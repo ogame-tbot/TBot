@@ -1,0 +1,87 @@
+﻿{
+  "Credentials": {
+    "Universe": "",
+    "Email": "",
+    "Password": "",
+    "Language": ""
+  },
+  "General": {
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+    "Port": "8080"
+  },
+  "Defender": {
+    "Active": true,
+    "CheckIntervalMin": 4,
+    "CheckIntervalMax": 11,
+    "Autofleet": {
+      "Active": true
+    },
+    "SpyAttacker": {
+      "Active": true,
+      "Probes": 5
+    },
+    "MessageAttacker": {
+      "Active": true,
+      "Messages": [
+        "hey",
+        "hello",
+        "Grande Puffo is in da house"
+      ]
+    },
+    "TelegramMessenger": {
+      "Active": true
+    },
+    "Alarm": {
+      "Active": true
+    }
+  },
+  "Brain": {
+    "Active": true,
+    "AutoCargo": {
+      "Active": true,
+      "ExcludeMoons": true,
+      "CargoType": "LargeCargo",
+      "CheckIntervalMin": 60,
+      "CheckIntervalMax": 240
+    },
+    "AutoRepatriate": {
+      "Active": true,
+      "ExcludeMoons": true,
+      "MinimumResources": 1000000,
+      "Target": {
+        "Galaxy": 1,
+        "System": 95,
+        "Position": 4,
+        "Type": "Moon"
+      },
+      "CargoType": "LargeCargo",
+      "RandomOrder": true,
+      "CheckIntervalMin": 180,
+      "CheckIntervalMax": 360
+    }
+  },
+  "Expeditions": {
+    "Active": true,
+    "AutoSendExpeditions": {
+      "Active": true,
+      "MainShip": "LargeCargo",
+      "WaitForAllExpeditions": true,
+      "SplitExpeditionsBetweenSystems": false,
+      "Origin": {
+        "Galaxy": 1,
+        "System": 95,
+        "Position": 4,
+        "Type": "Moon"
+      }
+    },
+    "AutoHarvest": {
+      "active": true,
+      "MinimumResources": 10000
+    }
+  },
+  "TelegramMessenger": {
+    "Active": true,
+    "API": "",
+    "ChatId": ""
+  }
+}
