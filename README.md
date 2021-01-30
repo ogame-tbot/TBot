@@ -20,6 +20,7 @@ Use this bot at your own risk!! Any testing is very much appreciated!
 
 * Defender: TBot checks periodically for incoming attacks
   * Autofleet: TBot deploys your endangered fleet and resources to your closest celestial
+    * Recall: TBot can autorecall the fleet
   * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in settings.json
   * SpyAttacker: TBot automatically spies attacker with set number of probes
   * Alarm: TBot plays a nasty sound if under attack
