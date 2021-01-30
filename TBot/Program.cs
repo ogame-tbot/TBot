@@ -15,13 +15,12 @@ namespace Tbot
     class Program
     {
         static OgamedService ogamedService;
-        static Timer defenderTimer;
-        static Timer capacityTimer;
-        static Timer repatriateTimer;
-        static Timer expeditionsTimer;
-        static Timer harvestTimer;
 
         static TelegramMessenger telegramMessenger;
+
+        static Dictionary<string, Timer> timers;
+
+        static dynamic settings;
 
         static Server serverInfo;
         static ServerData serverData;
@@ -32,9 +31,7 @@ namespace Tbot
         static List<Fleet> fleets;
         static List<AttackerFleet> attacks;
         static Slots slots;
-        static Researches researches;
-
-        static dynamic settings;
+        static Researches researches;        
 
         static void Main(string[] args)
         {
@@ -56,7 +53,7 @@ namespace Tbot
             serverInfo = ogamedService.GetServerInfo();
             serverData = ogamedService.GetServerData();
 
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Server time: " + ogamedService.GetServerTime().ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Server time: " + GetDateTime().ToString());
 
             userInfo = UpdateUserInfo();
             Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
@@ -72,11 +69,14 @@ namespace Tbot
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
                     telegramMessenger = new TelegramMessenger(settings.TelegramMessenger.API.ToString(), settings.TelegramMessenger.ChatId.ToString());
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] TBot activated");
                 }
 
                 Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
                 celestials = UpdatePlanets(UpdateType.Fast);
                 researches = ogamedService.GetResearches();
+
+                timers = new Dictionary<string, Timer>();
 
                 if (settings.Defender.Active)
                 {
@@ -100,6 +100,15 @@ namespace Tbot
 
             Console.ReadLine();
             ogamedService.KillOgamedExecultable();
+        }
+
+        private static DateTime GetDateTime()
+        {
+            DateTime dateTime = ogamedService.GetServerTime();
+            if (dateTime.Kind == DateTimeKind.Utc)
+                return dateTime.ToLocalTime();
+            else
+                return dateTime;
         }
 
         private static UserInfo UpdateUserInfo()
@@ -202,7 +211,7 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
             
-            defenderTimer = new Timer(Defender, null, 0, Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax));
+            timers.Add("DefenderTimer", new Timer(Defender, null, 0, Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax)));
         }
         private static void InitializeBrain()
         {
@@ -210,11 +219,11 @@ namespace Tbot
 
             if (settings.Brain.AutoCargo.Active)
             {
-                capacityTimer = new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax));
+                timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
             }
             if (settings.Brain.AutoRepatriate.Active)
             {
-                repatriateTimer = new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax));
+                timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax)));
             }
         }
 
@@ -222,14 +231,14 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
 
-            expeditionsTimer = new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour));
+            timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour)));
         }
 
         private static void Defender(object state)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
             bool isUnderAttack = ogamedService.IsUnderAttack();
-            DateTime time = ogamedService.GetServerTime();
+            DateTime time = GetDateTime();
             if (isUnderAttack)
             {
                 if ((bool)settings.Defender.Alarm.Active) 
@@ -246,7 +255,7 @@ namespace Tbot
             }
             int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
             DateTime newTime = time.AddMilliseconds(interval);
-            defenderTimer.Change(interval, Timeout.Infinite);
+            timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
         }
 
@@ -305,10 +314,10 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Capacity is ok.");
                 }
             }
-            var time = ogamedService.GetServerTime();
+            var time = GetDateTime();
             var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
             var newTime = time.AddMilliseconds(interval);
-            capacityTimer.Change(interval, Timeout.Infinite);
+            timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
         }
 
@@ -373,10 +382,10 @@ namespace Tbot
                 SendFleet(celestial, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, payload);
             }
 
-            var time = ogamedService.GetServerTime();
+            var time = GetDateTime();
             var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
             var newTime = time.AddMilliseconds(interval);
-            repatriateTimer.Change(interval, Timeout.Infinite);
+            timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
         }
 
@@ -399,7 +408,7 @@ namespace Tbot
                 }
                 catch (Exception e)
                 {
-                    Helpers.WriteLog(LogType.Error, LogSender.Defender, "Exception: " + e.Message);
+                    Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to send fleet: an exception has occurred: " + e.Message);
                     return 0;
                 }
             }
@@ -410,23 +419,57 @@ namespace Tbot
             }
         }
 
+        private static bool CancelFleet(Fleet fleet)
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Recalling fleet id " + fleet.ID + " originally from " + fleet.Origin.ToString() + " to " + fleet.Destination.ToString() + " with mission: " + fleet.Mission.ToString() + ". Start time: " + fleet.StartTime.ToString() + " - Arrival time: " + fleet.ArrivalTime.ToString() + " - Ships: " + fleet.Ships.ToString());
+            UpdateSlots();
+            try
+            {
+                var result = ogamedService.CancelFleet(fleet);
+                Thread.Sleep((int)IntervalType.AFewSeconds);
+                UpdateFleets();
+                var recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID);
+                if (recalledFleet.ID == 0)
+                {
+                    Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an unknon error has occurred.");
+                }
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled: return time: " + fleet.ArrivalTime.ToString());
+                return result;
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an exception has occurred: " + e.Message);
+                return false;
+            }
+        }
+
+        private static void RetireFleet(object state)
+        {
+            CancelFleet((Fleet)state);
+        }
+
         private static void HandleAttack(object state)
         {
             if (celestials.Count == 0)
             {
-                DateTime time = ogamedService.GetServerTime();
+                DateTime time = GetDateTime();
                 int interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
-                defenderTimer.Change(interval, Timeout.Infinite);
+                timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Unable to handle attack at the moment: bot is still getting account info.");
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                 return;
             }
             foreach (AttackerFleet attack in attacks)
             {
+                if (attack.IsOnlyProbes())
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
+                    continue;
+                }
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                 {
-                    telegramMessenger.SendMessage("Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
                 }
                 Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.Coordinate.Galaxy == attack.Destination.Galaxy && planet.Coordinate.System == attack.Destination.System && planet.Coordinate.Position == attack.Destination.Position && planet.Coordinate.Type == attack.Destination.Type);
                 attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
@@ -510,10 +553,10 @@ namespace Tbot
                             if (destination.ID == 0)
                             {
                                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no valid destination exists");
-                                DateTime time = ogamedService.GetServerTime();
+                                DateTime time = GetDateTime();
                                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
-                                defenderTimer.Change(interval, Timeout.Infinite);
+                                timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                                 return;
                             }
@@ -533,26 +576,47 @@ namespace Tbot
                                 {
                                     Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
                                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
+                                    if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.Autofleet.TelegramMessenger.Active)
+                                    {
+                                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
+                                    }
+                                    if ((bool)settings.Defender.Autofleet.Recall)
+                                    {
+                                        DateTime time = GetDateTime();
+                                        var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 20)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                        DateTime newTime = time.AddMilliseconds(interval);
+                                        timers.Add(attack.ID.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+                                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
+                                    }
+                                }
+                                else
+                                {
+                                    Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an unknown error has occurred.");
+                                    DateTime time = GetDateTime();
+                                    int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                                    DateTime newTime = time.AddMilliseconds(interval);
+                                    timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
+                                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                                 }
                             }
                         }
                         catch(Exception e)
                         {
                             Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an exception has occurred: " + e.Message);
-                            DateTime time = ogamedService.GetServerTime();
+                            DateTime time = GetDateTime();
                             int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                             DateTime newTime = time.AddMilliseconds(interval);
-                            defenderTimer.Change(interval, Timeout.Infinite);
+                            timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                             Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                         }
                     }
                     else
                     {
                         Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no slots available.");
-                        DateTime time = ogamedService.GetServerTime();
+                        DateTime time = GetDateTime();
                         int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                         DateTime newTime = time.AddMilliseconds(interval);
-                        defenderTimer.Change(interval, Timeout.Infinite);
+                        timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                         Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                     }
                 }
@@ -659,7 +723,7 @@ namespace Tbot
 
                 UpdateSlots();
                 UpdateFleets();
-                var time = ogamedService.GetServerTime();
+                var time = GetDateTime();
                 List<Fleet> orderedFleets = fleets
                     .Where(fleet => fleet.Mission == Missions.Expedition)
                     .OrderByDescending(fleet => fleet.BackIn)
@@ -674,7 +738,7 @@ namespace Tbot
                     interval = (int)((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                 }
                 DateTime newTime = time.AddMilliseconds(interval);
-                expeditionsTimer.Change(interval, Timeout.Infinite);
+                timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
             }
 

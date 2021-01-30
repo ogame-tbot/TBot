@@ -6,26 +6,32 @@
     "Language": ""
   },
   "General": {
-    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36",
     "Port": "8080"
   },
   "Defender": {
     "Active": true,
     "CheckIntervalMin": 4,
     "CheckIntervalMax": 11,
+    "IgnoreProbes": true,
     "Autofleet": {
-      "Active": true
+      "Active": true,
+      "Recall": true,
+      "TelegramMessenger": {
+        "Active": true
+      }
     },
     "SpyAttacker": {
       "Active": true,
-      "Probes": 5
+      "Probes": 1
     },
     "MessageAttacker": {
       "Active": true,
       "Messages": [
         "hey",
         "hello",
-        "Grande Puffo is in da house"
+        "Tripa tripaloski",
+        "Trallallero trallallà"
       ]
     },
     "TelegramMessenger": {
@@ -40,7 +46,7 @@
     "AutoCargo": {
       "Active": true,
       "ExcludeMoons": true,
-      "CargoType": "LargeCargo",
+      "CargoType": "SmallCargo",
       "CheckIntervalMin": 60,
       "CheckIntervalMax": 240
     },
@@ -49,12 +55,12 @@
       "ExcludeMoons": true,
       "MinimumResources": 1000000,
       "Target": {
-        "Galaxy": 1,
-        "System": 95,
-        "Position": 4,
-        "Type": "Moon"
+        "Galaxy": 4,
+        "System": 63,
+        "Position": 8,
+        "Type": "Planet"
       },
-      "CargoType": "LargeCargo",
+      "CargoType": "SmallCargo",
       "RandomOrder": true,
       "CheckIntervalMin": 180,
       "CheckIntervalMax": 360
@@ -64,14 +70,14 @@
     "Active": true,
     "AutoSendExpeditions": {
       "Active": true,
-      "MainShip": "LargeCargo",
+      "MainShip": "SmallCargo",
       "WaitForAllExpeditions": true,
       "SplitExpeditionsBetweenSystems": false,
       "Origin": {
-        "Galaxy": 1,
-        "System": 95,
-        "Position": 4,
-        "Type": "Moon"
+        "Galaxy": 4,
+        "System": 63,
+        "Position": 8,
+        "Type": "Planet"
       }
     },
     "AutoHarvest": {
@@ -80,7 +86,7 @@
     }
   },
   "TelegramMessenger": {
-    "Active": true,
+    "Active": false,
     "API": "",
     "ChatId": ""
   }
