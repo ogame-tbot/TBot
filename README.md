@@ -1,8 +1,8 @@
 # TBot
 OGame Bot
 
-![GitHub all releases](https://img.shields.io/github/downloads/ogame-tbot/TBot/total)
-![Discord](https://img.shields.io/discord/801453618770214923)
+[![GitHub all releases](https://img.shields.io/github/downloads/ogame-tbot/TBot/total)](https://github.com/ogame-tbot/TBot/releases/latest)
+[![Discord](https://img.shields.io/discord/801453618770214923)](https://discord.gg/NZSaY4aQ7J)
 
 TBot is a .NET Core 3.1 [OGame](https://lobby.ogame.gameforge.com/) bot based on (a fork of) [ogamed deamon](https://github.com/kokiddp/ogame) by alaingilbert
 
