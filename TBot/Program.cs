@@ -172,7 +172,14 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
             List<Celestial> localPlanets;
-            localPlanets = ogamedService.GetCelestials();
+            if (celestials == null)
+            {
+                localPlanets = ogamedService.GetCelestials();
+            }
+            else
+            {
+                localPlanets = celestials;
+            }
             List<Celestial> newPlanets = new List<Celestial>();
             foreach (Celestial planet in localPlanets)
             {
