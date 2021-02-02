@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Linq;
 
 namespace Tbot.Includes
 {
@@ -137,7 +138,7 @@ namespace Tbot.Includes
             long total = 0;
             foreach (PropertyInfo prop in fleet.GetType().GetProperties())
             {
-                int qty = (int)prop.GetValue(fleet, null);
+                long qty = (long)prop.GetValue(fleet, null);
                 if (qty == 0) continue;
                 if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
                 {
@@ -263,7 +264,7 @@ namespace Tbot.Includes
             int minSpeed = 0;
             foreach (PropertyInfo prop in fleet.GetType().GetProperties())
             {
-                int qty = (int)prop.GetValue(fleet, null);
+                long qty = (long)prop.GetValue(fleet, null);
                 if (qty == 0) continue;
                 if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
                 {
@@ -299,9 +300,9 @@ namespace Tbot.Includes
             }
         }
 
-        public static int CalcShipNumberForPayload(Resources payload, Buildables buildable, int hyperspaceTech, Classes playerClass)
+        public static long CalcShipNumberForPayload(Resources payload, Buildables buildable, int hyperspaceTech, Classes playerClass)
         {
-            return (int)Math.Round(((float)payload.TotalResources / (float)CalcShipCapacity(buildable, hyperspaceTech, playerClass)), MidpointRounding.ToPositiveInfinity);
+            return (long)Math.Round(((float)payload.TotalResources / (float)CalcShipCapacity(buildable, hyperspaceTech, playerClass)), MidpointRounding.ToPositiveInfinity);
         }
 
         public static Ships CalcIdealExpeditionShips(Buildables buildable, int ecoSpeed, int topOnePoints, int hyperspaceTech, Classes playerClass)
@@ -372,11 +373,11 @@ namespace Tbot.Includes
             {
                 if (prop.Name == buildable.ToString())
                 {
-                    int availableVal = (int)prop.GetValue(fleet);
-                    int idealVal = (int)prop.GetValue(ideal);
+                    long availableVal = (long)prop.GetValue(fleet);
+                    long idealVal = (long)prop.GetValue(ideal);
                     if (availableVal < idealVal * expeditionsNumber)
                     {
-                        int realVal = (int)Math.Round(((float)availableVal / (float)expeditionsNumber), MidpointRounding.ToZero);
+                        long realVal = (long)Math.Round(((float)availableVal / (float)expeditionsNumber), MidpointRounding.ToZero);
                         prop.SetValue(ideal, realVal);
                     }                        
                 }
@@ -395,7 +396,7 @@ namespace Tbot.Includes
             {
                 if (prop.Name == buildable.ToString())
                 {
-                    int availableVal = (int)prop.GetValue(fleet);
+                    long availableVal = (long)prop.GetValue(fleet);
                     if (availableVal >= expeditionsNumber)
                         return true;
                 }
@@ -406,13 +407,17 @@ namespace Tbot.Includes
         public static Ships CalcFullExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
         {
             Ships oneExpeditionFleet = CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata, researches, playerClass);
+
             if (MayAddShipToExpedition(fleet, Buildables.EspionageProbe, expeditionsNumber))
-                oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);
-            if (MayAddShipToExpedition(fleet, Buildables.Pathfinder, expeditionsNumber))
-                oneExpeditionFleet.Add(Buildables.Pathfinder, 1);
+                oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);     
+            
             Buildables militaryShip = CalcMilitaryShipForExpedition(fleet, expeditionsNumber);
             if (MayAddShipToExpedition(fleet, militaryShip, expeditionsNumber))
                 oneExpeditionFleet.Add(militaryShip, 1);
+
+            if (MayAddShipToExpedition(fleet, Buildables.Pathfinder, expeditionsNumber))
+                if (oneExpeditionFleet.Pathfinder == 0)
+                    oneExpeditionFleet.Add(Buildables.Pathfinder, 1);
 
             return oneExpeditionFleet;
         }
@@ -420,17 +425,14 @@ namespace Tbot.Includes
         public static int CalcDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, int systemsNumber = 499, bool donutGalaxy = true, bool donutSystem = true )
         {
             if (origin.Galaxy != destination.Galaxy)
-            {
                 return CalcGalaxyDistance(origin, destination, galaxiesNumber, donutGalaxy);
-            }
+
             if (origin.System != destination.System)
-            {
                 return CalcSystemDistance(origin, destination, systemsNumber, donutSystem);
-            }
+
             if (origin.Position != destination.Position)
-            {
                 return CalcPlanetDistance(origin, destination);
-            }
+
             return 5;
         }
 
@@ -442,33 +444,24 @@ namespace Tbot.Includes
         private static int CalcGalaxyDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, bool donutGalaxy = true)
         {
             if (!donutGalaxy)
-            {
                 return 2000 * Math.Abs(origin.Galaxy - destination.Galaxy);
-            }
+
             if (origin.Galaxy > destination.Galaxy)
-            {
                 return 2000 * Math.Min((origin.Galaxy - destination.Galaxy),((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
-            }
-            else
-            {
-                return 2000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
-            }
+
+            return 2000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
         }
 
         private static int CalcSystemDistance(Coordinate origin, Coordinate destination, int systemsNumber, bool donutSystem = true)
         {
             if (!donutSystem)
-            {
                 return 2700 + 95 * Math.Abs(origin.System - destination.System);
-            }
+
             if (origin.System > destination.System)
-            {
                 return 2700 + 95 * Math.Min((origin.System - destination.System), ((destination.System + systemsNumber) - origin.System));
-            }
-            else
-            {
-                return 2700 + 95 * Math.Min((destination.System - origin.System), ((origin.System + systemsNumber) - destination.System));
-            }
+
+            return 2700 + 95 * Math.Min((destination.System - origin.System), ((origin.System + systemsNumber) - destination.System));
+
         }
 
         private static int CalcPlanetDistance(Coordinate origin, Coordinate destination)
@@ -595,6 +588,434 @@ namespace Tbot.Includes
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcDeuteriumProduction(planet.Buildings.CrystalMine, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+        }
+
+        public static Resources CalcPlanetHourlyProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            Resources hourlyProduction = new Resources
+            {
+                Metal = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff),
+                Crystal = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff),
+                Deuterium = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff)
+            };
+            return hourlyProduction;
+        }
+
+        public static Resources CalcPrice(Buildables buildable, int level)
+        {
+            Resources output = new Resources();
+
+            switch (buildable)
+            {
+                case Buildables.MetalMine:
+                    output.Metal = (long)(60 * Math.Pow(1.5, (level - 1)));
+                    output.Crystal = (long)(15 * Math.Pow(1.5, (level - 1)));
+                    break;
+                case Buildables.CrystalMine:
+                    output.Metal = (long)(48 * Math.Pow(1.6, (level - 1)));
+                    output.Crystal = (long)(24 * Math.Pow(1.6, (level - 1)));
+                    break;
+                case Buildables.DeuteriumSynthesizer:
+                    output.Metal = (long)(225 * Math.Pow(1.5, (level - 1)));
+                    output.Crystal = (long)(75 * Math.Pow(1.5, (level - 1)));
+                    break;
+                case Buildables.SolarPlant:
+                    output.Metal = (long)(75 * Math.Pow(1.5, (level - 1)));
+                    output.Crystal = (long)(30 * Math.Pow(1.5, (level - 1)));
+                    break;
+                case Buildables.FusionReactor:
+                    output.Metal = (long)(1900 * Math.Pow(1.8, (level - 1)));
+                    output.Crystal = (long)(360 * Math.Pow(1.8, (level - 1)));
+                    output.Deuterium = (long)(180 * Math.Pow(1.8, (level - 1)));
+                    break;
+                case Buildables.MetalStorage:
+                    output.Metal = (long)(500 * Math.Pow(2, level));
+                    break;
+                case Buildables.CrystalStorage:
+                    output.Metal = (long)(500 * Math.Pow(2, level));
+                    output.Crystal = (long)(250 * Math.Pow(2, level));
+                    break;
+                case Buildables.DeuteriumTank:
+                    output.Metal = (long)(500 * Math.Pow(2, level));
+                    output.Crystal = (long)(500 * Math.Pow(2, level));
+                    break;
+                case Buildables.ShieldedMetalDen:
+                    break;
+                case Buildables.UndergroundCrystalDen:
+                    break;
+                case Buildables.SeabedDeuteriumDen:
+                    break;
+                case Buildables.AllianceDepot:
+                    output.Metal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(40000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.RoboticsFactory:
+                    output.Metal = (long)(400 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(120 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(200 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.Shipyard:
+                    output.Metal = (long)(400 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(200 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(100 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.ResearchLab:
+                    output.Metal = (long)(200 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(400 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(200 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.MissileSilo:
+                    output.Metal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(1000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.NaniteFactory:
+                    output.Metal = (long)(1000000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(500000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(100000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.Terraformer:
+                    output.Crystal = (long)(50000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(100000 * Math.Pow(2, level - 1));
+                    output.Energy = (long)(1000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.SpaceDock:
+                    break;
+                case Buildables.LunarBase:
+                    output.Metal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(40000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(20000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.SensorPhalanx:
+                    output.Metal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(40000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(20000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.JumpGate:
+                    output.Metal = (long)(2000000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(4000000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(2000000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.RocketLauncher:
+                    output.Metal = (long)(2000 * level);
+                    break;
+                case Buildables.LightLaser:
+                    output.Metal = (long)(1500 * level);
+                    output.Crystal = (long)(500 * level);
+                    break;
+                case Buildables.HeavyLaser:
+                    output.Metal = (long)(6000 * level);
+                    output.Crystal = (long)(2000 * level);
+                    break;
+                case Buildables.GaussCannon:
+                    output.Metal = (long)(20000 * level);
+                    output.Crystal = (long)(15000 * level);
+                    output.Deuterium = (long)(2000 * level);
+                    break;
+                case Buildables.IonCannon:
+                    output.Metal = (long)(5000 * level);
+                    output.Crystal = (long)(3000 * level);
+                    break;
+                case Buildables.PlasmaTurret:
+                    output.Metal = (long)(50000 * level);
+                    output.Crystal = (long)(50000 * level);
+                    output.Deuterium = (long)(30000 * level);
+                    break;
+                case Buildables.SmallShieldDome:
+                    output.Metal = (long)(10000 * level);
+                    output.Crystal = (long)(10000 * level);
+                    break;
+                case Buildables.LargeShieldDome:
+                    output.Metal = (long)(50000 * level);
+                    output.Crystal = (long)(50000 * level);
+                    break;
+                case Buildables.AntiBallisticMissiles:
+                    break;
+                case Buildables.InterplanetaryMissiles:
+                    break;
+                case Buildables.SmallCargo:
+                    output.Metal = (long)(2000 * level);
+                    output.Crystal = (long)(2000 * level);
+                    break;
+                case Buildables.LargeCargo:
+                    output.Metal = (long)(6000 * level);
+                    output.Crystal = (long)(6000 * level);
+                    break;
+                case Buildables.LightFighter:
+                    output.Metal = (long)(3000 * level);
+                    output.Crystal = (long)(1000 * level);
+                    break;
+                case Buildables.HeavyFighter:
+                    output.Metal = (long)(6000 * level);
+                    output.Crystal = (long)(4000 * level);
+                    break;
+                case Buildables.Cruiser:
+                    output.Metal = (long)(20000 * level);
+                    output.Crystal = (long)(7000 * level);
+                    output.Deuterium = (long)(2000 * level);
+                    break;
+                case Buildables.Battleship:
+                    output.Metal = (long)(35000 * level);
+                    output.Crystal = (long)(15000 * level);
+                    break;
+                case Buildables.ColonyShip:
+                    output.Metal = (long)(10000 * level);
+                    output.Crystal = (long)(20000 * level);
+                    output.Deuterium = (long)(10000 * level);
+                    break;
+                case Buildables.Recycler:
+                    output.Metal = (long)(10000 * level);
+                    output.Crystal = (long)(6000 * level);
+                    output.Deuterium = (long)(2000 * level);
+                    break;
+                case Buildables.EspionageProbe:
+                    output.Crystal = (long)(1000 * level);
+                    break;
+                case Buildables.Bomber:
+                    output.Metal = (long)(50000 * level);
+                    output.Crystal = (long)(25000 * level);
+                    output.Deuterium = (long)(15000 * level);
+                    break;
+                case Buildables.SolarSatellite:
+                    output.Crystal = (long)(2000 * level);
+                    output.Deuterium = (long)(500 * level);
+                    break;
+                case Buildables.Destroyer:
+                    output.Metal = (long)(60000 * level);
+                    output.Crystal = (long)(50000 * level);
+                    output.Deuterium = (long)(15000 * level);
+                    break;
+                case Buildables.Deathstar:
+                    output.Metal = (long)(5000000 * level);
+                    output.Crystal = (long)(4000000 * level);
+                    output.Deuterium = (long)(1000000 * level);
+                    break;
+                case Buildables.Battlecruiser:
+                    output.Metal = (long)(30000 * level);
+                    output.Crystal = (long)(40000 * level);
+                    output.Deuterium = (long)(15000 * level);
+                    break;
+                case Buildables.Crawler:
+                    break;
+                case Buildables.Reaper:
+                    output.Metal = (long)(85000 * level);
+                    output.Crystal = (long)(55000 * level);
+                    output.Deuterium = (long)(20000 * level);
+                    break;
+                case Buildables.Pathfinder:
+                    output.Metal = (long)(8000 * level);
+                    output.Crystal = (long)(15000 * level);
+                    output.Deuterium = (long)(8000 * level);
+                    break;
+                case Buildables.EspionageTechnology:
+                    output.Metal = (long)(200 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(1000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(200 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.ComputerTechnology:
+                    output.Crystal = (long)(400 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(600 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.WeaponsTechnology:
+                    output.Metal = (long)(800 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(200 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.ShieldingTechnology:
+                    output.Metal = (long)(200 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(600 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.ArmourTechnology:
+                    output.Metal = (long)(1000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.EnergyTechnology:
+                    output.Crystal = (long)(800 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(400 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.HyperspaceTechnology:
+                    output.Crystal = (long)(4000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(2000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.CombustionDrive:
+                    output.Metal = (long)(400 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(600 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.ImpulseDrive:
+                    output.Metal = (long)(2000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(4000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(600 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.HyperspaceDrive:
+                    output.Metal = (long)(10000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(20000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(6000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.LaserTechnology:
+                    output.Metal = (long)(200 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(100 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.IonTechnology:
+                    output.Metal = (long)(1000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(300 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(100 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.PlasmaTechnology:
+                    output.Metal = (long)(2000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(4000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(1000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.IntergalacticResearchNetwork:
+                    output.Metal = (long)(240000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(400000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(160000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.Astrophysics:
+                    output.Metal = (long)(4000 * Math.Pow(2, level - 1));
+                    output.Crystal = (long)(8000 * Math.Pow(2, level - 1));
+                    output.Deuterium = (long)(4000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.GravitonTechnology:
+                    output.Energy = (long)(300000 * Math.Pow(2, level - 1));
+                    break;
+                case Buildables.Null:
+                default:
+                    break;
+            }
+
+            return output;
+        }
+
+        public static int GetNextLevel(Planet planet, Buildables buildable)
+        {
+            foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
+            {
+                if (prop.Name == buildable.ToString())
+                {
+                    return (int)prop.GetValue(planet.Buildings) + 1;
+                }
+            }
+            return 0;
+        }
+
+        public static int CalcDepositCapacity(int level)
+        {
+            return 5000 * (int)(2.5 * Math.Pow(Math.E,(20 * level / 33)));
+        }
+
+        public static bool ShouldBuildMetalStorage(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            int metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            int metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
+            if (metalCapacity < 24 * metalProduction)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildCrystalStorage(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            int crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            int crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
+            if (crystalCapacity < 24 * crystalProduction)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildDeuteriumTank(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            int deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            int deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
+            if (deuteriumCapacity < 24 * deuteriumProduction)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildEnergySource(Planet planet)
+        {
+            if (planet.Resources.Energy < 0)
+                return true;
+            else
+                return false;
+        }
+
+        public static Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor)
+        {
+            if (planet.Buildings.SolarPlant < maxSolarPlant)
+                return Buildables.SolarPlant;
+            if (planet.Buildings.FusionReactor < maxFusionReactor)
+                return Buildables.FusionReactor;
+            return Buildables.SolarSatellite;
+        }
+
+        public static int GetSolarSatelliteOutput(Planet planet)
+        {
+            return (int)Math.Round((planet.Temperature.Average + 160) / 6);
+        }
+
+        public static int CalcNeededSolarSatellites(Planet planet)
+        {
+            if (planet.Resources.Energy > 0)
+                return 0;
+            return (int)Math.Round( (float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+        }
+
+        public static Buildables GetNextMineToBuild(Planet planet)
+        {
+            var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
+            var dic = new Dictionary<Buildables, long>();
+            foreach (var mine in mines)
+            {
+                dic.Add(mine, CalcPrice(mine, GetNextLevel(planet, mine)).ConvertedDeuterium);
+            }
+            dic.OrderBy(m => m.Value)
+                .ToDictionary(m => m.Key, m => m.Value);
+            return dic.First().Key;
+        }
+
+        public static bool ShouldBuildRoboticFactory(Planet planet, int maxLevel = 10)
+        {
+            var nextMine = GetNextMineToBuild(planet);
+            var nextMineLevel = GetNextLevel(planet, nextMine);
+            var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+            var nextRobotsLevel = GetNextLevel(planet, Buildables.RoboticsFactory);
+            var nextRobotsPrice = CalcPrice(Buildables.RoboticsFactory, nextRobotsLevel);
+
+            if (nextRobotsLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildShipyard(Planet planet, int maxLevel = 12)
+        {
+            var nextMine = GetNextMineToBuild(planet);
+            var nextMineLevel = GetNextLevel(planet, nextMine);
+            var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+            var nextShipyardLevel = GetNextLevel(planet, Buildables.RoboticsFactory);
+            var nextShipyardPrice = CalcPrice(Buildables.RoboticsFactory, nextShipyardLevel);
+
+            if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 2)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildNanites(Planet planet, int maxLevel = 10)
+        {
+            var nextMine = GetNextMineToBuild(planet);
+            var nextMineLevel = GetNextLevel(planet, nextMine);
+            var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+            var nextNanitesLevel = GetNextLevel(planet, Buildables.NaniteFactory);
+            var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
+
+            if (nextNanitesLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
+                return true;
+            else
+                return false;
         }
     }
 }

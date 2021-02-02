@@ -65,7 +65,7 @@ namespace Tbot.Properties {
         /// </summary>
         public static byte[] ogamed_win64 {
             get {
-                object obj = ResourceManager.GetObject("ogamed-win64", resourceCulture);
+                object obj = ResourceManager.GetObject("ogamed_win64", resourceCulture);
                 return ((byte[])(obj));
             }
         }

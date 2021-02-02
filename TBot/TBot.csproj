@@ -5,14 +5,14 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Nullable>disable</Nullable>
     <Authors>ELK-Lab</Authors>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Copyright>2021 © ELK-Lab</Copyright>
     <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.ogame-tbot.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ogame-tbot/TBot</RepositoryUrl>
-    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <AssemblyVersion>0.1.2.0</AssemblyVersion>
     <FileVersion>0.1.1.0</FileVersion>
     <Description>OGame Bot</Description>
     <SignAssembly>false</SignAssembly>
@@ -20,6 +20,7 @@
     <DelaySign>false</DelaySign>
     <RootNamespace>Tbot</RootNamespace>
     <PackageReleaseNotes></PackageReleaseNotes>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -35,10 +36,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="External\ogamed.exe" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1841731" />
     <PackageReference Include="Nefarius.JsonConfig" Version="1.1.28" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
@@ -46,8 +43,8 @@
     <PackageReference Include="Telegram.Bot" Version="15.7.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="External\ogamed.exe" />
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != 'win-x64'">
+    <Resource Remove="Resources\ogamed-win64.exe" />
   </ItemGroup>
 
   <ItemGroup>

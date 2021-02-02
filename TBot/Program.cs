@@ -14,24 +14,22 @@ namespace Tbot
 {
     class Program
     {
-        static OgamedService ogamedService;
+        static volatile OgamedService ogamedService;
 
-        static TelegramMessenger telegramMessenger;
+        static volatile TelegramMessenger telegramMessenger;
 
-        static Dictionary<string, Timer> timers;
+        static volatile Dictionary<string, Timer> timers;
 
-        static dynamic settings;
+        static volatile dynamic settings;
 
-        static Server serverInfo;
-        static ServerData serverData;
-        static UserInfo userInfo;
-        static List<Celestial> celestials;
-        static List<Planet> planets;
-        static List<Moon> moons;
-        static List<Fleet> fleets;
-        static List<AttackerFleet> attacks;
-        static Slots slots;
-        static Researches researches;        
+        static volatile Server serverInfo;
+        static volatile ServerData serverData;
+        static volatile UserInfo userInfo;
+        static volatile List<Celestial> celestials;
+        static volatile List<Fleet> fleets;
+        static volatile List<AttackerFleet> attacks;
+        static volatile Slots slots;
+        static volatile Researches researches;        
 
         static void Main(string[] args)
         {
@@ -44,62 +42,93 @@ namespace Tbot
                 Password = settings.Credentials.Password.ToString(),
                 Language = settings.Credentials.Language.ToString().ToLower()
             };
-            ogamedService = new OgamedService(credentials, int.Parse(settings.General.Port));
-            ogamedService.SetUserAgent(settings.General.UserAgent.ToString());
+            try
+            {
+                ogamedService = new OgamedService(credentials, int.Parse(settings.General.Port));
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to start ogamed: " + e.Message);
+            }
+            try
+            {
+                ogamedService.SetUserAgent(settings.General.UserAgent.ToString());
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to set user agent: " + e.Message);
+            }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
-            ogamedService.Login();
+            var isLoggedIn = false;
+            try
+            {
+                isLoggedIn = ogamedService.Login();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login: " + e.Message);
+            }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 
-            serverInfo = ogamedService.GetServerInfo();
-            serverData = ogamedService.GetServerData();
-
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Server time: " + GetDateTime().ToString());
-
-            userInfo = UpdateUserInfo();
-            Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player name: " + userInfo.PlayerName);
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player class: " + userInfo.Class.ToString());
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player rank: " + userInfo.Rank);
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player points: " + userInfo.Points);
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player honour points: " + userInfo.HonourPoints);
-
-            if (!ogamedService.IsVacationMode())
+            if (!isLoggedIn)
             {
-                if ((bool)settings.TelegramMessenger.Active)
-                {
-                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
-                    telegramMessenger = new TelegramMessenger(settings.TelegramMessenger.API.ToString(), settings.TelegramMessenger.ChatId.ToString());
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] TBot activated");
-                }
-
-                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
-                celestials = UpdatePlanets(UpdateType.Fast);
-                researches = ogamedService.GetResearches();
-
-                timers = new Dictionary<string, Timer>();
-
-                if (settings.Defender.Active)
-                {
-                    InitializeDefender();
-                }
-
-                if (settings.Brain.Active)
-                {
-                    InitializeBrain();
-                }
-
-                if (settings.Expeditions.Active)
-                {
-                    InitializeExpeditions();
-                }
-            }
+                ogamedService.KillOgamedExecultable();
+                Console.ReadLine();
+            }                
             else
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
-            }
+                serverInfo = UpdateServerInfo();
+                serverData = UpdateServerData();
+                userInfo = UpdateUserInfo();
 
-            Console.ReadLine();
-            ogamedService.KillOgamedExecultable();
+                UpdateTitle(false);
+
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Server time: " + GetDateTime().ToString());
+
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player name: " + userInfo.PlayerName);
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player class: " + userInfo.Class.ToString());
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player rank: " + userInfo.Rank);
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player points: " + userInfo.Points);
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player honour points: " + userInfo.HonourPoints);
+
+                if (!ogamedService.IsVacationMode())
+                {
+                    if ((bool)settings.TelegramMessenger.Active)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
+                        telegramMessenger = new TelegramMessenger(settings.TelegramMessenger.API.ToString(), settings.TelegramMessenger.ChatId.ToString());
+                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] TBot activated");
+                    }
+
+                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
+                    celestials = UpdatePlanets(UpdateType.Fast);
+                    researches = ogamedService.GetResearches();
+
+                    timers = new Dictionary<string, Timer>();
+
+                    if (settings.Defender.Active)
+                    {
+                        InitializeDefender();
+                    }
+
+                    if (settings.Brain.Active)
+                    {
+                        InitializeBrain();
+                    }
+
+                    if (settings.Expeditions.Active)
+                    {
+                        InitializeExpeditions();
+                    }
+                }
+                else
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
+                }
+
+                Console.ReadLine();
+                ogamedService.KillOgamedExecultable();
+            }            
         }
 
         private static DateTime GetDateTime()
@@ -109,6 +138,26 @@ namespace Tbot
                 return dateTime.ToLocalTime();
             else
                 return dateTime;
+        }
+
+        private static Slots UpdateSlots()
+        {
+            return ogamedService.GetSlots();
+        }
+
+        private static List<Fleet> UpdateFleets()
+        {
+            return ogamedService.GetFleets();
+        }
+
+        private static ServerData UpdateServerData()
+        {
+            return ogamedService.GetServerData();
+        }
+
+        private static Server UpdateServerInfo()
+        {
+            return ogamedService.GetServerInfo();
         }
 
         private static UserInfo UpdateUserInfo()
@@ -123,14 +172,7 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
             List<Celestial> localPlanets;
-            if (celestials == null)
-            {
-                localPlanets = ogamedService.GetCelestials();
-            }
-            else
-            {
-                localPlanets = celestials;
-            }
+            localPlanets = ogamedService.GetCelestials();
             List<Celestial> newPlanets = new List<Celestial>();
             foreach (Celestial planet in localPlanets)
             {
@@ -207,6 +249,17 @@ namespace Tbot
             return planet;
         }
 
+        private static void UpdateTitle(bool force = true)
+        {
+            if (force)
+            {
+                serverInfo = UpdateServerInfo();
+                serverData = UpdateServerData();
+                userInfo = UpdateUserInfo();
+            }            
+            Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+        }
+
         private static void InitializeDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
@@ -243,8 +296,8 @@ namespace Tbot
             {
                 if ((bool)settings.Defender.Alarm.Active) 
                     Task.Factory.StartNew(() => Helpers.PlayAlarm());
-                Helpers.SetTitle("UNDER ATTACK - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "UNDER ATTACK!!!");
+                Helpers.SetTitle("ENEMY ACTIVITY DETECTED - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
                 attacks = ogamedService.GetAttacks();
                 HandleAttack(state);
             }
@@ -257,6 +310,7 @@ namespace Tbot
             DateTime newTime = time.AddMilliseconds(interval);
             timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+            UpdateTitle();
         }
 
         private static void AutoBuildCargo(object state)
@@ -319,6 +373,7 @@ namespace Tbot
             var newTime = time.AddMilliseconds(interval);
             timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
+            UpdateTitle();
         }
 
         private static void AutoRepatriate(object state)
@@ -341,7 +396,7 @@ namespace Tbot
                     continue;
                 }
                 Buildables preferredShip = Enum.Parse<Buildables>(settings.Brain.AutoRepatriate.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
-                int idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
                 Ships ships = new Ships();
                 if (idealShips <= celestial.Ships.GetAmount(preferredShip))
                 {
@@ -387,12 +442,13 @@ namespace Tbot
             var newTime = time.AddMilliseconds(interval);
             timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
+            UpdateTitle();
         }
 
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload = null, bool force = false)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Ships: " + ships.ToString());
-            UpdateSlots();
+            slots = UpdateSlots();
             if (slots.Free > 1 || force)
             {                
                 if (payload == null)
@@ -403,7 +459,7 @@ namespace Tbot
                 {
                     Fleet fleet = ogamedService.SendFleet(origin, ships, destination, mission, speed, payload);
                     fleets = ogamedService.GetFleets();
-                    UpdateSlots();
+                    slots = UpdateSlots();
                     return fleet.ID;
                 }
                 catch (Exception e)
@@ -422,12 +478,12 @@ namespace Tbot
         private static bool CancelFleet(Fleet fleet)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Recalling fleet id " + fleet.ID + " originally from " + fleet.Origin.ToString() + " to " + fleet.Destination.ToString() + " with mission: " + fleet.Mission.ToString() + ". Start time: " + fleet.StartTime.ToString() + " - Arrival time: " + fleet.ArrivalTime.ToString() + " - Ships: " + fleet.Ships.ToString());
-            UpdateSlots();
+            slots = UpdateSlots();
             try
             {
                 var result = ogamedService.CancelFleet(fleet);
                 Thread.Sleep((int)IntervalType.AFewSeconds);
-                UpdateFleets();
+                fleets = UpdateFleets();
                 var recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID);
                 if (recalledFleet.ID == 0)
                 {
@@ -464,7 +520,11 @@ namespace Tbot
             {
                 if (attack.IsOnlyProbes())
                 {
-                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
+                    if (attack.MissionType == Missions.Spy)
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
+                    else
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
+
                     continue;
                 }
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
@@ -476,7 +536,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" +  attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
                 if (settings.Defender.SpyAttacker.Active)
                 {
-                    UpdateSlots();
+                    slots = UpdateSlots();
                     if (slots.Free > 0)
                     {
                         if (attackedCelestial.Ships.EspionageProbe == 0)
@@ -523,7 +583,7 @@ namespace Tbot
                 }
                 if (settings.Defender.Autofleet.Active)
                 {
-                    UpdateSlots();
+                    slots = UpdateSlots();
                     if (slots.Free > 0)
                     {
                         try
@@ -628,8 +688,8 @@ namespace Tbot
             celestials = UpdatePlanets(UpdateType.Ships);
             if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
             {
-                UpdateSlots();
-                UpdateFleets();
+                slots = UpdateSlots();
+                fleets = UpdateFleets();
                 int expsToSend;
                 if (settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
                 {
@@ -707,6 +767,7 @@ namespace Tbot
                                         };
                                     }
                                     SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
+                                    Thread.Sleep((int)IntervalType.AFewSeconds);
                                 }
                             }
                         }
@@ -721,8 +782,8 @@ namespace Tbot
                     }
                 }
 
-                UpdateSlots();
-                UpdateFleets();
+                slots = UpdateSlots();
+                fleets = UpdateFleets();
                 var time = GetDateTime();
                 List<Fleet> orderedFleets = fleets
                     .Where(fleet => fleet.Mission == Missions.Expedition)
@@ -740,12 +801,13 @@ namespace Tbot
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
+                UpdateTitle();
             }
 
             if ((bool)settings.Expeditions.AutoHarvest.Active)
             {
-                UpdateSlots();
-                UpdateFleets();
+                slots = UpdateSlots();
+                fleets = UpdateFleets();
                 Celestial origin = celestials
                     .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                     .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
@@ -802,7 +864,7 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Debris detected at " + destination.ToString());
                         if (galaxyInfos.ExpeditionDebris.Resources.TotalResources >= settings.Expeditions.AutoHarvest.MinimumResources)
                         {
-                            int pathfindersToSend = Helpers.CalcShipNumberForPayload(galaxyInfos.ExpeditionDebris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            long pathfindersToSend = Helpers.CalcShipNumberForPayload(galaxyInfos.ExpeditionDebris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
                             SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
                         }
                         else
@@ -813,16 +875,5 @@ namespace Tbot
                 }
             }
         }
-
-        private static void UpdateSlots()
-        {
-            slots = ogamedService.GetSlots();
-        }
-
-        private static void UpdateFleets()
-        {
-            fleets = ogamedService.GetFleets();
-        }
-
     }
 }

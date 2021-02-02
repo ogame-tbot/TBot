@@ -41,16 +41,16 @@ namespace Tbot.Services
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        obj = Properties.Resources.ResourceManager.GetObject("ogamed-win64");
+                        obj = Properties.Resources.ResourceManager.GetObject("ogamed_win64");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-linux64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_linux64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-osx64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_osx64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else
@@ -62,12 +62,12 @@ namespace Tbot.Services
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-win32");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_win32");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-linux32");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_linux32");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else
@@ -79,7 +79,7 @@ namespace Tbot.Services
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-linuxarm");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_arm32");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else
@@ -91,17 +91,17 @@ namespace Tbot.Services
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-winarm64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_winarm64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-linuxarm64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_arm64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed-osxarm64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_osxarm64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else
@@ -138,7 +138,7 @@ namespace Tbot.Services
         internal void ExecuteOgamedExecutable(Credentials credentials, int port)
         {
             CreateOgamedExecutable();
-            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port;
+            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --cookies-filename=cookies.txt";
             Process.Start("ogamed.exe", args);
         }
 
@@ -723,12 +723,11 @@ namespace Tbot.Services
             request.AddParameter(new Parameter("position", destination.Position, ParameterType.GetOrPost));
             request.AddParameter(new Parameter("type", (int)destination.Type, ParameterType.GetOrPost));
 
-            Buildables buildable;
             foreach (PropertyInfo prop in ships.GetType().GetProperties())
             {
-                int qty = (int)prop.GetValue(ships, null);
+                long qty = (long)prop.GetValue(ships, null);
                 if (qty == 0) continue;
-                if (Enum.TryParse<Buildables>(prop.Name, out buildable))
+                if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
                 {
                     request.AddParameter(new Parameter("ships", (int)buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost));
                 }
