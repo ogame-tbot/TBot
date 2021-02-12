@@ -29,19 +29,35 @@ namespace Tbot
         static volatile List<Fleet> fleets;
         static volatile List<AttackerFleet> attacks;
         static volatile Slots slots;
-        static volatile Researches researches;        
-
+        static volatile Researches researches;
+        /*Lorenzo 07/02/2021
+         * Added array of semaphore to manage the cuncurrency
+         * for timers. 
+         * ATTENTION!!In case of adding some timers
+         * you need to redim the Semaphore array!!!
+         */
+        static Semaphore[] xaSem = new Semaphore[5];
         static void Main(string[] args)
         {
             Helpers.SetTitle();
 
             settings = Config.Global;
-            Credentials credentials = new Credentials {
+            Credentials credentials = new Credentials
+            {
                 Universe = settings.Credentials.Universe.ToString(),
                 Username = settings.Credentials.Email.ToString(),
                 Password = settings.Credentials.Password.ToString(),
                 Language = settings.Credentials.Language.ToString().ToLower()
             };
+
+
+
+
+
+
+
+
+
             try
             {
                 ogamedService = new OgamedService(credentials, int.Parse(settings.General.Port));
@@ -59,6 +75,10 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to set user agent: " + e.Message);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
+
+
+
+
             var isLoggedIn = false;
             try
             {
@@ -74,7 +94,7 @@ namespace Tbot
             {
                 ogamedService.KillOgamedExecultable();
                 Console.ReadLine();
-            }                
+            }
             else
             {
                 serverInfo = UpdateServerInfo();
@@ -106,6 +126,21 @@ namespace Tbot
 
                     timers = new Dictionary<string, Timer>();
 
+                    /*Lorenzo 07/02/2020 initialize semaphores
+                     * For the same reason in the xaSem declaration
+                     * if you add some timers add the initialization
+                     * of their timer
+                     * 
+                     * Tralla 12/2/20
+                     * change index to enum
+                     */
+                    xaSem[(int)Feature.Defender] = new Semaphore(1, 1); //Defender
+                    xaSem[(int)Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
+                    xaSem[(int)Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
+                    xaSem[(int)Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
+                    xaSem[(int)Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
+
+
                     if (settings.Defender.Active)
                     {
                         InitializeDefender();
@@ -128,8 +163,11 @@ namespace Tbot
 
                 Console.ReadLine();
                 ogamedService.KillOgamedExecultable();
-            }            
+            }
+
         }
+
+
 
         private static DateTime GetDateTime()
         {
@@ -167,7 +205,7 @@ namespace Tbot
             user.Class = ogamedService.GetUserClass();
             return user;
         }
-        
+
         private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
@@ -263,14 +301,14 @@ namespace Tbot
                 serverInfo = UpdateServerInfo();
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
-            }            
+            }
             Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
         }
 
         private static void InitializeDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
-            
+
             timers.Add("DefenderTimer", new Timer(Defender, null, 0, Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax)));
         }
         private static void InitializeBrain()
@@ -285,6 +323,13 @@ namespace Tbot
             {
                 timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax)));
             }
+            /*Lorenzo 05/02/2021
+             * Adding timer for auto buil mine
+             */
+            if (settings.Brain.AutoMine.Active)
+            {
+                timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.Automine.CheckIntervalMin, (int)settings.Brain.Automine.CheckIntervalMax)));
+            }
         }
 
         private static void InitializeExpeditions()
@@ -296,160 +341,480 @@ namespace Tbot
 
         private static void Defender(object state)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
-            bool isUnderAttack = ogamedService.IsUnderAttack();
-            DateTime time = GetDateTime();
-            if (isUnderAttack)
+
+            try
             {
-                if ((bool)settings.Defender.Alarm.Active) 
-                    Task.Factory.StartNew(() => Helpers.PlayAlarm());
-                Helpers.SetTitle("ENEMY ACTIVITY DETECTED - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
-                attacks = ogamedService.GetAttacks();
-                HandleAttack(state);
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.Defender].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
+                bool isUnderAttack = ogamedService.IsUnderAttack();
+                DateTime time = GetDateTime();
+                if (isUnderAttack)
+                {
+                    if ((bool)settings.Defender.Alarm.Active)
+                        Task.Factory.StartNew(() => Helpers.PlayAlarm());
+                    Helpers.SetTitle("ENEMY ACTIVITY DETECTED - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
+                    attacks = ogamedService.GetAttacks();
+                    HandleAttack(state);
+                }
+                else
+                {
+                    Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
+                }
+                int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+                UpdateTitle();
             }
-            else
+            catch (Exception e)
             {
-                Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
+
             }
-            int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
-            DateTime newTime = time.AddMilliseconds(interval);
-            timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
-            Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
-            UpdateTitle();
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.Defender].Release();
+            }
+
+        }
+        /*Lorenzo 06/02/2021
+         * 
+         * Method call by the timer to manage the auto build for mines.
+         * 
+         * All the logic is based on the MetalMine level (n).
+         * 
+         * At now there are 3 steps: n<=15 --> n;n-2;n-1 / 15<n<=30 n;n-4;n-2 / n>30 n;n-7;n-3
+         * 
+         * If all the mines level rules are satisfied by default it will be request to build a Metal Mine
+         * to force the dissatisfaction of them
+         */
+        private static void AutoMine(object state)
+        {
+            try
+            {
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.BrainAutoMine].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..,");
+                celestials = UpdatePlanets(UpdateType.Resources);
+                celestials = UpdatePlanets(UpdateType.Buildings);
+                celestials = UpdatePlanets(UpdateType.Constructions);
+
+                Buildables xBuildable = Buildables.Null;
+                int nLevelToReach = 0;
+                foreach (Celestial xCelestial in celestials)
+                {
+                    //Manage the need of build some deposit
+                    mHandleDeposit(xCelestial, ref xBuildable, ref nLevelToReach);
+                    //If it isn't needed to build deposit
+                    //check if it needs to build some mines 
+                    if (xBuildable == Buildables.Null)
+                    {
+                        mHandleMines(xCelestial, ref xBuildable, ref nLevelToReach);
+                    }
+
+                    if (xBuildable != Buildables.Null && nLevelToReach > 0)
+                        mHandleBuildCelestialBuild(xCelestial, xBuildable, nLevelToReach);
+
+                    xBuildable = Buildables.Null;
+                    nLevelToReach = 0;
+                }
+
+
+                var time = GetDateTime();
+                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                var newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoMine Exception: " + e.Message);
+            }
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.BrainAutoMine].Release();
+            }
+        }
+
+
+        /*Lorenzo 06/02/2021
+         * 
+         * Method that allows bot to check if there is the need to build some storage
+         * 
+         * IN PARAMETER:
+         * 
+         * - Celestial xCelestial: Celestial object used when the method need to know the range level of metal mine
+         * - ref Buildables xBuildable: Buildables object passed by reference to allow the method to set a specific type of building
+         *                              that needs to be built
+         * - ref int nLevelToReach: integer passed by reference to allow the method to set the building level that needs to be build
+         * 
+         * 
+         * OUT PARAMETER
+         * 
+         * NaN
+         */
+        private static void mHandleDeposit(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
+        {
+            try
+            {
+                //Check if it is necessary to build a Deuterium tank
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, 1))
+                {
+                    //Yes, need it
+
+                    //Set the type of building to build
+                    xBuildable = Buildables.DeuteriumTank;
+                    //Set the level
+                    nLevelToReach = xCelestial.Buildings.DeuteriumTank + 1;
+                }
+
+
+                //Check if it is necessary to build a Crystal storage
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, 1))
+                {
+                    //Yes, need it
+
+                    //Set the type of building to build
+                    xBuildable = Buildables.CrystalStorage;
+                    //Set the level
+                    nLevelToReach = xCelestial.Buildings.CrystalStorage + 1;
+                }
+
+                //Check if it is necessary to build a Metal storage
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, 1))
+                {
+                    //Yes, need it
+
+                    //Set the type of building to build
+                    xBuildable = Buildables.MetalStorage;
+                    //Set the level
+                    nLevelToReach = xCelestial.Buildings.MetalStorage + 1;
+                }
+
+
+
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleDeposit Exception: " + e.Message);
+            }
+        }
+        /*Lorenzo 06/02/2021
+         * 
+         * Method that allows bot to check if there is the need to build some mines
+         * 
+         * IN PARAMETER:
+         * 
+         * - Celestial xCelestial: Celestial object used when the method need to know the range level of metal mine
+         * - ref Buildables xBuildable: Buildables object passed by reference to allow the method to set a specific type of building
+         *                              that needs to be built
+         * - ref int nLevelToReach: integer passed by reference to allow the method to set the building level that needs to be build
+         * 
+         * 
+         * OUT PARAMETER
+         * 
+         * NaN
+         */
+        private static void mHandleMines(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
+        {
+            try
+            {
+                int nDiffMetCry = 0;
+                int nDiffMetDeut = 0;
+                //Setting the 
+                //Metal - Crystal level gap
+                //Metal - Deuterium level gap
+                //by checking the metal mine level
+
+                //TODO: put metal range and gaps in settings.json 
+                switch (xCelestial.Buildings.MetalMine)
+                {
+                    case int n when n <= 15:
+                        /*Lorenzo 06/02/2021
+                         * Diff mines:
+                         *  - n = Metal mine level
+                         *  - (n-2) = Crystal mine leve
+                         *  - (n-1) = DeuteriumSynthesizer leve
+                         */
+                        nDiffMetCry = 2;
+                        nDiffMetDeut = 1;
+                        break;
+                    case int n when (n > 15 && n <= 30):
+                        /*Lorenzo 06/02/2021
+                         * Diff mines:
+                         *  - n = Metal mine level
+                         *  - (n-4) = Crystal mine leve
+                         *  - (n-2) = DeuteriumSynthesizer leve
+                         */
+                        nDiffMetCry = 4;
+                        nDiffMetDeut = 2;
+                        break;
+                    case int n when n > 30:
+                        /*Lorenzo 06/02/2021
+                         * Diff mines:
+                         *  - n = Metal mine level
+                         *  - (n-7) = Crystal mine leve
+                         *  - (n-3) = DeuteriumSynthesizer leve
+                         */
+                        nDiffMetCry = 7;
+                        nDiffMetDeut = 3;
+                        break;
+                }
+
+                //Check the level difference between metal mine and crystal mine
+                if ((xCelestial.Buildings.MetalMine - xCelestial.Buildings.CrystalMine) > nDiffMetCry)
+                {
+                    //The difference doesn't satisfy the requirement
+
+                    //Set the buildable type
+                    xBuildable = Buildables.CrystalMine;
+                    //set the level of the building
+                    nLevelToReach = xCelestial.Buildings.CrystalMine + 1;
+                }
+                if (xBuildable == Buildables.Null && (xCelestial.Buildings.MetalMine - xCelestial.Buildings.DeuteriumSynthesizer) > nDiffMetDeut)
+                {
+                    //The difference doesn't satisfy the requirement
+
+                    //Set the buildable type
+                    xBuildable = Buildables.DeuteriumSynthesizer;
+                    //set the level of the building
+                    nLevelToReach = xCelestial.Buildings.DeuteriumSynthesizer + 1;
+                }
+                if (xBuildable == Buildables.Null)
+                {
+                    //All the requirement for mines are satisfied
+                    //so i start to build a metal mine
+                    //to dissatisfy the request about mines
+
+                    //Set the buildable type
+                    xBuildable = Buildables.MetalMine;
+                    //set the level of the building
+                    nLevelToReach = xCelestial.Buildings.MetalMine + 1;
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleMines Exception: " + e.Message);
+            }
+        }
+
+        /*Lorenzo 06/02/2021
+         * 
+         * Method to manage the possibility of build some mine if required.
+         * 
+         * IN PARAMETERS:
+         * 
+         * - Celestial xCelestial: Celestial object used when the method need to know the next mine level cost.
+         * - ref bool bBuildMetalMine: bool that indicates the request for build a Metal mine. When the request is managed it will return to false
+         * - ref bool bBuildCrystalMine: bool that indicates the request for build a Crystal mine. When the request is managed it will return to false
+         * - ref bool bBuildDeutMine: bool that indicates the request for build a Deuteryum mine. When the request is managed it will return to false
+         * 
+         * OUT PARAMETERS:
+         * 
+         * void
+         */
+        private static void mHandleBuildCelestialBuild(Celestial xCelestial, Buildables xBuildableToBuild, int nLevelToBuild)
+        {
+            try
+            {
+                Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
+
+                if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
+                {
+                    /*Tralla 12/2/20
+                     * 
+                     * Fix energy calc
+                     */
+                    if (Helpers.GetRequiredEnergyDelta(xBuildableToBuild, nLevelToBuild) > xCelestial.Resources.Energy)
+                    {
+                        //The mine requires more energy than what is avaible
+                        Buildables xEnergyBuilding = Helpers.GetNextEnergySourceToBuild((Planet)xCelestial, 20, 20);
+                        //Set the building to build as the energy building
+                        xBuildableToBuild = xEnergyBuilding;
+                        //get the level of energy building
+                        nLevelToBuild = Helpers.GetNextLevel((Planet)xCelestial, xBuildableToBuild);
+                    }
+                }
+
+                if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                {
+                    //Yes, i can build it
+                    ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "mHandleBuildCelestialMines Build: " + xBuildableToBuild.ToString() + " level: " + nLevelToBuild.ToString());
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleBuildCelestialMines Exception: " + e.Message);
+            }
         }
 
         private static void AutoBuildCargo(object state)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
-            celestials = UpdatePlanets(UpdateType.Ships);
-            celestials = UpdatePlanets(UpdateType.Resources);
-            celestials = UpdatePlanets(UpdateType.Productions);
-            foreach (Celestial planet in celestials)
+            try
             {
-                var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Planet " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0") );
-                if (planet.Coordinate.Type == Celestials.Moon && settings.Brain.AutoCargo.ExcludeMoons)
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.BrainAutobuildCargo].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
+                celestials = UpdatePlanets(UpdateType.Ships);
+                celestials = UpdatePlanets(UpdateType.Resources);
+                celestials = UpdatePlanets(UpdateType.Productions);
+                foreach (Celestial planet in celestials)
                 {
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
-                    continue;
-                }
-                if (capacity <= planet.Resources.TotalResources)
-                {
-                    long difference = planet.Resources.TotalResources - capacity;
-                    Buildables preferredCargoShip = Enum.Parse<Buildables>(settings.Brain.AutoCargo.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
-                    int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
-                    int neededCargos = (int)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
-                    if (planet.HasProduction())
+                    var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Planet " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
+                    if (planet.Coordinate.Type == Celestials.Moon && settings.Brain.AutoCargo.ExcludeMoons)
                     {
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "There is already a production ongoing. Skipping planet.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
+                        continue;
+                    }
+                    if (capacity <= planet.Resources.TotalResources)
+                    {
+                        long difference = planet.Resources.TotalResources - capacity;
+                        Buildables preferredCargoShip = Enum.Parse<Buildables>(settings.Brain.AutoCargo.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
+                        int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
+                        int neededCargos = (int)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
+                        if (planet.HasProduction())
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "There is already a production ongoing. Skipping planet.");
+                            foreach (Production production in planet.Productions)
+                            {
+                                Buildables productionType = (Buildables)production.ID;
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, production.Nbr + "x" + productionType.ToString() + " are in production.");
+                            }
+                            continue;
+                        }
+                        var cost = ogamedService.GetPrice(preferredCargoShip, neededCargos);
+                        if (planet.Resources.IsEnoughFor(cost))
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());
+                            ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
+                        }
+                        else
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
+                            ogamedService.BuildShips(planet, Buildables.SmallCargo, neededCargos);
+                        }
+                        planet.Productions = ogamedService.GetProductions(planet);
                         foreach (Production production in planet.Productions)
                         {
                             Buildables productionType = (Buildables)production.ID;
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, production.Nbr + "x" + productionType.ToString() + " are in production.");
                         }
-                        continue;
-                    }
-                    var cost = ogamedService.GetPrice(preferredCargoShip, neededCargos);
-                    if (planet.Resources.IsEnoughFor(cost))
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());
-                        ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
-                        ogamedService.BuildShips(planet, Buildables.SmallCargo, neededCargos);
-                    }
-                    planet.Productions = ogamedService.GetProductions(planet);
-                    foreach (Production production in planet.Productions)
-                    {
-                        Buildables productionType = (Buildables)production.ID;
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, production.Nbr + "x" + productionType.ToString() + " are in production.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Capacity is ok.");
                     }
                 }
-                else
-                {
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Capacity is ok.");
-                }
+                var time = GetDateTime();
+                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
+                var newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
+                UpdateTitle();
             }
-            var time = GetDateTime();
-            var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
-            var newTime = time.AddMilliseconds(interval);
-            timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
-            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
-            UpdateTitle();
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.BrainAutobuildCargo].Release();
+            }
         }
+
 
         private static void AutoRepatriate(object state)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
-            celestials = UpdatePlanets(UpdateType.Resources);
-            celestials = UpdatePlanets(UpdateType.Ships);
-
-            var rand = new Random();
-            foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
+            try
             {
-                if (celestial.Coordinate.Type == Celestials.Moon && settings.Brain.AutoRepatriate.ExcludeMoons)
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
+                celestials = UpdatePlanets(UpdateType.Resources);
+                celestials = UpdatePlanets(UpdateType.Ships);
+
+                var rand = new Random();
+                foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
                 {
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
-                    continue;
-                }
-                if (celestial.Resources.TotalResources < (int)settings.Brain.AutoRepatriate.MinimumResources)
-                {
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
-                    continue;
-                }
-                Buildables preferredShip = Enum.Parse<Buildables>(settings.Brain.AutoRepatriate.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
-                long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
-                Ships ships = new Ships();
-                if (idealShips <= celestial.Ships.GetAmount(preferredShip))
-                {
-                    ships.Add(preferredShip, idealShips);
-                }
-                else
-                {
-                    ships.Add(preferredShip, celestial.Ships.GetAmount(preferredShip));
-                }
-                Resources payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
-                Celestial destination = celestials
-                            .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                            .First();
-                if (settings.Brain.AutoRepatriate.Target)
-                {
-                    try
+                    if (celestial.Coordinate.Type == Celestials.Moon && settings.Brain.AutoRepatriate.ExcludeMoons)
                     {
-                        Celestial customDestination = celestials
-                            .Where(planet => planet.Coordinate.Galaxy == (int)settings.Brain.AutoRepatriate.Target.Galaxy)
-                            .Where(planet => planet.Coordinate.System == (int)settings.Brain.AutoRepatriate.Target.System)
-                            .Where(planet => planet.Coordinate.Position == (int)settings.Brain.AutoRepatriate.Target.Position)
-                            .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Brain.AutoRepatriate.Target.Type.ToString()))
-                            .Single();
-                        destination = customDestination;
-                        if (celestial.ID == customDestination.ID)
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
+                        continue;
+                    }
+                    if (celestial.Resources.TotalResources < (int)settings.Brain.AutoRepatriate.MinimumResources)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
+                        continue;
+                    }
+                    Buildables preferredShip = Enum.Parse<Buildables>(settings.Brain.AutoRepatriate.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
+                    long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                    Ships ships = new Ships();
+                    if (idealShips <= celestial.Ships.GetAmount(preferredShip))
+                    {
+                        ships.Add(preferredShip, idealShips);
+                    }
+                    else
+                    {
+                        ships.Add(preferredShip, celestial.Ships.GetAmount(preferredShip));
+                    }
+                    Resources payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
+                    Celestial destination = celestials
+                                .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                                .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                .First();
+                    if (settings.Brain.AutoRepatriate.Target)
+                    {
+                        try
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: this celestial is the destination");
-                            continue;
+                            Celestial customDestination = celestials
+                                .Where(planet => planet.Coordinate.Galaxy == (int)settings.Brain.AutoRepatriate.Target.Galaxy)
+                                .Where(planet => planet.Coordinate.System == (int)settings.Brain.AutoRepatriate.Target.System)
+                                .Where(planet => planet.Coordinate.Position == (int)settings.Brain.AutoRepatriate.Target.Position)
+                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Brain.AutoRepatriate.Target.Type.ToString()))
+                                .Single();
+                            destination = customDestination;
+                            if (celestial.ID == customDestination.ID)
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: this celestial is the destination");
+                                continue;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
                         }
                     }
-                    catch (Exception e)
-                    {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
-                    }
+                    SendFleet(celestial, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, payload);
                 }
-                SendFleet(celestial, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, payload);
-            }
 
-            var time = GetDateTime();
-            var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
-            var newTime = time.AddMilliseconds(interval);
-            timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
-            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
-            UpdateTitle();
+                var time = GetDateTime();
+                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
+                var newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.BrainAutoRepatriate].Release();
+            }
         }
 
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload = null, bool force = false)
@@ -457,7 +822,7 @@ namespace Tbot
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Ships: " + ships.ToString());
             slots = UpdateSlots();
             if (slots.Free > 1 || force)
-            {                
+            {
                 if (payload == null)
                 {
                     payload = new Resources { Metal = 0, Crystal = 0, Deuterium = 0 };
@@ -540,7 +905,7 @@ namespace Tbot
                 }
                 Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.Coordinate.Galaxy == attack.Destination.Galaxy && planet.Coordinate.System == attack.Destination.System && planet.Coordinate.Position == attack.Destination.Position && planet.Coordinate.Type == attack.Destination.Type);
                 attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
-                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" +  attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
                 if (settings.Defender.SpyAttacker.Active)
                 {
                     slots = UpdateSlots();
@@ -560,12 +925,12 @@ namespace Tbot
                                 Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
                                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Spying attacker from " + attackedCelestial.ToString() + " to " + destination.ToString() + " with " + settings.Defender.SpyAttacker.Probes + " probes. Arrival at " + fleet.ArrivalTime.ToString());
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
                                 Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not spy attacker: an exception has occurred: " + e.Message);
                             }
                         }
-                        
+
                     }
                     else
                     {
@@ -583,7 +948,7 @@ namespace Tbot
                         ogamedService.SendMessage(attack.AttackerID, messages[messageIndex]);
                         Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sent message \"" + message + "\" to attacker" + attack.AttackerName);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not message attacker: an exception has occurred: " + e.Message);
                     }
@@ -597,6 +962,7 @@ namespace Tbot
                         {
                             attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Resources);
                             Celestial destination;
+                            Missions mission = Missions.Deploy;
                             destination = celestials
                                 .Where(planet => planet.ID != attackedCelestial.ID)
                                 .Where(planet => planet.Coordinate.Type == (attackedCelestial.Coordinate.Type == Celestials.Moon ? Celestials.Planet : Celestials.Moon))
@@ -619,6 +985,13 @@ namespace Tbot
                             }
                             if (destination.ID == 0)
                             {
+                                destination.ID = -99;
+                                destination.Coordinate = new Coordinate();
+                                mission = Missions.Transport;
+                            }
+
+                            if (destination.ID == 0)
+                            {
                                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no valid destination exists");
                                 DateTime time = GetDateTime();
                                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
@@ -636,9 +1009,9 @@ namespace Tbot
                                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: there is no fleet.");
                             }
                             else
-                            {                                
+                            {
                                 Resources resources = Helpers.CalcMaxTransportableResources(ships, attackedCelestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
-                                int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, Missions.Deploy, Speeds.TenPercent, resources, true);
+                                int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, mission, Speeds.TenPercent, resources, true);
                                 if (fleetId != 0)
                                 {
                                     Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
@@ -667,7 +1040,7 @@ namespace Tbot
                                 }
                             }
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an exception has occurred: " + e.Message);
                             DateTime time = GetDateTime();
@@ -692,195 +1065,212 @@ namespace Tbot
 
         private static void HandleExpeditions(object state)
         {
-            celestials = UpdatePlanets(UpdateType.Ships);
-            if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
+            try
             {
-                slots = UpdateSlots();
-                fleets = UpdateFleets();
-                int expsToSend;
-                if (settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
-                {
-                    if (slots.ExpInUse == 0)
-                        expsToSend = slots.ExpTotal;
-                    else
-                        expsToSend = 0;
-                }
-                else
-                {
-                    expsToSend = Math.Min(slots.ExpFree, slots.Free);
-                }
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.Expeditions].WaitOne();
 
-                if (expsToSend > 0)
+                celestials = UpdatePlanets(UpdateType.Ships);
+                if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
                 {
-                    if (slots.ExpFree > 0)
+                    slots = UpdateSlots();
+                    fleets = UpdateFleets();
+                    int expsToSend;
+                    if (settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
                     {
-                        if (slots.Free > 0)
+                        if (slots.ExpInUse == 0)
+                            expsToSend = slots.ExpTotal;
+                        else
+                            expsToSend = 0;
+                    }
+                    else
+                    {
+                        expsToSend = Math.Min(slots.ExpFree, slots.Free);
+                    }
+
+                    if (expsToSend > 0)
+                    {
+                        if (slots.ExpFree > 0)
                         {
-                            Celestial origin = celestials
-                                .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                                .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                                .First();
-                            if (settings.Expeditions.AutoSendExpeditions.Origin)
+                            if (slots.Free > 0)
                             {
-                                try
+                                Celestial origin = celestials
+                                    .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                                    .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                    .First();
+                                if (settings.Expeditions.AutoSendExpeditions.Origin)
                                 {
-                                    Celestial customOrigin = celestials
-                                        .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
-                                        .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
-                                        .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
-                                        .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
-                                        .Single();
-                                    origin = customOrigin;
+                                    try
+                                    {
+                                        Celestial customOrigin = celestials
+                                            .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
+                                            .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
+                                            .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
+                                            .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
+                                            .Single();
+                                        origin = customOrigin;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
+                                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
+                                    }
                                 }
-                                catch (Exception e)
+                                if (origin.Ships.IsEmpty())
                                 {
-                                    Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
-                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
+                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
                                 }
-                            }
-                            if (origin.Ships.IsEmpty())
-                            {
-                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
+                                else
+                                {
+                                    Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
+                                    Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSend, serverData, researches, userInfo.Class);
+
+                                    Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSend.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
+                                    for (int i = 0; i < expsToSend; i++)
+                                    {
+                                        Coordinate destination;
+                                        if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
+                                        {
+                                            var rand = new Random();
+
+                                            destination = new Coordinate
+                                            {
+                                                Galaxy = origin.Coordinate.Galaxy,
+                                                System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
+                                                Position = 16,
+                                                Type = Celestials.DeepSpace
+                                            };
+                                        }
+                                        else
+                                        {
+                                            destination = new Coordinate
+                                            {
+                                                Galaxy = origin.Coordinate.Galaxy,
+                                                System = origin.Coordinate.System,
+                                                Position = 16,
+                                                Type = Celestials.DeepSpace
+                                            };
+                                        }
+                                        SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
+                                        Thread.Sleep((int)IntervalType.AFewSeconds);
+                                    }
+                                }
                             }
                             else
                             {
-                                Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
-                                Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSend, serverData, researches, userInfo.Class);
-
-                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSend.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
-                                for (int i = 0; i < expsToSend; i++)
-                                {
-                                    Coordinate destination;
-                                    if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
-                                    {
-                                        var rand = new Random();
-
-                                        destination = new Coordinate
-                                        {
-                                            Galaxy = origin.Coordinate.Galaxy,
-                                            System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
-                                            Position = 16,
-                                            Type = Celestials.DeepSpace
-                                        };
-                                    }
-                                    else
-                                    {
-                                        destination = new Coordinate
-                                        {
-                                            Galaxy = origin.Coordinate.Galaxy,
-                                            System = origin.Coordinate.System,
-                                            Position = 16,
-                                            Type = Celestials.DeepSpace
-                                        };
-                                    }
-                                    SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
-                                    Thread.Sleep((int)IntervalType.AFewSeconds);
-                                }
+                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no fleet slots available");
                             }
                         }
                         else
                         {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no fleet slots available");
+                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no expeditions slots available");
                         }
+                    }
+
+                    slots = UpdateSlots();
+                    fleets = UpdateFleets();
+                    var time = GetDateTime();
+                    List<Fleet> orderedFleets = fleets
+                        .Where(fleet => fleet.Mission == Missions.Expedition)
+                        .OrderByDescending(fleet => fleet.BackIn)
+                        .ToList();
+                    int interval;
+                    if (orderedFleets.Count == 0)
+                    {
+                        interval = Helpers.CalcRandomInterval(IntervalType.AboutHalfAnHour);
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no expeditions slots available");
+                        interval = (int)((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                     }
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
+                    UpdateTitle();
                 }
 
-                slots = UpdateSlots();
-                fleets = UpdateFleets();
-                var time = GetDateTime();
-                List<Fleet> orderedFleets = fleets
-                    .Where(fleet => fleet.Mission == Missions.Expedition)
-                    .OrderByDescending(fleet => fleet.BackIn)
-                    .ToList();
-                int interval;
-                if (orderedFleets.Count == 0)
+                if ((bool)settings.Expeditions.AutoHarvest.Active)
                 {
-                    interval = Helpers.CalcRandomInterval(IntervalType.AboutHalfAnHour);
-                }
-                else
-                {
-                    interval = (int)((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
-                }
-                DateTime newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
-                UpdateTitle();
-            }
+                    slots = UpdateSlots();
+                    fleets = UpdateFleets();
+                    Celestial origin = celestials
+                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                        .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                        .First();
+                    if (settings.Expeditions.AutoSendExpeditions.Origin)
+                    {
+                        try
+                        {
+                            Celestial customOrigin = celestials
+                                .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
+                                .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
+                                .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
+                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
+                                .Single();
+                            origin = customOrigin;
+                        }
+                        catch (Exception e)
+                        {
+                            Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
+                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
+                        }
+                    }
+                    List<Coordinate> destinations = new List<Coordinate>();
+                    if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
+                    {
+                        var rand = new Random();
+                        for (int i = origin.Coordinate.System - 1; i < origin.Coordinate.System + 2; i++)
+                        {
+                            destinations.Add(new Coordinate
+                            {
+                                Galaxy = origin.Coordinate.Galaxy,
+                                System = rand.Next(i, i + 1),
+                                Position = 16,
+                                Type = Celestials.DeepSpace
+                            });
+                        }
 
-            if ((bool)settings.Expeditions.AutoHarvest.Active)
-            {
-                slots = UpdateSlots();
-                fleets = UpdateFleets();
-                Celestial origin = celestials
-                    .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                    .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                    .First();
-                if (settings.Expeditions.AutoSendExpeditions.Origin)
-                {
-                    try
-                    {
-                        Celestial customOrigin = celestials
-                            .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
-                            .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
-                            .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
-                            .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
-                            .Single();
-                        origin = customOrigin;
                     }
-                    catch (Exception e)
-                    {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
-                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
-                    }
-                }
-                List<Coordinate> destinations = new List<Coordinate>();
-                if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
-                {
-                    var rand = new Random();
-                    for (int i = origin.Coordinate.System - 1; i < origin.Coordinate.System + 2; i++)
+                    else
                     {
                         destinations.Add(new Coordinate
                         {
                             Galaxy = origin.Coordinate.Galaxy,
-                            System = rand.Next(i, i + 1),
+                            System = origin.Coordinate.System,
                             Position = 16,
                             Type = Celestials.DeepSpace
                         });
                     }
-                    
-                }
-                else
-                {
-                    destinations.Add(new Coordinate
+                    foreach (Coordinate destination in destinations)
                     {
-                        Galaxy = origin.Coordinate.Galaxy,
-                        System = origin.Coordinate.System,
-                        Position = 16,
-                        Type = Celestials.DeepSpace
-                    });
-                }
-                foreach(Coordinate destination in destinations)
-                {
-                    var galaxyInfos = ogamedService.GetGalaxyInfo(destination);
-                    if (galaxyInfos.ExpeditionDebris.Resources.TotalResources > 0)
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Debris detected at " + destination.ToString());
-                        if (galaxyInfos.ExpeditionDebris.Resources.TotalResources >= settings.Expeditions.AutoHarvest.MinimumResources)
+                        var galaxyInfos = ogamedService.GetGalaxyInfo(destination);
+                        if (galaxyInfos.ExpeditionDebris.Resources.TotalResources > 0)
                         {
-                            long pathfindersToSend = Helpers.CalcShipNumberForPayload(galaxyInfos.ExpeditionDebris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
-                            SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
-                        }
-                        else
-                        {
-                            Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping hervest: resources under set limit.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Debris detected at " + destination.ToString());
+                            if (galaxyInfos.ExpeditionDebris.Resources.TotalResources >= settings.Expeditions.AutoHarvest.MinimumResources)
+                            {
+                                long pathfindersToSend = Helpers.CalcShipNumberForPayload(galaxyInfos.ExpeditionDebris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                                SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping hervest: resources under set limit.");
+                            }
                         }
                     }
                 }
             }
+            catch (Exception)
+            {
+
+            }
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.Expeditions].Release();
+            }
+
         }
     }
 }
