@@ -180,7 +180,7 @@ namespace Tbot.Includes
                 case Buildables.HeavyFighter:
                     baseSpeed = 10000;
                     bonus = impulseDrive * 2;
-                    if (playerClass == Classes.General)bonus += 10;
+                    if (playerClass == Classes.General) bonus += 10;
                     break;
                 case Buildables.Cruiser:
                     baseSpeed = 15000;
@@ -377,9 +377,9 @@ namespace Tbot.Includes
                     long idealVal = (long)prop.GetValue(ideal);
                     if (availableVal < idealVal * expeditionsNumber)
                     {
-                        long realVal = (long)Math.Round(((float)availableVal / (float)expeditionsNumber), MidpointRounding.ToZero);
+                        long realVal = (long)Math.Round(((float)availableVal / (float)expeditionsNumber), MidpointRounding.AwayFromZero);
                         prop.SetValue(ideal, realVal);
-                    }                        
+                    }
                 }
             }
             return ideal;
@@ -409,8 +409,8 @@ namespace Tbot.Includes
             Ships oneExpeditionFleet = CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata, researches, playerClass);
 
             if (MayAddShipToExpedition(fleet, Buildables.EspionageProbe, expeditionsNumber))
-                oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);     
-            
+                oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);
+
             Buildables militaryShip = CalcMilitaryShipForExpedition(fleet, expeditionsNumber);
             if (MayAddShipToExpedition(fleet, militaryShip, expeditionsNumber))
                 oneExpeditionFleet.Add(militaryShip, 1);
@@ -422,7 +422,7 @@ namespace Tbot.Includes
             return oneExpeditionFleet;
         }
 
-        public static int CalcDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, int systemsNumber = 499, bool donutGalaxy = true, bool donutSystem = true )
+        public static int CalcDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, int systemsNumber = 499, bool donutGalaxy = true, bool donutSystem = true)
         {
             if (origin.Galaxy != destination.Galaxy)
                 return CalcGalaxyDistance(origin, destination, galaxiesNumber, donutGalaxy);
@@ -447,7 +447,7 @@ namespace Tbot.Includes
                 return 2000 * Math.Abs(origin.Galaxy - destination.Galaxy);
 
             if (origin.Galaxy > destination.Galaxy)
-                return 2000 * Math.Min((origin.Galaxy - destination.Galaxy),((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
+                return 2000 * Math.Min((origin.Galaxy - destination.Galaxy), ((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
 
             return 2000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
         }
@@ -476,8 +476,8 @@ namespace Tbot.Includes
                 6 => (int)Math.Round(30 + (30 * 0.17)),
                 7 => (int)Math.Round(30 + (30 * 0.23)),
                 8 => (int)Math.Round(30 + (30 * 0.35)),
-                9 => (int)Math.Round(30 + (30 * 0.23)),                
-                10 => (int)Math.Round(30 + (30 * 0.17)),                
+                9 => (int)Math.Round(30 + (30 * 0.23)),
+                10 => (int)Math.Round(30 + (30 * 0.17)),
                 _ => 30,
             };
             baseProd *= speedFactor;
@@ -497,7 +497,7 @@ namespace Tbot.Includes
             if (playerClass == Classes.Collector)
             {
                 classProd = (int)Math.Round(prod * 0.25);
-            }            
+            }
             return (int)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
         }
 
@@ -507,7 +507,7 @@ namespace Tbot.Includes
             return CalcMetalProduction(buildings.MetalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcMetalProduction(Planet planet,int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static int CalcMetalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
@@ -539,7 +539,7 @@ namespace Tbot.Includes
             if (playerClass == Classes.Collector)
             {
                 classProd = (int)Math.Round(prod * 0.25);
-            }            
+            }
             return (int)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
         }
 
@@ -610,14 +610,35 @@ namespace Tbot.Includes
                 case Buildables.MetalMine:
                     output.Metal = (long)(60 * Math.Pow(1.5, (level - 1)));
                     output.Crystal = (long)(15 * Math.Pow(1.5, (level - 1)));
+                    /*Lorenzo 06/02/2021
+                     * Added the calc for the energy needed
+                     */
+                    //MidpointRounding set to "ToNegativeInfinity" because
+                    //in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+                    //Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+                    output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToNegativeInfinity);
                     break;
                 case Buildables.CrystalMine:
                     output.Metal = (long)(48 * Math.Pow(1.6, (level - 1)));
                     output.Crystal = (long)(24 * Math.Pow(1.6, (level - 1)));
+                    /*Lorenzo 06/02/2021
+                     * Added the calc for the energy needed
+                     */
+                    //MidpointRounding set to "ToNegativeInfinity" because
+                    //in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+                    //Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+                    output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToNegativeInfinity);
                     break;
                 case Buildables.DeuteriumSynthesizer:
                     output.Metal = (long)(225 * Math.Pow(1.5, (level - 1)));
                     output.Crystal = (long)(75 * Math.Pow(1.5, (level - 1)));
+                    /*Lorenzo 06/02/2021
+                     * Added the calc for the energy needed
+                     */
+                    //MidpointRounding set to "ToNegativeInfinity" because
+                    //in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+                    //Formula: 20 * Mine Level * (1.1 ^ Mine Level)
+                    output.Energy = (long)Math.Round((20 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToNegativeInfinity);
                     break;
                 case Buildables.SolarPlant:
                     output.Metal = (long)(75 * Math.Pow(1.5, (level - 1)));
@@ -884,6 +905,26 @@ namespace Tbot.Includes
             return output;
         }
 
+        /*Tralla 12/2/2020
+         * 
+         * Added helper to calc delta
+         * Hotfix to autominer energy builder
+         */
+        public static long GetRequiredEnergyDelta(Buildables buildable, int level)
+        {
+            if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer)
+            {
+                if (level > 1)
+                {
+                    var prevLevelResources = CalcPrice(buildable, level - 1);
+                    var thisLevelResources = CalcPrice(buildable, level);
+                    return thisLevelResources.Energy - prevLevelResources.Energy;
+                }
+                else return CalcPrice(buildable, 1).Energy;
+            }
+            else return 0;
+        }
+
         public static int GetNextLevel(Planet planet, Buildables buildable)
         {
             foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
@@ -898,7 +939,7 @@ namespace Tbot.Includes
 
         public static int CalcDepositCapacity(int level)
         {
-            return 5000 * (int)(2.5 * Math.Pow(Math.E,(20 * level / 33)));
+            return 5000 * (int)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
         }
 
         public static bool ShouldBuildMetalStorage(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
@@ -957,7 +998,7 @@ namespace Tbot.Includes
         {
             if (planet.Resources.Energy > 0)
                 return 0;
-            return (int)Math.Round( (float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+            return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
         }
 
         public static Buildables GetNextMineToBuild(Planet planet)

@@ -4,24 +4,24 @@ using System.Text;
 
 namespace Tbot.Model
 {
-    public enum Classes
-    {
-        NoClass = 0,
-        Collector = 1,
-        General = 2,
-        Discoverer = 3
-    }
+	public enum Classes
+	{
+		NoClass = 0,
+		Collector = 1,
+		General = 2,
+		Discoverer = 3
+	}
 
-    public enum Celestials
-    {
-        Planet = 1,
-        Debris = 2,
-        Moon = 3,
+	public enum Celestials
+	{
+		Planet = 1,
+		Debris = 2,
+		Moon = 3,
 		DeepSpace = 4
-    }
+	}
 
-    public enum Buildables
-    {
+	public enum Buildables
+	{
 		Null = 0,
 		MetalMine = 1,
 		CrystalMine = 2,
@@ -90,35 +90,35 @@ namespace Tbot.Model
 		GravitonTechnology = 199
 	}
 
-    public enum Missions
-    {
-        Attack = 1,
-        FederalAttack = 2,
-        Transport = 3,
-        Deploy = 4,
-        FederalDefense = 5,
-        Spy = 6,
-        Colonize = 7,
-        Harvest = 8,
-        Destroy = 9,
-        MissileAttack = 10,
-        Expedition = 15,
+	public enum Missions
+	{
+		Attack = 1,
+		FederalAttack = 2,
+		Transport = 3,
+		Deploy = 4,
+		FederalDefense = 5,
+		Spy = 6,
+		Colonize = 7,
+		Harvest = 8,
+		Destroy = 9,
+		MissileAttack = 10,
+		Expedition = 15,
 		Trade = 16
-    }
+	}
 
-    public enum Speeds
-    {
-        TenPercent = 1,
-        TwentyPercent = 2,
-        ThirtyPercent = 3,
-        FourtyPercent = 4,
-        FiftyPercent = 5,
-        SixtyPercent = 6,
-        SeventyPercent = 7,
-        EightyPercent = 8,
-        NinetyPercent = 9,
-        HundredPercent = 10
-    }
+	public enum Speeds
+	{
+		TenPercent = 1,
+		TwentyPercent = 2,
+		ThirtyPercent = 3,
+		FourtyPercent = 4,
+		FiftyPercent = 5,
+		SixtyPercent = 6,
+		SeventyPercent = 7,
+		EightyPercent = 8,
+		NinetyPercent = 9,
+		HundredPercent = 10
+	}
 
 	public enum Percents
 	{
@@ -148,7 +148,7 @@ namespace Tbot.Model
 	}
 
 	public enum UpdateType
-    {
+	{
 		Fast,
 		Full,
 		Resources,
@@ -176,5 +176,14 @@ namespace Tbot.Model
 		Defender,
 		Brain,
 		Expeditions
+	}
+
+	public enum Feature
+	{
+		Defender = 0,
+		BrainAutobuildCargo = 1,
+		BrainAutoRepatriate = 2,
+		BrainAutoMine = 3,
+		Expeditions = 4
 	}
 }

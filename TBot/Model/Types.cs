@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 
 namespace Tbot.Model
-{ 
+{
 
     public class Credentials
     {
@@ -24,6 +24,13 @@ namespace Tbot.Model
 
     public class Coordinate
     {
+        public Coordinate(int galaxy = 1, int system = 1, int position = 1, Celestials type = Celestials.Planet)
+        {
+            Galaxy = galaxy;
+            System = system;
+            Position = position;
+            Type = type;
+        }
         public int Galaxy { get; set; }
         public int System { get; set; }
         public int Position { get; set; }
@@ -55,7 +62,9 @@ namespace Tbot.Model
     {
         public int Min { get; set; }
         public int Max { get; set; }
-        public float Average { get
+        public float Average
+        {
+            get
             {
                 return (float)(Min + Max) / 2;
             }
@@ -108,11 +117,11 @@ namespace Tbot.Model
             catch
             {
                 return false;
-            }                
+            }
         }
     }
 
-    public class Moon : Celestial {}
+    public class Moon : Celestial { }
 
     public class Planet : Celestial
     {
@@ -217,7 +226,8 @@ namespace Tbot.Model
         public long Deuterium { get; set; }
         public long Energy { get; set; }
         public long Darkmatter { get; set; }
-        public long ConvertedDeuterium {
+        public long ConvertedDeuterium
+        {
             get
             {
                 return (long)Math.Round(2.5 * Metal, 0) + (long)Math.Round(1.5 * Crystal, 0) + Deuterium;
@@ -385,7 +395,8 @@ namespace Tbot.Model
         {
             string output = "";
             foreach (PropertyInfo prop in this.GetType().GetProperties())
-            {   if ((long)prop.GetValue(this) == 0)
+            {
+                if ((long)prop.GetValue(this) == 0)
                     continue;
                 output += prop.Name + ": " + prop.GetValue(this) + "; ";
             }
@@ -428,7 +439,7 @@ namespace Tbot.Model
 
         public bool IsOnlyProbes()
         {
-            if ( Ships.EspionageProbe != 0)
+            if (Ships.EspionageProbe != 0)
             {
                 if
                 (
@@ -462,7 +473,9 @@ namespace Tbot.Model
         public int Total { get; set; }
         public int ExpInUse { get; set; }
         public int ExpTotal { get; set; }
-        public int Free { get
+        public int Free
+        {
+            get
             {
                 return Total - InUse;
             }
@@ -515,8 +528,10 @@ namespace Tbot.Model
         public long Metal { get; set; }
         public long Crystal { get; set; }
         public long RecyclersNeeded { get; set; }
-        public Resources Resources {
-            get {
+        public Resources Resources
+        {
+            get
+            {
                 return new Resources
                 {
                     Metal = Metal,

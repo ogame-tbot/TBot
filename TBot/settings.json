@@ -43,6 +43,11 @@
   },
   "Brain": {
     "Active": true,
+    "AutoMine": {
+      "Active": true,
+      "CheckIntervalMin": 10,
+      "CheckIntervalMax": 20
+    },
     "AutoCargo": {
       "Active": true,
       "ExcludeMoons": true,
