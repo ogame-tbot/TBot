@@ -78,7 +78,7 @@
       "ExcludeMoons": true,
       "MinimumResources": 1000000,
       "Target": {
-        "Galaxy": 4,
+        "Galaxy": 5,
         "System": 63,
         "Position": 8,
         "Type": "Moon"
@@ -97,7 +97,7 @@
       "WaitForAllExpeditions": true,
       "SplitExpeditionsBetweenSystems": false,
       "Origin": {
-        "Galaxy": 4,
+        "Galaxy": 5,
         "System": 63,
         "Position": 8,
         "Type": "Moon"

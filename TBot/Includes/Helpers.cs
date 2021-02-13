@@ -469,7 +469,7 @@ namespace Tbot.Includes
             return 1000 + 5 * Math.Abs(destination.Position - origin.Position);
         }
 
-        public static int CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             int baseProd = position switch
             {
@@ -498,22 +498,22 @@ namespace Tbot.Includes
             {
                 classProd = (int)Math.Round(prod * 0.25);
             }
-            return (int)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
+            return (long)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
         }
 
-        public static int CalcMetalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcMetalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcMetalProduction(buildings.MetalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcMetalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcMetalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcCrystalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcCrystalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             int baseProd = position switch
             {
@@ -540,22 +540,22 @@ namespace Tbot.Includes
             {
                 classProd = (int)Math.Round(prod * 0.25);
             }
-            return (int)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
+            return (long)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
         }
 
-        public static int CalcCrystalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcCrystalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcCrystalProduction(buildings.CrystalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcCrystalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcCrystalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             int baseProd = 10 * speedFactor;
             int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level) * (1.05 + (0.01 * temp))));
@@ -575,16 +575,16 @@ namespace Tbot.Includes
             {
                 classProd = (int)Math.Round(prod * 0.25);
             }
-            return (int)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
+            return (long)Math.Round((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio);
         }
 
-        public static int CalcDeuteriumProduction(Buildings buildings, Temperature temp, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcDeuteriumProduction(Buildings buildings, Temperature temp, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcDeuteriumProduction(buildings.CrystalMine, temp.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
         }
 
-        public static int CalcDeuteriumProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static long CalcDeuteriumProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             if (researches == null) researches = new Researches() { PlasmaTechnology = 0 };
             return CalcDeuteriumProduction(planet.Buildings.CrystalMine, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
@@ -948,36 +948,36 @@ namespace Tbot.Includes
             return output;
         }
 
-        public static int CalcDepositCapacity(int level)
+        public static long CalcDepositCapacity(int level)
         {
-            return 5000 * (int)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
+            return 5000 * (long)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
         }
 
-        public static bool ShouldBuildMetalStorage(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildMetalStorage(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
-            int metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-            int metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
-            if (metalCapacity < 24 * metalProduction)
+            long metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            long metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
+            if (metalCapacity < 24 * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildCrystalStorage(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
-            int crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-            int crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
-            if (crystalCapacity < 24 * crystalProduction)
+            long crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            long crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
+            if (crystalCapacity < 24 * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildDeuteriumTank(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
-            int deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-            int deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
-            if (deuteriumCapacity < 24 * deuteriumProduction)
+            long deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            long deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
+            if (deuteriumCapacity < 24 * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
                 return true;
             else
                 return false;

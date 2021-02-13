@@ -506,37 +506,37 @@ namespace Tbot
             try
             {
                 //Check if it is necessary to build a Deuterium tank
-                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxDeuteriumTank && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.DeuteriumSynthesizer / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, serverData.Speed, xCelestial.ResourceSettings.DeuteriumSynthesizer / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
                     //Set the type of building to build
                     xBuildable = Buildables.DeuteriumTank;
                     //Set the level
-                    nLevelToReach = xCelestial.Buildings.DeuteriumTank + 1;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
 
 
                 //Check if it is necessary to build a Crystal storage
-                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxCrystalStorage && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.CrystalMine / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, serverData.Speed, xCelestial.ResourceSettings.CrystalMine / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
                     //Set the type of building to build
                     xBuildable = Buildables.CrystalStorage;
                     //Set the level
-                    nLevelToReach = xCelestial.Buildings.CrystalStorage + 1;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
 
                 //Check if it is necessary to build a Metal storage
-                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxMetalStorage && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.MetalMine / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, serverData.Speed, xCelestial.ResourceSettings.MetalMine / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
                     //Set the type of building to build
                     xBuildable = Buildables.MetalStorage;
                     //Set the level
-                    nLevelToReach = xCelestial.Buildings.MetalStorage + 1;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
 
 
@@ -597,24 +597,6 @@ namespace Tbot
             try
             {
                 Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
-
-                if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
-                {
-                    /*Tralla 12/2/20
-                     * 
-                     * Fix energy calc
-                     */
-                    if (Helpers.GetRequiredEnergyDelta(xBuildableToBuild, nLevelToBuild) > xCelestial.Resources.Energy)
-                    {
-                        //The mine requires more energy than what is avaible
-                        Buildables xEnergyBuilding = Helpers.GetNextEnergySourceToBuild((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
-                        //Set the building to build as the energy building
-                        xBuildableToBuild = xEnergyBuilding;
-                        //get the level of energy building
-
-                        nLevelToBuild = Helpers.GetNextLevel((Planet)xCelestial, xBuildableToBuild);
-                    }
-                }
 
                 if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
                 {
