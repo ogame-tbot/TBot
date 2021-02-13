@@ -138,7 +138,7 @@ namespace Tbot.Services
         internal void ExecuteOgamedExecutable(Credentials credentials, int port)
         {
             CreateOgamedExecutable();
-            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --cookies-filename=cookies.txt";
+            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --api-new-hostname=http://localhost:" + port + " --cookies-filename=cookies.txt";
             Process.Start("ogamed.exe", args);
         }
 
