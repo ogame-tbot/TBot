@@ -399,26 +399,67 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..,");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..");
                 celestials = UpdatePlanets(UpdateType.Resources);
+                celestials = UpdatePlanets(UpdateType.ResourceSettings);
                 celestials = UpdatePlanets(UpdateType.Buildings);
+                celestials = UpdatePlanets(UpdateType.Facilities);
                 celestials = UpdatePlanets(UpdateType.Constructions);
 
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
                 foreach (Celestial xCelestial in celestials)
                 {
-                    //Manage the need of build some deposit
-                    mHandleDeposit(xCelestial, ref xBuildable, ref nLevelToReach);
-                    //If it isn't needed to build deposit
-                    //check if it needs to build some mines 
-                    if (xBuildable == Buildables.Null)
+                    if (xCelestial.Constructions.BuildingID != 0)
                     {
-                        mHandleMines(xCelestial, ref xBuildable, ref nLevelToReach);
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + ": there is already a building in production.");
                     }
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + xCelestial.ToString());
+                    if (xCelestial is Planet)
+                    {
+                        if (Helpers.ShouldBuildEnergySource(xCelestial as Planet))
+                        {
+                            //Checks if energy is needed
+                            xBuildable = Helpers.GetNextEnergySourceToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
+                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        }
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
+                        {
+                            //Manage the need of nanites
+                            xBuildable = Buildables.NaniteFactory;
+                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        }
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
+                        {
+                            //Manage the need of robotics factory
+                            xBuildable = Buildables.RoboticsFactory;
+                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        }
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
+                        {
+                            //Manage the need of shipyard
+                            xBuildable = Buildables.Shipyard;
+                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        }
+                        if (xBuildable == Buildables.Null)
+                        {
+                            //Manage the need of build some deposit
+                            mHandleDeposit(xCelestial, ref xBuildable, ref nLevelToReach);
+                        }
+                        //If it isn't needed to build deposit
+                        //check if it needs to build some mines 
+                        if (xBuildable == Buildables.Null)
+                        {
+                            mHandleMines(xCelestial, ref xBuildable, ref nLevelToReach);
+                        }
 
-                    if (xBuildable != Buildables.Null && nLevelToReach > 0)
-                        mHandleBuildCelestialBuild(xCelestial, xBuildable, nLevelToReach);
+                        if (xBuildable != Buildables.Null && nLevelToReach > 0)
+                            mHandleBuildCelestialBuild(xCelestial, xBuildable, nLevelToReach);
+                    }
+                    else
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + xCelestial.ToString());
+                    }
 
                     xBuildable = Buildables.Null;
                     nLevelToReach = 0;
@@ -465,7 +506,7 @@ namespace Tbot
             try
             {
                 //Check if it is necessary to build a Deuterium tank
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, 1))
+                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxDeuteriumTank && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.DeuteriumSynthesizer / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
@@ -477,7 +518,7 @@ namespace Tbot
 
 
                 //Check if it is necessary to build a Crystal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, 1))
+                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxCrystalStorage && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.CrystalMine / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
@@ -488,7 +529,7 @@ namespace Tbot
                 }
 
                 //Check if it is necessary to build a Metal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, 1))
+                if (xBuildable == Buildables.Null && Helpers.GetNextLevel(xCelestial as Planet, xBuildable) > (int)settings.Brain.AutoMine.MaxMetalStorage && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, serverData.Speed, xCelestial.ResourceSettings.MetalMine / 100, researches, userInfo.Class))
                 {
                     //Yes, need it
 
@@ -526,78 +567,9 @@ namespace Tbot
         {
             try
             {
-                int nDiffMetCry = 0;
-                int nDiffMetDeut = 0;
-                //Setting the 
-                //Metal - Crystal level gap
-                //Metal - Deuterium level gap
-                //by checking the metal mine level
-
-                //TODO: put metal range and gaps in settings.json 
-                switch (xCelestial.Buildings.MetalMine)
-                {
-                    case int n when n <= 15:
-                        /*Lorenzo 06/02/2021
-                         * Diff mines:
-                         *  - n = Metal mine level
-                         *  - (n-2) = Crystal mine leve
-                         *  - (n-1) = DeuteriumSynthesizer leve
-                         */
-                        nDiffMetCry = 2;
-                        nDiffMetDeut = 1;
-                        break;
-                    case int n when (n > 15 && n <= 30):
-                        /*Lorenzo 06/02/2021
-                         * Diff mines:
-                         *  - n = Metal mine level
-                         *  - (n-4) = Crystal mine leve
-                         *  - (n-2) = DeuteriumSynthesizer leve
-                         */
-                        nDiffMetCry = 4;
-                        nDiffMetDeut = 2;
-                        break;
-                    case int n when n > 30:
-                        /*Lorenzo 06/02/2021
-                         * Diff mines:
-                         *  - n = Metal mine level
-                         *  - (n-7) = Crystal mine leve
-                         *  - (n-3) = DeuteriumSynthesizer leve
-                         */
-                        nDiffMetCry = 7;
-                        nDiffMetDeut = 3;
-                        break;
-                }
-
-                //Check the level difference between metal mine and crystal mine
-                if ((xCelestial.Buildings.MetalMine - xCelestial.Buildings.CrystalMine) > nDiffMetCry)
-                {
-                    //The difference doesn't satisfy the requirement
-
-                    //Set the buildable type
-                    xBuildable = Buildables.CrystalMine;
-                    //set the level of the building
-                    nLevelToReach = xCelestial.Buildings.CrystalMine + 1;
-                }
-                if (xBuildable == Buildables.Null && (xCelestial.Buildings.MetalMine - xCelestial.Buildings.DeuteriumSynthesizer) > nDiffMetDeut)
-                {
-                    //The difference doesn't satisfy the requirement
-
-                    //Set the buildable type
-                    xBuildable = Buildables.DeuteriumSynthesizer;
-                    //set the level of the building
-                    nLevelToReach = xCelestial.Buildings.DeuteriumSynthesizer + 1;
-                }
-                if (xBuildable == Buildables.Null)
-                {
-                    //All the requirement for mines are satisfied
-                    //so i start to build a metal mine
-                    //to dissatisfy the request about mines
-
-                    //Set the buildable type
-                    xBuildable = Buildables.MetalMine;
-                    //set the level of the building
-                    nLevelToReach = xCelestial.Buildings.MetalMine + 1;
-                }
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer);
+                if (xBuildable != Buildables.Null)
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
             catch (Exception e)
             {
@@ -635,10 +607,11 @@ namespace Tbot
                     if (Helpers.GetRequiredEnergyDelta(xBuildableToBuild, nLevelToBuild) > xCelestial.Resources.Energy)
                     {
                         //The mine requires more energy than what is avaible
-                        Buildables xEnergyBuilding = Helpers.GetNextEnergySourceToBuild((Planet)xCelestial, 20, 20);
+                        Buildables xEnergyBuilding = Helpers.GetNextEnergySourceToBuild((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
                         //Set the building to build as the energy building
                         xBuildableToBuild = xEnergyBuilding;
                         //get the level of energy building
+
                         nLevelToBuild = Helpers.GetNextLevel((Planet)xCelestial, xBuildableToBuild);
                     }
                 }
@@ -647,7 +620,11 @@ namespace Tbot
                 {
                     //Yes, i can build it
                     ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "mHandleBuildCelestialMines Build: " + xBuildableToBuild.ToString() + " level: " + nLevelToBuild.ToString());
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                }
+                else
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
                 }
             }
             catch (Exception e)

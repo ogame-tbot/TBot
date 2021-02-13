@@ -927,14 +927,25 @@ namespace Tbot.Includes
 
         public static int GetNextLevel(Planet planet, Buildables buildable)
         {
+            int output = 0;
             foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
             {
                 if (prop.Name == buildable.ToString())
                 {
-                    return (int)prop.GetValue(planet.Buildings) + 1;
+                    output = (int)prop.GetValue(planet.Buildings) + 1;
                 }
             }
-            return 0;
+            if (output == 0)
+            {
+                foreach (PropertyInfo prop in planet.Facilities.GetType().GetProperties())
+                {
+                    if (prop.Name == buildable.ToString())
+                    {
+                        output = (int)prop.GetValue(planet.Facilities) + 1;
+                    }
+                }
+            }
+            return output;
         }
 
         public static int CalcDepositCapacity(int level)
@@ -1001,17 +1012,27 @@ namespace Tbot.Includes
             return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
         }
 
-        public static Buildables GetNextMineToBuild(Planet planet)
+        public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100)
         {
             var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
             var dic = new Dictionary<Buildables, long>();
             foreach (var mine in mines)
             {
+                if (mine == Buildables.MetalMine && GetNextLevel(planet, mine) > maxMetalMine)
+                    continue;
+                if (mine == Buildables.CrystalMine && GetNextLevel(planet, mine) > maxCrystalMine)
+                    continue;
+                if (mine == Buildables.DeuteriumSynthesizer && GetNextLevel(planet, mine) > maxDeuteriumSynthetizer)
+                    continue;
+
                 dic.Add(mine, CalcPrice(mine, GetNextLevel(planet, mine)).ConvertedDeuterium);
             }
-            dic.OrderBy(m => m.Value)
+            if (dic.Count() == 0)
+                return Buildables.Null;
+
+            dic = dic.OrderBy(m => m.Value)
                 .ToDictionary(m => m.Key, m => m.Value);
-            return dic.First().Key;
+            return dic.FirstOrDefault().Key;
         }
 
         public static bool ShouldBuildRoboticFactory(Planet planet, int maxLevel = 10)
