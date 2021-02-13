@@ -36,7 +36,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1841731" />
     <PackageReference Include="Nefarius.JsonConfig" Version="1.1.28" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="RestSharp" Version="106.11.7" />
