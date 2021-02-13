@@ -14,6 +14,7 @@ namespace Tbot
 {
     class Program
     {
+        /*Lorenzo prova upload modifiche*/
         static volatile OgamedService ogamedService;
 
         static volatile TelegramMessenger telegramMessenger;
