@@ -402,7 +402,6 @@ namespace Tbot
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..");
                 celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.ResourceSettings);
                 celestials = UpdatePlanets(UpdateType.Buildings);
                 celestials = UpdatePlanets(UpdateType.Facilities);
                 celestials = UpdatePlanets(UpdateType.Constructions);
@@ -508,7 +507,7 @@ namespace Tbot
             try
             {
                 //Check if it is necessary to build a Deuterium tank
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, serverData.Speed, xCelestial.ResourceSettings.DeuteriumSynthesizer / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
                 {
                     //Yes, need it
 
@@ -520,7 +519,7 @@ namespace Tbot
 
 
                 //Check if it is necessary to build a Crystal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, serverData.Speed, xCelestial.ResourceSettings.CrystalMine / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
                 {
                     //Yes, need it
 
@@ -531,7 +530,7 @@ namespace Tbot
                 }
 
                 //Check if it is necessary to build a Metal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, serverData.Speed, xCelestial.ResourceSettings.MetalMine / 100, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
                 {
                     //Yes, need it
 

@@ -953,31 +953,31 @@ namespace Tbot.Includes
             return 5000 * (long)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
         }
 
-        public static bool ShouldBuildMetalStorage(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildMetalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             long metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
-            if (metalCapacity < 24 * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
+            if (metalCapacity < hours * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             long crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
-            if (crystalCapacity < 24 * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
+            if (crystalCapacity < hours * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             long deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
-            if (deuteriumCapacity < 24 * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
+            if (deuteriumCapacity < hours * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
                 return true;
             else
                 return false;
