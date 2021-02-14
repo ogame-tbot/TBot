@@ -830,7 +830,7 @@ namespace Tbot.Services
             else return true;
         }
 
-        public bool BuildMilitary(Celestial celestial, Buildables buildable, int quantity)
+        public bool BuildMilitary(Celestial celestial, Buildables buildable, long quantity)
         {
             var request = new RestRequest
             {
@@ -845,7 +845,7 @@ namespace Tbot.Services
             else return true;
         }
 
-        public bool BuildShips(Celestial celestial, Buildables buildable, int quantity)
+        public bool BuildShips(Celestial celestial, Buildables buildable, long quantity)
         {
             var request = new RestRequest
             {
@@ -860,7 +860,7 @@ namespace Tbot.Services
             else return true;
         }
 
-        public bool BuildDefences(Celestial celestial, Buildables buildable, int quantity)
+        public bool BuildDefences(Celestial celestial, Buildables buildable, long quantity)
         {
             var request = new RestRequest
             {
@@ -875,7 +875,7 @@ namespace Tbot.Services
             else return true;
         }
 
-        public Model.Resources GetPrice(Buildables buildable, int levelOrQuantity)
+        public Model.Resources GetPrice(Buildables buildable, long levelOrQuantity)
         {
             var request = new RestRequest
             {

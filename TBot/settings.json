@@ -50,6 +50,7 @@
       "MaxDeuteriumSynthetizer": 37,
       "MaxSolarPlant": 20,
       "MaxFusionReactor": 20,
+      "DepositHours": 6,
       "MaxMetalStorage": 13,
       "MaxCrystalStorage": 12,
       "MaxDeuteriumTank": 11,
@@ -70,6 +71,8 @@
       "Active": true,
       "ExcludeMoons": true,
       "CargoType": "LargeCargo",
+      "MaxCargosToBuild": 50,
+      "MaxCargosToKeep": 50,
       "CheckIntervalMin": 60,
       "CheckIntervalMax": 240
     },

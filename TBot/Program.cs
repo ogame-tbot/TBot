@@ -630,10 +630,10 @@ namespace Tbot
                 foreach (Celestial planet in celestials)
                 {
                     var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Planet " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
                     if (planet.Coordinate.Type == Celestials.Moon && settings.Brain.AutoCargo.ExcludeMoons)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " is a moon - Skipping moon.");
                         continue;
                     }
                     if (capacity <= planet.Resources.TotalResources)
@@ -641,18 +641,29 @@ namespace Tbot
                         long difference = planet.Resources.TotalResources - capacity;
                         Buildables preferredCargoShip = Enum.Parse<Buildables>(settings.Brain.AutoCargo.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
-                        int neededCargos = (int)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
+                        long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
                         if (planet.HasProduction())
                         {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "There is already a production ongoing. Skipping planet.");
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + planet.ToString() + " - There is already a production ongoing. Skipping planet.");
                             foreach (Production production in planet.Productions)
                             {
                                 Buildables productionType = (Buildables)production.ID;
-                                Helpers.WriteLog(LogType.Info, LogSender.Brain, production.Nbr + "x" + productionType.ToString() + " are in production.");
+                                Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are already in production.");
                             }
                             continue;
                         }
+
+                        /*Tralla 14/2/21
+                         * 
+                         * Add settings to provide a better autocargo configurability
+                         */
+                        if (neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToBuild)
+                            neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToBuild;
+
+                        if (planet.Ships.GetAmount(preferredCargoShip) + neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToKeep)
+                            neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - planet.Ships.GetAmount(preferredCargoShip);
+
                         var cost = ogamedService.GetPrice(preferredCargoShip, neededCargos);
                         if (planet.Resources.IsEnoughFor(cost))
                         {
@@ -661,19 +672,19 @@ namespace Tbot
                         }
                         else
                         {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + planet.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
                             ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
                         }
                         planet.Productions = ogamedService.GetProductions(planet);
                         foreach (Production production in planet.Productions)
                         {
                             Buildables productionType = (Buildables)production.ID;
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, production.Nbr + "x" + productionType.ToString() + " are in production.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are in production.");
                         }
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Capacity is ok.");
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " - Capacity is ok.");
                     }
                 }
                 var time = GetDateTime();
