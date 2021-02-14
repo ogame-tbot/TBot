@@ -31,6 +31,10 @@ Use this bot at your own risk!! Any testing is very much appreciated!
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial (guess where you can specify which...)
+  * AutoMine (tnx to Stewie): Tbot will develop your colonies up to the levels given in settings.json. Transports are not implemented yet, so you should provide resources manually to speed up.
+* Local Proxy (tnx to ogamed and CrynogarTM for the hint): Tbot allows you to play in your browser
+  * Navigate with your browser to http://127.0.0.1:8080/game/index.php (if you changed the default port modify accordingly)
+  * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
   
 ## Running
 
@@ -56,7 +60,7 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
   
 ## Development Plans
-Sleep mode, auto miner and a better auto fleet save are the next features I plan to write.
+Sleep mode and a better auto fleet save are the next features I plan to write.
 
 Also, a proper documentation about how to deal with settings.json should be written sooner or later.
 
@@ -93,6 +97,5 @@ In the future, I plan to release TBot for:
 An Android version could be handy as well, although it may require a serious logic overhaul.
 
 Being extremely lightweight (only ~ 30Mb in RAM), I will prioritize Linux arm and Linux arm64 versions, in order to enable execution on RaspberryPi and similar devices.
-Given it's extremely small footprint, I forsee Necrobot being able to run even on RaspBerryPi Zero and RaspBerryPi1 devices.
 As for Mac arm64, I do not own one of theese new gigs. Feel free to contact me if you own such device and are willing to test.
 Windows 32 bit, not being really useful, will have the least priority.
