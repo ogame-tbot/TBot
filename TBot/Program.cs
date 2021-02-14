@@ -1048,7 +1048,7 @@ namespace Tbot
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
                     int expsToSend;
-                    if (settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
                     {
                         if (slots.ExpInUse == 0)
                             expsToSend = slots.ExpTotal;
@@ -1141,20 +1141,32 @@ namespace Tbot
 
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
-                    var time = GetDateTime();
+                    
                     List<Fleet> orderedFleets = fleets
                         .Where(fleet => fleet.Mission == Missions.Expedition)
-                        .OrderByDescending(fleet => fleet.BackIn)
                         .ToList();
+                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    {
+                        fleets = fleets
+                            .OrderByDescending(fleet => fleet.BackIn)
+                            .ToList();
+                    }
+                    else
+                    {
+                        fleets = fleets
+                            .OrderBy(fleet => fleet.BackIn)
+                            .ToList();
+                    }
                     int interval;
                     if (orderedFleets.Count == 0)
                     {
-                        interval = Helpers.CalcRandomInterval(IntervalType.AboutHalfAnHour);
+                        interval = Helpers.CalcRandomInterval(IntervalType.AboutTenMinutes);
                     }
                     else
                     {
                         interval = (int)((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                     }
+                    var time = GetDateTime();
                     DateTime newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
