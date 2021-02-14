@@ -37,6 +37,7 @@ namespace Tbot
          * you need to redim the Semaphore array!!!
          */
         static Semaphore[] xaSem = new Semaphore[5];
+
         static void Main(string[] args)
         {
             Helpers.SetTitle();
@@ -413,6 +414,7 @@ namespace Tbot
                     if (xCelestial.Constructions.BuildingID != 0)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + ": there is already a building in production.");
+                        continue;
                     }
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + xCelestial.ToString());
                     if (xCelestial is Planet)
@@ -661,7 +663,7 @@ namespace Tbot
                         else
                         {
                             Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
-                            ogamedService.BuildShips(planet, Buildables.SmallCargo, neededCargos);
+                            ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
                         }
                         planet.Productions = ogamedService.GetProductions(planet);
                         foreach (Production production in planet.Productions)

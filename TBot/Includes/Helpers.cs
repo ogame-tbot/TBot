@@ -1057,7 +1057,7 @@ namespace Tbot.Includes
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
             var nextShipyardLevel = GetNextLevel(planet, Buildables.RoboticsFactory);
-            var nextShipyardPrice = CalcPrice(Buildables.RoboticsFactory, nextShipyardLevel);
+            var nextShipyardPrice = CalcPrice(Buildables.Shipyard, nextShipyardLevel);
 
             if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 2)
                 return true;
