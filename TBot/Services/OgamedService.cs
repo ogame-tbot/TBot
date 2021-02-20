@@ -25,7 +25,7 @@ namespace Tbot.Services
         */
         public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080)
         {
-            ExecuteOgamedExecutable(credentials, port);
+            ExecuteOgamedExecutable(credentials, host, port);
             this.Url = "http://" + host + ":" + port;
             this.Client = new RestClient(this.Url);
         }
@@ -128,15 +128,10 @@ namespace Tbot.Services
             fsDst.Write(bytes, 0, bytes.Length);
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials)
-        {
-            ExecuteOgamedExecutable(credentials, 8080);
-        }
-
-        internal void ExecuteOgamedExecutable(Credentials credentials, int port)
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080)
         {
             CreateOgamedExecutable();
-            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --api-new-hostname=http://localhost:" + port + " --cookies-filename=cookies.txt";
+            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
             Process.Start("ogamed.exe", args);
         }
 
