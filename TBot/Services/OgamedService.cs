@@ -23,10 +23,10 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "http://127.0.0.1", int port = 8080)
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080)
         {
             ExecuteOgamedExecutable(credentials, port);
-            this.Url = host + ":" + port;
+            this.Url = "http://" + host + ":" + port;
             this.Client = new RestClient(this.Url);
         }
 

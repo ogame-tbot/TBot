@@ -59,8 +59,8 @@ namespace Tbot
                  * 
                  * add ability to set custom host 
                  */
-                var host = settings.General.Host ?? "http://localhost";
-                var port = settings.General.Port ?? 8080;
+                var host = settings.General.Host ?? "localhost";
+                var port = settings.General.Port ?? "8080";
                 ogamedService = new OgamedService(credentials, (string)host, int.Parse(port));
             }
             catch (Exception e)
