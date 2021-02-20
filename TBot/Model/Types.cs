@@ -119,6 +119,14 @@ namespace Tbot.Model
                 return false;
             }
         }
+
+        public bool HasCoords(Coordinate coords)
+        {
+            if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
+                return true;
+            else
+                return false;
+        }
     }
 
     public class Moon : Celestial { }

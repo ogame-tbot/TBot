@@ -52,16 +52,16 @@ namespace Tbot
             };
 
 
-
-
-
-
-
-
-
             try
             {
-                ogamedService = new OgamedService(credentials, int.Parse(settings.General.Port));
+                /**
+                 * Tralla 20/2/21
+                 * 
+                 * add ability to set custom host 
+                 */
+                var host = settings.General.Host ?? "http://localhost";
+                var port = settings.General.Port ?? 8080;
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port));
             }
             catch (Exception e)
             {
@@ -76,8 +76,6 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to set user agent: " + e.Message);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
-
-
 
 
             var isLoggedIn = false;
@@ -1042,7 +1040,6 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.Expeditions].WaitOne();
 
-                celestials = UpdatePlanets(UpdateType.Ships);
                 if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
                 {
                     slots = UpdateSlots();
@@ -1066,27 +1063,41 @@ namespace Tbot
                         {
                             if (slots.Free > 0)
                             {
-                                Celestial origin = celestials
-                                    .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                                    .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                                    .First();
+                                Celestial origin;
                                 if (settings.Expeditions.AutoSendExpeditions.Origin)
                                 {
+                                    Coordinate customOriginCoords = new Coordinate(
+                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy,
+                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.System,
+                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.Position,
+                                        Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()));
                                     try
                                     {
+
                                         Celestial customOrigin = celestials
-                                            .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
-                                            .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
-                                            .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
-                                            .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
-                                            .Single();
+                                            .Single(planet => planet.HasCoords(customOriginCoords));
                                         origin = customOrigin;
+                                        origin = UpdatePlanet(origin, UpdateType.Ships);
                                     }
                                     catch (Exception e)
                                     {
                                         Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
                                         Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
+
+                                        celestials = UpdatePlanets(UpdateType.Ships);
+                                        origin = celestials
+                                            .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                            .First();
                                     }
+                                }
+                                else
+                                {
+                                    celestials = UpdatePlanets(UpdateType.Ships);
+                                    origin = celestials
+                                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                                        .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                        .First();
                                 }
                                 if (origin.Ships.IsEmpty())
                                 {
@@ -1141,7 +1152,7 @@ namespace Tbot
 
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
-                    
+
                     List<Fleet> orderedFleets = fleets
                         .Where(fleet => fleet.Mission == Missions.Expedition)
                         .ToList();
@@ -1244,9 +1255,9 @@ namespace Tbot
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-
+                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "HandleExpeditions exception: " + e.Message);
             }
             finally
             {

@@ -18,17 +18,15 @@ namespace Tbot.Services
         private string Url { get; set; }
         private RestClient Client { get; set; }
 
-        public OgamedService(Credentials credentials, string url)
-        {
-            ExecuteOgamedExecutable(credentials);
-            this.Url = url;
-            this.Client = new RestClient(this.Url);
-        }
-
-        public OgamedService(Credentials credentials, int port = 8080)
+        /**
+        * Tralla 20/2/21
+        * 
+        * add ability to set custom host 
+        */
+        public OgamedService(Credentials credentials, string host = "http://127.0.0.1", int port = 8080)
         {
             ExecuteOgamedExecutable(credentials, port);
-            this.Url = "http://127.0.0.1:" + port;
+            this.Url = host + ":" + port;
             this.Client = new RestClient(this.Url);
         }
 
