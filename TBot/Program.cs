@@ -1118,11 +1118,19 @@ namespace Tbot
                                 }
                                 foreach (var origin in origins)
                                 {
-                                    int expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToZero);
-                                    if (origin == origins.Last())
+                                    int expsToSendFromThisOrigin;
+                                    if (origins.Count >= expsToSend)
                                     {
-                                        expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToPositiveInfinity);
+                                        expsToSendFromThisOrigin = 1;
                                     }
+                                    else
+                                    {
+                                        expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToZero);
+                                        if (origin == origins.Last())
+                                        {
+                                            expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToZero) + (expsToSend % origins.Count);
+                                        }
+                                    } 
                                     if (origin.Ships.IsEmpty())
                                     {
                                         Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
@@ -1159,8 +1167,17 @@ namespace Tbot
                                                     Type = Celestials.DeepSpace
                                                 };
                                             }
-                                            SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
-                                            Thread.Sleep((int)IntervalType.AFewSeconds);
+                                            slots = UpdateSlots();
+                                            if (slots.ExpFree > 0)
+                                            {
+                                                SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
+                                                Thread.Sleep((int)IntervalType.AFewSeconds);
+                                            }
+                                            else
+                                            {
+                                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Unable to send expeditions: no expedition slots available.");
+                                                break;
+                                            }                                            
                                         }
                                     }
                                 }                                
