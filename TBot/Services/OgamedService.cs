@@ -26,7 +26,7 @@ namespace Tbot.Services
         public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080)
         {
             ExecuteOgamedExecutable(credentials, host, port);
-            this.Url = "http://" + host + ":" + port;
+            this.Url = "http://localhost:" + port;
             this.Client = new RestClient(this.Url);
         }
 
@@ -358,7 +358,7 @@ namespace Tbot.Services
         {
             var request = new RestRequest
             {
-                Resource = "/bot/user-class",
+                Resource = "/bot/character-class",
                 Method = Method.GET
             };
             var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -647,7 +647,7 @@ namespace Tbot.Services
         {
             var request = new RestRequest
             {
-                Resource = "/bot/planets/" + planet.ID + "/resource-production",
+                Resource = "/bot/planets/" + planet.ID + "/resource-details",
                 Method = Method.GET,
             };
             var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);

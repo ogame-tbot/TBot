@@ -6,25 +6,25 @@
     "Language": ""
   },
   "General": {
-    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
     "Host": "localhost",
     "Port": "8080"
   },
   "Defender": {
     "Active": true,
-    "CheckIntervalMin": 4,
-    "CheckIntervalMax": 11,
+    "CheckIntervalMin": 1,
+    "CheckIntervalMax": 22,
     "IgnoreProbes": true,
     "Autofleet": {
       "Active": true,
-      "Recall": true,
+      "Recall": false,
       "TelegramMessenger": {
-        "Active": true
+        "Active": false
       }
     },
     "SpyAttacker": {
       "Active": true,
-      "Probes": 1
+      "Probes": 20
     },
     "MessageAttacker": {
       "Active": true,
@@ -36,7 +36,7 @@
       ]
     },
     "TelegramMessenger": {
-      "Active": true
+      "Active": false
     },
     "Alarm": {
       "Active": true
@@ -89,8 +89,8 @@
       },
       "CargoType": "LargeCargo",
       "RandomOrder": true,
-      "CheckIntervalMin": 180,
-      "CheckIntervalMax": 360
+      "CheckIntervalMin": 30,
+      "CheckIntervalMax": 60
     }
   },
   "Expeditions": {
@@ -98,19 +98,31 @@
     "AutoSendExpeditions": {
       "Active": true,
       "MainShip": "LargeCargo",
-      "WaitForAllExpeditions": true,
+      "WaitForAllExpeditions": false,
       "SplitExpeditionsBetweenSystems": false,
-      "Origin": {
-        "Galaxy": 5,
-        "System": 63,
-        "Position": 8,
-        "Type": "Moon"
-      }
-    },
-    "AutoHarvest": {
-      "active": true,
-      "MinimumResources": 10000
+      "Origin": [
+        {
+          "Galaxy": 5,
+          "System": 63,
+          "Position": 8,
+          "Type": "Moon"
+        },
+        {
+          "Galaxy": 5,
+          "System": 64,
+          "Position": 8,
+          "Type": "Moon"
+        }
+      ]
     }
+  },
+  "AutoHarvest": {
+    "Active": true,
+    "HarvestOwnDF": true,
+    "HarvestDeepSpace": true,
+    "MinimumResources": 300,
+    "CheckIntervalMin": 30,
+    "CheckIntervalMax": 60
   },
   "TelegramMessenger": {
     "Active": false,

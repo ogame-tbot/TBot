@@ -36,7 +36,7 @@ namespace Tbot
          * ATTENTION!!In case of adding some timers
          * you need to redim the Semaphore array!!!
          */
-        static Semaphore[] xaSem = new Semaphore[5];
+        static Semaphore[] xaSem = new Semaphore[6];
 
         static void Main(string[] args)
         {
@@ -138,21 +138,27 @@ namespace Tbot
                     xaSem[(int)Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
                     xaSem[(int)Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
                     xaSem[(int)Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
+                    xaSem[(int)Feature.Harvest] = new Semaphore(1, 1); //Harvest
 
 
-                    if (settings.Defender.Active)
+                    if ((bool)settings.Defender.Active)
                     {
                         InitializeDefender();
                     }
 
-                    if (settings.Brain.Active)
+                    if ((bool)settings.Brain.Active)
                     {
                         InitializeBrain();
                     }
 
-                    if (settings.Expeditions.Active)
+                    if ((bool)settings.Expeditions.Active)
                     {
                         InitializeExpeditions();
+                    }
+
+                    if ((bool)settings.AutoHarvest.Active)
+                    {
+                        InitializeHarvest();
                     }
                 }
                 else
@@ -335,7 +341,14 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
 
-            timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour)));
+            timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo)));
+        }
+
+        private static void InitializeHarvest()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Harvest...");
+            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "This feature will be reintroduced in the next version, in a hopefully better way");
+            //timers.Add("HarvestTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour)));
         }
 
         private static void Defender(object state)
@@ -1063,21 +1076,23 @@ namespace Tbot
                         {
                             if (slots.Free > 0)
                             {
-                                Celestial origin;
-                                if (settings.Expeditions.AutoSendExpeditions.Origin)
+                                List<Celestial> origins = new List<Celestial>();
+                                if (settings.Expeditions.AutoSendExpeditions.Origin.Length > 0)
                                 {
-                                    Coordinate customOriginCoords = new Coordinate(
-                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy,
-                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.System,
-                                        (int)settings.Expeditions.AutoSendExpeditions.Origin.Position,
-                                        Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()));
                                     try
                                     {
-
-                                        Celestial customOrigin = celestials
-                                            .Single(planet => planet.HasCoords(customOriginCoords));
-                                        origin = customOrigin;
-                                        origin = UpdatePlanet(origin, UpdateType.Ships);
+                                        foreach (var origin in settings.Expeditions.AutoSendExpeditions.Origin)
+                                        {
+                                            Coordinate customOriginCoords = new Coordinate(
+                                                (int)origin.Galaxy,
+                                                (int)origin.System,
+                                                (int)origin.Position,
+                                                Enum.Parse<Celestials>(origin.Type.ToString()));
+                                                Celestial customOrigin = celestials
+                                                    .Single(planet => planet.HasCoords(customOriginCoords));
+                                                customOrigin = UpdatePlanet(customOrigin, UpdateType.Ships);
+                                                origins.Add(customOrigin);
+                                        }
                                     }
                                     catch (Exception e)
                                     {
@@ -1085,59 +1100,70 @@ namespace Tbot
                                         Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
 
                                         celestials = UpdatePlanets(UpdateType.Ships);
-                                        origin = celestials
+                                        origins.Add(celestials
                                             .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                                             .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                                            .First();
+                                            .First()
+                                        );
                                     }
                                 }
                                 else
                                 {
                                     celestials = UpdatePlanets(UpdateType.Ships);
-                                    origin = celestials
+                                    origins.Add(celestials
                                         .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                                         .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                                        .First();
+                                        .First()
+                                    );
                                 }
-                                if (origin.Ships.IsEmpty())
+                                foreach (var origin in origins)
                                 {
-                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
-                                }
-                                else
-                                {
-                                    Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
-                                    Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSend, serverData, researches, userInfo.Class);
-
-                                    Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSend.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
-                                    for (int i = 0; i < expsToSend; i++)
+                                    int expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToZero);
+                                    if (origin == origins.Last())
                                     {
-                                        Coordinate destination;
-                                        if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
-                                        {
-                                            var rand = new Random();
-
-                                            destination = new Coordinate
-                                            {
-                                                Galaxy = origin.Coordinate.Galaxy,
-                                                System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
-                                                Position = 16,
-                                                Type = Celestials.DeepSpace
-                                            };
-                                        }
-                                        else
-                                        {
-                                            destination = new Coordinate
-                                            {
-                                                Galaxy = origin.Coordinate.Galaxy,
-                                                System = origin.Coordinate.System,
-                                                Position = 16,
-                                                Type = Celestials.DeepSpace
-                                            };
-                                        }
-                                        SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
-                                        Thread.Sleep((int)IntervalType.AFewSeconds);
+                                        expsToSendFromThisOrigin = (int)Math.Round((float)expsToSend / (float)origins.Count, MidpointRounding.ToPositiveInfinity);
                                     }
-                                }
+                                    if (origin.Ships.IsEmpty())
+                                    {
+                                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
+                                        Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
+
+                                        Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSendFromThisOrigin.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
+                                        for (int i = 0; i < expsToSendFromThisOrigin; i++)
+                                        {
+                                            Coordinate destination;
+                                            if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
+                                            {
+                                                var rand = new Random();
+
+                                                destination = new Coordinate
+                                                {
+                                                    Galaxy = origin.Coordinate.Galaxy,
+                                                    System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
+                                                    Position = 16,
+                                                    Type = Celestials.DeepSpace
+                                                };
+                                            }
+                                            else
+                                            {
+                                                destination = new Coordinate
+                                                {
+                                                    Galaxy = origin.Coordinate.Galaxy,
+                                                    System = origin.Coordinate.System,
+                                                    Position = 16,
+                                                    Type = Celestials.DeepSpace
+                                                };
+                                            }
+                                            SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
+                                            Thread.Sleep((int)IntervalType.AFewSeconds);
+                                        }
+                                    }
+                                }                                
                             }
                             else
                             {
@@ -1158,13 +1184,13 @@ namespace Tbot
                         .ToList();
                     if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
                     {
-                        fleets = fleets
+                        orderedFleets = orderedFleets
                             .OrderByDescending(fleet => fleet.BackIn)
                             .ToList();
                     }
                     else
                     {
-                        fleets = fleets
+                        orderedFleets = orderedFleets
                             .OrderBy(fleet => fleet.BackIn)
                             .ToList();
                     }
@@ -1184,6 +1210,7 @@ namespace Tbot
                     UpdateTitle();
                 }
 
+                /*
                 if ((bool)settings.Expeditions.AutoHarvest.Active)
                 {
                     slots = UpdateSlots();
@@ -1254,10 +1281,18 @@ namespace Tbot
                         }
                     }
                 }
+                */
             }
+
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "HandleExpeditions exception: " + e.Message);
+                int interval = (int)(Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+                var time = GetDateTime();
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
+                UpdateTitle();
             }
             finally
             {

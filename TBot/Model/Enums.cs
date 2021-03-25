@@ -175,7 +175,8 @@ namespace Tbot.Model
 		Tbot,
 		Defender,
 		Brain,
-		Expeditions
+		Expeditions,
+		Harvest
 	}
 
 	public enum Feature
@@ -184,6 +185,7 @@ namespace Tbot.Model
 		BrainAutobuildCargo = 1,
 		BrainAutoRepatriate = 2,
 		BrainAutoMine = 3,
-		Expeditions = 4
+		Expeditions = 4,
+		Harvest = 5
 	}
 }
