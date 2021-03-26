@@ -8,7 +8,8 @@
   "General": {
     "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
     "Host": "localhost",
-    "Port": "8080"
+    "Port": "8080",
+    "CaptchaAPIKey": ""
   },
   "Defender": {
     "Active": true,
@@ -91,6 +92,11 @@
       "RandomOrder": true,
       "CheckIntervalMin": 30,
       "CheckIntervalMax": 60
+    },
+    "BuyOfferOfTheDay": {
+      "Active": true,
+      "CheckIntervalMin": 240,
+      "CheckIntervalMax": 360
     }
   },
   "Expeditions": {
@@ -100,6 +106,7 @@
       "MainShip": "LargeCargo",
       "WaitForAllExpeditions": false,
       "SplitExpeditionsBetweenSystems": false,
+      "RandomizeOrder": true,
       "Origin": [
         {
           "Galaxy": 5,

@@ -150,6 +150,7 @@ namespace Tbot.Model
 	public enum UpdateType
 	{
 		Fast,
+		Techs,
 		Full,
 		Resources,
 		Buildings,
@@ -185,7 +186,8 @@ namespace Tbot.Model
 		BrainAutobuildCargo = 1,
 		BrainAutoRepatriate = 2,
 		BrainAutoMine = 3,
+		BrainOfferOfTheDay = 6,
 		Expeditions = 4,
-		Harvest = 5
+		Harvest = 5		
 	}
 }

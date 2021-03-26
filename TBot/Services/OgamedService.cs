@@ -23,9 +23,9 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080)
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "")
         {
-            ExecuteOgamedExecutable(credentials, host, port);
+            ExecuteOgamedExecutable(credentials, host, port, captchaKey);
             this.Url = "http://localhost:" + port;
             this.Client = new RestClient(this.Url);
         }
@@ -128,10 +128,14 @@ namespace Tbot.Services
             fsDst.Write(bytes, 0, bytes.Length);
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080)
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "")
         {
             CreateOgamedExecutable();
-            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
+            string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
+            if (captchaKey != "")
+            {
+                args += " --nja-api-key=" + captchaKey;
+            }
             Process.Start("ogamed.exe", args);
         }
 
@@ -145,48 +149,57 @@ namespace Tbot.Services
 
         public bool SetUserAgent(string userAgent)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/set-user-agent",
-                Method = Method.POST,
-            };
-            request.AddParameter(new Parameter("userAgent", userAgent, ParameterType.GetOrPost));
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/set-user-agent",
+                    Method = Method.POST,
+                };
+                request.AddParameter(new Parameter("userAgent", userAgent, ParameterType.GetOrPost));
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool Login()
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/login",
-                Method = Method.GET
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/login",
+                    Method = Method.GET
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool Logout()
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/logout",
-                Method = Method.GET
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/logout",
+                    Method = Method.GET
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public Server GetServerInfo()
@@ -448,6 +461,21 @@ namespace Tbot.Services
             else return celestial;
         }
 
+        public Techs GetTechs(Celestial celestial)
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/celestials/" + celestial.ID + "/techs",
+                Method = Method.GET,
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return JsonConvert.DeserializeObject<Techs>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+        }
+
         public Model.Resources GetResources(Celestial celestial)
         {
             var request = new RestRequest
@@ -551,6 +579,24 @@ namespace Tbot.Services
                 throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
             }
             else return (bool)result.Result;
+        }
+
+        public bool BuyOfferOfTheDay()
+        {
+            try
+            {
+                var request = new RestRequest
+                {
+                    Resource = "/bot/buy-offer-of-the-day",
+                    Method = Method.GET
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
+            }
+            catch { return false; }
         }
 
         public List<AttackerFleet> GetAttacks()
@@ -675,32 +721,38 @@ namespace Tbot.Services
 
         public bool CancelConstruction(Celestial celestial)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/cancel-building",
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/cancel-building",
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool CancelResearch(Celestial celestial)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/cancel-research",
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/cancel-research",
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public Fleet SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload)
@@ -744,17 +796,20 @@ namespace Tbot.Services
 
         public bool CancelFleet(Fleet fleet)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/fleets/" + fleet.ID + "/cancel",
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/fleets/" + fleet.ID + "/cancel",
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public GalaxyInfo GetGalaxyInfo(Coordinate coordinate)
@@ -780,92 +835,106 @@ namespace Tbot.Services
 
         public bool BuildCancelable(Celestial celestial, Buildables buildable)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/cancelable/" + (int)buildable,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/build/cancelable/" + (int)buildable,
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool BuildConstruction(Celestial celestial, Buildables buildable)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/building/" + (int)buildable,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/build/building/" + (int)buildable,
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool BuildTechnology(Celestial celestial, Buildables buildable)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/technology/" + (int)buildable,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest { Resource = "/bot/planets/" + celestial.ID + "/build/technology/" + (int)buildable, Method = Method.POST };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool BuildMilitary(Celestial celestial, Buildables buildable, long quantity)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/production/" + (int)buildable + "/" + quantity,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/build/production/" + (int)buildable + "/" + quantity,
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool BuildShips(Celestial celestial, Buildables buildable, long quantity)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/ships/" + (int)buildable + "/" + quantity,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/build/ships/" + (int)buildable + "/" + quantity,
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public bool BuildDefences(Celestial celestial, Buildables buildable, long quantity)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/planets/" + celestial.ID + "/build/defence/" + (int)buildable + "/" + quantity,
-                Method = Method.POST,
-            };
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/planets/" + celestial.ID + "/build/defence/" + (int)buildable + "/" + quantity,
+                    Method = Method.POST,
+                };
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
 
         public Model.Resources GetPrice(Buildables buildable, long levelOrQuantity)
@@ -885,19 +954,22 @@ namespace Tbot.Services
 
         public bool SendMessage(int playerID, string message)
         {
-            var request = new RestRequest
+            try
             {
-                Resource = "/bot/send-message",
-                Method = Method.POST,
-            };
-            request.AddParameter(new Parameter("playerID", playerID, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("message", message, ParameterType.GetOrPost));
-            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-            if (result.Status != "ok")
-            {
-                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+                var request = new RestRequest
+                {
+                    Resource = "/bot/send-message",
+                    Method = Method.POST,
+                };
+                request.AddParameter(new Parameter("playerID", playerID, ParameterType.GetOrPost));
+                request.AddParameter(new Parameter("message", message, ParameterType.GetOrPost));
+                var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+                if (result.Status != "ok")
+                    return false;
+                else
+                    return true;
             }
-            else return true;
+            catch { return false; }
         }
     }
 }

@@ -280,6 +280,8 @@ namespace Tbot.Model
         }
     }
 
+    public class Supplies : Buildings { }
+
     public class Facilities
     {
         public int RoboticsFactory { get; set; }
@@ -290,6 +292,9 @@ namespace Tbot.Model
         public int NaniteFactory { get; set; }
         public int Terraformer { get; set; }
         public int SpaceDock { get; set; }
+        public int LunarBase { get; set; }
+        public int SensorPhalanx { get; set; }
+        public int JumpGate { get; set; }
         public override string ToString()
         {
             return "R:" + RoboticsFactory.ToString() + " S:" + Shipyard.ToString() + " L:" + ResearchLab.ToString() + " M:" + MissileSilo.ToString("") + " N:" + NaniteFactory.ToString("");
@@ -309,6 +314,8 @@ namespace Tbot.Model
         public long AntiBallisticMissiles { get; set; }
         public long InterplanetaryMissiles { get; set; }
     }
+
+    public class Defenses : Defences { }
 
     public class Ships
     {
@@ -529,6 +536,15 @@ namespace Tbot.Model
         public int BuildingCountdown { get; set; }
         public int ResearchID { get; set; }
         public int ResearchCountdown { get; set; }
+    }
+
+    public class Techs
+    {
+        public Defences defenses { get; set; }
+        public Facilities facilities { get; set; }
+        public Researches researches { get; set; }
+        public Ships ships { get; set; }
+        public Buildings supplies { get; set; }
     }
 
     public class Debris

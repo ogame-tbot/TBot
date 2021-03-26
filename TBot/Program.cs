@@ -36,7 +36,7 @@ namespace Tbot
          * ATTENTION!!In case of adding some timers
          * you need to redim the Semaphore array!!!
          */
-        static Semaphore[] xaSem = new Semaphore[6];
+        static Semaphore[] xaSem = new Semaphore[7];
 
         static void Main(string[] args)
         {
@@ -61,7 +61,8 @@ namespace Tbot
                  */
                 var host = settings.General.Host ?? "localhost";
                 var port = settings.General.Port ?? "8080";
-                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port));
+                var captchaKey = settings.General.CaptchaAPIKey ?? "";
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey);
             }
             catch (Exception e)
             {
@@ -137,6 +138,7 @@ namespace Tbot
                     xaSem[(int)Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
                     xaSem[(int)Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
                     xaSem[(int)Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
+                    xaSem[(int)Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
                     xaSem[(int)Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
                     xaSem[(int)Feature.Harvest] = new Semaphore(1, 1); //Harvest
 
@@ -274,6 +276,13 @@ namespace Tbot
                             planet.ResourceProduction = ogamedService.GetResourceProduction(planet as Planet);
                         }
                         break;
+                    case UpdateType.Techs:
+                        var techs = ogamedService.GetTechs(planet);
+                        planet.Defences = techs.defenses;
+                        planet.Facilities = techs.facilities;
+                        planet.Ships = techs.ships;
+                        planet.Buildings = techs.supplies;
+                        break;
                     case UpdateType.Full:
                     default:
                         planet.Resources = ogamedService.GetResources(planet);
@@ -335,6 +344,10 @@ namespace Tbot
             {
                 timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.Automine.CheckIntervalMin, (int)settings.Brain.Automine.CheckIntervalMax)));
             }
+            if (settings.Brain.BuyOfferOfTheDay.Active)
+            {
+                timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax)));
+            }
         }
 
         private static void InitializeExpeditions()
@@ -347,7 +360,7 @@ namespace Tbot
         private static void InitializeHarvest()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Harvest...");
-            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "This feature will be reintroduced in the next version, in a hopefully better way");
+            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "This feature will be reintroduced in a future version, in a hopefully better way");
             //timers.Add("HarvestTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour)));
         }
 
@@ -393,6 +406,38 @@ namespace Tbot
             }
 
         }
+
+        private static void BuyOfferOfTheDay(object state)
+        {
+            try
+            {
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.BrainOfferOfTheDay].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Buying offer of the day...");
+                var result = ogamedService.BuyOfferOfTheDay();
+                if (result)
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Offer of the day succesfully bought.");
+                else
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Offer of the day already bought.");
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "BuyOfferOfTheDay Exception: " + e.Message);
+            }
+            finally
+            {
+                var time = GetDateTime();
+                var interval = Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+                var newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
+                UpdateTitle();
+                //Release its semaphore
+                xaSem[(int)Feature.BrainOfferOfTheDay].Release();
+            }
+        }
+
         /*Lorenzo 06/02/2021
          * 
          * Method call by the timer to manage the auto build for mines.
@@ -412,9 +457,7 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..");
-                celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.Buildings);
-                celestials = UpdatePlanets(UpdateType.Facilities);
+                celestials = UpdatePlanets(UpdateType.Techs);
                 celestials = UpdatePlanets(UpdateType.Constructions);
 
                 Buildables xBuildable = Buildables.Null;
@@ -613,8 +656,12 @@ namespace Tbot
                 if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
                 {
                     //Yes, i can build it
-                    ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
+                    var result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                    if (result)
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                    else
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction.");
                 }
                 else
                 {
@@ -635,8 +682,7 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutobuildCargo].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
-                celestials = UpdatePlanets(UpdateType.Ships);
-                celestials = UpdatePlanets(UpdateType.Resources);
+                celestials = UpdatePlanets(UpdateType.Techs);
                 celestials = UpdatePlanets(UpdateType.Productions);
                 foreach (Celestial planet in celestials)
                 {
@@ -679,12 +725,20 @@ namespace Tbot
                         if (planet.Resources.IsEnoughFor(cost))
                         {
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());
-                            ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
+                            var result = ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
+                            if (result)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
                         }
                         else
                         {
                             Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + planet.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
-                            ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
+                            var result = ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
+                            if (result)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
                         }
                         planet.Productions = ogamedService.GetProductions(planet);
                         foreach (Production production in planet.Productions)
@@ -724,8 +778,7 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
-                celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.Ships);
+                celestials = UpdatePlanets(UpdateType.Techs);
 
                 var rand = new Random();
                 foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
@@ -836,6 +889,10 @@ namespace Tbot
             try
             {
                 var result = ogamedService.CancelFleet(fleet);
+                if (result)
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Fleet succesfully recalled.");
+                else
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to recall fleet.");
                 Thread.Sleep((int)IntervalType.AFewSeconds);
                 fleets = UpdateFleets();
                 var recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID);
@@ -927,8 +984,13 @@ namespace Tbot
                         string[] messages = settings.Defender.MessageAttacker.Messages;
                         int messageIndex = random.Next(0, messages.Length);
                         string message = messages[messageIndex];
-                        ogamedService.SendMessage(attack.AttackerID, messages[messageIndex]);
-                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sent message \"" + message + "\" to attacker" + attack.AttackerName);
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sending message \"" + message + "\" to attacker" + attack.AttackerName);
+                        var result = ogamedService.SendMessage(attack.AttackerID, messages[messageIndex]);
+                        if (result)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Message succesfully sent.");
+                        else
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable send message.");
+                        
                     }
                     catch (Exception e)
                     {
@@ -1116,6 +1178,10 @@ namespace Tbot
                                         .First()
                                     );
                                 }
+                                if ((bool)settings.Expeditions.AutoSendExpeditions.RandomizeOrder)
+                                {
+                                    origins = origins.Shuffle().ToList();
+                                }                                
                                 foreach (var origin in origins)
                                 {
                                     int expsToSendFromThisOrigin;
@@ -1212,9 +1278,9 @@ namespace Tbot
                             .ToList();
                     }
                     int interval;
-                    if (orderedFleets.Count == 0)
+                    if (orderedFleets.Count == 0 || slots.ExpFree > 0)
                     {
-                        interval = Helpers.CalcRandomInterval(IntervalType.AboutTenMinutes);
+                        interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
                     }
                     else
                     {
