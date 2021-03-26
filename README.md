@@ -26,14 +26,16 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
-  * AutoSendExpeditions: TBot automatically optimizes expeditions for your account, sending them from the origin setted in settings.json
-  * AutoHarvest: TBot automatically checks if there are any debris where you send your expeditions, and harvests them
+  * AutoSendExpeditions: TBot automatically optimizes expeditions for your account, sending them from the origin(s) setted in settings.json
+  * AutoHarvest: TBot automatically checks if there are any debris where you send your expeditions, and harvests them (currently under rework)
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial (guess where you can specify which...)
   * AutoMine (tnx to Stewie): Tbot will develop your colonies up to the levels given in settings.json. Transports are not implemented yet, so you should provide resources manually to speed up.
+  * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * Local Proxy (tnx to ogamed and CrynogarTM for the hint): Tbot allows you to play in your browser
-  * Navigate with your browser to http://127.0.0.1:8080/game/index.php (if you changed the default port modify accordingly)
+  * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
+  * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
   
 ## Running
@@ -58,6 +60,9 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Write "/start" to [@getmyid_bot](https://t.me/getmyid_bot)
   * It will answer you a message containing your user ID and chat ID (WARNING: you need the USER ID)
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
+
+### Captch solving
+TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Just follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
   
 ## Development Plans
 Sleep mode and a better auto fleet save are the next features I plan to write.
