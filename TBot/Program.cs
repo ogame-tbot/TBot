@@ -397,7 +397,13 @@ namespace Tbot
             }
             catch (Exception e)
             {
-
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking for attacks: " + e.Message);
+                DateTime time = GetDateTime();
+                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+                UpdateTitle();
             }
             finally
             {
