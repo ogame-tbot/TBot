@@ -6,12 +6,19 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Linq;
+using System.IO;
 
 namespace Tbot.Includes
 {
     static class Helpers
     {
         public static void WriteLog(LogType type, LogSender sender, string message)
+        {
+            LogToConsole(type, sender, message);
+            LogToFile(type, sender, message);
+        }
+
+        public static void LogToConsole(LogType type, LogSender sender, string message)
         {
             Console.ForegroundColor = type switch
             {
@@ -25,6 +32,21 @@ namespace Tbot.Includes
             Console.ForegroundColor = ConsoleColor.Gray;
         }
 
+        public static void LogToFile(LogType type, LogSender sender, string message)
+        {
+            string path = Directory.GetCurrentDirectory() + "/log";
+            DirectoryInfo dir = new DirectoryInfo(path);
+            if (!dir.Exists)
+                dir.Create();
+            string fileName = DateTime.Now.Year.ToString() + DateTime.Now.Month.ToString() + DateTime.Now.Day.ToString() + "_TBot.log";
+            try
+            {
+                StreamWriter file = new StreamWriter(path + fileName, true);
+                file.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
+                file.Close();
+            }
+            catch (Exception) { }
+        }
         public static void SetTitle(string content = "")
         {
             AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
@@ -38,11 +60,11 @@ namespace Tbot.Includes
 
         public static void PlayAlarm()
         {
-            Console.Beep(800, 1500);
+            Console.Beep();
             Thread.Sleep(1000);
-            Console.Beep(800, 2000);
+            Console.Beep();
             Thread.Sleep(1000);
-            Console.Beep(800, 2000);
+            Console.Beep();
             return;
         }
 

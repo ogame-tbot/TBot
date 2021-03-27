@@ -156,7 +156,7 @@ namespace Tbot.Services
                     Resource = "/bot/set-user-agent",
                     Method = Method.POST,
                 };
-                request.AddParameter(new Parameter("userAgent", userAgent, ParameterType.GetOrPost));
+                request.AddParameter("userAgent", userAgent, ParameterType.GetOrPost);
                 var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
                 if (result.Status != "ok")
                     return false;
@@ -763,10 +763,10 @@ namespace Tbot.Services
                 Method = Method.POST,
             };
 
-            request.AddParameter(new Parameter("galaxy", destination.Galaxy, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("system", destination.System, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("position", destination.Position, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("type", (int)destination.Type, ParameterType.GetOrPost));
+            request.AddParameter("galaxy", destination.Galaxy, ParameterType.GetOrPost);
+            request.AddParameter("system", destination.System, ParameterType.GetOrPost);
+            request.AddParameter("position", destination.Position, ParameterType.GetOrPost);
+            request.AddParameter("type", (int)destination.Type, ParameterType.GetOrPost);
 
             foreach (PropertyInfo prop in ships.GetType().GetProperties())
             {
@@ -774,17 +774,17 @@ namespace Tbot.Services
                 if (qty == 0) continue;
                 if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
                 {
-                    request.AddParameter(new Parameter("ships", (int)buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost));
+                    request.AddParameter("ships", (int)buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost);
                 }
             }
 
-            request.AddParameter(new Parameter("mission", (int)mission, ParameterType.GetOrPost));
+            request.AddParameter("mission", (int)mission, ParameterType.GetOrPost);
 
-            request.AddParameter(new Parameter("speed", (int)speed, ParameterType.GetOrPost));
+            request.AddParameter("speed", (int)speed, ParameterType.GetOrPost);
 
-            request.AddParameter(new Parameter("metal", payload.Metal, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("crystal", payload.Crystal, ParameterType.GetOrPost));
-            request.AddParameter(new Parameter("deuterium", payload.Deuterium, ParameterType.GetOrPost));
+            request.AddParameter("metal", payload.Metal, ParameterType.GetOrPost);
+            request.AddParameter("crystal", payload.Crystal, ParameterType.GetOrPost);
+            request.AddParameter("deuterium", payload.Deuterium, ParameterType.GetOrPost);
 
             var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
             if (result.Status != "ok")
@@ -961,8 +961,8 @@ namespace Tbot.Services
                     Resource = "/bot/send-message",
                     Method = Method.POST,
                 };
-                request.AddParameter(new Parameter("playerID", playerID, ParameterType.GetOrPost));
-                request.AddParameter(new Parameter("message", message, ParameterType.GetOrPost));
+                request.AddParameter("playerID", playerID, ParameterType.GetOrPost);
+                request.AddParameter("message", message, ParameterType.GetOrPost);
                 var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
                 if (result.Status != "ok")
                     return false;

@@ -524,15 +524,7 @@ namespace Tbot
 
                     xBuildable = Buildables.Null;
                     nLevelToReach = 0;
-                }
-
-
-                var time = GetDateTime();
-                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
-                var newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
-                UpdateTitle();
+                }                
             }
             catch (Exception e)
             {
@@ -540,6 +532,12 @@ namespace Tbot
             }
             finally
             {
+                var time = GetDateTime();
+                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                var newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
+                UpdateTitle();
                 //Release its semaphore
                 xaSem[(int)Feature.BrainAutoMine].Release();
             }
@@ -758,18 +756,19 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " - Capacity is ok.");
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "Unable to complete autocargo: " + e.Message);                
+            }
+            finally
+            {
                 var time = GetDateTime();
                 var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
                 var newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
                 UpdateTitle();
-            }
-            catch (Exception)
-            {
-            }
-            finally
-            {
                 //Release its semaphore
                 xaSem[(int)Feature.BrainAutobuildCargo].Release();
             }
@@ -840,19 +839,19 @@ namespace Tbot
                     }
                     SendFleet(celestial, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, payload);
                 }
-
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to complete repatriate: " + e.Message);                
+            }
+            finally
+            {                
                 var time = GetDateTime();
                 var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
                 var newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
                 UpdateTitle();
-            }
-            catch (Exception)
-            {
-            }
-            finally
-            {
                 //Release its semaphore
                 xaSem[(int)Feature.BrainAutoRepatriate].Release();
             }
