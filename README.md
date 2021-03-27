@@ -4,7 +4,7 @@ OGame Bot
 [![GitHub all releases](https://img.shields.io/github/downloads/ogame-tbot/TBot/total)](https://github.com/ogame-tbot/TBot/releases/latest)
 [![Discord](https://img.shields.io/discord/801453618770214923)](https://discord.gg/NZSaY4aQ7J)
 
-TBot is a .NET Core 3.1 [OGame](https://lobby.ogame.gameforge.com/) bot based on (a fork of) [ogamed deamon](https://github.com/kokiddp/ogame) by alaingilbert
+TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) v43.2.2 by alaingilbert
 
 Feel free to publish issues or pull requests
 
@@ -40,13 +40,13 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   
 ## Running
 
-* Download latest release
+* Download latest release for your platform.
 * Insert you credentials in settings.json
   * Under "Universe" type your universe name with leading capital letter, i.e.: Andromeda, Bellatrix etc...
   * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
 * Configure the bot by editing all settings.json fields
   * All config options are sorted by feature, [check which features you](#features) want and configure them before activating
-* Make sure you have installed the [.NET Core 3.1 runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1) for your platform
+* Make sure you have installed the [.NET 5 runtime](https://dotnet.microsoft.com/download/dotnet/5.0) for your platform
 * Run TBot.exe
 
 ### Telegram
@@ -61,7 +61,7 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * It will answer you a message containing your user ID and chat ID (WARNING: you need the USER ID)
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
-### Captch solving
+### Captcha solving
 TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Just follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
   
 ## Development Plans
@@ -75,32 +75,8 @@ Feel free to give suggestions posting an Issue or joining the Discord chat.
 
 ## Building
 
-I write and build TBot with Visual Studio 2019 Community Edition, thus probably .NET Core 3.1 SDK is enough for command line compilation.
+I write and build TBot with Visual Studio 2019 Community Edition, thus probably .NET 5 SDK is enough for command line compilation.
   
 ## Portability
 
-TBot is currently developed and mantained for Windows 64bit only.
-
-*Short story*
-
-For the time being this will not change.
-
-*Long story*
-
-As you may have noticed, the bot in based upon ogamed, a daemon which exposes an API to interact with an ogame account. Any time TBot needs some data it sends an http request to the daemon, the daemon interacts with ogame and returns the formatted data to TBot. Ogamed is a a part of (the unimaginatively named) ogame, a great GO Lang library. As ogamed did not have all the endpoints I needed, and more in general, I liked a better control over the code, I based TBot on a fork of it. My first choice would have been including the library itself, but I am not aware of any tool for converting a library from GO to .NET, and of course I do not want to rewrite it in C# and loose all the amazing community behind the original ogamed. So I came up with a fairly unconventional idea: I embedded the compiled daemon for one or more OS/arch as a resource, on startup I check for OS and architecture, provide and execute the correct binary. If you are a dev (and if you read so far, you probably are) you are probably either despising or worshiping me for the dirtiest hack ever (i'd lean for the former). In my ToDo/Wish list there are plans for implementing a proper pipeline which builds all the required ogamed binaries, then TBot instead of providing the binary would version check the present binary and, if missing or outdated, download the appropriate binary from the ogamed fork releases. Currently I have no pipeline setup experience. I will catch up someday and fix this, but certainly not today nor until this project grows enough to require it. 
-
-In the future, I plan to release TBot for:
-* Windows 64
-* Windows 32
-* Mac 64
-* Mac arm64
-* Linux 32
-* Linux 64
-* Linux arm
-* Linux arm64
-
-An Android version could be handy as well, although it may require a serious logic overhaul.
-
-Being extremely lightweight (only ~ 30Mb in RAM), I will prioritize Linux arm and Linux arm64 versions, in order to enable execution on RaspberryPi and similar devices.
-As for Mac arm64, I do not own one of theese new gigs. Feel free to contact me if you own such device and are willing to test.
-Windows 32 bit, not being really useful, will have the least priority.
+TBot is currently developed and mantained for Windows 64bit, Linux x86_64, MacOS 64bit and Linux ARMv7.
