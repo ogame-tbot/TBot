@@ -2,18 +2,18 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <Nullable>disable</Nullable>
     <Authors>ELK-Lab</Authors>
-    <Version>0.1.11</Version>
+    <Version>0.2.0</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Copyright>2021 © ELK-Lab</Copyright>
     <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.ogame-tbot.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ogame-tbot/TBot</RepositoryUrl>
-    <AssemblyVersion>0.1.11.0</AssemblyVersion>
-    <FileVersion>0.1.11.0</FileVersion>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
     <Description>OGame Bot</Description>
     <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ELK-Lab.pfx</AssemblyOriginatorKeyFile>
@@ -37,13 +37,25 @@
 
   <ItemGroup>
     <PackageReference Include="Nefarius.JsonConfig" Version="1.1.28" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="RestSharp" Version="106.11.7" />
     <PackageReference Include="Telegram.Bot" Version="15.7.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeIdentifier)' != 'win-x64'">
     <Resource Remove="Resources\ogamed_win64.exe" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != 'linux-x64'">
+    <Resource Remove="Resources\ogamed_linux64" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != 'linux-arm'">
+    <Resource Remove="Resources\ogamed_linuxarm" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != 'osx-x64'">
+    <Resource Remove="Resources\ogamed_osx64" />
   </ItemGroup>
 
   <ItemGroup>

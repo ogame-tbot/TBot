@@ -26,7 +26,7 @@ namespace Tbot.Services
         public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "")
         {
             ExecuteOgamedExecutable(credentials, host, port, captchaKey);
-            this.Url = "http://localhost:" + port;
+            this.Url = "http://" + host + ":" + port;
             this.Client = new RestClient(this.Url);
         }
 
@@ -43,13 +43,11 @@ namespace Tbot.Services
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_linux64");
-                        throw new Exception("This platform is not supported yet.");
+                        obj = Properties.Resources.ResourceManager.GetObject("ogamed_linux64");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_osx64");
-                        throw new Exception("This platform is not supported yet.");
+                        obj = Properties.Resources.ResourceManager.GetObject("ogamed_osx64");
                     }
                     else
                     {
@@ -77,8 +75,7 @@ namespace Tbot.Services
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_arm32");
-                        throw new Exception("This platform is not supported yet.");
+                        obj = Properties.Resources.ResourceManager.GetObject("ogamed_linuxarm");
                     }
                     else
                     {
@@ -94,7 +91,7 @@ namespace Tbot.Services
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_arm64");
+                        //obj = Properties.Resources.ResourceManager.GetObject("ogamed_linuxarm64");
                         throw new Exception("This platform is not supported yet.");
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -122,7 +119,11 @@ namespace Tbot.Services
 
         internal void CreateOgamedExecutable()
         {
-            string tempExeName = Path.Combine(Directory.GetCurrentDirectory(), "ogamed.exe");
+            string tempExeName;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                tempExeName = Path.Combine(Directory.GetCurrentDirectory(), "ogamed.exe");
+            else
+                tempExeName = Path.Combine(Directory.GetCurrentDirectory(), "ogamed");
             using FileStream fsDst = new FileStream(tempExeName, FileMode.OpenOrCreate, FileAccess.Write);
             byte[] bytes = GetOgamedExecutable();
             fsDst.Write(bytes, 0, bytes.Length);
@@ -133,10 +134,11 @@ namespace Tbot.Services
             CreateOgamedExecutable();
             string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
             if (captchaKey != "")
-            {
                 args += " --nja-api-key=" + captchaKey;
-            }
-            Process.Start("ogamed.exe", args);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                Process.Start("ogamed.exe", args);
+            else
+                Process.Start("ogamed", args);
         }
 
         public void KillOgamedExecultable()

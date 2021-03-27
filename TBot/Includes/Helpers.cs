@@ -41,7 +41,7 @@ namespace Tbot.Includes
             string fileName = DateTime.Now.Year.ToString() + DateTime.Now.Month.ToString() + DateTime.Now.Day.ToString() + "_TBot.log";
             try
             {
-                StreamWriter file = new StreamWriter(path + fileName, true);
+                StreamWriter file = new StreamWriter(path + "/" + fileName, true);
                 file.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
                 file.Close();
             }
