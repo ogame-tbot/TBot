@@ -22,39 +22,29 @@ jobs:
         dotnet-version: 5.0.x
     - name: Restore dependencies
       run: dotnet restore
-    - name: Go au Project level
-      run: cd TBot
-    - name: Build win64
-      run: dotnet build --no-restore -c Release -r win-x64 -o win64/ -property:Version=$VERSION
     - name: Publish win64
-      run: dotnet publish --no-build -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true
+      run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true
     - name: Upload win64
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-win64
         path: publish/win64/        
-    - name: Build linux64
-      run: dotnet build --no-restore -c Release -r linux-x64 -o linux64/ -property:Version=$VERSION
     - name: Publish linux64
-      run: dotnet publish --no-build -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true
+      run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true
     - name: Upload linux64
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-linux64
         path: publish/linux64/        
-    - name: Build linuxarm
-      run: dotnet build --no-restore -c Release -r linux-arm -o linuxarm/ -property:Version=$VERSION
     - name: Publish linuxarm
-      run: dotnet publish --no-build -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true
+      run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true
     - name: Upload linuxarm
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-linuxarm
         path: publish/linuxarm/        
-    - name: Build osx64
-      run: dotnet build --no-restore -c Release -r osx-x64 -o osx64/ -property:Version=$VERSION
     - name: Publish osx64
-      run: dotnet publish --no-build -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true
+      run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true
     - name: Upload osx64
       uses: actions/upload-artifact@v2
       with:
