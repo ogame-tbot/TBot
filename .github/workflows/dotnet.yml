@@ -22,6 +22,8 @@ jobs:
         dotnet-version: 5.0.x
     - name: Restore dependencies
       run: dotnet restore
+    - name: Go au Project level
+      run: cd TBot
     - name: Build win64
       run: dotnet build --no-restore -c Release -r win-x64 -o win64/ -property:Version=$VERSION
     - name: Publish win64
