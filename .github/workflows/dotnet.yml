@@ -1,0 +1,31 @@
+name: .NET
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build -c Release --no-restore
+    - name: Publish win64
+      run: dotnet publish -c Release -p:PublishSingleFile=true -r win-x64 -o bin/Release/net5.0/publish/win64/
+    - name: Publish linux64
+      run: dotnet publish -c Release -p:PublishSingleFile=true -r linux-x64 -o bin/Release/net5.0/publish/linux64/
+    - name: Publish linuxarm
+      run: dotnet publish -c Release -p:PublishSingleFile=true -r linux-arm -o bin/Release/net5.0/publish/linuxarm/
+    - name: Publish osx64
+      run: dotnet publish -c Release -p:PublishSingleFile=true -r osx-x64 -o bin/Release/net5.0/publish/osx64/
