@@ -687,6 +687,7 @@ namespace Tbot
                 xaSem[(int)Feature.BrainAutobuildCargo].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
                 celestials = UpdatePlanets(UpdateType.Techs);
+                celestials = UpdatePlanets(UpdateType.Resources);
                 celestials = UpdatePlanets(UpdateType.Productions);
                 foreach (Celestial planet in celestials)
                 {
@@ -784,6 +785,7 @@ namespace Tbot
                 xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
                 celestials = UpdatePlanets(UpdateType.Techs);
+                celestials = UpdatePlanets(UpdateType.Resources);
 
                 var rand = new Random();
                 foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
