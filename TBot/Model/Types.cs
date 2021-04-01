@@ -195,9 +195,9 @@ namespace Tbot.Model
         public bool ACS { get; set; }
         public bool RapidFire { get; set; }
         public bool DefToTF { get; set; }
-        public double DebrisFactor { get; set; }
+        public float DebrisFactor { get; set; }
         public int DebrisFactorDef { get; set; }
-        public double RepairFactor { get; set; }
+        public float RepairFactor { get; set; }
         public int NewbieProtectionLimit { get; set; }
         public int NewbieProtectionHigh { get; set; }
         public int TopScore { get; set; }
@@ -208,7 +208,7 @@ namespace Tbot.Model
         public int WfMinimumRessLost { get; set; }
         public int WfMinimumLossPercentage { get; set; }
         public int WfBasicPercentageRepairable { get; set; }
-        public double GlobalDeuteriumSaveFactor { get; set; }
+        public float GlobalDeuteriumSaveFactor { get; set; }
         public int Bashlimit { get; set; }
         public int ProbeCargo { get; set; }
         public int ResearchDurationDivisor { get; set; }

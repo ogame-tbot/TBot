@@ -35,13 +35,13 @@ namespace Tbot.Includes
         public static void LogToFile(LogType type, LogSender sender, string message)
         {
             string path = Directory.GetCurrentDirectory() + "/log";
-            DirectoryInfo dir = new DirectoryInfo(path);
+            DirectoryInfo dir = new(path);
             if (!dir.Exists)
                 dir.Create();
             string fileName = DateTime.Now.Year.ToString() + DateTime.Now.Month.ToString() + DateTime.Now.Day.ToString() + "_TBot.log";
             try
             {
-                StreamWriter file = new StreamWriter(path + "/" + fileName, true);
+                StreamWriter file = new(path + "/" + fileName, true);
                 file.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
                 file.Close();
             }
@@ -253,7 +253,6 @@ namespace Tbot.Includes
                 case Buildables.Deathstar:
                     baseSpeed = 100;
                     bonus = hyperspaceDrive * 3;
-                    if (playerClass == Classes.General) bonus += 10;
                     break;
                 case Buildables.Battlecruiser:
                     baseSpeed = 10000;
@@ -276,6 +275,31 @@ namespace Tbot.Includes
             return (int)Math.Round(((float)baseSpeed * ((float)bonus + 10) / 10), MidpointRounding.ToZero);
         }
 
+        public static int CalcSlowestSpeed(Ships fleet, Researches researches, Classes playerClass)
+        {
+            return CalcSlowestSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, playerClass);
+        }
+
+        public static int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, Classes playerClass)
+        {
+            int lowest = int.MaxValue;
+            foreach (PropertyInfo prop in fleet.GetType().GetProperties())
+            {
+                long qty = (long)prop.GetValue(fleet, null);
+                
+                if (qty == 0) continue;
+                if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
+                {
+                    if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler)
+                        continue;
+                    int speed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
+                    if (speed < lowest)
+                        lowest = speed;
+                }
+            }
+            return lowest;
+        }        
+
         public static int CalcFleetSpeed(Ships fleet, Researches researches, Classes playerClass)
         {
             return CalcFleetSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, playerClass);
@@ -295,6 +319,104 @@ namespace Tbot.Includes
                 }
             }
             return minSpeed;
+        }
+
+        public static int CalcShipConsumption(Buildables buildable, Researches researches, ServerData serverData, Classes playerClass)
+        {
+            return CalcShipConsumption(buildable, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.GlobalDeuteriumSaveFactor, playerClass);
+        }
+
+        public static int CalcShipConsumption(Buildables buildable, int impulseDrive, int hyperspaceDrive, double deuteriumSaveFactor, Classes playerClass)
+        {
+            int baseConsumption;
+            switch (buildable)
+            {
+                case Buildables.SmallCargo:
+                    baseConsumption = 20;
+                    if (impulseDrive >= 5)
+                        baseConsumption *= 2;
+                    break;
+                case Buildables.LargeCargo:
+                    baseConsumption = 50;
+                    break;
+                case Buildables.LightFighter:
+                    baseConsumption = 20;
+                    break;
+                case Buildables.HeavyFighter:
+                    baseConsumption = 75;
+                    break;
+                case Buildables.Cruiser:
+                    baseConsumption = 300;
+                    break;
+                case Buildables.Battleship:
+                    baseConsumption = 500;
+                    break;
+                case Buildables.ColonyShip:
+                    baseConsumption = 1000;
+                    break;
+                case Buildables.Recycler:
+                    baseConsumption = 2000;
+                    if (hyperspaceDrive >= 15)
+                        baseConsumption *= 3;
+                    else if (impulseDrive >= 17)
+                        baseConsumption *= 2;                    
+                    break;
+                case Buildables.EspionageProbe:
+                    baseConsumption = 1;
+                    break;
+                case Buildables.Bomber:
+                    baseConsumption = 700;
+                    if (hyperspaceDrive >= 8)
+                        baseConsumption *= 3 / 2;
+                    break;
+                case Buildables.Destroyer:
+                    baseConsumption = 1000;
+                    break;
+                case Buildables.Deathstar:
+                    baseConsumption = 1;
+                    break;
+                case Buildables.Battlecruiser:
+                    baseConsumption = 250;
+                    break;
+                case Buildables.Reaper:
+                    baseConsumption = 1100;
+                    break;
+                case Buildables.Pathfinder:
+                    baseConsumption = 300;
+                    break;
+                default:
+                    return 0;
+            }
+            float fuelConsumption = (float)(deuteriumSaveFactor * baseConsumption);
+            if (playerClass == Classes.General)
+                fuelConsumption /= 2;
+            return (int)Math.Round(fuelConsumption, MidpointRounding.ToZero);
+        }
+
+        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Speeds speed, Researches researches, ServerData serverData, Classes playerClass)
+        {
+            return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, serverData.SpeedFleet, playerClass);
+        }
+
+        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Speeds speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass)
+        {
+            var fleetSpeedPercent = speed switch
+            {
+                Speeds.HundredPercent => 1,
+                Speeds.NinetyPercent => 0.9,
+                Speeds.EightyPercent => 0.8,
+                Speeds.SeventyPercent => 0.7,
+                Speeds.SixtyPercent => 0.6,
+                Speeds.FiftyPercent => 0.5,
+                Speeds.FourtyPercent => 0.4,
+                Speeds.ThirtyPercent => 0.3,
+                Speeds.TwentyPercent => 0.2,
+                Speeds.TenPercent => 0.1,
+                _ => 1,
+            };
+            int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
+            int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
+            return (int)Math.Round(((3500 / fleetSpeedPercent) * (Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed), MidpointRounding.AwayFromZero);
         }
 
         public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass)
@@ -614,7 +736,7 @@ namespace Tbot.Includes
 
         public static Resources CalcPlanetHourlyProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
-            Resources hourlyProduction = new Resources
+            Resources hourlyProduction = new()
             {
                 Metal = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff),
                 Crystal = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff),
@@ -625,7 +747,7 @@ namespace Tbot.Includes
 
         public static Resources CalcPrice(Buildables buildable, int level)
         {
-            Resources output = new Resources();
+            Resources output = new();
 
             switch (buildable)
             {
@@ -1049,7 +1171,7 @@ namespace Tbot.Includes
 
                 dic.Add(mine, CalcPrice(mine, GetNextLevel(planet, mine)).ConvertedDeuterium);
             }
-            if (dic.Count() == 0)
+            if (dic.Count == 0)
                 return Buildables.Null;
 
             dic = dic.OrderBy(m => m.Value)

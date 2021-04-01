@@ -43,7 +43,7 @@ namespace Tbot
             Helpers.SetTitle();
 
             settings = Config.Global;
-            Credentials credentials = new Credentials
+            Credentials credentials = new()
             {
                 Universe = settings.Credentials.Universe.ToString(),
                 Username = settings.Credentials.Email.ToString(),
@@ -67,7 +67,9 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to start ogamed: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
+
             try
             {
                 ogamedService.SetUserAgent(settings.General.UserAgent.ToString());
@@ -75,6 +77,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to set user agent: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 
@@ -87,6 +90,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 
@@ -225,7 +229,7 @@ namespace Tbot
             {
                 localPlanets = celestials;
             }
-            List<Celestial> newPlanets = new List<Celestial>();
+            List<Celestial> newPlanets = new();
             foreach (Celestial planet in localPlanets)
             {
                 newPlanets.Add(UpdatePlanet(planet, updateType));
@@ -303,6 +307,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "An error has occurred. Skipping update");
             }
             return planet;
@@ -329,22 +334,22 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing brain...");
 
-            if (settings.Brain.AutoCargo.Active)
+            if ((bool)settings.Brain.AutoCargo.Active)
             {
                 timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
             }
-            if (settings.Brain.AutoRepatriate.Active)
+            if ((bool)settings.Brain.AutoRepatriate.Active)
             {
                 timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax)));
             }
             /*Lorenzo 05/02/2021
              * Adding timer for auto buil mine
              */
-            if (settings.Brain.AutoMine.Active)
+            if ((bool)settings.Brain.AutoMine.Active)
             {
                 timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.Automine.CheckIntervalMin, (int)settings.Brain.Automine.CheckIntervalMax)));
             }
-            if (settings.Brain.BuyOfferOfTheDay.Active)
+            if ((bool)settings.Brain.BuyOfferOfTheDay.Active)
             {
                 timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax)));
             }
@@ -398,6 +403,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking for attacks: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
@@ -430,6 +436,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "BuyOfferOfTheDay Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
             {
@@ -529,6 +536,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoMine Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
             {
@@ -604,6 +612,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleDeposit Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
         }
         /*Lorenzo 06/02/2021
@@ -633,6 +642,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleMines Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
         }
 
@@ -675,6 +685,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleBuildCelestialMines Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
         }
 
@@ -760,7 +771,8 @@ namespace Tbot
             }
             catch (Exception e)
             {
-                Helpers.WriteLog(LogType.Error, LogSender.Brain, "Unable to complete autocargo: " + e.Message);                
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "Unable to complete autocargo: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
             {
@@ -802,7 +814,7 @@ namespace Tbot
                     }
                     Buildables preferredShip = Enum.Parse<Buildables>(settings.Brain.AutoRepatriate.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
                     long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
-                    Ships ships = new Ships();
+                    Ships ships = new();
                     if (idealShips <= celestial.Ships.GetAmount(preferredShip))
                     {
                         ships.Add(preferredShip, idealShips);
@@ -836,6 +848,7 @@ namespace Tbot
                         catch (Exception e)
                         {
                             Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                             Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
                         }
                     }
@@ -844,7 +857,8 @@ namespace Tbot
             }
             catch (Exception e)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to complete repatriate: " + e.Message);                
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to complete repatriate: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
             {                
@@ -859,9 +873,29 @@ namespace Tbot
             }
         }
 
-        private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload = null, bool force = false)
+        private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Ships: " + ships.ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + speed.ToString() + ". Ships: " + ships.ToString());
+
+            if (
+                playerClass != Classes.General && (
+                    speed == Speeds.FivePercent ||
+                    speed == Speeds.FifteenPercent ||
+                    speed == Speeds.TwentyfivePercent ||
+                    speed == Speeds.ThirtyfivePercent ||
+                    speed == Speeds.FourtyfivePercent ||
+                    speed == Speeds.FiftyfivePercent ||
+                    speed == Speeds.SixtyfivePercent ||
+                    speed == Speeds.SeventyfivePercent ||
+                    speed == Speeds.EightyfivePercent ||
+                    speed == Speeds.NinetyfivePercent
+                )
+            )
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, speed not available for your class");
+                return 0;
+            }
+
             slots = UpdateSlots();
             if (slots.Free > 1 || force)
             {
@@ -879,6 +913,7 @@ namespace Tbot
                 catch (Exception e)
                 {
                     Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to send fleet: an exception has occurred: " + e.Message);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                     return 0;
                 }
             }
@@ -913,6 +948,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an exception has occurred: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 return false;
             }
         }
@@ -952,7 +988,7 @@ namespace Tbot
                 Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.Coordinate.Galaxy == attack.Destination.Galaxy && planet.Coordinate.System == attack.Destination.System && planet.Coordinate.Position == attack.Destination.Position && planet.Coordinate.Type == attack.Destination.Type);
                 attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
-                if (settings.Defender.SpyAttacker.Active)
+                if ((bool)settings.Defender.SpyAttacker.Active)
                 {
                     slots = UpdateSlots();
                     if (slots.Free > 0)
@@ -966,7 +1002,7 @@ namespace Tbot
                             try
                             {
                                 Coordinate destination = attack.Origin;
-                                Ships ships = new Ships { EspionageProbe = (int)settings.Defender.SpyAttacker.Probes };
+                                Ships ships = new() { EspionageProbe = (int)settings.Defender.SpyAttacker.Probes };
                                 int fleetId = SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent);
                                 Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
                                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Spying attacker from " + attackedCelestial.ToString() + " to " + destination.ToString() + " with " + settings.Defender.SpyAttacker.Probes + " probes. Arrival at " + fleet.ArrivalTime.ToString());
@@ -974,6 +1010,7 @@ namespace Tbot
                             catch (Exception e)
                             {
                                 Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not spy attacker: an exception has occurred: " + e.Message);
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                             }
                         }
 
@@ -983,11 +1020,11 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not send probes: no slots available.");
                     }
                 }
-                if (settings.Defender.MessageAttacker.Active)
+                if ((bool)settings.Defender.MessageAttacker.Active)
                 {
                     try
                     {
-                        Random random = new Random();
+                        Random random = new();
                         string[] messages = settings.Defender.MessageAttacker.Messages;
                         int messageIndex = random.Next(0, messages.Length);
                         string message = messages[messageIndex];
@@ -1002,9 +1039,10 @@ namespace Tbot
                     catch (Exception e)
                     {
                         Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not message attacker: an exception has occurred: " + e.Message);
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                     }
                 }
-                if (settings.Defender.Autofleet.Active)
+                if ((bool)settings.Defender.Autofleet.Active)
                 {
                     slots = UpdateSlots();
                     if (slots.Free > 0)
@@ -1062,7 +1100,7 @@ namespace Tbot
                             else
                             {
                                 Resources resources = Helpers.CalcMaxTransportableResources(ships, attackedCelestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
-                                int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, mission, Speeds.TenPercent, resources, true);
+                                int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, mission, Speeds.TenPercent, resources, userInfo.Class, true);
                                 if (fleetId != 0)
                                 {
                                     Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
@@ -1094,6 +1132,7 @@ namespace Tbot
                         catch (Exception e)
                         {
                             Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an exception has occurred: " + e.Message);
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                             DateTime time = GetDateTime();
                             int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                             DateTime newTime = time.AddMilliseconds(interval);
@@ -1145,27 +1184,29 @@ namespace Tbot
                         {
                             if (slots.Free > 0)
                             {
-                                List<Celestial> origins = new List<Celestial>();
+                                List<Celestial> origins = new();
                                 if (settings.Expeditions.AutoSendExpeditions.Origin.Length > 0)
                                 {
                                     try
                                     {
                                         foreach (var origin in settings.Expeditions.AutoSendExpeditions.Origin)
                                         {
-                                            Coordinate customOriginCoords = new Coordinate(
+                                            Coordinate customOriginCoords = new(
                                                 (int)origin.Galaxy,
                                                 (int)origin.System,
                                                 (int)origin.Position,
-                                                Enum.Parse<Celestials>(origin.Type.ToString()));
-                                                Celestial customOrigin = celestials
-                                                    .Single(planet => planet.HasCoords(customOriginCoords));
-                                                customOrigin = UpdatePlanet(customOrigin, UpdateType.Ships);
-                                                origins.Add(customOrigin);
+                                                Enum.Parse<Celestials>(origin.Type.ToString())
+                                            );
+                                            Celestial customOrigin = celestials
+                                                .Single(planet => planet.HasCoords(customOriginCoords));
+                                            customOrigin = UpdatePlanet(customOrigin, UpdateType.Ships);
+                                            origins.Add(customOrigin);
                                         }
                                     }
                                     catch (Exception e)
                                     {
                                         Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
+                                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                                         Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
 
                                         celestials = UpdatePlanets(UpdateType.Ships);
@@ -1377,6 +1418,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "HandleExpeditions exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 int interval = (int)(Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                 var time = GetDateTime();
                 DateTime newTime = time.AddMilliseconds(interval);
