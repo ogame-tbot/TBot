@@ -104,6 +104,7 @@
     "AutoSendExpeditions": {
       "Active": true,
       "MainShip": "LargeCargo",
+      "MinCargosToSend": 1000,
       "WaitForAllExpeditions": false,
       "SplitExpeditionsBetweenSystems": false,
       "RandomizeOrder": true,

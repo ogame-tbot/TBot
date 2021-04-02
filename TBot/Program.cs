@@ -1257,6 +1257,11 @@ namespace Tbot
                                     {
                                         Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
                                         Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
+                                        if (fleet.GetAmount(mainShip) < (long)settings.Expeditions.AutoSendExpeditions.MinCargosToSend)
+                                        {
+                                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: cargos under set number");
+                                            continue;
+                                        }
 
                                         Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSendFromThisOrigin.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)

@@ -419,6 +419,30 @@ namespace Tbot.Includes
             return (int)Math.Round(((3500 / fleetSpeedPercent) * (Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed), MidpointRounding.AwayFromZero);
         }
 
+        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, int flightTime, Researches researches, ServerData serverData, Classes playerClass)
+        {
+            return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, serverData.SpeedFleet, serverData.GlobalDeuteriumSaveFactor, playerClass);
+        }
+
+        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, int flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, Classes playerClass)
+        {
+            int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
+            float tempFuel = 0.0F;
+            foreach (PropertyInfo prop in ships.GetType().GetProperties())
+            {
+                long qty = (long)prop.GetValue(ships, null);
+                if (qty == 0) continue;
+                if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
+                {
+                    float tempSpeed = 35000 / ((flightTime * fleetSpeed) - 10) * (float)Math.Sqrt(distance * 10 / CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
+                    int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, playerClass);
+                    float thisFuel = (float)(shipConsumption * qty * distance) / 35000F * (float)Math.Pow(tempSpeed / 10 + 1, 2);
+                    tempFuel += thisFuel;
+                }
+            }
+            return (long)(1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
+        }
+
         public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass)
         {
             var capacity = CalcFleetCapacity(ships, hyperspaceTech, playerClass);
