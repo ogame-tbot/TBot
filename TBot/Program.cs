@@ -471,6 +471,7 @@ namespace Tbot
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..");
                 celestials = UpdatePlanets(UpdateType.Techs);
+                celestials = UpdatePlanets(UpdateType.Resources);
                 celestials = UpdatePlanets(UpdateType.Constructions);
 
                 Buildables xBuildable = Buildables.Null;
@@ -877,6 +878,7 @@ namespace Tbot
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + speed.ToString() + ". Ships: " + ships.ToString());
 
+            /*
             if (
                 playerClass != Classes.General && (
                     speed == Speeds.FivePercent ||
@@ -895,6 +897,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, speed not available for your class");
                 return 0;
             }
+            */
 
             slots = UpdateSlots();
             if (slots.Free > 1 || force)

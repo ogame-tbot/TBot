@@ -229,6 +229,14 @@ namespace Tbot.Model
 
     public class Resources
     {
+        public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long energy = 0, long darkmatter = 0)
+        {
+            Metal = metal;
+            Crystal = crystal;
+            Deuterium = deuterium;
+            Energy = energy;
+            Darkmatter = darkmatter;
+        }
         public long Metal { get; set; }
         public long Crystal { get; set; }
         public long Deuterium { get; set; }

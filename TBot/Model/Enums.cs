@@ -108,25 +108,29 @@ namespace Tbot.Model
 
 	public enum Speeds
 	{
-		FivePercent = 5,
+		TenPercent = 1,
+		TwentyPercent = 2,
+		ThirtyPercent = 3,
+		FourtyPercent = 4,
+		FiftyPercent = 5,
+		SixtyPercent = 6,
+		SeventyPercent = 7,
+		EightyPercent = 8,
+		NinetyPercent = 9,
+		HundredPercent = 10
+	}
+
+	public enum Percents
+	{
 		TenPercent = 10,
-		FifteenPercent = 15,
 		TwentyPercent = 20,
-		TwentyfivePercent = 25,
 		ThirtyPercent = 30,
-		ThirtyfivePercent = 35,
 		FourtyPercent = 40,
-		FourtyfivePercent = 45,
 		FiftyPercent = 50,
-		FiftyfivePercent = 55,
 		SixtyPercent = 60,
-		SixtyfivePercent = 65,
 		SeventyPercent = 70,
-		SeventyfivePercent = 75,
 		EightyPercent = 80,
-		EightyfivePercent = 85,
 		NinetyPercent = 90,
-		NinetyfivePercent = 95,
 		HundredPercent = 100
 	}
 

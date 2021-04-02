@@ -124,7 +124,7 @@ namespace Tbot.Services
                 tempExeName = Path.Combine(Directory.GetCurrentDirectory(), "ogamed.exe");
             else
                 tempExeName = Path.Combine(Directory.GetCurrentDirectory(), "ogamed");
-            using FileStream fsDst = new FileStream(tempExeName, FileMode.OpenOrCreate, FileAccess.Write);
+            using FileStream fsDst = new(tempExeName, FileMode.OpenOrCreate, FileAccess.Write);
             byte[] bytes = GetOgamedExecutable();
             fsDst.Write(bytes, 0, bytes.Length);
         }
@@ -448,7 +448,7 @@ namespace Tbot.Services
         {
             var planets = this.GetPlanets();
             var moons = this.GetMoons();
-            List<Celestial> celestials = new List<Celestial>();
+            List<Celestial> celestials = new();
             celestials.AddRange(planets);
             celestials.AddRange(moons);
             return celestials;
@@ -831,7 +831,7 @@ namespace Tbot.Services
 
         public GalaxyInfo GetGalaxyInfo(int galaxy, int system)
         {
-            Coordinate coordinate = new Coordinate { Galaxy = galaxy, System = system };
+            Coordinate coordinate = new() { Galaxy = galaxy, System = system };
             return this.GetGalaxyInfo(coordinate);
         }
 
