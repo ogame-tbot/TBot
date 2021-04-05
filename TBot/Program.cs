@@ -211,7 +211,7 @@ namespace Tbot
 
         private static UserInfo UpdateUserInfo()
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating player data...");
+            //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating player data...");
             UserInfo user = ogamedService.GetUserInfo();
             user.Class = ogamedService.GetUserClass();
             return user;
@@ -469,8 +469,9 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking mines and resources..");
-                celestials = UpdatePlanets(UpdateType.Techs);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
+                celestials = UpdatePlanets(UpdateType.Buildings);
+                celestials = UpdatePlanets(UpdateType.Facilities);
                 celestials = UpdatePlanets(UpdateType.Resources);
                 celestials = UpdatePlanets(UpdateType.Constructions);
 
@@ -698,7 +699,7 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutobuildCargo].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
-                celestials = UpdatePlanets(UpdateType.Techs);
+                celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
                 celestials = UpdatePlanets(UpdateType.Productions);
                 foreach (Celestial planet in celestials)
@@ -797,7 +798,7 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
-                celestials = UpdatePlanets(UpdateType.Techs);
+                celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
 
                 var rand = new Random();
