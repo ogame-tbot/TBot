@@ -56,7 +56,7 @@ jobs:
     - name: Draft Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: publish/win64/TBot-${{ env.VERSION }}-win64,publish/linux64/TBot-${{ env.VERSION }}-linux64,publish/osx64/TBot-${{ env.VERSION }}-osx64,publish/linuxarm/TBot-${{ env.VERSION }}-linuxarm
+        artifacts: publish/win64/TBot-${{ env.VERSION }}-win64/*,publish/linux64/TBot-${{ env.VERSION }}-linux64/*,publish/osx64/TBot-${{ env.VERSION }}-osx64/*,publish/linuxarm/TBot-${{ env.VERSION }}-linuxarm/*
         draft: true
         token: ${{ secrets.GITHUB_TOKEN }}
         
