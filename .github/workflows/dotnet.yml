@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup Version ID
       run: |
-        VERSION=`git describe --tags --abbrev=0` || VERSION="0.0.0-SNAPSHOT-`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
+        VERSION=`git describe --tags --abbrev=0` || VERSION="SNAPSHOT-`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
@@ -50,3 +50,10 @@ jobs:
       with:
         name: TBot-${{ env.VERSION }}-osx64
         path: publish/osx64/
+    - name: Draft Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: publish/win64/TBot-${{ env.VERSION }}-win64,publish/linux64/TBot-${{ env.VERSION }}-linux64,publish/osx64/TBot-${{ env.VERSION }}-osx64,publish/linuxarm/TBot-${{ env.VERSION }}-linuxarm
+        draft: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
