@@ -31,21 +31,36 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-win64
-        path: publish/win64/        
+        path: publish/win64/   
+    - name: ZIP win64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/win64/ README.md
+        dest: TBot-${{ env.VERSION }}-win64.zip
     - name: Publish linux64
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
     - name: Upload linux64
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-linux64
-        path: publish/linux64/        
+        path: publish/linux64/
+    - name: ZIP linux64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/linux64/ README.md
+        dest: TBot-${{ env.VERSION }}-linux64.zip
     - name: Publish linuxarm
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
     - name: Upload linuxarm
       uses: actions/upload-artifact@v2
       with:
         name: TBot-${{ env.VERSION }}-linuxarm
-        path: publish/linuxarm/        
+        path: publish/linuxarm/
+    - name: ZIP linuxarm
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/linuxarm/ README.md
+        dest: TBot-${{ env.VERSION }}-linuxarm.zip
     - name: Publish osx64
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
     - name: Upload osx64
@@ -53,10 +68,15 @@ jobs:
       with:
         name: TBot-${{ env.VERSION }}-osx64
         path: publish/osx64/
+    - name: ZIP osx64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/osx64/ README.md
+        dest: TBot-${{ env.VERSION }}-osx64.zip
     - name: Draft Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: publish/win64/TBot-${{ env.VERSION }}-win64/*,publish/linux64/TBot-${{ env.VERSION }}-linux64/*,publish/osx64/TBot-${{ env.VERSION }}-osx64/*,publish/linuxarm/TBot-${{ env.VERSION }}-linuxarm/*
+        artifacts: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip
         draft: true
         token: ${{ secrets.GITHUB_TOKEN }}
         
