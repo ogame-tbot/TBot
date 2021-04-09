@@ -34,10 +34,10 @@ jobs:
       run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed win64
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=windows GOARCH=amd64 go build -o ogamed.exe
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed.exe publish/win64/
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed.exe ${{ github.workspace }}/publish/win64/
     - name: Package win64
       uses: papeloto/action-zip@v1
       with:
@@ -53,10 +53,10 @@ jobs:
       run: dotnet publish -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed win32
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=windows GOARCH=386 go build -o ogamed.exe
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed.exe publish/win32/
+        cd ${{ github.workspace }}/
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed.exe ${{ github.workspace }}/publish/win32/
     - name: Package win32
       uses: papeloto/action-zip@v1
       with:
@@ -72,12 +72,12 @@ jobs:
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linux64
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=linux GOARCH=amd64 go build -o ogamed
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed publish/linux64/
-        chmod +x publish/linux64/TBot
-        chmod +x publish/linux64/ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed ${{ github.workspace }}/publish/linux64/
+        chmod +x ${{ github.workspace }}/publish/linux64/TBot
+        chmod +x ${{ github.workspace }}/publish/linux64/ogamed
     - name: Package linux64
       uses: papeloto/action-zip@v1
       with:
@@ -93,12 +93,12 @@ jobs:
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linuxarm
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=linux GOARCH=arm GOARM=v7 go build -o ogamed
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed publish/linuxarm/
-        chmod +x publish/linuxarm/TBot
-        chmod +x publish/linuxarm/ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm/
+        chmod +x ${{ github.workspace }}/publish/linuxarm/TBot
+        chmod +x ${{ github.workspace }}/publish/linuxarm/ogamed
     - name: Package linuxarm
       uses: papeloto/action-zip@v1
       with:
@@ -114,12 +114,12 @@ jobs:
       run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linuxarm64
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=linux GOARCH=arm64 go build -o ogamed
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed publish/linuxarm64/
-        chmod +x publish/linuxarm64/TBot
-        chmod +x publish/linuxarm64/ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm64/
+        chmod +x ${{ github.workspace }}/publish/linuxarm64/TBot
+        chmod +x ${{ github.workspace }}/publish/linuxarm64/ogamed
     - name: Package linuxarm64
       uses: papeloto/action-zip@v1
       with:
@@ -135,12 +135,12 @@ jobs:
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed osx64
       run: | 
-        cd ogame/bin/ogamed
+        cd ${{ github.workspace }}/ogame/bin/ogamed
         env GOOS=darwin GOARCH=amd64 go build -o ogamed
-        cd ../../../
-        mv ogame/bin/ogamed/ogamed publish/osx64/
-        chmod +x publish/osx64/TBot
-        chmod +x publish/osx64/ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/bin/ogamed/ogamed ${{ github.workspace }}/publish/osx64/
+        chmod +x ${{ github.workspace }}/publish/osx64/TBot
+        chmod +x ${{ github.workspace }}/publish/osx64/ogamed
     - name: Package osx64
       uses: papeloto/action-zip@v1
       with:
