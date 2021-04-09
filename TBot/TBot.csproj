@@ -5,7 +5,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>disable</Nullable>
     <Authors>ELK-Lab</Authors>
-    <Version>0.2.2</Version>
+    <Version>0.2.3</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Copyright>2021 © ELK-Lab</Copyright>
