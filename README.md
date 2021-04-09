@@ -47,7 +47,7 @@ Use this bot at your own risk!! Any testing is very much appreciated!
 * Configure the bot by editing all settings.json fields
   * All config options are sorted by feature, [check which features you](#features) want and configure them before activating
 * Make sure you have installed the [.NET 5 runtime](https://dotnet.microsoft.com/download/dotnet/5.0) for your platform
-* Run TBot.exe
+* Run TBot
 
 ### Telegram
 TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
