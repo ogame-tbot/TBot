@@ -79,4 +79,4 @@ I write and build TBot with Visual Studio 2019 Community Edition, thus probably 
   
 ## Portability
 
-TBot is currently developed and mantained for Windows 64bit, Linux x86_64, MacOS 64bit and Linux ARMv7.
+TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
