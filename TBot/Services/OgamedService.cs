@@ -30,7 +30,7 @@ namespace Tbot.Services
             Client = new RestClient(Url);
         }
 
-        internal static void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "")
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "")
         {
             try
             {
@@ -48,7 +48,7 @@ namespace Tbot.Services
             }
         }
 
-        public static void KillOgamedExecultable()
+        public void KillOgamedExecultable()
         {
             foreach (var process in Process.GetProcessesByName("ogamed"))
             {
