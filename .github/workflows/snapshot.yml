@@ -94,7 +94,7 @@ jobs:
     - name: Build ogamed linuxarm
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
-        env GOOS=linux GOARCH=arm GOARM=v7 go build -o ogamed
+        env GOOS=linux GOARCH=arm GOARM=7 go build -o ogamed
         cd ${{ github.workspace }}
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm/
         chmod +x ${{ github.workspace }}/publish/linuxarm/TBot
