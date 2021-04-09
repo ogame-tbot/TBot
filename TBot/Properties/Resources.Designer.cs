@@ -59,45 +59,5 @@ namespace Tbot.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Cerca una risorsa localizzata di tipo System.Byte[].
-        /// </summary>
-        public static byte[] ogamed_linux64 {
-            get {
-                object obj = ResourceManager.GetObject("ogamed_linux64", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Cerca una risorsa localizzata di tipo System.Byte[].
-        /// </summary>
-        public static byte[] ogamed_linuxarm {
-            get {
-                object obj = ResourceManager.GetObject("ogamed_linuxarm", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Cerca una risorsa localizzata di tipo System.Byte[].
-        /// </summary>
-        public static byte[] ogamed_osx64 {
-            get {
-                object obj = ResourceManager.GetObject("ogamed_osx64", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Cerca una risorsa localizzata di tipo System.Byte[].
-        /// </summary>
-        public static byte[] ogamed_win64 {
-            get {
-                object obj = ResourceManager.GetObject("ogamed_win64", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
     }
 }

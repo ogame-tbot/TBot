@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Setup Version ID
       run: |
         VERSION=`git describe --tags --abbrev=0` || VERSION="SNAPSHOT-`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -21,34 +24,98 @@ jobs:
         dotnet-version: 5.0.x
     - name: Restore dependencies
       run: dotnet restore
+    - name: Setup GO
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16.3'
       
-    - name: Publish win64
-      run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false    
-    - name: ZIP win64
+    - name: Build TBot win64
+      run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed win64
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=windows GOARCH=amd64 go build -o ogamed.exe
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed.exe publish/win64/
+    - name: Package win64
       uses: papeloto/action-zip@v1
       with:
         files: publish/win64/ README.md
         dest: TBot-${{ env.VERSION }}-win64.zip
+
+    - name: Build TBot win32
+      run: dotnet publish -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed win32
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=windows GOARCH=386 go build -o ogamed.exe
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed.exe publish/win32/
+    - name: Package win32
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/win32/ README.md
+        dest: TBot-${{ env.VERSION }}-win32.zip
         
-    - name: Publish linux64
+    - name: Build TBot linux64
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
-    - name: ZIP linux64
+    - name: Build ogamed linux64
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=linux GOARCH=amd64 go build -o ogamed
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed publish/linux64/
+        chmod +x publish/linux64/TBot
+        chmod +x publish/linux64/ogamed
+    - name: Package linux64
       uses: papeloto/action-zip@v1
       with:
         files: publish/linux64/ README.md
         dest: TBot-${{ env.VERSION }}-linux64.zip
         
-    - name: Publish linuxarm
+    - name: Build TBot linuxarm
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
-    - name: ZIP linuxarm
+    - name: Build ogamed linuxarm
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=linux GOARCH=arm GOARM=v7 go build -o ogamed
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed publish/linuxarm/
+        chmod +x publish/linuxarm/TBot
+        chmod +x publish/linuxarm/ogamed
+    - name: Package linuxarm
       uses: papeloto/action-zip@v1
       with:
         files: publish/linuxarm/ README.md
         dest: TBot-${{ env.VERSION }}-linuxarm.zip
+
+    - name: Build TBot linuxarm64
+      run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed linuxarm64
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=linux GOARCH=arm64 go build -o ogamed
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed publish/linuxarm64/
+        chmod +x publish/linuxarm64/TBot
+        chmod +x publish/linuxarm64/ogamed
+    - name: Package linuxarm64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/linuxarm64/ README.md
+        dest: TBot-${{ env.VERSION }}-linuxarm64.zip
         
-    - name: Publish osx64
+    - name: Build TBot osx64
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
-    - name: ZIP osx64
+    - name: Build ogamed osx64
+      run: | 
+        cd ogame/bin/ogamed
+        env GOOS=darwin GOARCH=amd64 go build -o ogamed
+        cd ../../../
+        mv ogame/bin/ogamed/ogamed publish/osx64/
+        chmod +x publish/osx64/TBot
+        chmod +x publish/osx64/ogamed
+    - name: Package osx64
       uses: papeloto/action-zip@v1
       with:
         files: publish/osx64/ README.md
@@ -57,6 +124,6 @@ jobs:
     - name: Draft Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
+        artifacts: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-win32.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
         draft: true
         token: ${{ secrets.GITHUB_TOKEN }}

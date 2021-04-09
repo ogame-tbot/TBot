@@ -117,17 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="ogamed_linux64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ogamed_linux64;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="ogamed_linuxarm" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ogamed_linuxarm;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="ogamed_osx64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ogamed_osx64;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="ogamed_win64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ogamed_win64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
 </root>

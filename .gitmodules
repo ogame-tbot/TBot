@@ -1,3 +1,4 @@
 [submodule "ogame"]
 	path = ogame
 	url = https://github.com/alaingilbert/ogame
+	branch = v43.2.2
