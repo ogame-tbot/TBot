@@ -1,0 +1,3 @@
+[submodule "ogame"]
+	path = ogame
+	url = https://github.com/alaingilbert/ogame
