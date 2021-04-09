@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'  
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Version ID
+      run: |
+        VERSION=`git describe --tags --abbrev=0` || VERSION="SNAPSHOT-`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Publish win64
+      run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false    
+    - name: ZIP win64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/win64/ README.md
+        dest: TBot-${{ env.VERSION }}-win64.zip
+        
+    - name: Publish linux64
+      run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
+    - name: ZIP linux64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/linux64/ README.md
+        dest: TBot-${{ env.VERSION }}-linux64.zip
+        
+    - name: Publish linuxarm
+      run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
+    - name: ZIP linuxarm
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/linuxarm/ README.md
+        dest: TBot-${{ env.VERSION }}-linuxarm.zip
+        
+    - name: Publish osx64
+      run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
+    - name: ZIP osx64
+      uses: papeloto/action-zip@v1
+      with:
+        files: publish/osx64/ README.md
+        dest: TBot-${{ env.VERSION }}-osx64.zip
+        
+    - name: Draft Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
+        draft: true
+        token: ${{ secrets.GITHUB_TOKEN }}

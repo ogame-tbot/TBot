@@ -1,13 +1,10 @@
-name: .NET
+name: Snapshot
 
 on:
   push:
     branches: [ master ]
-    tags:
-      - '*'
   pull_request:
-    branches: [ master ]
-  
+    branches: [ master ]  
 
 jobs:
   build:
@@ -77,11 +74,3 @@ jobs:
       with:
         name: TBot-${{ env.VERSION }}-osx64
         path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
-        
-    - name: Draft Release
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
-        draft: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-        
