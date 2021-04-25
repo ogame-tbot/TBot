@@ -664,7 +664,7 @@ namespace Tbot.Services
             catch { return false; }
         }
 
-        public Fleet SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload)
+        public Fleet SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload)
         {
             var request = new RestRequest
             {
@@ -689,7 +689,7 @@ namespace Tbot.Services
 
             request.AddParameter("mission", (int)mission, ParameterType.GetOrPost);
 
-            request.AddParameter("speed", (int)speed, ParameterType.GetOrPost);
+            request.AddParameter("speed", speed.ToString(), ParameterType.GetOrPost);
 
             request.AddParameter("metal", payload.Metal, ParameterType.GetOrPost);
             request.AddParameter("crystal", payload.Crystal, ParameterType.GetOrPost);

@@ -321,7 +321,11 @@ namespace Tbot
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
             }
-            Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+            if (settings.General.CustomTitle.ToString() != "")
+                Helpers.SetTitle(settings.General.CustomTitle.ToString() + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+            else
+                Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+
         }
 
         private static void InitializeDefender()
@@ -543,6 +547,9 @@ namespace Tbot
             finally
             {
                 var time = GetDateTime();
+                //celestials = UpdatePlanets(UpdateType.Constructions);
+                //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
+                //var interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                 var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
                 var newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
@@ -875,30 +882,28 @@ namespace Tbot
             }
         }
 
-        private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, Speeds speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
+        private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + speed.ToString() + ". Ships: " + ships.ToString());
 
-            /*
             if (
                 playerClass != Classes.General && (
                     speed == Speeds.FivePercent ||
                     speed == Speeds.FifteenPercent ||
-                    speed == Speeds.TwentyfivePercent ||
-                    speed == Speeds.ThirtyfivePercent ||
-                    speed == Speeds.FourtyfivePercent ||
-                    speed == Speeds.FiftyfivePercent ||
-                    speed == Speeds.SixtyfivePercent ||
-                    speed == Speeds.SeventyfivePercent ||
-                    speed == Speeds.EightyfivePercent ||
-                    speed == Speeds.NinetyfivePercent
+                    speed == Speeds.TwentyFivePercent ||
+                    speed == Speeds.ThirtyFivePercent ||
+                    speed == Speeds.FourtyFivePercent ||
+                    speed == Speeds.FiftyFivePercent ||
+                    speed == Speeds.SixtyFivePercent ||
+                    speed == Speeds.SeventyFivePercent ||
+                    speed == Speeds.EightyFivePercent ||
+                    speed == Speeds.NinetyFivePercent
                 )
             )
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, speed not available for your class");
                 return 0;
             }
-            */
 
             slots = UpdateSlots();
             if (slots.Free > 1 || force)
@@ -945,14 +950,26 @@ namespace Tbot
                 if (recalledFleet.ID == 0)
                 {
                     Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an unknon error has occurred.");
+                    if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
+                    {
+                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an unknon error has occurred.");
+                    }
                 }
-                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled: return time: " + fleet.ArrivalTime.ToString());
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled: return time: " + fleet.BackTime.ToString());
+                if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
+                {
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled: return time: " + fleet.BackTime.ToString());
+                }
                 return result;
             }
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an exception has occurred: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
+                {
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an exception has occurred.");
+                }
                 return false;
             }
         }
@@ -1007,7 +1024,7 @@ namespace Tbot
                             {
                                 Coordinate destination = attack.Origin;
                                 Ships ships = new() { EspionageProbe = (int)settings.Defender.SpyAttacker.Probes };
-                                int fleetId = SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent);
+                                int fleetId = SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent, new Resources(), userInfo.Class);
                                 Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
                                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Spying attacker from " + attackedCelestial.ToString() + " to " + destination.ToString() + " with " + settings.Defender.SpyAttacker.Probes + " probes. Arrival at " + fleet.ArrivalTime.ToString());
                             }
@@ -1116,7 +1133,7 @@ namespace Tbot
                                     if ((bool)settings.Defender.Autofleet.Recall)
                                     {
                                         DateTime time = GetDateTime();
-                                        var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 20)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                        var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 30)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                         DateTime newTime = time.AddMilliseconds(interval);
                                         timers.Add(attack.ID.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
                                         Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
