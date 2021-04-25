@@ -6,10 +6,11 @@
     "Language": ""
   },
   "General": {
-    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
     "Host": "localhost",
     "Port": "8080",
-    "CaptchaAPIKey": ""
+    "CaptchaAPIKey": "",
+    "CustomTitle": ""
   },
   "Defender": {
     "Active": true,
@@ -125,7 +126,7 @@
     }
   },
   "AutoHarvest": {
-    "Active": true,
+    "Active": false,
     "HarvestOwnDF": true,
     "HarvestDeepSpace": true,
     "MinimumResources": 300,

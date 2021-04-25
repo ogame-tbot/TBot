@@ -106,32 +106,28 @@ namespace Tbot.Model
 		Trade = 16
 	}
 
-	public enum Speeds
+	public static class Speeds
 	{
-		TenPercent = 1,
-		TwentyPercent = 2,
-		ThirtyPercent = 3,
-		FourtyPercent = 4,
-		FiftyPercent = 5,
-		SixtyPercent = 6,
-		SeventyPercent = 7,
-		EightyPercent = 8,
-		NinetyPercent = 9,
-		HundredPercent = 10
-	}
-
-	public enum Percents
-	{
-		TenPercent = 10,
-		TwentyPercent = 20,
-		ThirtyPercent = 30,
-		FourtyPercent = 40,
-		FiftyPercent = 50,
-		SixtyPercent = 60,
-		SeventyPercent = 70,
-		EightyPercent = 80,
-		NinetyPercent = 90,
-		HundredPercent = 100
+		public const decimal FivePercent = 0.5M;
+		public const decimal TenPercent = 1;
+		public const decimal FifteenPercent = 1.5M;
+		public const decimal TwentyPercent = 2;
+		public const decimal TwentyFivePercent = 2.5M;
+		public const decimal ThirtyPercent = 3;
+		public const decimal ThirtyFivePercent = 3.5M;
+		public const decimal FourtyPercent = 4;
+		public const decimal FourtyFivePercent = 4.5M;
+		public const decimal FiftyPercent = 5;
+		public const decimal FiftyFivePercent = 5.5M;
+		public const decimal SixtyPercent = 6;
+		public const decimal SixtyFivePercent = 6.5M;
+		public const decimal SeventyPercent = 7;
+		public const decimal SeventyFivePercent = 7.5M;
+		public const decimal EightyPercent = 8;
+		public const decimal EightyFivePercent = 8.5M;
+		public const decimal NinetyPercent = 9;
+		public const decimal NinetyFivePercent = 9.5M;
+		public const decimal HundredPercent = 10;
 	}
 
 	public enum IntervalType

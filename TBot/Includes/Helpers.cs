@@ -393,30 +393,16 @@ namespace Tbot.Includes
             return (int)Math.Round(fuelConsumption, MidpointRounding.ToZero);
         }
 
-        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Speeds speed, Researches researches, ServerData serverData, Classes playerClass)
+        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, Researches researches, ServerData serverData, Classes playerClass)
         {
             return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, serverData.SpeedFleet, playerClass);
         }
 
-        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Speeds speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass)
+        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass)
         {
-            var fleetSpeedPercent = speed switch
-            {
-                Speeds.HundredPercent => 1,
-                Speeds.NinetyPercent => 0.9,
-                Speeds.EightyPercent => 0.8,
-                Speeds.SeventyPercent => 0.7,
-                Speeds.SixtyPercent => 0.6,
-                Speeds.FiftyPercent => 0.5,
-                Speeds.FourtyPercent => 0.4,
-                Speeds.ThirtyPercent => 0.3,
-                Speeds.TwentyPercent => 0.2,
-                Speeds.TenPercent => 0.1,
-                _ => 1,
-            };
             int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
             int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-            return (int)Math.Round(((3500 / fleetSpeedPercent) * (Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed), MidpointRounding.AwayFromZero);
+            return (int)Math.Round(((3500 / ((double)speed / 10) ) * (Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed), MidpointRounding.AwayFromZero);
         }
 
         public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, int flightTime, Researches researches, ServerData serverData, Classes playerClass)
