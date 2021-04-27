@@ -474,70 +474,73 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
-                celestials = UpdatePlanets(UpdateType.Buildings);
-                celestials = UpdatePlanets(UpdateType.Facilities);
-                celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.Constructions);
 
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
+                List<Celestial> newCelestials = new List<Celestial>();
                 foreach (Celestial xCelestial in celestials)
                 {
-                    if (xCelestial.Constructions.BuildingID != 0)
+                    var tempCelestial = xCelestial;                    
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
+                    if (tempCelestial.Constructions.BuildingID != 0)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + ": there is already a building in production.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
                     }
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + xCelestial.ToString());
-                    if (xCelestial is Planet)
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
+                    if (tempCelestial is Planet)
                     {
-                        if (Helpers.ShouldBuildEnergySource(xCelestial as Planet))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
+                        if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
                         {
                             //Checks if energy is needed
-                            xBuildable = Helpers.GetNextEnergySourceToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            xBuildable = Helpers.GetNextEnergySourceToBuild(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
                         {
                             //Manage the need of nanites
                             xBuildable = Buildables.NaniteFactory;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
                         {
                             //Manage the need of robotics factory
                             xBuildable = Buildables.RoboticsFactory;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
                         {
                             //Manage the need of shipyard
                             xBuildable = Buildables.Shipyard;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
                         if (xBuildable == Buildables.Null)
                         {
                             //Manage the need of build some deposit
-                            mHandleDeposit(xCelestial, ref xBuildable, ref nLevelToReach);
+                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
                         //If it isn't needed to build deposit
                         //check if it needs to build some mines 
                         if (xBuildable == Buildables.Null)
                         {
-                            mHandleMines(xCelestial, ref xBuildable, ref nLevelToReach);
+                            mHandleMines(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
 
                         if (xBuildable != Buildables.Null && nLevelToReach > 0)
-                            mHandleBuildCelestialBuild(xCelestial, xBuildable, nLevelToReach);
+                            mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + xCelestial.ToString());
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + tempCelestial.ToString());
                     }
-
+                    newCelestials.Add(tempCelestial);
                     xBuildable = Buildables.Null;
                     nLevelToReach = 0;
-                }                
+                }
+                celestials = newCelestials;
             }
             catch (Exception e)
             {
@@ -545,7 +548,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
-            {
+            {                
                 var time = GetDateTime();
                 //celestials = UpdatePlanets(UpdateType.Constructions);
                 //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
@@ -884,20 +887,22 @@ namespace Tbot
 
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + speed.ToString() + ". Ships: " + ships.ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + (speed * 10).ToString() + "% . Ships: " + ships.ToString());
+            if (playerClass == Classes.NoClass)
+                playerClass = userInfo.Class;
 
             if (
                 playerClass != Classes.General && (
                     speed == Speeds.FivePercent ||
                     speed == Speeds.FifteenPercent ||
-                    speed == Speeds.TwentyFivePercent ||
-                    speed == Speeds.ThirtyFivePercent ||
-                    speed == Speeds.FourtyFivePercent ||
-                    speed == Speeds.FiftyFivePercent ||
-                    speed == Speeds.SixtyFivePercent ||
-                    speed == Speeds.SeventyFivePercent ||
-                    speed == Speeds.EightyFivePercent ||
-                    speed == Speeds.NinetyFivePercent
+                    speed == Speeds.TwentyfivePercent ||
+                    speed == Speeds.ThirtyfivePercent ||
+                    speed == Speeds.FourtyfivePercent ||
+                    speed == Speeds.FiftyfivePercent ||
+                    speed == Speeds.SixtyfivePercent ||
+                    speed == Speeds.SeventyfivePercent ||
+                    speed == Speeds.EightyfivePercent ||
+                    speed == Speeds.NinetyfivePercent
                 )
             )
             {
