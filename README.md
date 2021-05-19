@@ -4,7 +4,7 @@ OGame Bot
 [![GitHub all releases](https://img.shields.io/github/downloads/ogame-tbot/TBot/total)](https://github.com/ogame-tbot/TBot/releases/latest)
 [![Discord](https://img.shields.io/discord/801453618770214923)](https://discord.gg/NZSaY4aQ7J)
 
-TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) v43.2.2 by alaingilbert
+TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
 Feel free to publish issues or pull requests
 
@@ -95,7 +95,8 @@ Feel free to give suggestions posting an Issue or joining the Discord chat.
 
 ## Building
 
-I write and build TBot with Visual Studio 2019 Community Edition, thus probably .NET 5 SDK is enough for command line compilation.
+I write and build TBot with Visual Studio 2019 Community Edition, thus .NET 5 SDK is enough for command line compilation.
+Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the details.
   
 ## Portability
 
