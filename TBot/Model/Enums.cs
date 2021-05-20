@@ -179,11 +179,12 @@ namespace Tbot.Model
 	public enum Feature
 	{
 		Defender = 0,
-		BrainAutobuildCargo = 1,
-		BrainAutoRepatriate = 2,
-		BrainAutoMine = 3,
-		BrainOfferOfTheDay = 6,
-		Expeditions = 4,
-		Harvest = 5		
+		Brain = 1,
+		BrainAutobuildCargo = 2,
+		BrainAutoRepatriate = 3,
+		BrainAutoMine = 4,
+		BrainOfferOfTheDay = 5,
+		Expeditions = 6,
+		Harvest = 7		
 	}
 }

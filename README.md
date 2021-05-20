@@ -32,11 +32,15 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial (guess where you can specify which...)
   * AutoMine (tnx to Stewie): Tbot will develop your colonies up to the levels given in settings.json. Transports are not implemented yet, so you should provide resources manually to speed up.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
-* AutoHarvest: currently under rework
+* AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * Local Proxy (tnx to ogamed and CrynogarTM for the hint): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
+
+## Settings Hot Reload
+
+TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well of the specific feature config settings.
   
 ## Running on Windows
 
@@ -96,7 +100,8 @@ Feel free to give suggestions posting an Issue or joining the Discord chat.
 ## Building
 
 I write and build TBot with Visual Studio 2019 Community Edition, thus .NET 5 SDK is enough for command line compilation.
-Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the details.
+
+Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the build process.
   
 ## Portability
 
