@@ -112,21 +112,21 @@ namespace Tbot.Model
 		public const decimal TenPercent = 1;
 		public const decimal FifteenPercent = 1.5M;
 		public const decimal TwentyPercent = 2;
-		public const decimal TwentyFivePercent = 2.5M;
+		public const decimal TwentyfivePercent = 2.5M;
 		public const decimal ThirtyPercent = 3;
-		public const decimal ThirtyFivePercent = 3.5M;
+		public const decimal ThirtyfivePercent = 3.5M;
 		public const decimal FourtyPercent = 4;
-		public const decimal FourtyFivePercent = 4.5M;
+		public const decimal FourtyfivePercent = 4.5M;
 		public const decimal FiftyPercent = 5;
-		public const decimal FiftyFivePercent = 5.5M;
+		public const decimal FiftyfivePercent = 5.5M;
 		public const decimal SixtyPercent = 6;
-		public const decimal SixtyFivePercent = 6.5M;
+		public const decimal SixtyfivePercent = 6.5M;
 		public const decimal SeventyPercent = 7;
-		public const decimal SeventyFivePercent = 7.5M;
+		public const decimal SeventyfivePercent = 7.5M;
 		public const decimal EightyPercent = 8;
-		public const decimal EightyFivePercent = 8.5M;
+		public const decimal EightyfivePercent = 8.5M;
 		public const decimal NinetyPercent = 9;
-		public const decimal NinetyFivePercent = 9.5M;
+		public const decimal NinetyfivePercent = 9.5M;
 		public const decimal HundredPercent = 10;
 	}
 
@@ -179,11 +179,12 @@ namespace Tbot.Model
 	public enum Feature
 	{
 		Defender = 0,
-		BrainAutobuildCargo = 1,
-		BrainAutoRepatriate = 2,
-		BrainAutoMine = 3,
-		BrainOfferOfTheDay = 6,
-		Expeditions = 4,
-		Harvest = 5		
+		Brain = 1,
+		BrainAutobuildCargo = 2,
+		BrainAutoRepatriate = 3,
+		BrainAutoMine = 4,
+		BrainOfferOfTheDay = 5,
+		Expeditions = 6,
+		Harvest = 7		
 	}
 }

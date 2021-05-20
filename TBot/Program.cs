@@ -4,11 +4,12 @@ using Tbot.Includes;
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using JsonConfig;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
+using System.Collections.Concurrent;
 
 namespace Tbot
 {
@@ -27,30 +28,38 @@ namespace Tbot
         static volatile UserInfo userInfo;
         static volatile List<Celestial> celestials;
         static volatile List<Fleet> fleets;
+        static volatile List<GalaxyInfo> galaxyInfos;
         static volatile List<AttackerFleet> attacks;
         static volatile Slots slots;
         static volatile Researches researches;
+        static volatile ConcurrentDictionary<Feature, bool> features;
+
         /*Lorenzo 07/02/2021
          * Added array of semaphore to manage the cuncurrency
          * for timers. 
          * ATTENTION!!In case of adding some timers
          * you need to redim the Semaphore array!!!
          */
-        static Semaphore[] xaSem = new Semaphore[7];
+        static Semaphore[] xaSem = new Semaphore[8];
 
         static void Main(string[] args)
         {
             Helpers.SetTitle();
 
-            settings = Config.Global;
+            ReadSettings();
+            FileSystemWatcher settingsWatcher = new(new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase)).AbsolutePath);
+            settingsWatcher.Filter = "settings.json";
+            settingsWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            settingsWatcher.Changed += new(OnSettingsChanged);
+            settingsWatcher.EnableRaisingEvents = true;
+
             Credentials credentials = new()
             {
-                Universe = settings.Credentials.Universe.ToString(),
-                Username = settings.Credentials.Email.ToString(),
-                Password = settings.Credentials.Password.ToString(),
-                Language = settings.Credentials.Language.ToString().ToLower()
+                Universe = (string)settings.Credentials.Universe,
+                Username = (string)settings.Credentials.Email,
+                Password = (string)settings.Credentials.Password,
+                Language = (string)settings.Credentials.Language
             };
-
 
             try
             {
@@ -72,7 +81,7 @@ namespace Tbot
 
             try
             {
-                ogamedService.SetUserAgent(settings.General.UserAgent.ToString());
+                ogamedService.SetUserAgent((string)settings.General.UserAgent);
             }
             catch (Exception e)
             {
@@ -120,7 +129,7 @@ namespace Tbot
                     if ((bool)settings.TelegramMessenger.Active)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
-                        telegramMessenger = new TelegramMessenger(settings.TelegramMessenger.API.ToString(), settings.TelegramMessenger.ChatId.ToString());
+                        telegramMessenger = new TelegramMessenger((string)settings.TelegramMessenger.API, (string)settings.TelegramMessenger.ChatId);
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] TBot activated");
                     }
 
@@ -146,26 +155,17 @@ namespace Tbot
                     xaSem[(int)Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
                     xaSem[(int)Feature.Harvest] = new Semaphore(1, 1); //Harvest
 
+                    features = new();
+                    features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 
-                    if ((bool)settings.Defender.Active)
-                    {
-                        InitializeDefender();
-                    }
-
-                    if ((bool)settings.Brain.Active)
-                    {
-                        InitializeBrain();
-                    }
-
-                    if ((bool)settings.Expeditions.Active)
-                    {
-                        InitializeExpeditions();
-                    }
-
-                    if ((bool)settings.AutoHarvest.Active)
-                    {
-                        InitializeHarvest();
-                    }
+                    InitializeFeatures();
                 }
                 else
                 {
@@ -178,7 +178,138 @@ namespace Tbot
 
         }
 
+        private static bool HandleStartStopFeatures(Feature feature, bool currentValue)
+        {
+            switch (feature)
+            {
+                case Feature.Defender:
+                    if ((bool)settings.Defender.Active)
+                    {
+                        if (!currentValue)
+                            InitializeDefender();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopDefender();
+                        return false;
+                    }
+                case Feature.Brain:
+                    if ((bool)settings.Brain.Active)
+                        return true;
+                    else
+                        return false;
+                case Feature.BrainAutobuildCargo:
+                    if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoCargo.Active)
+                    {
+                        if (!currentValue)
+                            InitializeBrainAutoCargo();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopBrainAutoCargo();
+                        return false;
+                    }
+                case Feature.BrainAutoRepatriate:
+                    if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoRepatriate.Active)
+                    {
+                        if (!currentValue)
+                            InitializeBrainRepatriate();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopBrainRepatriate();
+                        return false;
+                    }
+                case Feature.BrainAutoMine:
+                    if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoMine.Active)
+                    {
+                        if (!currentValue)
+                            InitializeBrainAutoMine();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopBrainAutoMine();
+                        return false;
+                    }
+                case Feature.BrainOfferOfTheDay:
+                    if ((bool)settings.Brain.Active && (bool)settings.Brain.BuyOfferOfTheDay.Active)
+                    {
+                        if (!currentValue)
+                            InitializeBrainOfferOfTheDay();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopBrainOfferOfTheDay();
+                        return false;
+                    }
+                case Feature.Expeditions:
+                    if ((bool)settings.Expeditions.Active)
+                    {
+                        if (!currentValue)
+                            InitializeExpeditions();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopExpeditions();
+                        return false;
+                    }
+                case Feature.Harvest:
+                    if ((bool)settings.AutoHarvest.Active)
+                    {
+                        if (!currentValue)
+                            InitializeHarvest();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopHarvest();
+                        return false;
+                    }
+                default:
+                    return false;
+            }
+        }
 
+        private static void InitializeFeatures()
+        {
+            features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
+        }
+
+        private static void ReadSettings()
+        {
+            settings = SettingsService.GetSettings();
+        }
+
+        private static void OnSettingsChanged(object sender, FileSystemEventArgs e)
+        {
+            if (e.ChangeType != WatcherChangeTypes.Changed)
+            {
+                return;
+            }
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
+            ReadSettings();
+            InitializeFeatures();
+        }
 
         private static DateTime GetDateTime()
         {
@@ -199,6 +330,25 @@ namespace Tbot
             return ogamedService.GetFleets();
         }
 
+        private static List<GalaxyInfo> UpdateGalaxyInfos()
+        {
+            List<GalaxyInfo> galaxyInfos = new();
+            Planet newPlanet = new();
+            List<Celestial> newCelestials = celestials.ToList();
+            foreach (Planet planet in celestials.Where(p => p is Planet))
+            {
+                newPlanet = planet;
+                var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
+                newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris ?? new();
+                galaxyInfos.Add(gi);
+                Planet oldPlanet = celestials.Single(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                newCelestials.Remove(oldPlanet);
+                newCelestials.Add(newPlanet);
+            }            
+            celestials = newCelestials;
+            return galaxyInfos;
+        }
+
         private static ServerData UpdateServerData()
         {
             return ogamedService.GetServerData();
@@ -211,7 +361,6 @@ namespace Tbot
 
         private static UserInfo UpdateUserInfo()
         {
-            //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating player data...");
             UserInfo user = ogamedService.GetUserInfo();
             user.Class = ogamedService.GetUserClass();
             return user;
@@ -321,61 +470,98 @@ namespace Tbot
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
             }
-            if (settings.General.CustomTitle.ToString() != "")
-                Helpers.SetTitle(settings.General.CustomTitle.ToString() + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+            if ((string)settings.General.CustomTitle != "")
+                Helpers.SetTitle((string)settings.General.CustomTitle + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
             else
                 Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-
         }
 
         private static void InitializeDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
-
             timers.Add("DefenderTimer", new Timer(Defender, null, 0, Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax)));
         }
-        private static void InitializeBrain()
-        {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing brain...");
 
-            if ((bool)settings.Brain.AutoCargo.Active)
-            {
-                timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
-            }
-            if ((bool)settings.Brain.AutoRepatriate.Active)
-            {
-                timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax)));
-            }
-            /*Lorenzo 05/02/2021
-             * Adding timer for auto buil mine
-             */
-            if ((bool)settings.Brain.AutoMine.Active)
-            {
-                timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.Automine.CheckIntervalMin, (int)settings.Brain.Automine.CheckIntervalMax)));
-            }
-            if ((bool)settings.Brain.BuyOfferOfTheDay.Active)
-            {
-                timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax)));
-            }
+        private static void StopDefender()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping defender...");
+            timers.Remove("DefenderTimer");
+        }
+
+        private static void InitializeBrainAutoCargo()
+        {            
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autocargo...");
+            timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+        }
+
+        private static void StopBrainAutoCargo()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autocargo...");
+            timers.Remove("CapacityTimer");
+        }
+
+        private static void InitializeBrainRepatriate()
+        {            
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing repatriate...");
+            timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+        }
+
+        private static void StopBrainRepatriate()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping repatriate...");
+            timers.Remove("RepatriateTimer");
+        }
+
+        private static void InitializeBrainAutoMine()
+        {            
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing automine...");
+            timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+        }
+
+        private static void StopBrainAutoMine()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping automine...");
+            timers.Remove("AutoMineTimer");
+        }
+
+        private static void InitializeBrainOfferOfTheDay()
+        {            
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing offer of the day...");
+            timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+        }
+
+        private static void StopBrainOfferOfTheDay()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
+            timers.Remove("OfferOfTheDayTimer");
         }
 
         private static void InitializeExpeditions()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
-
             timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo)));
+        }
+
+        private static void StopExpeditions()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
+            timers.Remove("ExpeditionsTimer");
         }
 
         private static void InitializeHarvest()
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Harvest...");
-            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "This feature will be reintroduced in a future version, in a hopefully better way");
-            //timers.Add("HarvestTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutAQuarterHour)));
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing harvest...");
+            timers.Add("HarvestTimer", new Timer(HandleHarvest, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes)));
+        }
+
+        private static void StopHarvest()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
+            timers.Remove("HarvestTimer");
         }
 
         private static void Defender(object state)
         {
-
             try
             {
                 // Wait for the thread semaphore
@@ -474,70 +660,74 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
-                celestials = UpdatePlanets(UpdateType.Buildings);
-                celestials = UpdatePlanets(UpdateType.Facilities);
-                celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.Constructions);
 
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
+                List<Celestial> newCelestials = celestials.ToList();
                 foreach (Celestial xCelestial in celestials)
                 {
-                    if (xCelestial.Constructions.BuildingID != 0)
+                    var tempCelestial = xCelestial;                    
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
+                    if (tempCelestial.Constructions.BuildingID != 0)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + ": there is already a building in production.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
                     }
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + xCelestial.ToString());
-                    if (xCelestial is Planet)
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
+                    if (tempCelestial is Planet)
                     {
-                        if (Helpers.ShouldBuildEnergySource(xCelestial as Planet))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
+                        if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
                         {
                             //Checks if energy is needed
-                            xBuildable = Helpers.GetNextEnergySourceToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            xBuildable = Helpers.GetNextEnergySourceToBuild(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
                         {
                             //Manage the need of nanites
                             xBuildable = Buildables.NaniteFactory;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
                         {
                             //Manage the need of robotics factory
                             xBuildable = Buildables.RoboticsFactory;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
                         {
                             //Manage the need of shipyard
                             xBuildable = Buildables.Shipyard;
-                            nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
                         if (xBuildable == Buildables.Null)
                         {
                             //Manage the need of build some deposit
-                            mHandleDeposit(xCelestial, ref xBuildable, ref nLevelToReach);
+                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
                         //If it isn't needed to build deposit
                         //check if it needs to build some mines 
                         if (xBuildable == Buildables.Null)
                         {
-                            mHandleMines(xCelestial, ref xBuildable, ref nLevelToReach);
+                            mHandleMines(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
 
                         if (xBuildable != Buildables.Null && nLevelToReach > 0)
-                            mHandleBuildCelestialBuild(xCelestial, xBuildable, nLevelToReach);
+                            mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + xCelestial.ToString());
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + tempCelestial.ToString());
                     }
-
+                    newCelestials.Remove(xCelestial);
+                    newCelestials.Add(tempCelestial);
                     xBuildable = Buildables.Null;
                     nLevelToReach = 0;
-                }                
+                }
+                celestials = newCelestials;
             }
             catch (Exception e)
             {
@@ -545,7 +735,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
             finally
-            {
+            {                
                 var time = GetDateTime();
                 //celestials = UpdatePlanets(UpdateType.Constructions);
                 //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
@@ -713,7 +903,7 @@ namespace Tbot
                 {
                     var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
-                    if (planet.Coordinate.Type == Celestials.Moon && settings.Brain.AutoCargo.ExcludeMoons)
+                    if (planet.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
                     {
                         Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " is a moon - Skipping moon.");
                         continue;
@@ -721,7 +911,8 @@ namespace Tbot
                     if (capacity <= planet.Resources.TotalResources)
                     {
                         long difference = planet.Resources.TotalResources - capacity;
-                        Buildables preferredCargoShip = Enum.Parse<Buildables>(settings.Brain.AutoCargo.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
+                        Buildables preferredCargoShip = Buildables.SmallCargo;
+                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
                         long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
                         Helpers.WriteLog(LogType.Debug, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
@@ -804,7 +995,7 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Reaptriating resources...");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
                 celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
 
@@ -821,7 +1012,8 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
                         continue;
                     }
-                    Buildables preferredShip = Enum.Parse<Buildables>(settings.Brain.AutoRepatriate.CargoType.ToString() ?? "SmallCargo") ?? Buildables.SmallCargo;
+                    Buildables preferredShip = Buildables.SmallCargo;
+                    Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
                     long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
                     Ships ships = new();
                     if (idealShips <= celestial.Ships.GetAmount(preferredShip))
@@ -845,7 +1037,7 @@ namespace Tbot
                                 .Where(planet => planet.Coordinate.Galaxy == (int)settings.Brain.AutoRepatriate.Target.Galaxy)
                                 .Where(planet => planet.Coordinate.System == (int)settings.Brain.AutoRepatriate.Target.System)
                                 .Where(planet => planet.Coordinate.Position == (int)settings.Brain.AutoRepatriate.Target.Position)
-                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Brain.AutoRepatriate.Target.Type.ToString()))
+                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type))
                                 .Single();
                             destination = customDestination;
                             if (celestial.ID == customDestination.ID)
@@ -884,20 +1076,22 @@ namespace Tbot
 
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + speed.ToString() + ". Ships: " + ships.ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + (speed * 10).ToString() + "% . Ships: " + ships.ToString());
+            if (playerClass == Classes.NoClass)
+                playerClass = userInfo.Class;
 
             if (
                 playerClass != Classes.General && (
                     speed == Speeds.FivePercent ||
                     speed == Speeds.FifteenPercent ||
-                    speed == Speeds.TwentyFivePercent ||
-                    speed == Speeds.ThirtyFivePercent ||
-                    speed == Speeds.FourtyFivePercent ||
-                    speed == Speeds.FiftyFivePercent ||
-                    speed == Speeds.SixtyFivePercent ||
-                    speed == Speeds.SeventyFivePercent ||
-                    speed == Speeds.EightyFivePercent ||
-                    speed == Speeds.NinetyFivePercent
+                    speed == Speeds.TwentyfivePercent ||
+                    speed == Speeds.ThirtyfivePercent ||
+                    speed == Speeds.FourtyfivePercent ||
+                    speed == Speeds.FiftyfivePercent ||
+                    speed == Speeds.SixtyfivePercent ||
+                    speed == Speeds.SeventyfivePercent ||
+                    speed == Speeds.EightyfivePercent ||
+                    speed == Speeds.NinetyfivePercent
                 )
             )
             {
@@ -1433,7 +1627,7 @@ namespace Tbot
                             }
                             else
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping hervest: resources under set limit.");
+                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping harvest: resources under set limit.");
                             }
                         }
                     }
@@ -1456,6 +1650,126 @@ namespace Tbot
             {
                 //Release its semaphore
                 xaSem[(int)Feature.Expeditions].Release();
+            }
+
+        }
+
+        private static void HandleHarvest(object state)
+        {
+            try
+            {
+                // Wait for the thread semaphore
+                // to avoid the concurrency with itself
+                xaSem[(int)Feature.Harvest].WaitOne();
+
+                if ((bool)settings.AutoHarvest.Active)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Detecting harvest targets");
+
+                    galaxyInfos = UpdateGalaxyInfos();
+                    celestials = UpdatePlanets(UpdateType.Ships);
+                    var dic = new Dictionary<Celestial, Coordinate>();
+
+                    foreach (Planet planet in celestials.Where(c => c is Planet))
+                    {
+                        Moon moon = new()
+                        {
+                            Ships = new()
+                        };
+
+                        bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) == 1;                        
+                        if (hasMoon)
+                        {
+                            moon = celestials.Single(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) as Moon;
+                        }
+
+                        if ((bool)settings.AutoHarvest.HarvestOwnDF)
+                        {
+                            Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris);
+                            if (planet.Debris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
+                            {                                
+                                if (moon.Ships.Recycler >= planet.Debris.RecyclersNeeded)
+                                    dic.Add(moon, dest);
+                                else if (planet.Ships.Recycler >= planet.Debris.RecyclersNeeded)
+                                    dic.Add(planet, dest);
+                                else
+                                    Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough recyclers.");
+                            }
+                            else if (planet.Debris.Resources.TotalResources == 0)
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
+                            }
+                        }
+
+                        if ((bool)settings.AutoHarvest.HarvestDeepSpace)
+                        {
+                            ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(planet.Coordinate).ExpeditionDebris;
+                            Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, 16, Celestials.DeepSpace);
+                            if (expoDebris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
+                            {                                
+                                if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
+                                    dic.Add(moon, dest);
+                                else if (planet.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
+                                    dic.Add(planet, dest);
+                                else
+                                    Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough pathfinders.");
+                            }
+                            else if (expoDebris.Resources.TotalResources == 0)
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
+                            }
+                        }
+                    }
+
+                    foreach (Celestial origin in dic.Keys)
+                    {
+                        var destination = dic[origin];
+                        if (destination.Position == 16)
+                        {
+                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;                            
+                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString());
+                            long pathfindersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);                                
+                        }
+                        else
+                        {
+                            Debris debris = (celestials.Where(c => c.HasCoords(destination)).First() as Planet).Debris;                            
+                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString());
+                            long recyclersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);                            
+                        }
+                    }
+
+                    int interval = (int)Helpers.CalcRandomInterval((int)settings.AutoHarvest.CheckIntervalMin, (int)settings.AutoHarvest.CheckIntervalMax);
+                    var time = GetDateTime();
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Harvest, "HandleHarvest exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Harvest, "Stacktrace: " + e.StackTrace);
+                int interval = (int)Helpers.CalcRandomInterval((int)settings.AutoHarvest.CheckIntervalMin, (int)settings.AutoHarvest.CheckIntervalMax);
+                var time = GetDateTime();
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            finally
+            {
+                //Release its semaphore
+                xaSem[(int)Feature.Harvest].Release();
             }
 
         }
