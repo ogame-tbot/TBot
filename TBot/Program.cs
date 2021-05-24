@@ -47,7 +47,7 @@ namespace Tbot
             Helpers.SetTitle();
 
             ReadSettings();
-            FileSystemWatcher settingsWatcher = new(new Uri(Path.GetDirectoryName(AppContext.BaseDirectory)).AbsolutePath);
+            FileSystemWatcher settingsWatcher = new(Path.GetFullPath(AppContext.BaseDirectory));
             settingsWatcher.Filter = "settings.json";
             settingsWatcher.NotifyFilter = NotifyFilters.LastWrite;
             settingsWatcher.Changed += new(OnSettingsChanged);
