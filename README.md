@@ -105,4 +105,4 @@ Releases are automated by GitHub Actions, take a look at the [workflows](https:/
   
 ## Portability
 
-TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, MacOS ARM64, Linux ARMv7 and Linux ARM64.
+TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
