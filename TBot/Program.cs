@@ -36,11 +36,9 @@ namespace Tbot
 
         /*Lorenzo 07/02/2021
          * Added array of semaphore to manage the cuncurrency
-         * for timers. 
-         * ATTENTION!!In case of adding some timers
-         * you need to redim the Semaphore array!!!
+         * for timers.
          */
-        static Semaphore[] xaSem = new Semaphore[8];
+        static Dictionary<Feature, Semaphore> xaSem = new();
 
         static void Main(string[] args)
         {
@@ -131,11 +129,7 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
                         telegramMessenger = new TelegramMessenger((string)settings.TelegramMessenger.API, (string)settings.TelegramMessenger.ChatId);
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] TBot activated");
-                    }
-
-                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
-                    celestials = UpdatePlanets(UpdateType.Fast);
-                    researches = ogamedService.GetResearches();
+                    }                    
 
                     timers = new Dictionary<string, Timer>();
 
@@ -147,13 +141,13 @@ namespace Tbot
                      * Tralla 12/2/20
                      * change index to enum
                      */
-                    xaSem[(int)Feature.Defender] = new Semaphore(1, 1); //Defender
-                    xaSem[(int)Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
-                    xaSem[(int)Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
-                    xaSem[(int)Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
-                    xaSem[(int)Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
-                    xaSem[(int)Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
-                    xaSem[(int)Feature.Harvest] = new Semaphore(1, 1); //Harvest
+                    xaSem[Feature.Defender] = new Semaphore(1, 1); //Defender
+                    xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
+                    xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
+                    xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
+                    xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
+                    xaSem[Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
+                    xaSem[Feature.Harvest] = new Semaphore(1, 1); //Harvest
 
                     features = new();
                     features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -165,6 +159,11 @@ namespace Tbot
                     features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 
+                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
+                    celestials = GetPlanets();
+                    researches = ogamedService.GetResearches();
+
+                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
                     InitializeFeatures();
                 }
                 else
@@ -309,6 +308,7 @@ namespace Tbot
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
             ReadSettings();
             InitializeFeatures();
+            UpdateTitle();
         }
 
         private static DateTime GetDateTime()
@@ -366,18 +366,21 @@ namespace Tbot
             return user;
         }
 
+        private static List<Celestial> GetPlanets()
+        {
+            List<Celestial> localPlanets = celestials ?? new();
+            List<Celestial> ogamedPlanets = ogamedService.GetCelestials();
+            if (localPlanets.Count == 0 || ogamedPlanets.Count != celestials.Count)
+            {
+                localPlanets = ogamedPlanets.ToList();
+            }
+            return localPlanets;
+        }
+
         private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
-            List<Celestial> localPlanets;
-            if (celestials == null)
-            {
-                localPlanets = ogamedService.GetCelestials();
-            }
-            else
-            {
-                localPlanets = celestials;
-            }
+            List<Celestial> localPlanets = GetPlanets();
             List<Celestial> newPlanets = new();
             foreach (Celestial planet in localPlanets)
             {
@@ -485,6 +488,7 @@ namespace Tbot
         private static void StopDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping defender...");
+            timers.GetValueOrDefault("DefenderTimer").Dispose();
             timers.Remove("DefenderTimer");
         }
 
@@ -497,6 +501,7 @@ namespace Tbot
         private static void StopBrainAutoCargo()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autocargo...");
+            timers.GetValueOrDefault("CapacityTimer").Dispose();
             timers.Remove("CapacityTimer");
         }
 
@@ -509,6 +514,7 @@ namespace Tbot
         private static void StopBrainRepatriate()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping repatriate...");
+            timers.GetValueOrDefault("RepatriateTimer").Dispose();
             timers.Remove("RepatriateTimer");
         }
 
@@ -521,6 +527,7 @@ namespace Tbot
         private static void StopBrainAutoMine()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping automine...");
+            timers.GetValueOrDefault("AutoMineTimer").Dispose();
             timers.Remove("AutoMineTimer");
         }
 
@@ -533,6 +540,7 @@ namespace Tbot
         private static void StopBrainOfferOfTheDay()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
+            timers.GetValueOrDefault("OfferOfTheDayTimer").Dispose();
             timers.Remove("OfferOfTheDayTimer");
         }
 
@@ -545,6 +553,7 @@ namespace Tbot
         private static void StopExpeditions()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
+            timers.GetValueOrDefault("ExpeditionsTimer").Dispose();
             timers.Remove("ExpeditionsTimer");
         }
 
@@ -557,6 +566,7 @@ namespace Tbot
         private static void StopHarvest()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
+            timers.GetValueOrDefault("HarvestTimer").Dispose();
             timers.Remove("HarvestTimer");
         }
 
@@ -566,7 +576,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.Defender].WaitOne();
+                xaSem[Feature.Defender].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
                 bool isUnderAttack = ogamedService.IsUnderAttack();
                 DateTime time = GetDateTime();
@@ -604,7 +614,7 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[(int)Feature.Defender].Release();
+                xaSem[Feature.Defender].Release();
             }
 
         }
@@ -615,7 +625,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.BrainOfferOfTheDay].WaitOne();
+                xaSem[Feature.BrainOfferOfTheDay].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Buying offer of the day...");
                 var result = ogamedService.BuyOfferOfTheDay();
                 if (result)
@@ -637,7 +647,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[(int)Feature.BrainOfferOfTheDay].Release();
+                xaSem[Feature.BrainOfferOfTheDay].Release();
             }
         }
 
@@ -658,7 +668,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.BrainAutoMine].WaitOne();
+                xaSem[Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
 
                 Buildables xBuildable = Buildables.Null;
@@ -746,7 +756,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[(int)Feature.BrainAutoMine].Release();
+                xaSem[Feature.BrainAutoMine].Release();
             }
         }
 
@@ -868,9 +878,19 @@ namespace Tbot
 
                 if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
                 {
+                    bool result = false;
                     //Yes, i can build it
-                    var result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                    if (xBuildableToBuild == Buildables.SolarSatellite)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + nLevelToBuild.ToString() + "x " + xBuildableToBuild.ToString() + " on " + xCelestial.ToString());
+                        result = ogamedService.BuildShips(xCelestial, xBuildableToBuild, nLevelToBuild);
+                    }                        
+                    else
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                        result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);                        
+                    }
+                        
                     if (result)
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
                     else
@@ -894,7 +914,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.BrainAutobuildCargo].WaitOne();
+                xaSem[Feature.BrainAutobuildCargo].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
                 celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
@@ -983,7 +1003,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[(int)Feature.BrainAutobuildCargo].Release();
+                xaSem[Feature.BrainAutobuildCargo].Release();
             }
         }
 
@@ -994,7 +1014,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.BrainAutoRepatriate].WaitOne();
+                xaSem[Feature.BrainAutoRepatriate].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
                 celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
@@ -1070,7 +1090,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[(int)Feature.BrainAutoRepatriate].Release();
+                xaSem[Feature.BrainAutoRepatriate].Release();
             }
         }
 
@@ -1241,10 +1261,9 @@ namespace Tbot
                     {
                         Random random = new();
                         string[] messages = settings.Defender.MessageAttacker.Messages;
-                        int messageIndex = random.Next(0, messages.Length);
-                        string message = messages[messageIndex];
+                        string message = messages.ToList().Shuffle().First();
                         Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sending message \"" + message + "\" to attacker" + attack.AttackerName);
-                        var result = ogamedService.SendMessage(attack.AttackerID, messages[messageIndex]);
+                        var result = ogamedService.SendMessage(attack.AttackerID, message);
                         if (result)
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Message succesfully sent.");
                         else
@@ -1374,7 +1393,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.Expeditions].WaitOne();
+                xaSem[Feature.Expeditions].WaitOne();
 
                 if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
                 {
@@ -1649,7 +1668,7 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[(int)Feature.Expeditions].Release();
+                xaSem[Feature.Expeditions].Release();
             }
 
         }
@@ -1660,7 +1679,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[(int)Feature.Harvest].WaitOne();
+                xaSem[Feature.Harvest].WaitOne();
 
                 if ((bool)settings.AutoHarvest.Active)
                 {
@@ -1769,7 +1788,7 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[(int)Feature.Harvest].Release();
+                xaSem[Feature.Harvest].Release();
             }
 
         }

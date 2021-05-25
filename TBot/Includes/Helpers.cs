@@ -1082,11 +1082,16 @@ namespace Tbot.Includes
         public static int GetNextLevel(Planet planet, Buildables buildable)
         {
             int output = 0;
-            foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
+            if (buildable == Buildables.SolarSatellite)
+                output = CalcNeededSolarSatellites(planet);
+            if (output == 0)
             {
-                if (prop.Name == buildable.ToString())
+                foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
                 {
-                    output = (int)prop.GetValue(planet.Buildings) + 1;
+                    if (prop.Name == buildable.ToString())
+                    {
+                        output = (int)prop.GetValue(planet.Buildings) + 1;
+                    }
                 }
             }
             if (output == 0)
