@@ -22,14 +22,19 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
-    - name: Restore dependencies
+        dotnet-version: '5.0.x'
+    - name: Restore .NET dependencies
       run: dotnet restore
     - name: Setup GO
       uses: actions/setup-go@v2
       with:
-        go-version: '^1.16.3'
-      
+        go-version: '^1.16.4'
+    - name: Restore GO modules
+      run: | 
+        cd ${{ github.workspace }}/ogame/cmd/ogamed
+        go mod download
+        cd ${{ github.workspace }}
+
     - name: Build TBot win64
       run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed win64
@@ -68,86 +73,82 @@ jobs:
         name: TBot-${{ env.VERSION }}-win32
         path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win32.zip
         
-    - name: Build TBot linux64
-      run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
-    - name: Build ogamed linux64
+    - name: Build TBot linux-x64
+      run: dotnet publish -c Release -r linux-x64 -o publish/linux-x64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed linux-x64
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
         env GOOS=linux GOARCH=amd64 go build -o ogamed
         cd ${{ github.workspace }}
-        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linux64/
-        chmod +x ${{ github.workspace }}/publish/linux64/TBot
-        chmod +x ${{ github.workspace }}/publish/linux64/ogamed
-    - name: Package linux64
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linux-x64/
+        chmod +x ${{ github.workspace }}/publish/linux-x64/TBot
+        chmod +x ${{ github.workspace }}/publish/linux-x64/ogamed
+    - name: Package linux-x64
       uses: papeloto/action-zip@v1
       with:
-        files: publish/linux64/ README.md
-        dest: TBot-${{ env.VERSION }}-linux64.zip
-    - name: Upload linux64
-      uses: actions/upload-artifact@v2
-      with:
-        name: TBot-${{ env.VERSION }}-linux64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip
+        files: publish/linux-x64/ README.md
+        dest: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linux-x64.zip
         
-    - name: Build TBot linuxarm
-      run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
-    - name: Build ogamed linuxarm
+    - name: Build TBot linux-arm
+      run: dotnet publish -c Release -r linux-arm -o publish/linux-arm/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed linux-arm
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
         env GOOS=linux GOARCH=arm GOARM=7 go build -o ogamed
         cd ${{ github.workspace }}
-        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm/
-        chmod +x ${{ github.workspace }}/publish/linuxarm/TBot
-        chmod +x ${{ github.workspace }}/publish/linuxarm/ogamed
-    - name: Package linuxarm
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linux-arm/
+        chmod +x ${{ github.workspace }}/publish/linux-arm/TBot
+        chmod +x ${{ github.workspace }}/publish/linux-arm/ogamed
+    - name: Package linux-arm
       uses: papeloto/action-zip@v1
       with:
-        files: publish/linuxarm/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm.zip
-    - name: Upload linuxarm
-      uses: actions/upload-artifact@v2
-      with:
-        name: TBot-${{ env.VERSION }}-linuxarm
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip
+        files: publish/linux-arm/ README.md
+        dest: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linux-arm.zip
 
-    - name: Build TBot linuxarm64
-      run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
-    - name: Build ogamed linuxarm64
+    - name: Build TBot linux-arm64
+      run: dotnet publish -c Release -r linux-arm64 -o publish/linux-arm64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed linux-arm64
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
         env GOOS=linux GOARCH=arm64 go build -o ogamed
         cd ${{ github.workspace }}
-        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm64/
-        chmod +x ${{ github.workspace }}/publish/linuxarm64/TBot
-        chmod +x ${{ github.workspace }}/publish/linuxarm64/ogamed
-    - name: Package linuxarm64
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linux-arm64/
+        chmod +x ${{ github.workspace }}/publish/linux-arm64/TBot
+        chmod +x ${{ github.workspace }}/publish/linux-arm64/ogamed
+    - name: Package linux-arm64
       uses: papeloto/action-zip@v1
       with:
-        files: publish/linuxarm64/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm64.zip
-    - name: Upload linuxarm64
-      uses: actions/upload-artifact@v2
-      with:
-        name: TBot-${{ env.VERSION }}-linuxarm64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm64.zip
+        files: publish/linux-arm64/ README.md
+        dest: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linux-arm64.zip
         
-    - name: Build TBot osx64
-      run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
-    - name: Build ogamed osx64
+    - name: Build TBot osx-x64
+      run: dotnet publish -c Release -r osx-x64 -o publish/osx-x64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed osx-x64
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
         env GOOS=darwin GOARCH=amd64 go build -o ogamed
         cd ${{ github.workspace }}
-        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx64/
-        chmod +x ${{ github.workspace }}/publish/osx64/TBot
-        chmod +x ${{ github.workspace }}/publish/osx64/ogamed
-    - name: Package osx64
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx-x64/
+        chmod +x ${{ github.workspace }}/publish/osx-x64/TBot
+        chmod +x ${{ github.workspace }}/publish/osx-x64/ogamed
+    - name: Package osx-x64
       uses: papeloto/action-zip@v1
       with:
-        files: publish/osx64/ README.md
-        dest: TBot-${{ env.VERSION }}-osx64.zip
-    - name: Upload osx64
-      uses: actions/upload-artifact@v2
+        files: publish/osx-x64/ README.md
+        dest: ${{ github.workspace }}/TBot-${{ env.VERSION }}-osx-x64.zip
+
+    - name: Build TBot osx-arm64
+      run: dotnet publish -c Release -r osx-arm64 -o publish/osx-arm64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed osx-arm64
+      run: | 
+        cd ${{ github.workspace }}/ogame/cmd/ogamed
+        env GOOS=darwin GOARCH=arm64 go build -o ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx-arm64/
+        chmod +x ${{ github.workspace }}/publish/osx-arm64/TBot
+        chmod +x ${{ github.workspace }}/publish/osx-arm64/ogamed
+    - name: Package osx-arm64
+      uses: papeloto/action-zip@v1
       with:
-        name: TBot-${{ env.VERSION }}-osx64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
+        files: publish/osx-arm64/ README.md
+        dest: ${{ github.workspace }}/TBot-${{ env.VERSION }}-osx-arm64.zip
