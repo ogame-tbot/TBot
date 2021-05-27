@@ -2,9 +2,12 @@
 OGame Bot
 
 [![GitHub all releases](https://img.shields.io/github/downloads/ogame-tbot/TBot/total)](https://github.com/ogame-tbot/TBot/releases/latest)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/ogame-tbot/TBot)](https://github.com/ogame-tbot/TBot/releases/latest)
 [![Discord](https://img.shields.io/discord/801453618770214923)](https://discord.gg/NZSaY4aQ7J)
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
+
+TBot supports Ogame v8!
 
 Feel free to publish issues or pull requests
 
@@ -37,6 +40,8 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
+* Proxy: TBot supports routing your traffic through a proxy
+  * Fill the settings in settings.json. The settings are quite self-explainatory. If you need assistance ping me on Discord
 
 ## Settings Hot Reload
 
@@ -106,3 +111,5 @@ Releases are automated by GitHub Actions, take a look at the [workflows](https:/
 ## Portability
 
 TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
+
+MacOS ARM will be supported when .NET 6 will be officially released

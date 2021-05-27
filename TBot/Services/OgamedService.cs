@@ -23,20 +23,29 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "")
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
         {
-            ExecuteOgamedExecutable(credentials, host, port, captchaKey);
+            ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
             Url = "http://" + host + ":" + port;
             Client = new RestClient(Url);
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "")
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
         {
             try
             {
                 string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
                 if (captchaKey != "")
                     args += " --nja-api-key=" + captchaKey;
+                if (proxySettings != null && proxySettings.Enabled)
+                {
+                    args += " --proxy=" + proxySettings.Address;
+                    args += " --proxy-type=" + proxySettings.Type;
+                    if (proxySettings.Username != "")
+                        args += " --proxy-username=" + proxySettings.Username;
+                    if (proxySettings.Password != "")
+                        args += " --proxy-password=" + proxySettings.Password;
+                }
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     Process.Start("ogamed.exe", args);
                 else

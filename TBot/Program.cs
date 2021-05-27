@@ -66,10 +66,21 @@ namespace Tbot
                  * 
                  * add ability to set custom host 
                  */
-                var host = settings.General.Host ?? "localhost";
-                var port = settings.General.Port ?? "8080";
-                var captchaKey = settings.General.CaptchaAPIKey ?? "";
-                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey);
+                string host = (string)settings.General.Host ?? "localhost";
+                string port = (string)settings.General.Port ?? "8080";
+                string captchaKey = (string)settings.General.CaptchaAPIKey ?? "";
+                ProxySettings proxy = null;
+                if ((bool)settings.General.Proxy.Active && (string)settings.General.Proxy.Address != "" )
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
+                    proxy.Enabled = (bool)settings.General.Proxy.Active;
+                    proxy.Address = (string)settings.General.Proxy.Address;
+                    proxy.Type = (string)settings.General.Proxy.Type ?? "socks5";
+                    proxy.Username = (string)settings.General.Proxy.Username ?? "";
+                    proxy.Password = (string)settings.General.Proxy.Password ?? "";
+
+                }
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, proxy);
             }
             catch (Exception e)
             {
