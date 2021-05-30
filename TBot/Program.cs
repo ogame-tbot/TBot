@@ -1698,7 +1698,7 @@ namespace Tbot
 
                     galaxyInfos = UpdateGalaxyInfos();
                     celestials = UpdatePlanets(UpdateType.Ships);
-                    var dic = new Dictionary<Celestial, Coordinate>();
+                    var dic = new Dictionary<Coordinate, Celestial>();
 
                     foreach (Planet planet in celestials.Where(c => c is Planet))
                     {
@@ -1719,9 +1719,9 @@ namespace Tbot
                             if (planet.Debris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
                             {                                
                                 if (moon.Ships.Recycler >= planet.Debris.RecyclersNeeded)
-                                    dic.Add(moon, dest);
+                                    dic.Add(dest, moon);
                                 else if (planet.Ships.Recycler >= planet.Debris.RecyclersNeeded)
-                                    dic.Add(planet, dest);
+                                    dic.Add(dest, planet);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough recyclers.");
                             }
@@ -1742,9 +1742,9 @@ namespace Tbot
                             if (expoDebris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
                             {                                
                                 if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
-                                    dic.Add(moon, dest);
+                                    dic.Add(dest, moon);
                                 else if (planet.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
-                                    dic.Add(planet, dest);
+                                    dic.Add(dest, planet);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough pathfinders.");
                             }
@@ -1759,9 +1759,9 @@ namespace Tbot
                         }
                     }
 
-                    foreach (Celestial origin in dic.Keys)
+                    foreach (Coordinate destination in dic.Keys)
                     {
-                        var destination = dic[origin];
+                        Celestial origin = dic[destination];
                         if (destination.Position == 16)
                         {
                             ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;                            
