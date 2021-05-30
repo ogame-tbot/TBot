@@ -10,14 +10,19 @@
     "Host": "localhost",
     "Port": "8080",
     "Proxy": {
-      "Enabled":  false,
+      "Enabled": false,
       "Address": "",
       "Type": "socks5",
       "Username": "",
       "Password": ""
-    },    
+    },
     "CaptchaAPIKey": "",
     "CustomTitle": ""
+  },
+  "SleepMode": {
+    "Active": false,
+    "GoToSleep": "23:15",
+    "WakeUp": "07:05"
   },
   "Defender": {
     "Active": true,

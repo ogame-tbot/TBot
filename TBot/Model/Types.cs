@@ -630,6 +630,23 @@ namespace Tbot.Model
         public Resources Price { get; set; }
     }
 
+    public class FleetSchedule
+    {
+        public Celestial Origin { get; set; }
+        public Coordinate Destination { get; set; }
+        public Ships Ships { get; set; }
+        public Resources Payload { get; set; }
+        public Missions Mission { get; set; }
+        public decimal Speed { get; set; }
+        public DateTime Departure { get; set; }
+        public DateTime Arrival { get; set; }
+        public DateTime Comeback { get; set; }
+        public long Duration { get; set; }
+        public DateTime SendAt { get; set; }
+        public DateTime RecallAt { get; set; }
+        public DateTime ReturnAt { get; set; }
+    }
+
     public class ProxySettings
     {
         public bool Enabled { get; set; }

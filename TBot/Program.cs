@@ -33,6 +33,8 @@ namespace Tbot
         static volatile Slots slots;
         static volatile Researches researches;
         static volatile ConcurrentDictionary<Feature, bool> features;
+        static volatile List<FleetSchedule> scheduledFleets;
+        static volatile bool isSleeping;
 
         /*Lorenzo 07/02/2021
          * Added array of semaphore to manage the cuncurrency
@@ -43,6 +45,7 @@ namespace Tbot
         static void Main(string[] args)
         {
             Helpers.SetTitle();
+            isSleeping = false;
 
             ReadSettings();
             FileSystemWatcher settingsWatcher = new(Path.GetFullPath(AppContext.BaseDirectory));
@@ -159,6 +162,8 @@ namespace Tbot
                     xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
                     xaSem[Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
                     xaSem[Feature.Harvest] = new Semaphore(1, 1); //Harvest
+                    xaSem[Feature.FleetScheduler] = new Semaphore(1, 1); //FleetScheduler
+                    xaSem[Feature.SleepMode] = new Semaphore(1, 1); //SleepMode
 
                     features = new();
                     features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -169,10 +174,12 @@ namespace Tbot
                     features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
                     celestials = GetPlanets();
                     researches = ogamedService.GetResearches();
+                    scheduledFleets = new();
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
                     InitializeFeatures();
@@ -190,6 +197,17 @@ namespace Tbot
 
         private static bool HandleStartStopFeatures(Feature feature, bool currentValue)
         {
+            if (isSleeping && (bool)settings.SleepMode.Active)
+                switch (feature)
+                {
+                    case Feature.SleepMode:
+                        if (!currentValue)
+                            InitializeSleepMode();
+                        return true;
+                    default:
+                        return false;
+                }
+
             switch (feature)
             {
                 case Feature.Defender:
@@ -288,6 +306,19 @@ namespace Tbot
                             StopHarvest();
                         return false;
                     }
+                case Feature.SleepMode:
+                    if ((bool)settings.SleepMode.Active)
+                    {
+                        if (!currentValue)
+                            InitializeSleepMode();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopSleepMode();
+                        return false;
+                    }
                 default:
                     return false;
             }
@@ -303,6 +334,13 @@ namespace Tbot
             features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+        }
+
+        private static void InitializeFleetScheduler()
+        {
+            scheduledFleets = new();
+
         }
 
         private static void ReadSettings()
@@ -579,6 +617,116 @@ namespace Tbot
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
             timers.GetValueOrDefault("HarvestTimer").Dispose();
             timers.Remove("HarvestTimer");
+        }
+
+        private static void InitializeSleepMode()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing sleep mode...");
+            timers.Add("SleepModeTimer", new Timer(HandleSleepMode, null, 0, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes)));            
+        }
+
+        private static void StopSleepMode()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping sleep mode...");
+            timers.GetValueOrDefault("SleepModeTimer").Dispose();
+            timers.Remove("SleepModeTimer");
+        }
+
+        private static void HandleSleepMode(object state)
+        {
+            DateTime goToSleep = GetDateTime();
+            DateTime wakeUp = GetDateTime();
+            DateTime time = GetDateTime();
+
+            if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out goToSleep))
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
+            }
+            else if (!DateTime.TryParse((string)settings.SleepMode.WakeUp, out wakeUp))
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
+            }
+            else if (goToSleep == wakeUp)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep tima and WakeUp time must be different. Sleep mode will be disabled");
+            }
+            else
+            {
+                if (goToSleep > wakeUp)
+                    wakeUp.AddDays(1);
+
+                long interval;
+
+                if (time >= goToSleep)
+                {
+                    interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    GoToSleep(state);
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
+                }
+                else
+                {
+                    interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    WakeUp(state);
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
+                }
+            }
+        }
+
+        private static void GoToSleep(object state)
+        {
+            try
+            {
+                xaSem[Feature.SleepMode].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
+                isSleeping = true;
+                InitializeFeatures();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                DateTime time = GetDateTime();
+                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            finally
+            {
+                xaSem[Feature.SleepMode].Release();
+            }
+        }
+
+        private static void WakeUp(object state)
+        {
+            try
+            {
+                xaSem[Feature.SleepMode].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
+                isSleeping = false;
+                InitializeFeatures();
+
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                DateTime time = GetDateTime();
+                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            finally
+            {
+                xaSem[Feature.SleepMode].Release();
+            }
         }
 
         private static void Defender(object state)

@@ -173,7 +173,9 @@ namespace Tbot.Model
 		Defender,
 		Brain,
 		Expeditions,
-		Harvest
+		Harvest,
+		FleetScheduler,
+		SleepMode
 	}
 
 	public enum Feature
@@ -185,6 +187,8 @@ namespace Tbot.Model
 		BrainAutoMine = 4,
 		BrainOfferOfTheDay = 5,
 		Expeditions = 6,
-		Harvest = 7		
+		Harvest = 7,
+		FleetScheduler = 8,
+		SleepMode = 9
 	}
 }
