@@ -200,6 +200,36 @@ namespace Tbot
             if (isSleeping && (bool)settings.SleepMode.Active)
                 switch (feature)
                 {
+                    case Feature.Defender:
+                        if (currentValue)
+                            StopDefender();
+                        return false;
+                    case Feature.Brain:
+                        return false;
+                    case Feature.BrainAutobuildCargo:
+                        if (currentValue)
+                            StopBrainAutoCargo();
+                        return false;
+                    case Feature.BrainAutoRepatriate:
+                        if (currentValue)
+                            StopBrainRepatriate();
+                        return false;
+                    case Feature.BrainAutoMine:
+                        if (currentValue)
+                            StopBrainAutoMine();
+                        return false;
+                    case Feature.BrainOfferOfTheDay:
+                        if (currentValue)
+                            StopBrainOfferOfTheDay();
+                        return false;
+                    case Feature.Expeditions:
+                        if (currentValue)
+                            StopExpeditions();
+                        return false;
+                    case Feature.Harvest:
+                        if (currentValue)
+                            StopHarvest();
+                        return false;
                     case Feature.SleepMode:
                         if (!currentValue)
                             InitializeSleepMode();
@@ -652,27 +682,31 @@ namespace Tbot
             }
             else
             {
-                if (goToSleep > wakeUp)
-                    wakeUp.AddDays(1);
+                
 
                 long interval;
 
-                if (time >= goToSleep)
+                if (time >= wakeUp)
                 {
-                    interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                    DateTime newTime = time.AddMilliseconds(interval);
-                    GoToSleep(state);
-                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
-                }
-                else
-                {
+                    if (goToSleep < wakeUp)
+                        goToSleep = goToSleep.AddDays(1);
                     interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                     timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                     DateTime newTime = time.AddMilliseconds(interval);
                     WakeUp(state);
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
                 }
+                if (time >= goToSleep)
+                {
+                    if (goToSleep > wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                    interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    GoToSleep(state);
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
+                }
+                
             }
         }
 
