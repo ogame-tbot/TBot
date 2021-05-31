@@ -200,7 +200,7 @@ namespace Tbot.Model
         public float RepairFactor { get; set; }
         public int NewbieProtectionLimit { get; set; }
         public int NewbieProtectionHigh { get; set; }
-        public int TopScore { get; set; }
+        public long TopScore { get; set; }
         public int BonusFields { get; set; }
         public bool DonutGalaxy { get; set; }
         public bool DonutSystem { get; set; }

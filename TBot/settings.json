@@ -22,7 +22,10 @@
   "SleepMode": {
     "Active": false,
     "GoToSleep": "23:15",
-    "WakeUp": "07:05"
+    "WakeUp": "07:05",
+    "TelegramMessenger": {
+      "Active": false
+    }
   },
   "Defender": {
     "Active": true,

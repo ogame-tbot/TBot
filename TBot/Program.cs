@@ -664,9 +664,9 @@ namespace Tbot
 
         private static void HandleSleepMode(object state)
         {
-            DateTime goToSleep = GetDateTime();
-            DateTime wakeUp = GetDateTime();
             DateTime time = GetDateTime();
+            DateTime goToSleep = time;
+            DateTime wakeUp = time;
 
             if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out goToSleep))
             {
@@ -678,12 +678,10 @@ namespace Tbot
             }
             else if (goToSleep == wakeUp)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep tima and WakeUp time must be different. Sleep mode will be disabled");
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep time and WakeUp time must be different. Sleep mode will be disabled");
             }
             else
             {
-                
-
                 long interval;
 
                 if (time >= wakeUp)
@@ -693,7 +691,7 @@ namespace Tbot
                     interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                     timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                     DateTime newTime = time.AddMilliseconds(interval);
-                    WakeUp(state);
+                    WakeUp(newTime);
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
                 }
                 if (time >= goToSleep)
@@ -703,7 +701,7 @@ namespace Tbot
                     interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                     timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                     DateTime newTime = time.AddMilliseconds(interval);
-                    GoToSleep(state);
+                    GoToSleep(newTime);
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
                 }
                 
@@ -716,6 +714,11 @@ namespace Tbot
             {
                 xaSem[Feature.SleepMode].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
+                if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
+                {
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Going to sleep");
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Waking Up at " + state.ToString());
+                }
                 isSleeping = true;
                 InitializeFeatures();
             }
@@ -742,6 +745,11 @@ namespace Tbot
             {
                 xaSem[Feature.SleepMode].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
+                if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
+                {
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Waking up");
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Going to sleep at " + state.ToString());
+                }
                 isSleeping = false;
                 InitializeFeatures();
 

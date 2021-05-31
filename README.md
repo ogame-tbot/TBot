@@ -36,6 +36,7 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   * AutoMine (tnx to Stewie): Tbot will develop your colonies up to the levels given in settings.json. Transports are not implemented yet, so you should provide resources manually to speed up.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
+* SleepMode: TBot will not interact with your account between the hours specified in settings.json
 * Local Proxy (tnx to ogamed and CrynogarTM for the hint): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
