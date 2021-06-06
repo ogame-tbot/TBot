@@ -790,11 +790,13 @@ namespace Tbot
             {
                 xaSem[Feature.SleepMode].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
+                /*
                 foreach(Celestial celestial in celestials)
                 {
                     AutoFleetSave(celestial, true);
                 }
-                
+                */
+
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
                 {
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Going to sleep");
