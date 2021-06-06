@@ -434,7 +434,7 @@ namespace Tbot.Includes
             var capacity = CalcFleetCapacity(ships, hyperspaceTech, playerClass);
             if (resources.TotalResources <= capacity)
             {
-                return resources;
+                return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = resources.Crystal, Metal = resources.Metal };
             }
             else
             {
