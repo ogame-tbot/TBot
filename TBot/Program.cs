@@ -1250,7 +1250,7 @@ namespace Tbot
                                 .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                                 .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
                                 .First();
-                    Coordinate destinationCoordinate;
+                    Coordinate destinationCoordinate = destination.Coordinate;
 
                     if (settings.Brain.AutoRepatriate.Target)
                     {
