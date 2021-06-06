@@ -1250,6 +1250,8 @@ namespace Tbot
                                 .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                                 .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
                                 .First();
+                    Coordinate destinationCoordinate;
+
                     if (settings.Brain.AutoRepatriate.Target)
                     {
                         try
@@ -1261,7 +1263,7 @@ namespace Tbot
                                 .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type))
                                 .Single();
                             destination = customDestination;
-                            Coordinate destinationCoordinate = destination.Coordinate;
+                            destinationCoordinate = destination.Coordinate;
                             if (celestial.ID == customDestination.ID)
                             {
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: this celestial is the destination");
@@ -1272,10 +1274,10 @@ namespace Tbot
                         {
                             try
                             {
-                                Coordinate destinationCoordinate = new Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
-                                                                                  (int)settings.Brain.AutoRepatriate.Target.System,
-                                                                                  (int)settings.Brain.AutoRepatriate.Target.Position,
-                                                                                  Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
+                                destinationCoordinate = new Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
+                                                                       (int)settings.Brain.AutoRepatriate.Target.System,
+                                                                       (int)settings.Brain.AutoRepatriate.Target.Position,
+                                                                       Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
                             }
                             catch
                             {
