@@ -1326,11 +1326,13 @@ namespace Tbot
                     {
                         ships.Add(preferredShip, celestial.Ships.GetAmount(preferredShip));
                     }
-                    Resources payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
+                    Resources payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class, settings.Brain.AutoRepatriate.DeutToLeave);
                     Celestial destination = celestials
                                 .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
                                 .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
                                 .First();
+                    Coordinate destinationCoordinate = destination.Coordinate;
+
                     if (settings.Brain.AutoRepatriate.Target)
                     {
                         try
@@ -1342,6 +1344,7 @@ namespace Tbot
                                 .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type))
                                 .Single();
                             destination = customDestination;
+                            destinationCoordinate = destination.Coordinate;
                             if (celestial.ID == customDestination.ID)
                             {
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: this celestial is the destination");
@@ -1350,12 +1353,22 @@ namespace Tbot
                         }
                         catch (Exception e)
                         {
-                            Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
+                            try
+                            {
+                                destinationCoordinate = new Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
+                                                                       (int)settings.Brain.AutoRepatriate.Target.System,
+                                                                       (int)settings.Brain.AutoRepatriate.Target.Position,
+                                                                       Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
+                            }
+                            catch
+                            {
+                                Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
+                            }
                         }
                     }
-                    SendFleet(celestial, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, payload);
+                    SendFleet(celestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
                 }
             }
             catch (Exception e)
