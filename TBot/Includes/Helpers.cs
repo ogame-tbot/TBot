@@ -429,7 +429,7 @@ namespace Tbot.Includes
             return (long)(1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
         }
 
-        public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass)
+        public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass, long deuttoleave = 0)
         {
             var capacity = CalcFleetCapacity(ships, hyperspaceTech, playerClass);
             if (resources.TotalResources <= capacity)
@@ -438,17 +438,17 @@ namespace Tbot.Includes
             }
             else
             {
-                if (resources.Deuterium > capacity)
+                if (resources.Deuterium - deuttoleave > capacity)
                 {
-                    return new Resources { Deuterium = capacity };
+                    return new Resources { Deuterium - deuttoleave = capacity };
                 }
-                else if (capacity >= resources.Deuterium && capacity < (resources.Deuterium + resources.Crystal))
+                else if (capacity >= resources.Deuterium - deuttoleave && capacity < (resources.Deuterium - deuttoleave + resources.Crystal))
                 {
-                    return new Resources { Deuterium = resources.Deuterium, Crystal = (capacity - resources.Deuterium) };
+                    return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = (capacity - resources.Deuterium + deuttoleave) };
                 }
-                else if (capacity >= (resources.Deuterium + resources.Crystal) && capacity < resources.TotalResources)
+                else if (capacity >= (resources.Deuterium - deuttoleave + resources.Crystal) && capacity < resources.TotalResources)
                 {
-                    return new Resources { Deuterium = resources.Deuterium, Crystal = resources.Crystal, Metal = (capacity - resources.Deuterium - resources.Crystal) };
+                    return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = resources.Crystal, Metal = (capacity - resources.Deuterium + deuttoleave - resources.Crystal) };
                 }
                 else return resources;
             }
