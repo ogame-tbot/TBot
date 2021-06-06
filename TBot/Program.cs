@@ -1277,7 +1277,7 @@ namespace Tbot
                                                                                   (int)settings.Brain.AutoRepatriate.Target.Position,
                                                                                   Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
                             }
-                            catch (Exception e)
+                            catch
                             {
                                 Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
                                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
