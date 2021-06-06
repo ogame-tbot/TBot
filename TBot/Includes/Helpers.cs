@@ -440,7 +440,7 @@ namespace Tbot.Includes
             {
                 if (resources.Deuterium - deuttoleave > capacity)
                 {
-                    return new Resources { Deuterium - deuttoleave = capacity };
+                    return new Resources { Deuterium = capacity };
                 }
                 else if (capacity >= resources.Deuterium - deuttoleave && capacity < (resources.Deuterium - deuttoleave + resources.Crystal))
                 {
