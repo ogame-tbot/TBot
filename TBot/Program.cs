@@ -1272,10 +1272,10 @@ namespace Tbot
                         {
                             try
                             {
-                                Coordinate destinationCoordinate = Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
-                                                                              (int)settings.Brain.AutoRepatriate.Target.System,
-                                                                              (int)settings.Brain.AutoRepatriate.Target.Position,
-                                                                              Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
+                                Coordinate destinationCoordinate = new Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
+                                                                                  (int)settings.Brain.AutoRepatriate.Target.System,
+                                                                                  (int)settings.Brain.AutoRepatriate.Target.Position,
+                                                                                  Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
                             }
                             catch (Exception e)
                             {
