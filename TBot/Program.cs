@@ -1166,8 +1166,16 @@ namespace Tbot
                     //Yes, i can build it
                     if (xBuildableToBuild == Buildables.SolarSatellite)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + nLevelToBuild.ToString() + "x " + xBuildableToBuild.ToString() + " on " + xCelestial.ToString());
-                        result = ogamedService.BuildShips(xCelestial, xBuildableToBuild, nLevelToBuild);
+                        xCelestial = UpdatePlanet(xCelestial, UpdateType.Productions);
+                        if (xCelestial.Productions.Count == 0)
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + nLevelToBuild.ToString() + "x " + xBuildableToBuild.ToString() + " on " + xCelestial.ToString());
+                            result = ogamedService.BuildShips(xCelestial, xBuildableToBuild, nLevelToBuild);
+                        }
+                        else
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + " - There is already a production ongoing.Skipping planet.");
+                        }                        
                     }
                     else
                     {
