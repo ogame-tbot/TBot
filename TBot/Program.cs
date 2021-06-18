@@ -1258,8 +1258,8 @@ namespace Tbot
                         Ships ships = new();
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
                             ships.Add(preferredShip, idealShips);
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
                             SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
                         }
                         else
