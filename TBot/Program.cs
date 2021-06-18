@@ -1022,6 +1022,7 @@ namespace Tbot
                     }
                     else
                     {
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         xBuildable = Helpers.GetNextLunarFacilityToBuild(
                             tempCelestial as Moon,
                             (int)settings.Brain.AutoMine.MaxLunarBase,
