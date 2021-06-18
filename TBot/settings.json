@@ -82,6 +82,16 @@
       "MaxLunarRoboticsFactory": 8,
       "MaxSensorPhalanx": 6,
       "MaxJumpGate": 1,
+      "Trasports": {
+        "Active": true,
+        "CargoType": "SmallCargo",
+        "Origin": {
+          "Galaxy": 3,
+          "System": 333,
+          "Position": 8,
+          "Type": "Planet"
+        }
+      },
       "CheckIntervalMin": 10,
       "CheckIntervalMax": 20
     },
@@ -107,6 +117,7 @@
       },
       "CargoType": "LargeCargo",
       "RandomOrder": true,
+      "SkipIfIncomingTransport":  true,
       "CheckIntervalMin": 30,
       "CheckIntervalMax": 60
     },

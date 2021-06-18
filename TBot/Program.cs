@@ -955,6 +955,8 @@ namespace Tbot
                 xaSem[Feature.BrainAutoMine].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
 
+                fleets = UpdateFleets();
+
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
                 List<Celestial> newCelestials = celestials.ToList();
@@ -1208,11 +1210,72 @@ namespace Tbot
                 else
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                    if ((bool)settings.Brain.AutoMine.Trasports.Active)
+                    {
+                        if (!Helpers.IsThereTransportTowardsCelestial(xCelestial, fleets))
+                        {
+                            HandleMinerTrasport(xCelestial, xCostBuildable);
+                        }
+                        else
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + xCelestial.ToString());
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleBuildCelestialMines Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+            }
+        }
+
+        private static void HandleMinerTrasport(Celestial destination, Resources resources)
+        {
+            try
+            {
+                Celestial origin = celestials
+                    .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
+                    .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
+                    .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
+                    .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
+                    .SingleOrDefault() ?? new() { ID = 0 };
+
+                if (origin.ID == 0)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: unable to parse transport origin.");
+                }
+                else
+                {
+                    var missingResources = resources.Difference(destination.Resources);
+                    origin = UpdatePlanet(origin, UpdateType.Resources);                    
+                    if (origin.Resources.IsEnoughFor(missingResources))
+                    {
+                        origin = UpdatePlanet(origin, UpdateType.Ships);
+                        Buildables preferredShip = Buildables.SmallCargo;
+                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
+                        long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                        Ships ships = new();
+                        if (idealShips <= origin.Ships.GetAmount(preferredShip))
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
+                            ships.Add(preferredShip, idealShips);
+                            SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                        }
+                        else
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough ships to transport required resources.");
+                        }
+                    }
+                    else
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough resources in orgin.");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTrasport Exception: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
         }
@@ -1327,11 +1390,17 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
                 celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
+                fleets = UpdateFleets();
 
                 var rand = new Random();
                 foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
                 {
-                    if (celestial.Coordinate.Type == Celestials.Moon && settings.Brain.AutoRepatriate.ExcludeMoons)
+                    if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
+                        continue;
+                    }
+                    if (celestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoRepatriate.ExcludeMoons)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
                         continue;

@@ -1338,5 +1338,21 @@ namespace Tbot.Includes
             else
                 return false;
         }
+
+        public static bool IsThereTransportTowardsCelestial(Celestial celestial, List<Fleet> fleets)
+        {
+            var transports = fleets
+                .Where(f => f.Mission == Missions.Transport)
+                .Where(f => f.ReturnFlight == false)
+                .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+                .Where(f => f.Destination.System == celestial.Coordinate.System)
+                .Where(f => f.Destination.Position == celestial.Coordinate.Position)
+                .Where(f => f.Destination.Type == celestial.Coordinate.Type)
+                .Count();
+            if (transports > 0)
+                return true;
+            else
+                return false;
+        }
     }
 }

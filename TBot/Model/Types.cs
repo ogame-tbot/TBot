@@ -276,6 +276,32 @@ namespace Tbot.Model
             }
             else return false;
         }
+
+        public Resources Sum(Resources resourcesToSum)
+        {
+            Resources output = new();
+            output.Metal = Metal + resourcesToSum.Metal;
+            output.Crystal = Crystal + resourcesToSum.Crystal;
+            output.Deuterium = Deuterium + resourcesToSum.Deuterium;
+
+            return output;
+        }
+
+        public Resources Difference(Resources resourcesToSubtract)
+        {
+            Resources output = new();
+            output.Metal = Metal - resourcesToSubtract.Metal;
+            if (output.Metal < 0)
+                output.Metal = 0;
+            output.Crystal = Crystal - resourcesToSubtract.Crystal;
+            if (output.Crystal < 0)
+                output.Crystal = 0;
+            output.Deuterium = Deuterium - resourcesToSubtract.Deuterium;
+            if (output.Deuterium < 0)
+                output.Deuterium = 0;
+
+            return output;
+        }
     }
 
     public class Buildings
