@@ -56,6 +56,13 @@ namespace Tbot.Model
     {
         public int Built { get; set; }
         public int Total { get; set; }
+        public int Free
+        {
+            get
+            {
+                return Total - Built;
+            }
+        }
     }
 
     public class Temperature

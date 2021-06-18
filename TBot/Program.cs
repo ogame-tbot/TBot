@@ -1014,7 +1014,18 @@ namespace Tbot
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon " + tempCelestial.ToString());
+                        xBuildable = Helpers.GetNextLunarFacilityToBuild(
+                            tempCelestial as Moon,
+                            (int)settings.Brain.AutoMine.MaxLunarBase,
+                            (int)settings.Brain.AutoMine.MaxLunarRoboticsFactory,
+                            (int)settings.Brain.AutoMine.MaxSensorPhalanx,
+                            (int)settings.Brain.AutoMine.MaxJumpGate,
+                            (int)settings.Brain.AutoMine.MaxLunarShipyard
+                        );
+                        nLevelToReach = Helpers.GetNextLevel(tempCelestial as Moon, xBuildable);
+
+                        if (xBuildable != Buildables.Null && nLevelToReach > 0)
+                            mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
                     }
                     newCelestials.Remove(xCelestial);
                     newCelestials.Add(tempCelestial);
@@ -1249,7 +1260,7 @@ namespace Tbot
                         if (planet.Ships.GetAmount(preferredCargoShip) + neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToKeep)
                             neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - planet.Ships.GetAmount(preferredCargoShip);
 
-                        var cost = ogamedService.GetPrice(preferredCargoShip, neededCargos);
+                        var cost = Helpers.CalcPrice(preferredCargoShip, (int)neededCargos);
                         if (planet.Resources.IsEnoughFor(cost))
                         {
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());
@@ -1593,17 +1604,9 @@ namespace Tbot
                             Missions mission = Missions.Deploy;
                             destination = celestials
                                 .Where(planet => planet.ID != attackedCelestial.ID)
-                                .Where(planet => planet.Coordinate.Type == (attackedCelestial.Coordinate.Type == Celestials.Moon ? Celestials.Planet : Celestials.Moon))
-                                .Where(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData) == 5)
+                                .Where(planet => planet.Coordinate.Type == Celestials.Moon)
+                                .OrderBy(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData))
                                 .FirstOrDefault() ?? new Celestial { ID = 0 };
-                            if (destination.ID == 0)
-                            {
-                                destination = celestials
-                                    .Where(planet => planet.ID != attackedCelestial.ID)
-                                    .Where(planet => planet.Coordinate.Type == Celestials.Moon)
-                                    .OrderBy(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData))
-                                    .FirstOrDefault() ?? new Celestial { ID = 0 };
-                            }
                             if (destination.ID == 0)
                             {
                                 destination = celestials

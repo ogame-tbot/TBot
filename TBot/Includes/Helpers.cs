@@ -799,7 +799,7 @@ namespace Tbot.Includes
                     output.Crystal = (long)(30 * Math.Pow(1.5, (level - 1)));
                     break;
                 case Buildables.FusionReactor:
-                    output.Metal = (long)(1900 * Math.Pow(1.8, (level - 1)));
+                    output.Metal = (long)(900 * Math.Pow(1.8, (level - 1)));
                     output.Crystal = (long)(360 * Math.Pow(1.8, (level - 1)));
                     output.Deuterium = (long)(180 * Math.Pow(1.8, (level - 1)));
                     break;
@@ -1079,11 +1079,12 @@ namespace Tbot.Includes
             else return 0;
         }
 
-        public static int GetNextLevel(Planet planet, Buildables buildable)
+        public static int GetNextLevel(Celestial planet, Buildables buildable)
         {
             int output = 0;
             if (buildable == Buildables.SolarSatellite)
-                output = CalcNeededSolarSatellites(planet);
+                if (planet is Planet)
+                    output = CalcNeededSolarSatellites(planet as Planet);
             if (output == 0)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
@@ -1194,31 +1195,100 @@ namespace Tbot.Includes
             return dic.FirstOrDefault().Key;
         }
 
-        public static bool ShouldBuildRoboticFactory(Planet planet, int maxLevel = 10)
+        public static Buildables GetNextLunarFacilityToBuild(Moon moon, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
+        {
+            if (ShouldBuildLunarBase(moon, maxLunarBase))
+                return Buildables.LunarBase;
+            if (ShouldBuildRoboticFactory(moon, maxRoboticsFactory))
+                return Buildables.RoboticsFactory;
+            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
+                return Buildables.SensorPhalanx;
+            if (ShouldBuildJumpGate(moon, maxJumpGate))
+                return Buildables.JumpGate;
+            if (ShouldBuildShipyard(moon, maxShipyard))
+                return Buildables.Shipyard;
+            else return Buildables.Null;
+        }
+
+        public static bool ShouldBuildRoboticFactory(Celestial celestial, int maxLevel = 10)
+        {
+            if ( celestial is Planet )
+            {
+                var nextMine = GetNextMineToBuild(celestial as Planet);
+                var nextMineLevel = GetNextLevel(celestial, nextMine);
+                var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+                var nextRobotsLevel = GetNextLevel(celestial, Buildables.RoboticsFactory);
+                var nextRobotsPrice = CalcPrice(Buildables.RoboticsFactory, nextRobotsLevel);
+
+                if (nextRobotsLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                var nextRobotsLevel = GetNextLevel(celestial, Buildables.RoboticsFactory);
+
+                if (nextRobotsLevel < maxLevel && celestial.Fields.Free > 1)
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        public static bool ShouldBuildShipyard(Celestial celestial, int maxLevel = 12)
+        {
+            if (celestial is Planet)
+            {
+                var nextMine = GetNextMineToBuild(celestial as Planet);
+                var nextMineLevel = GetNextLevel(celestial, nextMine);
+                var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+                var nextShipyardLevel = GetNextLevel(celestial as Planet, Buildables.Shipyard);
+                var nextShipyardPrice = CalcPrice(Buildables.Shipyard, nextShipyardLevel);
+
+                if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 2)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                var nextShipyardLevel = GetNextLevel(celestial, Buildables.Shipyard);
+
+                if (nextShipyardLevel < maxLevel && celestial.Fields.Free > 1)
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        public static bool ShouldBuildResearchLab(Planet planet, int maxLevel = 12)
         {
             var nextMine = GetNextMineToBuild(planet);
             var nextMineLevel = GetNextLevel(planet, nextMine);
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
-            var nextRobotsLevel = GetNextLevel(planet, Buildables.RoboticsFactory);
-            var nextRobotsPrice = CalcPrice(Buildables.RoboticsFactory, nextRobotsLevel);
+            var nextLabLevel = GetNextLevel(planet, Buildables.ResearchLab);
+            var nextLabPrice = CalcPrice(Buildables.ResearchLab, nextLabLevel);
 
-            if (nextRobotsLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium)
+            if (nextLabLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildShipyard(Planet planet, int maxLevel = 12)
+        public static bool ShouldBuildMissileSilo(Planet planet, int maxLevel = 6)
         {
             var nextMine = GetNextMineToBuild(planet);
             var nextMineLevel = GetNextLevel(planet, nextMine);
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
-            var nextShipyardLevel = GetNextLevel(planet, Buildables.Shipyard);
-            var nextShipyardPrice = CalcPrice(Buildables.Shipyard, nextShipyardLevel);
+            var nextSiloLevel = GetNextLevel(planet, Buildables.MissileSilo);
+            var nextSiloPrice = CalcPrice(Buildables.MissileSilo, nextSiloLevel);
 
-            if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 2)
+            if (nextSiloLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextSiloPrice.ConvertedDeuterium && planet.Facilities.Shipyard >= 1)
                 return true;
             else
                 return false;
@@ -1234,6 +1304,36 @@ namespace Tbot.Includes
             var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
 
             if (nextNanitesLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildLunarBase(Moon moon, int maxLevel = 8)
+        {       
+            var nextLunarBaseLevel = GetNextLevel(moon, Buildables.LunarBase);
+
+            if (nextLunarBaseLevel < maxLevel && moon.Fields.Free == 1)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildSensorPhalanx(Moon moon, int maxLevel = 7)
+        {
+            var nextSensorPhalanxLevel = GetNextLevel(moon, Buildables.SensorPhalanx);
+
+            if (nextSensorPhalanxLevel < maxLevel && moon.Fields.Free > 1)
+                return true;
+            else
+                return false;
+        }
+
+        public static bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1)
+        {
+            var nextJumpGateLevel = GetNextLevel(moon, Buildables.JumpGate);
+
+            if (nextJumpGateLevel < maxLevel && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
