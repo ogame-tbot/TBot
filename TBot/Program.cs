@@ -1397,8 +1397,7 @@ namespace Tbot
                 celestials = UpdatePlanets(UpdateType.Resources);
                 fleets = UpdateFleets();
 
-                var rand = new Random();
-                foreach (Celestial celestial in settings.Brain.AutoRepatriate.RandomOrder ? celestials.OrderBy(celestial => rand.Next()).ToList() : celestials)
+                foreach (Celestial celestial in (bool)settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
                     if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                     {
@@ -1415,9 +1414,20 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
                         continue;
                     }
+
                     Buildables preferredShip = Buildables.SmallCargo;
                     Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
-                    long idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                    long idealShips;
+                    if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
+                    {
+                        if (celestial is Planet && (bool)settings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons)
+                            idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                        else
+                            idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources.Difference(new() { Deuterium = (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave }), preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                    }                        
+                    else
+                        idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+
                     Ships ships = new();
                     if (idealShips <= celestial.Ships.GetAmount(preferredShip))
                     {
@@ -1427,11 +1437,22 @@ namespace Tbot
                     {
                         ships.Add(preferredShip, celestial.Ships.GetAmount(preferredShip));
                     }
-                    Resources payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class, settings.Brain.AutoRepatriate.DeutToLeave);
+
+                    Resources payload;
+                    if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
+                    {
+                        if (celestial is Planet && (bool)settings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons)
+                            payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
+                        else
+                            payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class, (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave);
+                    }
+                    else
+                        payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);                    
+                    
                     Celestial destination = celestials
-                                .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                                .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                                .First();
+                            .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                            .First();
                     Coordinate destinationCoordinate = destination.Coordinate;
 
                     if (settings.Brain.AutoRepatriate.Target)
@@ -1456,10 +1477,12 @@ namespace Tbot
                         {
                             try
                             {
-                                destinationCoordinate = new Coordinate((int)settings.Brain.AutoRepatriate.Target.Galaxy,
-                                                                       (int)settings.Brain.AutoRepatriate.Target.System,
-                                                                       (int)settings.Brain.AutoRepatriate.Target.Position,
-                                                                       Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type));
+                                destinationCoordinate = new Coordinate(
+                                    (int)settings.Brain.AutoRepatriate.Target.Galaxy,
+                                    (int)settings.Brain.AutoRepatriate.Target.System,
+                                    (int)settings.Brain.AutoRepatriate.Target.Position,
+                                    Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type)
+                                );
                             }
                             catch
                             {

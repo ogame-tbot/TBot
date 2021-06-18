@@ -429,26 +429,26 @@ namespace Tbot.Includes
             return (long)(1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
         }
 
-        public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass, long deuttoleave = 0)
+        public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass, long deutToLeave = 0)
         {
             var capacity = CalcFleetCapacity(ships, hyperspaceTech, playerClass);
             if (resources.TotalResources <= capacity)
             {
-                return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = resources.Crystal, Metal = resources.Metal };
+                return new Resources { Deuterium = resources.Deuterium - deutToLeave, Crystal = resources.Crystal, Metal = resources.Metal };
             }
             else
             {
-                if (resources.Deuterium - deuttoleave > capacity)
+                if (resources.Deuterium - deutToLeave > capacity)
                 {
                     return new Resources { Deuterium = capacity };
                 }
-                else if (capacity >= resources.Deuterium - deuttoleave && capacity < (resources.Deuterium - deuttoleave + resources.Crystal))
+                else if (capacity >= resources.Deuterium - deutToLeave && capacity < (resources.Deuterium - deutToLeave + resources.Crystal))
                 {
-                    return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = (capacity - resources.Deuterium + deuttoleave) };
+                    return new Resources { Deuterium = resources.Deuterium - deutToLeave, Crystal = (capacity - resources.Deuterium + deutToLeave) };
                 }
-                else if (capacity >= (resources.Deuterium - deuttoleave + resources.Crystal) && capacity < resources.TotalResources)
+                else if (capacity >= (resources.Deuterium - deutToLeave + resources.Crystal) && capacity < resources.TotalResources)
                 {
-                    return new Resources { Deuterium = resources.Deuterium - deuttoleave, Crystal = resources.Crystal, Metal = (capacity - resources.Deuterium + deuttoleave - resources.Crystal) };
+                    return new Resources { Deuterium = resources.Deuterium - deutToLeave, Crystal = resources.Crystal, Metal = (capacity - resources.Deuterium + deutToLeave - resources.Crystal) };
                 }
                 else return resources;
             }
