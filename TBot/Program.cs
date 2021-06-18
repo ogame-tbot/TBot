@@ -963,13 +963,13 @@ namespace Tbot
                 foreach (Celestial xCelestial in celestials)
                 {
                     var tempCelestial = xCelestial;
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
                     if (tempCelestial.Constructions.BuildingID != 0)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
-                    }
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
+                    }                    
                     if (tempCelestial is Planet)
                     {
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
