@@ -1258,7 +1258,7 @@ namespace Tbot
                     {
                         origin = UpdatePlanet(origin, UpdateType.Ships);
                         Buildables preferredShip = Buildables.SmallCargo;
-                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
+                        Enum.TryParse<Buildables>((string)settings.Brain.AutoMine.Trasports.CargoType, true, out preferredShip);
                         long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
                         Ships ships = new();
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
