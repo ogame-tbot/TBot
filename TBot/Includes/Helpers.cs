@@ -1085,7 +1085,7 @@ namespace Tbot.Includes
             if (buildable == Buildables.SolarSatellite)
                 if (planet is Planet)
                     output = CalcNeededSolarSatellites(planet as Planet);
-            if (output == 0)
+            if (output == 0 && planet is Planet)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
                 {
