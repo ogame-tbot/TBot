@@ -17,7 +17,9 @@ Feel free to publish issues or pull requests
 
 Scripting and botting are forbidden by the OGame rules.
 I adopt a series of measures to prevent detection and thus ban, but I cannot, and never will, guarantee anything.
-Use this bot at your own risk!! Any testing is very much appreciated!
+Use this bot at your own risk!!
+
+Testing and PR are very much appreciated!
 
 ## Features
 
@@ -32,12 +34,12 @@ Use this bot at your own risk!! Any testing is very much appreciated!
   * AutoSendExpeditions: TBot automatically optimizes expeditions for your account, sending them from the origin(s) setted in settings.json
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
-  * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial (guess where you can specify which...)
-  * AutoMine (tnx to Stewie): Tbot will develop your colonies up to the levels given in settings.json. Transports are not implemented yet, so you should provide resources manually to speed up.
+  * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
+  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
-* Local Proxy (tnx to ogamed and CrynogarTM for the hint): Tbot allows you to play in your browser
+* Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
