@@ -997,6 +997,12 @@ namespace Tbot
                             xBuildable = Buildables.Shipyard;
                             nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab))
+                        {
+                            //Manage the need of lab
+                            xBuildable = Buildables.ResearchLab;
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
+                        }
                         if (xBuildable == Buildables.Null)
                         {
                             //Manage the need of build some deposit
