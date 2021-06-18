@@ -1241,7 +1241,11 @@ namespace Tbot
                     .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
                     .SingleOrDefault() ?? new() { ID = 0 };
 
-                if (origin.ID == 0)
+                if (origin.ID == destination.ID)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
+                }
+                else if (origin.ID == 0)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: unable to parse transport origin.");
                 }
