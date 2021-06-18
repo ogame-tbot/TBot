@@ -106,7 +106,7 @@
     },
     "AutoRepatriate": {
       "Active": true,
-      "ExcludeMoons": true,
+      "ExcludeMoons": false,
       "MinimumResources": 1000000,
       "LeaveDeut": {
         "OnlyOnMoons": true,

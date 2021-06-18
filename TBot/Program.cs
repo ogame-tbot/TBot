@@ -969,7 +969,12 @@ namespace Tbot
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
-                    }                    
+                    }
+                    if (tempCelestial.Fields.Free == 0)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": no more fields available.");
+                        continue;
+                    }
                     if (tempCelestial is Planet)
                     {
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
