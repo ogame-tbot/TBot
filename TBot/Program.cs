@@ -789,6 +789,10 @@ namespace Tbot
         {
             try
             {
+                xaSem[Feature.Defender].WaitOne();
+                xaSem[Feature.Brain].WaitOne();
+                xaSem[Feature.Expeditions].WaitOne();
+                xaSem[Feature.Harvest].WaitOne();
                 xaSem[Feature.SleepMode].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
                 /*
