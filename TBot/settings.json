@@ -1,171 +1,172 @@
 ﻿{
-  "Credentials": {
-    "Universe": "",
-    "Email": "",
-    "Password": "",
-    "Language": ""
-  },
-  "General": {
-    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36",
-    "Host": "localhost",
-    "Port": "8080",
-    "Proxy": {
-      "Enabled": false,
-      "Address": "",
-      "Type": "socks5",
-      "Username": "",
-      "Password": ""
-    },
-    "CaptchaAPIKey": "",
-    "CustomTitle": ""
-  },
-  "SleepMode": {
-    "Active": false,
-    "GoToSleep": "23:15",
-    "WakeUp": "07:05",
-    "TelegramMessenger": {
-      "Active": false
-    }
-  },
-  "Defender": {
-    "Active": true,
-    "CheckIntervalMin": 1,
-    "CheckIntervalMax": 22,
-    "IgnoreProbes": true,
-    "Autofleet": {
-      "Active": true,
-      "Recall": false,
-      "TelegramMessenger": {
-        "Active": false
-      }
-    },
-    "SpyAttacker": {
-      "Active": true,
-      "Probes": 20
-    },
-    "MessageAttacker": {
-      "Active": true,
-      "Messages": [
-        "hey",
-        "hello",
-        "Tripa tripaloski",
-        "Trallallero trallallà"
-      ]
-    },
-    "TelegramMessenger": {
-      "Active": false
-    },
-    "Alarm": {
-      "Active": true
-    }
-  },
-  "Brain": {
-    "Active": true,
-    "AutoMine": {
-      "Active": true,
-      "MaxMetalMine": 40,
-      "MaxCrystalMine": 35,
-      "MaxDeuteriumSynthetizer": 37,
-      "MaxSolarPlant": 20,
-      "MaxFusionReactor": 20,
-      "DepositHours": 6,
-      "MaxMetalStorage": 13,
-      "MaxCrystalStorage": 12,
-      "MaxDeuteriumTank": 11,
-      "MaxRoboticsFactory": 10,
-      "MaxShipyard": 12,
-      "MaxResearchLab": 12,
-      "MaxMissileSilo": 0,
-      "MaxNaniteFactory": 7,
-      "MaxLunarBase": 8,
-      "MaxLunarShipyard": 0,
-      "MaxLunarRoboticsFactory": 8,
-      "MaxSensorPhalanx": 6,
-      "MaxJumpGate": 1,
-      "Trasports": {
-        "Active": true,
-        "CargoType": "SmallCargo",
-        "Origin": {
-          "Galaxy": 3,
-          "System": 333,
-          "Position": 8,
-          "Type": "Planet"
-        }
-      },
-      "CheckIntervalMin": 10,
-      "CheckIntervalMax": 20
-    },
-    "AutoCargo": {
-      "Active": true,
-      "ExcludeMoons": true,
-      "CargoType": "LargeCargo",
-      "MaxCargosToBuild": 50,
-      "MaxCargosToKeep": 50,
-      "CheckIntervalMin": 60,
-      "CheckIntervalMax": 240
-    },
-    "AutoRepatriate": {
-      "Active": true,
-      "ExcludeMoons": false,
-      "MinimumResources": 1000000,
-      "LeaveDeut": {
-        "OnlyOnMoons": true,
-        "DeutToLeave": 1000000
-      },
-      "Target": {
-        "Galaxy": 5,
-        "System": 63,
-        "Position": 8,
-        "Type": "Moon"
-      },
-      "CargoType": "LargeCargo",
-      "RandomOrder": true,
-      "SkipIfIncomingTransport": true,
-      "CheckIntervalMin": 30,
-      "CheckIntervalMax": 60
-    },
-    "BuyOfferOfTheDay": {
-      "Active": true,
-      "CheckIntervalMin": 240,
-      "CheckIntervalMax": 360
-    }
-  },
-  "Expeditions": {
-    "Active": true,
-    "AutoSendExpeditions": {
-      "Active": true,
-      "MainShip": "LargeCargo",
-      "MinCargosToSend": 1000,
-      "WaitForAllExpeditions": false,
-      "SplitExpeditionsBetweenSystems": false,
-      "RandomizeOrder": true,
-      "Origin": [
-        {
-          "Galaxy": 5,
-          "System": 63,
-          "Position": 8,
-          "Type": "Moon"
-        },
-        {
-          "Galaxy": 5,
-          "System": 64,
-          "Position": 8,
-          "Type": "Moon"
-        }
-      ]
-    }
-  },
-  "AutoHarvest": {
-    "Active": false,
-    "HarvestOwnDF": true,
-    "HarvestDeepSpace": true,
-    "MinimumResources": 300,
-    "CheckIntervalMin": 30,
-    "CheckIntervalMax": 60
-  },
-  "TelegramMessenger": {
-    "Active": false,
-    "API": "",
-    "ChatId": ""
-  }
+	"Credentials": {
+		"Universe": "Kalyke",
+		"Email": "gabriele.coquillard@gmail.com",
+		"Password": "Steficanza%1989",
+		"Language": "us"
+	},
+	"General": {
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36",
+		"Host": "192.168.1.108",
+		"Port": "8082",
+		"Proxy": {
+		    "Enabled": false,
+		    "Address": "",
+		    "Type": "socks5",
+		    "Username": "",
+		    "Password": ""
+	    },
+		"CaptchaAPIKey": "d9d059de12bc2e46eaa247a9169cf2d7",
+		"CustomTitle": ""
+	},
+	"SleepMode": {
+	    "Active": false,
+	    "GoToSleep": "18:50",
+	    "WakeUp": "1:20",
+	    "TelegramMessenger": {
+    		"Active": true
+    	}
+	},
+	"Defender": {
+		"Active": true,
+		"CheckIntervalMin": 6,
+		"CheckIntervalMax": 18,
+		"IgnoreProbes": true,
+		"Autofleet": {
+			"Active": true,
+			"Recall": true,
+			"TelegramMessenger": {
+				"Active": true
+			}
+		},
+		"SpyAttacker": {
+			"Active": false,
+			"Probes": 10
+		},
+		"MessageAttacker": {
+			"Active": false,
+			"Messages": [
+				"on",
+				"hello",
+				"Tripa tripaloski",
+				"Trallallero trallallà"
+			]
+		},
+		"TelegramMessenger": {
+			"Active": true
+		},
+		"Alarm": {
+			"Active": false
+		}
+	},
+	"Brain": {
+		"Active": true,
+		"AutoMine": {
+			"Active": true,
+			"MaxMetalMine": 37,
+			"MaxCrystalMine": 32,
+			"MaxDeuteriumSynthetizer": 33,
+			"MaxSolarPlant": 0,
+			"MaxFusionReactor": 20,
+			"DepositHours": 6,
+			"MaxMetalStorage": 12,
+			"MaxCrystalStorage": 11,
+			"MaxDeuteriumTank": 10,
+			"MaxRoboticsFactory": 10,
+			"MaxShipyard": 12,
+			"MaxResearchLab": 13,
+			"MaxMissileSilo": 0,
+			"MaxNaniteFactory": 7,
+			"MaxLunarBase": 8,
+			"MaxLunarShipyard": 0,
+			"MaxLunarRoboticsFactory": 8,
+			"MaxSensorPhalanx": 6,
+			"MaxJumpGate": 1,
+			"Trasports": {
+				"Active": true,
+				"CargoType": "SmallCargo",
+				"Origin": {
+					"Galaxy": 2,
+					"System": 79,
+					"Position": 8,
+					"Type": "Moon"
+				}
+			},
+			"RandomOrder": true,
+			"CheckIntervalMin": 15,
+			"CheckIntervalMax": 30
+		},
+		"AutoCargo": {
+			"Active": false,
+			"ExcludeMoons": true,
+			"CargoType": "LargeCargo",
+			"MaxCargosToBuild": 500,
+			"MaxCargosToKeep": 500,
+			"CheckIntervalMin": 30,
+			"CheckIntervalMax": 60
+		},
+		"AutoRepatriate": {
+			"Active": true,
+			"ExcludeMoons": true,
+			"MinimumResources": 3000000,
+			"LeaveDeut": {
+		        "OnlyOnMoons": true,
+		        "DeutToLeave": 5000000
+		    },
+			"Target": { 
+				"Galaxy": 2,
+				"System": 79,
+				"Position": 8,
+				"Type": "Moon"
+			},
+			"CargoType": "LargeCargo",
+			"RandomOrder": true,
+			"SkipIfIncomingTransport": true,
+			"CheckIntervalMin": 60,
+			"CheckIntervalMax": 120
+		},
+		"BuyOfferOfTheDay": {
+			"Active": true,
+			"CheckIntervalMin": 720,
+			"CheckIntervalMax": 1440
+		}
+	},
+	"Expeditions": {
+		"Active": true,
+		"AutoSendExpeditions": {
+			"Active": true,
+			"MainShip": "LargeCargo",
+			"MinCargosToSend": 2800,
+			"WaitForAllExpeditions": false,
+			"SplitExpeditionsBetweenSystems": false,
+			"RandomizeOrder": true,
+			"Origin": [
+				{ 
+					"Galaxy": 1,
+					"System": 24,
+					"Position": 6,
+					"Type": "Moon"
+				},
+				{ 
+					"Galaxy": 2,
+					"System": 79,
+					"Position": 8,
+					"Type": "Moon"
+				}
+			]
+		}
+	},
+	"AutoHarvest": {
+		"Active": false,
+		"HarvestOwnDF": true,
+		"HarvestDeepSpace": true,
+		"MinimumResources": 300,
+		"CheckIntervalMin": 120,
+		"CheckIntervalMax": 240
+	},
+	"TelegramMessenger": {
+		"Active": true,
+		"API": "1588280259:AAG3YIk3pqOpaGQfhdOV158jUZUUkxVl7ks",
+		"ChatId": "612738847"
+	}
 }

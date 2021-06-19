@@ -50,6 +50,14 @@ namespace Tbot.Model
                 _ => "",
             };
         }
+
+        public bool IsSame(Coordinate otherCoord)
+        {
+            if (Galaxy == otherCoord.Galaxy && System == otherCoord.System && Position == otherCoord.Position && Type == otherCoord.Type)
+                return true;
+            else
+                return false;
+        }
     }
 
     public class Fields

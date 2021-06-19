@@ -156,6 +156,7 @@ namespace Tbot
                      * change index to enum
                      */
                     xaSem[Feature.Defender] = new Semaphore(1, 1); //Defender
+                    xaSem[Feature.Brain] = new Semaphore(1, 1); //Brain
                     xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
                     xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
                     xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
@@ -909,7 +910,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[Feature.BrainOfferOfTheDay].WaitOne();
+                xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Buying offer of the day...");
                 var result = ogamedService.BuyOfferOfTheDay();
                 if (result)
@@ -931,7 +932,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[Feature.BrainOfferOfTheDay].Release();
+                xaSem[Feature.Brain].Release();
             }
         }
 
@@ -952,7 +953,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[Feature.BrainAutoMine].WaitOne();
+                xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
 
                 fleets = UpdateFleets();
@@ -960,9 +961,9 @@ namespace Tbot
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
                 List<Celestial> newCelestials = celestials.ToList();
-                foreach (Celestial xCelestial in celestials)
+                foreach (Celestial xCelestial in (bool)settings.Brain.AutoMine.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
-                    var tempCelestial = xCelestial;
+                    var tempCelestial = UpdatePlanet(xCelestial, UpdateType.Fast);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
                     if (tempCelestial.Constructions.BuildingID != 0)
@@ -970,9 +971,9 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
                     }
-                    if (tempCelestial.Fields.Free == 0)
+                    if (tempCelestial.Fields.Free < 2)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": no more fields available.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": not enough fields available.");
                         continue;
                     }
                     if (tempCelestial is Planet)
@@ -1008,6 +1009,12 @@ namespace Tbot
                         {
                             //Manage the need of lab
                             xBuildable = Buildables.ResearchLab;
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
+                        }
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo))
+                        {
+                            //Manage the need of missile silo
+                            xBuildable = Buildables.MissileSilo;
                             nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
                         if (xBuildable == Buildables.Null)
@@ -1067,7 +1074,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[Feature.BrainAutoMine].Release();
+                xaSem[Feature.Brain].Release();
             }
         }
 
@@ -1298,7 +1305,7 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[Feature.BrainAutobuildCargo].WaitOne();
+                xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
                 celestials = UpdatePlanets(UpdateType.Ships);
                 celestials = UpdatePlanets(UpdateType.Resources);
@@ -1387,7 +1394,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[Feature.BrainAutobuildCargo].Release();
+                xaSem[Feature.Brain].Release();
             }
         }
 
@@ -1398,109 +1405,88 @@ namespace Tbot
             {
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
-                xaSem[Feature.BrainAutoRepatriate].WaitOne();
+                xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
-                celestials = UpdatePlanets(UpdateType.Ships);
-                celestials = UpdatePlanets(UpdateType.Resources);
                 fleets = UpdateFleets();
 
-                foreach (Celestial celestial in (bool)settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials)
+                if (settings.Brain.AutoRepatriate.Target)
                 {
-                    if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
-                        continue;
-                    }
-                    if (celestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoRepatriate.ExcludeMoons)
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
-                        continue;
-                    }
-                    if (celestial.Resources.TotalResources < (int)settings.Brain.AutoRepatriate.MinimumResources)
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
-                        continue;
-                    }
+                    Coordinate destinationCoordinate = new(
+                        (int)settings.Brain.AutoRepatriate.Target.Galaxy,
+                        (int)settings.Brain.AutoRepatriate.Target.System,
+                        (int)settings.Brain.AutoRepatriate.Target.Position,
+                        Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type)
+                    );
+                    List<Celestial> newCelestials = celestials.ToList();
 
-                    Buildables preferredShip = Buildables.SmallCargo;
-                    Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
-                    long idealShips;
-                    if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
+                    foreach (Celestial celestial in (bool)settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                     {
-                        if (celestial is Planet && (bool)settings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons)
-                            idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
-                        else
-                            idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources.Difference(new() { Deuterium = (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave }), preferredShip, researches.HyperspaceTechnology, userInfo.Class);
-                    }                        
-                    else
-                        idealShips = Helpers.CalcShipNumberForPayload(celestial.Resources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                        var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
-                    Ships ships = new();
-                    if (idealShips <= celestial.Ships.GetAmount(preferredShip))
-                    {
-                        ships.Add(preferredShip, idealShips);
-                    }
-                    else
-                    {
-                        ships.Add(preferredShip, celestial.Ships.GetAmount(preferredShip));
-                    }
-
-                    Resources payload;
-                    if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
-                    {
-                        if (celestial is Planet && (bool)settings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons)
-                            payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
-                        else
-                            payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class, (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave);
-                    }
-                    else
-                        payload = Helpers.CalcMaxTransportableResources(ships, celestial.Resources, researches.HyperspaceTechnology, userInfo.Class);                    
-                    
-                    Celestial destination = celestials
-                            .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                            .First();
-                    Coordinate destinationCoordinate = destination.Coordinate;
-
-                    if (settings.Brain.AutoRepatriate.Target)
-                    {
-                        try
+                        if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                         {
-                            Celestial customDestination = celestials
-                                .Where(planet => planet.Coordinate.Galaxy == (int)settings.Brain.AutoRepatriate.Target.Galaxy)
-                                .Where(planet => planet.Coordinate.System == (int)settings.Brain.AutoRepatriate.Target.System)
-                                .Where(planet => planet.Coordinate.Position == (int)settings.Brain.AutoRepatriate.Target.Position)
-                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type))
-                                .Single();
-                            destination = customDestination;
-                            destinationCoordinate = destination.Coordinate;
-                            if (celestial.ID == customDestination.ID)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
+                            continue;
+                        }
+                        if (celestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoRepatriate.ExcludeMoons)
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
+                            continue;
+                        }
+                        
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
+
+                        if (tempCelestial.Resources.TotalResources < (int)settings.Brain.AutoRepatriate.MinimumResources)
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
+                            continue;
+                        }
+
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+
+                        Buildables preferredShip = Buildables.SmallCargo;
+                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
+                        Resources payload = tempCelestial.Resources;
+
+                        if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
+                        {
+                            if ((bool)settings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons)
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: this celestial is the destination");
-                                continue;
+                                if (tempCelestial.Coordinate.Type == Celestials.Moon)
+                                {
+                                    payload = payload.Difference(new(0, 0, (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave));
+                                }
+                            }
+                            else
+                            {
+                                payload = payload.Difference(new(0, 0, (long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave));
                             }
                         }
-                        catch (Exception e)
+
+                        long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+
+                        Ships ships = new();
+                        if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip))
                         {
-                            try
-                            {
-                                destinationCoordinate = new Coordinate(
-                                    (int)settings.Brain.AutoRepatriate.Target.Galaxy,
-                                    (int)settings.Brain.AutoRepatriate.Target.System,
-                                    (int)settings.Brain.AutoRepatriate.Target.Position,
-                                    Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type)
-                                );
-                            }
-                            catch
-                            {
-                                Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Exception: " + e.Message);
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom destination");
-                            }
+                            ships.Add(preferredShip, idealShips);
                         }
+                        else
+                        {
+                            ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
+                        }
+                        payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class);
+
+                        SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+                        
+                        newCelestials.Remove(celestial);
+                        newCelestials.Add(tempCelestial);
                     }
-                    SendFleet(celestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+                    celestials = newCelestials;
                 }
+                else
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping autorepatriate: unable to parse custom destination");
+                }                
             }
             catch (Exception e)
             {
@@ -1516,7 +1502,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
                 UpdateTitle();
                 //Release its semaphore
-                xaSem[Feature.BrainAutoRepatriate].Release();
+                xaSem[Feature.Brain].Release();
             }
         }
 
