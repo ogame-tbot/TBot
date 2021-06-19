@@ -285,6 +285,15 @@ namespace Tbot.Model
             else return false;
         }
 
+        public bool IsEmpty()
+        {
+            if (Metal == 0 && Crystal == 0 && Deuterium == 0)
+            {
+                return true;
+            }
+            else return false;
+        }
+
         public Resources Sum(Resources resourcesToSum)
         {
             Resources output = new();

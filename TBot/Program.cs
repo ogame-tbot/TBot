@@ -1473,6 +1473,12 @@ namespace Tbot
                             }
                         }
 
+                        if (payload.IsEmpty())
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
+                            continue;
+                        }
+
                         long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
 
                         Ships ships = new();
