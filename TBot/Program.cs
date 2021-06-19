@@ -585,7 +585,7 @@ namespace Tbot
         private static void InitializeBrainAutoCargo()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autocargo...");
-            timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainAutoCargo()
@@ -598,7 +598,7 @@ namespace Tbot
         private static void InitializeBrainRepatriate()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing repatriate...");
-            timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainRepatriate()
@@ -611,7 +611,7 @@ namespace Tbot
         private static void InitializeBrainAutoMine()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing automine...");
-            timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainAutoMine()
@@ -624,7 +624,7 @@ namespace Tbot
         private static void InitializeBrainOfferOfTheDay()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing offer of the day...");
-            timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.LessThanASecond), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainOfferOfTheDay()
@@ -1312,6 +1312,12 @@ namespace Tbot
                 celestials = UpdatePlanets(UpdateType.Productions);
                 foreach (Celestial planet in celestials)
                 {
+                    if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(planet, fleets))
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
+                        continue;
+                    }
+
                     var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
                     if (planet.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
