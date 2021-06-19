@@ -975,7 +975,7 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
                     }
-                    if (tempCelestial.Fields.Free < 2)
+                    if (tempCelestial.Fields.Free == 0)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": not enough fields available.");
                         continue;
