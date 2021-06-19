@@ -823,6 +823,10 @@ namespace Tbot
             }
             finally
             {
+                xaSem[Feature.Defender].Release();
+                xaSem[Feature.Brain].Release();
+                xaSem[Feature.Expeditions].Release();
+                xaSem[Feature.Harvest].Release();
                 xaSem[Feature.SleepMode].Release();
             }
         }
