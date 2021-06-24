@@ -2043,7 +2043,6 @@ namespace Tbot
 
                     galaxyInfos = UpdateGalaxyInfos();
                     List<Celestial> newCelestials = celestials.ToList();
-                    celestials = UpdatePlanets(UpdateType.Ships);
                     var dic = new Dictionary<Coordinate, Celestial>();
 
                     foreach (Planet planet in celestials.Where(c => c is Planet))
