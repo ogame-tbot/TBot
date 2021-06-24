@@ -100,6 +100,7 @@
 			"Active": true,
 			"ExcludeMoons": true,
 			"CargoType": "LargeCargo",
+			"RandomOrder": true,
 			"MaxCargosToBuild": 50,
 			"MaxCargosToKeep": 50,
 			"SkipIfIncomingTransport": true,

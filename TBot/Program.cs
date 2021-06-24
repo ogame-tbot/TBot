@@ -1315,42 +1315,48 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
-                celestials = UpdatePlanets(UpdateType.Ships);
-                celestials = UpdatePlanets(UpdateType.Resources);
-                celestials = UpdatePlanets(UpdateType.Productions);
-                foreach (Celestial planet in celestials)
+                fleets = UpdateFleets();
+                List<Celestial> newCelestials = celestials.ToList();
+
+                foreach (Celestial planet in (bool)settings.Brain.AutoCargo.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
-                    if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(planet, fleets))
+                    var tempCelestial = UpdatePlanet(planet, UpdateType.Fast);
+
+                    if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(tempCelestial, fleets))
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
                         continue;
                     }
 
-                    var capacity = Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + planet.Resources.TotalResources.ToString("N0"));
-                    if (planet.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
+                    if (tempCelestial.HasProduction())
                     {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " is a moon - Skipping moon.");
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - There is already a production ongoing. Skipping planet.");
+                        foreach (Production production in tempCelestial.Productions)
+                        {
+                            Buildables productionType = (Buildables)production.ID;
+                            Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are already in production.");
+                        }
                         continue;
                     }
-                    if (capacity <= planet.Resources.TotalResources)
+
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
+                    var capacity = Helpers.CalcFleetCapacity(tempCelestial.Ships, researches.HyperspaceTechnology, userInfo.Class);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + tempCelestial.Resources.TotalResources.ToString("N0"));
+                    if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
                     {
-                        long difference = planet.Resources.TotalResources - capacity;
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
+                        continue;
+                    }
+                    if (capacity <= tempCelestial.Resources.TotalResources)
+                    {
+                        long difference = tempCelestial.Resources.TotalResources - capacity;
                         Buildables preferredCargoShip = Buildables.SmallCargo;
                         Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
                         long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
                         Helpers.WriteLog(LogType.Debug, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
-                        if (planet.HasProduction())
-                        {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + planet.ToString() + " - There is already a production ongoing. Skipping planet.");
-                            foreach (Production production in planet.Productions)
-                            {
-                                Buildables productionType = (Buildables)production.ID;
-                                Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are already in production.");
-                            }
-                            continue;
-                        }
 
                         /*Tralla 14/2/21
                          * 
@@ -1359,40 +1365,36 @@ namespace Tbot
                         if (neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToBuild)
                             neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToBuild;
 
-                        if (planet.Ships.GetAmount(preferredCargoShip) + neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToKeep)
-                            neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - planet.Ships.GetAmount(preferredCargoShip);
+                        if (tempCelestial.Ships.GetAmount(preferredCargoShip) + neededCargos > (long)settings.Brain.AutoCargo.MaxCargosToKeep)
+                            neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
 
                         var cost = Helpers.CalcPrice(preferredCargoShip, (int)neededCargos);
-                        if (planet.Resources.IsEnoughFor(cost))
-                        {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());
-                            var result = ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
-                            if (result)
-                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
-                            else
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
-                        }
+                        if (tempCelestial.Resources.IsEnoughFor(cost))
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());  
                         else
-                        {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + planet.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
-                            var result = ogamedService.BuildShips(planet, preferredCargoShip, neededCargos);
-                            if (result)
-                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
-                            else
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
-                        }
-                        planet.Productions = ogamedService.GetProductions(planet);
-                        foreach (Production production in planet.Productions)
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
+                        var result = ogamedService.BuildShips(tempCelestial, preferredCargoShip, neededCargos);
+                        if (result)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                        else
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
+
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
+                        foreach (Production production in tempCelestial.Productions)
                         {
                             Buildables productionType = (Buildables)production.ID;
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + planet.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are in production.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are in production.");
                         }
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + planet.ToString() + " - Capacity is ok.");
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Capacity is ok.");
                     }
+
+                    newCelestials.Remove(planet);
+                    newCelestials.Add(tempCelestial);
                 }
+                celestials = newCelestials;
             }
             catch (Exception e)
             {
@@ -1421,10 +1423,11 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
-                fleets = UpdateFleets();
 
                 if (settings.Brain.AutoRepatriate.Target)
                 {
+                    fleets = UpdateFleets();
+
                     Coordinate destinationCoordinate = new(
                         (int)settings.Brain.AutoRepatriate.Target.Galaxy,
                         (int)settings.Brain.AutoRepatriate.Target.System,
@@ -1823,6 +1826,7 @@ namespace Tbot
                 {
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
+                    serverData = ogamedService.GetServerData();
                     int expsToSend;
                     if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
                     {
@@ -1970,9 +1974,8 @@ namespace Tbot
                         }
                     }
 
-                    slots = UpdateSlots();
+                    
                     fleets = UpdateFleets();
-
                     List<Fleet> orderedFleets = fleets
                         .Where(fleet => fleet.Mission == Missions.Expedition)
                         .ToList();
@@ -1988,6 +1991,8 @@ namespace Tbot
                             .OrderBy(fleet => fleet.BackIn)
                             .ToList();
                     }
+
+                    slots = UpdateSlots();
                     int interval;
                     if (orderedFleets.Count == 0 || slots.ExpFree > 0)
                     {
@@ -2003,79 +2008,6 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
                     UpdateTitle();
                 }
-
-                /*
-                if ((bool)settings.Expeditions.AutoHarvest.Active)
-                {
-                    slots = UpdateSlots();
-                    fleets = UpdateFleets();
-                    Celestial origin = celestials
-                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                        .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
-                        .First();
-                    if (settings.Expeditions.AutoSendExpeditions.Origin)
-                    {
-                        try
-                        {
-                            Celestial customOrigin = celestials
-                                .Where(planet => planet.Coordinate.Galaxy == (int)settings.Expeditions.AutoSendExpeditions.Origin.Galaxy)
-                                .Where(planet => planet.Coordinate.System == (int)settings.Expeditions.AutoSendExpeditions.Origin.System)
-                                .Where(planet => planet.Coordinate.Position == (int)settings.Expeditions.AutoSendExpeditions.Origin.Position)
-                                .Where(planet => planet.Coordinate.Type == Enum.Parse<Celestials>(settings.Expeditions.AutoSendExpeditions.Origin.Type.ToString()))
-                                .Single();
-                            origin = customOrigin;
-                        }
-                        catch (Exception e)
-                        {
-                            Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
-                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
-                        }
-                    }
-                    List<Coordinate> destinations = new List<Coordinate>();
-                    if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
-                    {
-                        var rand = new Random();
-                        for (int i = origin.Coordinate.System - 1; i < origin.Coordinate.System + 2; i++)
-                        {
-                            destinations.Add(new Coordinate
-                            {
-                                Galaxy = origin.Coordinate.Galaxy,
-                                System = rand.Next(i, i + 1),
-                                Position = 16,
-                                Type = Celestials.DeepSpace
-                            });
-                        }
-
-                    }
-                    else
-                    {
-                        destinations.Add(new Coordinate
-                        {
-                            Galaxy = origin.Coordinate.Galaxy,
-                            System = origin.Coordinate.System,
-                            Position = 16,
-                            Type = Celestials.DeepSpace
-                        });
-                    }
-                    foreach (Coordinate destination in destinations)
-                    {
-                        var galaxyInfos = ogamedService.GetGalaxyInfo(destination);
-                        if (galaxyInfos.ExpeditionDebris.Resources.TotalResources > 0)
-                        {
-                            Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Debris detected at " + destination.ToString());
-                            if (galaxyInfos.ExpeditionDebris.Resources.TotalResources >= settings.Expeditions.AutoHarvest.MinimumResources)
-                            {
-                                long pathfindersToSend = Helpers.CalcShipNumberForPayload(galaxyInfos.ExpeditionDebris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
-                                SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
-                            }
-                            else
-                            {
-                                Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping harvest: resources under set limit.");
-                            }
-                        }
-                    }
-                }
-                */
             }
 
             catch (Exception e)
@@ -2110,11 +2042,14 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Detecting harvest targets");
 
                     galaxyInfos = UpdateGalaxyInfos();
+                    List<Celestial> newCelestials = celestials.ToList();
                     celestials = UpdatePlanets(UpdateType.Ships);
                     var dic = new Dictionary<Coordinate, Celestial>();
 
                     foreach (Planet planet in celestials.Where(c => c is Planet))
                     {
+                        var tempCelestial = UpdatePlanet(planet, UpdateType.Fast);
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
                         Moon moon = new()
                         {
                             Ships = new()
@@ -2170,7 +2105,11 @@ namespace Tbot
                                 Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
                             }
                         }
+
+                        newCelestials.Remove(planet);
+                        newCelestials.Add(tempCelestial);
                     }
+                    celestials = newCelestials;
 
                     foreach (Coordinate destination in dic.Keys)
                     {

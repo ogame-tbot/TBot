@@ -712,7 +712,7 @@ namespace Tbot.Includes
         public static long CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
             int baseProd = 10 * speedFactor;
-            int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level) * (1.05 + (0.01 * temp))));
+            int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level) * ((-0.004 * temp) + 1.36)));
             int plasmaProd = (int)Math.Round(prod * 0.0033 * plasma);
             int geologistProd = 0;
             if (hasGeologist)
