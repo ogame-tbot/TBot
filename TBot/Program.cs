@@ -1216,7 +1216,7 @@ namespace Tbot
                         }
                         else
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + " - There is already a production ongoing.Skipping planet.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + " - There is already a production ongoing. Skipping planet.");
                         }                        
                     }
                     else
@@ -1324,7 +1324,7 @@ namespace Tbot
 
                     if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(tempCelestial, fleets))
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is a transport incoming.");
                         continue;
                     }
 
@@ -1442,12 +1442,12 @@ namespace Tbot
 
                         if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: there is a transport incoming.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is a transport incoming.");
                             continue;
                         }
                         if (celestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoRepatriate.ExcludeMoons)
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping moon.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
                             continue;
                         }
                         
@@ -1455,7 +1455,7 @@ namespace Tbot
 
                         if (tempCelestial.Resources.TotalResources < (int)settings.Brain.AutoRepatriate.MinimumResources)
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": resources under set limit");
                             continue;
                         }
 
@@ -1482,7 +1482,7 @@ namespace Tbot
 
                         if (payload.IsEmpty())
                         {
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial: resources under set limit");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": resources under set limit");
                             continue;
                         }
 
