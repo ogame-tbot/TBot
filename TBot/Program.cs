@@ -469,7 +469,7 @@ namespace Tbot
 
         private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
+            //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
             List<Celestial> localPlanets = GetPlanets();
             List<Celestial> newPlanets = new();
             foreach (Celestial planet in localPlanets)
@@ -481,7 +481,7 @@ namespace Tbot
 
         private static Celestial UpdatePlanet(Celestial planet, UpdateType updateType = UpdateType.Full)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
+            //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
             try
             {
                 switch (updateType)
