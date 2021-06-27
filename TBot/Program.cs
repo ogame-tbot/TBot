@@ -456,6 +456,11 @@ namespace Tbot
             return user;
         }
 
+        private static List<Celestial> UpdateCelestials()
+        {
+            return ogamedService.GetCelestials();
+        }
+
         private static List<Celestial> GetPlanets()
         {
             List<Celestial> localPlanets = celestials ?? new();
@@ -562,6 +567,7 @@ namespace Tbot
                 serverInfo = UpdateServerInfo();
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
+                celestials = UpdateCelestials();
             }
             if ((string)settings.General.CustomTitle != "")
                 Helpers.SetTitle((string)settings.General.CustomTitle + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
@@ -2074,11 +2080,11 @@ namespace Tbot
                             }
                             else if (planet.Debris.Resources.TotalResources == 0)
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
+                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
                             }
                             else
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
+                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
                             }
                         }
 
@@ -2097,11 +2103,11 @@ namespace Tbot
                             }
                             else if (expoDebris.Resources.TotalResources == 0)
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
+                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
                             }
                             else
                             {
-                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
+                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
                             }
                         }
 
