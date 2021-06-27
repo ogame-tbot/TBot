@@ -93,6 +93,14 @@
 				}
 			},
 			"RandomOrder": true,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Planet"
+				}
+			],
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},

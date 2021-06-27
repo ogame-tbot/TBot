@@ -975,8 +975,16 @@ namespace Tbot
                 Buildables xBuildable = Buildables.Null;
                 int nLevelToReach = 0;
                 List<Celestial> newCelestials = celestials.ToList();
+                List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
+
                 foreach (Celestial xCelestial in (bool)settings.Brain.AutoMine.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
+                    if (celestialsToExclude.Has(xCelestial))
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + xCelestial.ToString() + ": celestial in exclude list.");
+                        continue;
+                    }
+
                     var tempCelestial = UpdatePlanet(xCelestial, UpdateType.Fast);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
