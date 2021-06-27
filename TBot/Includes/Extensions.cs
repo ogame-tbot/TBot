@@ -23,5 +23,15 @@ namespace Tbot.Includes
                 _ => input.First().ToString().ToUpper() + input[1..]
             };
         }
+
+        public static bool Has(this List<Celestial> celestials, Celestial celestial)
+        {
+            foreach (Celestial cel in celestials)
+            {
+                if (cel.HasCoords(celestial.Coordinate))
+                    return true;
+            }
+            return false;
+        }
     }
 }

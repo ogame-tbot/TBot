@@ -1323,10 +1323,17 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
                 fleets = UpdateFleets();
                 List<Celestial> newCelestials = celestials.ToList();
+                List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoCargo.Exclude, celestials);
 
-                foreach (Celestial planet in (bool)settings.Brain.AutoCargo.RandomOrder ? celestials.Shuffle().ToList() : celestials)
+                foreach (Celestial celestial in (bool)settings.Brain.AutoCargo.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
-                    var tempCelestial = UpdatePlanet(planet, UpdateType.Fast);
+                    if (celestialsToExclude.Has(celestial))
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + celestial.ToString() + ": celestial in exclude list.");
+                        continue;
+                    }
+
+                    var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
                     if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(tempCelestial, fleets))
                     {
@@ -1397,7 +1404,7 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Capacity is ok.");
                     }
 
-                    newCelestials.Remove(planet);
+                    newCelestials.Remove(celestial);
                     newCelestials.Add(tempCelestial);
                 }
                 celestials = newCelestials;
@@ -1441,9 +1448,16 @@ namespace Tbot
                         Enum.Parse<Celestials>((string)settings.Brain.AutoRepatriate.Target.Type)
                     );
                     List<Celestial> newCelestials = celestials.ToList();
+                    List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoRepatriate.Exclude, celestials);
 
                     foreach (Celestial celestial in (bool)settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                     {
+                        if (celestialsToExclude.Has(celestial))
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + celestial.ToString() + ": celestial in exclude list.");
+                            continue;
+                        }
+
                         var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
                         if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))

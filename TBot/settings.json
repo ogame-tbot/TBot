@@ -104,6 +104,14 @@
 			"MaxCargosToBuild": 50,
 			"MaxCargosToKeep": 50,
 			"SkipIfIncomingTransport": true,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Planet"
+				}
+			],
 			"CheckIntervalMin": 60,
 			"CheckIntervalMax": 240
 		},
@@ -124,6 +132,14 @@
 			"CargoType": "LargeCargo",
 			"RandomOrder": true,
 			"SkipIfIncomingTransport": true,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Planet"
+				}
+			],
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},

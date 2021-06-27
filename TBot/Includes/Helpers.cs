@@ -1354,5 +1354,33 @@ namespace Tbot.Includes
             else
                 return false;
         }
+
+        public static List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials)
+        {
+            List<Celestial> output = new();
+            try
+            {
+                foreach(var celestialToParse in source)
+                {
+                    Coordinate parsedCoords = new(
+                        (int)celestialToParse.Galaxy,
+                        (int)celestialToParse.System,
+                        (int)celestialToParse.Position,
+                        Enum.Parse<Celestials>(celestialToParse.Type.ToString())
+                    );
+
+                    Celestial parsedCelestial = currentCelestials
+                        .Single(cel => cel.HasCoords(parsedCoords));
+
+                    output.Add(parsedCelestial);
+                }
+            }
+            catch
+            {
+                throw;
+            }
+
+            return output;
+        }
     }
 }
