@@ -1108,6 +1108,36 @@ namespace Tbot.Includes
             return output;
         }
 
+        public static float CalcROI(Planet planet, Buildables buildable, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            long currentProd = 0;
+            long nextLevelProd = 0;
+            long cost = 0;
+            switch (buildable)
+            {
+                case Buildables.MetalMine:
+                    currentProd = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+                    nextLevelProd = CalcMetalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                case Buildables.CrystalMine:
+                    currentProd = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+                    nextLevelProd = CalcCrystalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                case Buildables.DeuteriumSynthesizer:
+                    currentProd = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+                    nextLevelProd = CalcDeuteriumProduction(GetNextLevel(planet, buildable), planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                default:
+                    return (float)0;
+            }
+
+            long delta = nextLevelProd - currentProd;
+            return (float)delta / (float)cost;
+        }
+
         public static long CalcDepositCapacity(int level)
         {
             return 5000 * (long)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
@@ -1193,6 +1223,27 @@ namespace Tbot.Includes
             dic = dic.OrderBy(m => m.Value)
                 .ToDictionary(m => m.Key, m => m.Value);
             return dic.FirstOrDefault().Key;
+        }
+
+        public static Buildables GetNextMineToBuild(Planet planet, int speedFactor, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
+            Dictionary<Buildables, float> rois = new();
+            foreach (var mine in mines)
+            {
+                if (mine == Buildables.MetalMine && GetNextLevel(planet, mine) > maxMetalMine)
+                    continue;
+                if (mine == Buildables.CrystalMine && GetNextLevel(planet, mine) > maxCrystalMine)
+                    continue;
+                if (mine == Buildables.DeuteriumSynthesizer && GetNextLevel(planet, mine) > maxDeuteriumSynthetizer)
+                    continue;
+
+                rois.Add(mine, CalcPrice(mine, GetNextLevel(planet, mine)).ConvertedDeuterium);
+            }
+            if (rois.Count == 0)
+                return Buildables.Null;
+
+            return rois.OrderByDescending(roi => roi.Value).First().Key;
         }
 
         public static Buildables GetNextLunarFacilityToBuild(Moon moon, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
