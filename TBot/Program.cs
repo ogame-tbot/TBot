@@ -461,6 +461,11 @@ namespace Tbot
             return ogamedService.GetCelestials();
         }
 
+        private static Researches UpdateResearches()
+        {
+            return ogamedService.GetResearches();
+        }
+
         private static List<Celestial> GetPlanets()
         {
             List<Celestial> localPlanets = celestials ?? new();
@@ -568,6 +573,7 @@ namespace Tbot
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
                 celestials = UpdateCelestials();
+                researches = UpdateResearches();
             }
             if ((string)settings.General.CustomTitle != "")
                 Helpers.SetTitle((string)settings.General.CustomTitle + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);

@@ -1108,36 +1108,6 @@ namespace Tbot.Includes
             return output;
         }
 
-        public static float CalcROI(Planet planet, Buildables buildable, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
-        {
-            long currentProd = 0;
-            long nextLevelProd = 0;
-            long cost = 0;
-            switch (buildable)
-            {
-                case Buildables.MetalMine:
-                    currentProd = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-                    nextLevelProd = CalcMetalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
-                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
-                    break;
-                case Buildables.CrystalMine:
-                    currentProd = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-                    nextLevelProd = CalcCrystalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
-                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
-                    break;
-                case Buildables.DeuteriumSynthesizer:
-                    currentProd = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-                    nextLevelProd = CalcDeuteriumProduction(GetNextLevel(planet, buildable), planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
-                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
-                    break;
-                default:
-                    return (float)0;
-            }
-
-            long delta = nextLevelProd - currentProd;
-            return (float)delta / (float)cost;
-        }
-
         public static long CalcDepositCapacity(int level)
         {
             return 5000 * (long)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
@@ -1205,7 +1175,7 @@ namespace Tbot.Includes
         public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100)
         {
             var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
-            var dic = new Dictionary<Buildables, long>();
+            Dictionary<Buildables, long> dic = new();
             foreach (var mine in mines)
             {
                 if (mine == Buildables.MetalMine && GetNextLevel(planet, mine) > maxMetalMine)
@@ -1238,12 +1208,42 @@ namespace Tbot.Includes
                 if (mine == Buildables.DeuteriumSynthesizer && GetNextLevel(planet, mine) > maxDeuteriumSynthetizer)
                     continue;
 
-                rois.Add(mine, CalcPrice(mine, GetNextLevel(planet, mine)).ConvertedDeuterium);
+                rois.Add(mine, CalcROI(planet, mine, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff));
             }
             if (rois.Count == 0)
                 return Buildables.Null;
 
             return rois.OrderByDescending(roi => roi.Value).First().Key;
+        }
+
+        public static float CalcROI(Planet planet, Buildables buildable, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            float currentProd;
+            float nextLevelProd;
+            float cost;
+            switch (buildable)
+            {
+                case Buildables.MetalMine:
+                    currentProd = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) * (float)2.5;
+                    nextLevelProd = CalcMetalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)2.5;
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                case Buildables.CrystalMine:
+                    currentProd = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) * (float)1.5;
+                    nextLevelProd = CalcCrystalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)1.5;
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                case Buildables.DeuteriumSynthesizer:
+                    currentProd = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+                    nextLevelProd = CalcDeuteriumProduction(GetNextLevel(planet, buildable), planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                    break;
+                default:
+                    return (float)0;
+            }
+
+            float delta = nextLevelProd - currentProd;
+            return delta / cost;
         }
 
         public static Buildables GetNextLunarFacilityToBuild(Moon moon, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
@@ -1272,7 +1272,7 @@ namespace Tbot.Includes
                 var nextRobotsLevel = GetNextLevel(celestial, Buildables.RoboticsFactory);
                 var nextRobotsPrice = CalcPrice(Buildables.RoboticsFactory, nextRobotsLevel);
 
-                if (nextRobotsLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium)
+                if (nextRobotsLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium)
                     return true;
                 else
                     return false;
@@ -1281,7 +1281,7 @@ namespace Tbot.Includes
             {
                 var nextRobotsLevel = GetNextLevel(celestial, Buildables.RoboticsFactory);
 
-                if (nextRobotsLevel < maxLevel && celestial.Fields.Free > 1)
+                if (nextRobotsLevel <= maxLevel && celestial.Fields.Free > 1)
                     return true;
                 else
                     return false;
@@ -1299,7 +1299,7 @@ namespace Tbot.Includes
                 var nextShipyardLevel = GetNextLevel(celestial as Planet, Buildables.Shipyard);
                 var nextShipyardPrice = CalcPrice(Buildables.Shipyard, nextShipyardLevel);
 
-                if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 2)
+                if (nextShipyardLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 2)
                     return true;
                 else
                     return false;
@@ -1308,7 +1308,7 @@ namespace Tbot.Includes
             {
                 var nextShipyardLevel = GetNextLevel(celestial, Buildables.Shipyard);
 
-                if (nextShipyardLevel < maxLevel && celestial.Fields.Free > 1)
+                if (nextShipyardLevel <= maxLevel && celestial.Fields.Free > 1)
                     return true;
                 else
                     return false;
@@ -1324,7 +1324,7 @@ namespace Tbot.Includes
             var nextLabLevel = GetNextLevel(planet, Buildables.ResearchLab);
             var nextLabPrice = CalcPrice(Buildables.ResearchLab, nextLabLevel);
 
-            if (nextLabLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium)
+            if (nextLabLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium)
                 return true;
             else
                 return false;
@@ -1339,7 +1339,7 @@ namespace Tbot.Includes
             var nextSiloLevel = GetNextLevel(planet, Buildables.MissileSilo);
             var nextSiloPrice = CalcPrice(Buildables.MissileSilo, nextSiloLevel);
 
-            if (nextSiloLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextSiloPrice.ConvertedDeuterium && planet.Facilities.Shipyard >= 1)
+            if (nextSiloLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSiloPrice.ConvertedDeuterium && planet.Facilities.Shipyard >= 1)
                 return true;
             else
                 return false;
@@ -1354,7 +1354,7 @@ namespace Tbot.Includes
             var nextNanitesLevel = GetNextLevel(planet, Buildables.NaniteFactory);
             var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
 
-            if (nextNanitesLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
+            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
                 return true;
             else
                 return false;
@@ -1364,7 +1364,7 @@ namespace Tbot.Includes
         {       
             var nextLunarBaseLevel = GetNextLevel(moon, Buildables.LunarBase);
 
-            if (nextLunarBaseLevel < maxLevel && moon.Fields.Free == 1)
+            if (nextLunarBaseLevel <= maxLevel && moon.Fields.Free == 1)
                 return true;
             else
                 return false;
@@ -1374,7 +1374,7 @@ namespace Tbot.Includes
         {
             var nextSensorPhalanxLevel = GetNextLevel(moon, Buildables.SensorPhalanx);
 
-            if (nextSensorPhalanxLevel < maxLevel && moon.Fields.Free > 1)
+            if (nextSensorPhalanxLevel <= maxLevel && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
@@ -1384,7 +1384,7 @@ namespace Tbot.Includes
         {
             var nextJumpGateLevel = GetNextLevel(moon, Buildables.JumpGate);
 
-            if (nextJumpGateLevel < maxLevel && moon.Fields.Free > 1)
+            if (nextJumpGateLevel <= maxLevel && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
