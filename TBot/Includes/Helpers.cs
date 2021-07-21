@@ -1248,7 +1248,7 @@ namespace Tbot.Includes
                 var nextShipyardLevel = GetNextLevel(celestial as Planet, Buildables.Shipyard);
                 var nextShipyardPrice = CalcPrice(Buildables.Shipyard, nextShipyardLevel);
 
-                if (nextShipyardLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 2)
+                if (nextShipyardLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextShipyardPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 2)
                     return true;
                 else
                     return false;
@@ -1257,7 +1257,7 @@ namespace Tbot.Includes
             {
                 var nextShipyardLevel = GetNextLevel(celestial, Buildables.Shipyard);
 
-                if (nextShipyardLevel < maxLevel && celestial.Fields.Free > 1)
+                if (nextShipyardLevel <= maxLevel && celestial.Fields.Free > 1)
                     return true;
                 else
                     return false;
@@ -1273,7 +1273,7 @@ namespace Tbot.Includes
             var nextLabLevel = GetNextLevel(planet, Buildables.ResearchLab);
             var nextLabPrice = CalcPrice(Buildables.ResearchLab, nextLabLevel);
 
-            if (nextLabLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium)
+            if (nextLabLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium)
                 return true;
             else
                 return false;
@@ -1288,7 +1288,7 @@ namespace Tbot.Includes
             var nextSiloLevel = GetNextLevel(planet, Buildables.MissileSilo);
             var nextSiloPrice = CalcPrice(Buildables.MissileSilo, nextSiloLevel);
 
-            if (nextSiloLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextSiloPrice.ConvertedDeuterium && planet.Facilities.Shipyard >= 1)
+            if (nextSiloLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSiloPrice.ConvertedDeuterium && planet.Facilities.Shipyard >= 1)
                 return true;
             else
                 return false;
@@ -1303,7 +1303,7 @@ namespace Tbot.Includes
             var nextNanitesLevel = GetNextLevel(planet, Buildables.NaniteFactory);
             var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
 
-            if (nextNanitesLevel < maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
+            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && planet.Facilities.RoboticsFactory >= 10)
                 return true;
             else
                 return false;
@@ -1313,7 +1313,7 @@ namespace Tbot.Includes
         {       
             var nextLunarBaseLevel = GetNextLevel(moon, Buildables.LunarBase);
 
-            if (nextLunarBaseLevel < maxLevel && moon.Fields.Free == 1)
+            if (nextLunarBaseLevel <= maxLevel && moon.Fields.Free == 1)
                 return true;
             else
                 return false;
@@ -1323,7 +1323,7 @@ namespace Tbot.Includes
         {
             var nextSensorPhalanxLevel = GetNextLevel(moon, Buildables.SensorPhalanx);
 
-            if (nextSensorPhalanxLevel < maxLevel && moon.Fields.Free > 1)
+            if (nextSensorPhalanxLevel <= maxLevel && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
@@ -1333,7 +1333,7 @@ namespace Tbot.Includes
         {
             var nextJumpGateLevel = GetNextLevel(moon, Buildables.JumpGate);
 
-            if (nextJumpGateLevel < maxLevel && moon.Fields.Free > 1)
+            if (nextJumpGateLevel <= maxLevel && moon.Fields.Free > 1)
                 return true;
             else
                 return false;

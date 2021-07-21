@@ -205,6 +205,9 @@ namespace Tbot.Model
         public string Version { get; set; }
         public int Speed { get; set; }
         public int SpeedFleet { get; set; }
+        public int SpeedFleetPeaceful { get; set; }
+        public int SpeedFleetWar { get; set; }
+        public int SpeedFleetHolding { get; set; }
         public int Galaxies { get; set; }
         public int Systems { get; set; }
         public bool ACS { get; set; }

@@ -472,6 +472,11 @@ namespace Tbot
             return localPlanets;
         }
 
+        private static Researches UpdateResearches()
+        {
+            return ogamedService.GetResearches();
+        }
+
         private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full)
         {
             //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
@@ -568,6 +573,7 @@ namespace Tbot
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
                 celestials = UpdateCelestials();
+                researches = UpdateResearches();
             }
             if ((string)settings.General.CustomTitle != "")
                 Helpers.SetTitle((string)settings.General.CustomTitle + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
