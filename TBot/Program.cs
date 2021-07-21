@@ -1190,7 +1190,7 @@ namespace Tbot
         {
             try
             {
-                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, researches, userInfo.Class);
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
