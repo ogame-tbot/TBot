@@ -1,15 +1,13 @@
-﻿using Tbot.Services;
-using Tbot.Model;
-using Tbot.Includes;
-using System;
-using System.Threading;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Reflection;
-using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
+﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Tbot.Includes;
+using Tbot.Model;
+using Tbot.Services;
 
 namespace Tbot
 {
@@ -373,6 +371,7 @@ namespace Tbot
 
         private static void InitializeFeatures()
         {
+            features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -380,8 +379,7 @@ namespace Tbot
             features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
-            features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
-            features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);            
         }
 
         private static void ReadSettings()
@@ -584,7 +582,7 @@ namespace Tbot
         private static void InitializeDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
-            timers.Add("DefenderTimer", new Timer(Defender, null, 0, Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax)));
+            timers.Add("DefenderTimer", new Timer(Defender, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax)));
         }
 
         private static void StopDefender()
@@ -597,7 +595,7 @@ namespace Tbot
         private static void InitializeBrainAutoCargo()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autocargo...");
-            timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainAutoCargo()
@@ -636,7 +634,7 @@ namespace Tbot
         private static void InitializeBrainOfferOfTheDay()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing offer of the day...");
-            timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.LessThanASecond), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
+            timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax)));
         }
 
         private static void StopBrainOfferOfTheDay()
@@ -649,7 +647,7 @@ namespace Tbot
         private static void InitializeExpeditions()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
-            timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo)));
+            timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes)));
         }
 
         private static void StopExpeditions()
@@ -662,7 +660,7 @@ namespace Tbot
         private static void InitializeHarvest()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing harvest...");
-            timers.Add("HarvestTimer", new Timer(HandleHarvest, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes)));
+            timers.Add("HarvestTimer", new Timer(HandleHarvest, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes)));
         }
 
         private static void StopHarvest()
@@ -698,18 +696,60 @@ namespace Tbot
             timers.Remove("FleetSchedulerTimer");
         }
 
-        private static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false)
+        private static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0)
         {
             celestial = UpdatePlanet(celestial, UpdateType.Ships);
-            celestial = UpdatePlanet(celestial, UpdateType.Resources);            
+            celestial = UpdatePlanet(celestial, UpdateType.Resources);
             Celestial destination = new() { ID = 0 };
-            Missions mission = Missions.Deploy;
+            bool forceUnsafe = false;
 
+            DateTime departureTime = GetDateTime();
+
+            if (isSleepTimeFleetSave) {
+                if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
+                {
+                    if (departureTime >= wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                    minDuration = (long)wakeUp.Subtract(departureTime).TotalSeconds;
+                    forceUnsafe = true;
+                }
+                else
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave from " + celestial.ToString() + " : unable to parse comeback time");
+                }
+            }
+
+            Missions mission = Missions.Deploy;
+            FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0)
+            {
+                mission = Missions.Spy;
+                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+            }
+            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
+            {
+                mission = Missions.Colonize;
+                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+            }
+            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0)
+            {
+                mission = Missions.Harvest;
+                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+            }
+            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)))
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave from " + celestial.ToString() + " : no safe destination exists");
+            }
+
+            SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, celestial.Resources, userInfo.Class, forceUnsafe);
+
+            /*
             destination = celestials
                 .Where(planet => planet.ID != celestial.ID)
                 .Where(planet => planet.Coordinate.Type == Celestials.Moon)
                 .OrderBy(planet => Helpers.CalcDistance(celestial.Coordinate, planet.Coordinate, serverData))
                 .FirstOrDefault() ?? new() { ID = 0 };
+
             if (destination.ID == 0 && celestial.Coordinate.Type == Celestials.Moon && celestial.Ships.EspionageProbe > 0)
             {
                 destination.ID = -99;
@@ -717,87 +757,214 @@ namespace Tbot
                 mission = Missions.Spy;
             }
 
+            if ((bool)settings.SleepMode.AutoFleetSave.ForceUnsafe)
+                destination = celestials
+                    .Where(planet => planet.ID != celestial.ID)
+                    .OrderBy(planet => Helpers.CalcDistance(celestial.Coordinate, planet.Coordinate, serverData))
+                    .FirstOrDefault() ?? new() { ID = 0 };
+
             if (destination.ID == 0)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave: no safe destination exists");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave from " + celestial.ToString() +" : no safe destination exists");
             }
             else
             {
-                decimal speed = Speeds.TenPercent;
+                decimal speed;
                 if (isSleepTimeFleetSave && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
                 {
-                    int flightTime = int.MaxValue;
-                    DateTime departureTime = GetDateTime();
+                    speed = Speeds.HundredPercent;
+                    long flightTime = (long)Math.Round(ogamedService.PredictFleet(celestial, celestial.Ships, destination.Coordinate, mission, speed).Time * 9.93, 0, MidpointRounding.ToPositiveInfinity);
                     if (departureTime >= wakeUp)
                         wakeUp = wakeUp.AddDays(1);
-
                     long minFlightTime = (long)wakeUp.Subtract(departureTime).TotalSeconds;
-                    speed = Speeds.HundredPercent;
                     if (mission != Missions.Deploy)
-                        minFlightTime /= 2;
-                    while (flightTime > minFlightTime && speed >= 1)
-                    {
-                        flightTime = Helpers.CalcFlightTime(celestial.Coordinate, destination.Coordinate, celestial.Ships, speed, researches, serverData, userInfo.Class);
-                        speed -= 1;
+                        flightTime *= 2;
 
+                    while (flightTime < minFlightTime && ( (userInfo.Class != Classes.General && speed > 1) || (userInfo.Class == Classes.General && speed > (decimal)0.5) ) )
+                    {
+                        if (userInfo.Class == Classes.General)
+                            speed -= (decimal)0.5;
+                        else
+                            speed -= 1;
+                        flightTime = (long)Math.Round(ogamedService.PredictFleet(celestial, celestial.Ships, destination.Coordinate, mission, speed).Time * 9.93, 0, MidpointRounding.ToPositiveInfinity);
                     }
                 }
                 else
                 {
-                    speed = Speeds.TenPercent;
-                }
-                SendFleet(celestial, celestial.Ships, destination.Coordinate, mission, speed, celestial.Resources, userInfo.Class);
-            }
+                    if (userInfo.Class == Classes.General)
+                        speed = Speeds.FivePercent;
+                    else
+                        speed = Speeds.TenPercent;
 
+                }
+                SendFleet(celestial, celestial.Ships, destination.Coordinate, mission, speed, celestial.Resources, userInfo.Class, true);
+            }
+            */
         }
+
+        private static FleetHypotesis GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, bool forceUnsafe = false)
+        {
+            var validSpeeds = userInfo.Class == Classes.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+            List<FleetHypotesis> possibleFleets = new();
+            List<Coordinate> possibleDestinations = new();
+
+            switch (mission)
+            {
+                case Missions.Deploy:
+                    possibleDestinations = celestials
+                        .Where(planet => planet.ID != origin.ID)
+                        .Where(planet => planet.Coordinate.Type == Celestials.Moon || forceUnsafe)
+                        .OrderBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
+                        .Select(planet => planet.Coordinate)
+                        .ToList();                    
+
+                    foreach (var possibleDestination in possibleDestinations)
+                    {
+                        foreach (var currentSpeed in validSpeeds)
+                        {
+                            FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+                            FleetHypotesis fleetHypotesis = new()
+                            {
+                                Origin = origin,
+                                Destination = possibleDestination,
+                                Ships = origin.Ships.GetMovableShips(),
+                                Mission = mission,
+                                Speed = currentSpeed,
+                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0),
+                                Fuel = fleetPrediction.Fuel
+                            };
+                            if (fleetHypotesis.Duration >= minFlightTime)
+                            {
+                                possibleFleets.Add(fleetHypotesis);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case Missions.Spy:
+                    Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.DeepSpace);
+                    foreach (var currentSpeed in validSpeeds)
+                    {
+                        FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), destination, mission, currentSpeed);
+                        FleetHypotesis fleetHypotesis = new()
+                        {
+                            Origin = origin,
+                            Destination = destination,
+                            Ships = origin.Ships.GetMovableShips(),
+                            Mission = mission,
+                            Speed = currentSpeed,
+                            Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                            Fuel = fleetPrediction.Fuel
+                        };
+                        if (fleetHypotesis.Duration >= minFlightTime / 2)
+                        {
+                            possibleFleets.Add(fleetHypotesis);
+                            break;
+                        }
+                    }
+                    break;
+                case Missions.Colonize:
+                    for (int pos = 1; pos <= 15; pos++)
+                    {
+                        if (pos == origin.Coordinate.Position)
+                            continue;
+                        GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
+                        List<int> occupiedPos = new();
+                        foreach (var planet in galaxyInfo.Planets)
+                        {
+                            occupiedPos.Add(planet.Coordinate.Position);
+                        }
+                        if (occupiedPos.Any(op => op == pos))
+                            continue;
+
+                        possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Planet));
+                    }
+                    foreach (var possibleDestination in possibleDestinations)
+                    {
+                        foreach (var currentSpeed in validSpeeds)
+                        {
+                            FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+                            FleetHypotesis fleetHypotesis = new()
+                            {
+                                Origin = origin,
+                                Destination = possibleDestination,
+                                Ships = origin.Ships.GetMovableShips(),
+                                Mission = mission,
+                                Speed = currentSpeed,
+                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                                Fuel = fleetPrediction.Fuel
+                            };
+                            if (fleetHypotesis.Duration >= minFlightTime / 2)
+                            {
+                                possibleFleets.Add(fleetHypotesis);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case Missions.Harvest:
+                    for (int pos = 1; pos <= 15; pos++)
+                    {
+                        if (pos == origin.Coordinate.Position)
+                            continue;
+                        GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
+                        List<int> harvestablePos = new();
+                        foreach (var planet in galaxyInfo.Planets)
+                        {
+                            if (planet.Debris.Resources.TotalResources > 0)
+                                possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Debris));
+                        }
+                    }
+                    foreach (var possibleDestination in possibleDestinations)
+                    {
+                        foreach (var currentSpeed in validSpeeds)
+                        {
+                            FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+                            FleetHypotesis fleetHypotesis = new()
+                            {
+                                Origin = origin,
+                                Destination = possibleDestination,
+                                Ships = origin.Ships.GetMovableShips(),
+                                Mission = mission,
+                                Speed = currentSpeed,
+                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                                Fuel = fleetPrediction.Fuel
+                            };
+                            if (fleetHypotesis.Duration >= minFlightTime / 2)
+                            {
+                                possibleFleets.Add(fleetHypotesis);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            if (possibleFleets.Count > 0)
+            {
+                return possibleFleets
+                    .OrderBy(pf => pf.Fuel)
+                    .ThenBy(pf => pf.Duration)
+                    .First();
+            }
+            else {
+                FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), new Coordinate(), mission, Speeds.TenPercent);
+                return new()
+                {
+                    Origin = origin,
+                    Destination = new Coordinate(),
+                    Ships = origin.Ships.GetMovableShips(),
+                    Mission = mission,
+                    Speed = Speeds.TenPercent,
+                    Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                    Fuel = fleetPrediction.Fuel
+                };
+            } 
+        }
+
 
         private static void HandleSleepMode(object state)
-        {
-            DateTime time = GetDateTime();
-
-            if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
-            {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
-            }
-            else if (!DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
-            {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
-            }
-            else if (goToSleep == wakeUp)
-            {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep time and WakeUp time must be different. Sleep mode will be disabled");
-            }
-            else
-            {
-                long interval;
-
-                if (time >= wakeUp)
-                {
-                    if (goToSleep < wakeUp)
-                        goToSleep = goToSleep.AddDays(1);
-                    if (goToSleep > wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
-                    interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                    DateTime newTime = time.AddMilliseconds(interval);
-                    WakeUp(newTime);
-                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
-                }
-                if (time >= goToSleep)
-                {
-                    if (goToSleep > wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
-                    interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                    DateTime newTime = time.AddMilliseconds(interval);
-                    GoToSleep(newTime);
-                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
-                }
-
-            }
-        }
-
-        private static void GoToSleep(object state)
         {
             try
             {
@@ -806,13 +973,83 @@ namespace Tbot
                 xaSem[Feature.Expeditions].WaitOne();
                 xaSem[Feature.Harvest].WaitOne();
                 xaSem[Feature.SleepMode].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
-                /*
-                foreach(Celestial celestial in celestials)
+
+                DateTime time = GetDateTime();
+
+                if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
                 {
-                    AutoFleetSave(celestial, true);
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
                 }
-                */
+                else if (!DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
+                }
+                else if (goToSleep == wakeUp)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep time and WakeUp time must be different. Sleep mode will be disabled");
+                }
+                else
+                {
+                    long interval;
+
+                    if (time >= wakeUp)
+                    {
+                        if (goToSleep < wakeUp)
+                            goToSleep = goToSleep.AddDays(1);
+                        if (goToSleep > wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+                        interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        DateTime newTime = time.AddMilliseconds(interval);
+                        WakeUp(newTime);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
+                    }
+                    if (time >= goToSleep)
+                    {
+                        if (goToSleep > wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        DateTime newTime = time.AddMilliseconds(interval);
+                        GoToSleep(newTime);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while handling sleep mode: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                DateTime time = GetDateTime();
+                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                UpdateTitle();
+            }
+            finally
+            {
+                xaSem[Feature.Defender].Release();
+                xaSem[Feature.Brain].Release();
+                xaSem[Feature.Expeditions].Release();
+                xaSem[Feature.Harvest].Release();
+                xaSem[Feature.SleepMode].Release();
+            }
+        }
+
+        private static void GoToSleep(object state)
+        {
+            try
+            {
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
+
+                if ((bool)settings.SleepMode.AutoFleetSave.Active)
+                {
+                    celestials = UpdateCelestials();
+                    foreach (Celestial celestial in celestials)
+                        AutoFleetSave(celestial, true);
+                }
 
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
                 {
@@ -833,21 +1070,12 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
                 UpdateTitle();
             }
-            finally
-            {
-                xaSem[Feature.Defender].Release();
-                xaSem[Feature.Brain].Release();
-                xaSem[Feature.Expeditions].Release();
-                xaSem[Feature.Harvest].Release();
-                xaSem[Feature.SleepMode].Release();
-            }
         }
 
         private static void WakeUp(object state)
         {
             try
             {
-                xaSem[Feature.SleepMode].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
                 {
@@ -868,10 +1096,6 @@ namespace Tbot
                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
                 UpdateTitle();
-            }
-            finally
-            {
-                xaSem[Feature.SleepMode].Release();
             }
         }
 
@@ -1295,6 +1519,7 @@ namespace Tbot
                 else
                 {
                     var missingResources = resources.Difference(destination.Resources);
+                    
                     origin = UpdatePlanet(origin, UpdateType.Resources);                    
                     if (origin.Resources.IsEnoughFor(missingResources))
                     {
@@ -1306,8 +1531,25 @@ namespace Tbot
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
                         {
                             ships.Add(preferredShip, idealShips);
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
-                            SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                            destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
+
+                            var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
+                            float metProd = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                            var metProdInFlightTime = metProd * flightPrediction.Time * 9.93;
+                            float criProd = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                            var criProdInFlightTime = criProd * flightPrediction.Time * 9.93;
+                            float deutProd = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                            var deutProdInFlightTime = deutProd * flightPrediction.Time * 9.93;
+
+                            if (missingResources.Metal >= metProdInFlightTime || missingResources.Crystal >= criProdInFlightTime || missingResources.Deuterium >= deutProdInFlightTime)
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
+                                SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
+                            }                            
                         }
                         else
                         {
@@ -1566,8 +1808,15 @@ namespace Tbot
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + (speed * 10).ToString() + "% . Ships: " + ships.ToString());
+            
             if (playerClass == Classes.NoClass)
                 playerClass = userInfo.Class;
+
+            if (!ships.HasMovableFleet())
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: there are no ships to send");
+                return 0;
+            }
 
             if (
                 playerClass != Classes.General && (
@@ -1584,9 +1833,40 @@ namespace Tbot
                 )
             )
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, speed not available for your class");
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: speed not available for your class");
                 return 0;
             }
+
+            var fleetPrediction = ogamedService.PredictFleet(origin, ships, destination, mission, speed);
+            var flightTime = mission switch
+            {
+                Missions.Deploy => (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                Missions.Expedition => (long)Math.Round((2 * fleetPrediction.Time * 9.93) + 3600, 0, MidpointRounding.ToPositiveInfinity),
+                _ => (long)Math.Round((2 * fleetPrediction.Time * 9.93), 0, MidpointRounding.ToPositiveInfinity),
+            };
+            var now = GetDateTime();
+            if (DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
+            {
+                if (now >= wakeUp)
+                {
+                    if (goToSleep < wakeUp)
+                        goToSleep = goToSleep.AddDays(1);
+                    if (goToSleep > wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                }
+                if (now >= goToSleep)
+                {
+                    if (goToSleep > wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                }
+                var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
+
+                if (now.CompareTo(lastDepartureTime) > 0 && !force)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: it would come back after sleep time");
+                    return 0;
+                }
+            }            
 
             slots = UpdateSlots();
             if (slots.Free > 1 || force)
@@ -1605,7 +1885,7 @@ namespace Tbot
                 catch (Exception e)
                 {
                     Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to send fleet: an exception has occurred: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                     return 0;
                 }
             }
@@ -1613,7 +1893,7 @@ namespace Tbot
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, no slots available");
                 return 0;
-            }
+            }                      
         }
 
         private static bool CancelFleet(Fleet fleet)

@@ -393,24 +393,36 @@ namespace Tbot.Includes
             return (int)Math.Round(fuelConsumption, MidpointRounding.ToZero);
         }
 
-        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, Researches researches, ServerData serverData, Classes playerClass)
+        public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, Classes playerClass)
         {
-            return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, serverData.SpeedFleet, playerClass);
+            var fleetSpeed = mission switch
+            {
+                Missions.Attack or Missions.FederalAttack or Missions.Destroy => serverData.SpeedFleetWar,
+                Missions.FederalDefense => serverData.SpeedFleetHolding,
+                _ => serverData.SpeedFleetPeaceful,
+            };
+            return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, playerClass);
         }
 
-        public static int CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass)
+        public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass)
         {
             int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
             int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-            return (int)Math.Round(((3500 / ((double)speed / 10) ) * (Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed), MidpointRounding.AwayFromZero);
+            return (long)Math.Round(((3500 / (double)speed ) * Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
         }
 
-        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, int flightTime, Researches researches, ServerData serverData, Classes playerClass)
+        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, Classes playerClass)
         {
-            return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, serverData.SpeedFleet, serverData.GlobalDeuteriumSaveFactor, playerClass);
+            var fleetSpeed = mission switch
+            {
+                Missions.Attack or Missions.FederalAttack or Missions.Destroy => serverData.SpeedFleetWar,
+                Missions.FederalDefense => serverData.SpeedFleetHolding,
+                _ => serverData.SpeedFleetPeaceful,
+            };
+            return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, serverData.GlobalDeuteriumSaveFactor, playerClass);
         }
 
-        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, int flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, Classes playerClass)
+        public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, Classes playerClass)
         {
             int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
             float tempFuel = 0.0F;
@@ -427,6 +439,17 @@ namespace Tbot.Includes
                 }
             }
             return (long)(1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
+        }
+
+        public static FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, Classes playerClass)
+        {
+            long time = CalcFlightTime(origin, destination, ships, mission, speed, researches, serverData, playerClass);
+            long fuel = CalcFuelConsumption(origin, destination, ships, mission, time, researches, serverData, playerClass);
+            return new()
+            {
+                Fuel = fuel,
+                Time = time
+            };
         }
 
         public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, Classes playerClass, long deutToLeave = 0)

@@ -712,6 +712,41 @@ namespace Tbot.Services
             else return JsonConvert.DeserializeObject<Fleet>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
         }
 
+        public FleetPrediction PredictFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed)
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/planets/" + origin.ID + "/predict-fleet",
+                Method = Method.POST,
+            };
+
+            request.AddParameter("galaxy", destination.Galaxy, ParameterType.GetOrPost);
+            request.AddParameter("system", destination.System, ParameterType.GetOrPost);
+            request.AddParameter("position", destination.Position, ParameterType.GetOrPost);
+            request.AddParameter("type", (int)destination.Type, ParameterType.GetOrPost);
+
+            foreach (PropertyInfo prop in ships.GetType().GetProperties())
+            {
+                long qty = (long)prop.GetValue(ships, null);
+                if (qty == 0) continue;
+                if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
+                {
+                    request.AddParameter("ships", (int)buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost);
+                }
+            }
+
+            request.AddParameter("mission", (int)mission, ParameterType.GetOrPost);
+
+            request.AddParameter("speed", speed.ToString(), ParameterType.GetOrPost);
+
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return JsonConvert.DeserializeObject<FleetPrediction>(JsonConvert.SerializeObject(result.Result));
+        }
+
         public bool CancelFleet(Fleet fleet)
         {
             try

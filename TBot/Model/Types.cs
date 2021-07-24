@@ -427,6 +427,43 @@ namespace Tbot.Model
                 return false;
             }
         }
+
+        public bool HasMovableFleet()
+        {
+            if
+            (
+                LightFighter == 0 &&
+                HeavyFighter == 0 &&
+                Cruiser == 0 &&
+                Battleship == 0 &&
+                Battlecruiser == 0 &&
+                Bomber == 0 &&
+                Destroyer == 0 &&
+                Deathstar == 0 &&
+                SmallCargo == 0 &&
+                LargeCargo == 0 &&
+                ColonyShip == 0 &&
+                Recycler == 0 &&
+                EspionageProbe == 0 &&
+                Reaper == 0 &&
+                Pathfinder == 0
+            )
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public Ships GetMovableShips()
+        {
+            Ships tempShips = this;
+            tempShips.SolarSatellite = 0;
+            tempShips.Crawler = 0;
+            return tempShips;
+        }
         public Ships Add(Buildables buildable, long quantity)
         {
             foreach (PropertyInfo prop in this.GetType().GetProperties())
@@ -478,6 +515,12 @@ namespace Tbot.Model
             }
             return output;
         }
+    }
+
+    public class FleetPrediction
+    {
+        public long Time { get; set; }
+        public long Fuel { get; set; }
     }
 
     public class Fleet
@@ -683,21 +726,26 @@ namespace Tbot.Model
         public Resources Price { get; set; }
     }
 
-    public class FleetSchedule
+    public class FleetSchedule: FleetHypotesis
+    {
+        public Resources Payload { get; set; }
+        public DateTime Departure { get; set; }
+        public DateTime Arrival { get; set; }
+        public DateTime Comeback { get; set; }
+        public DateTime SendAt { get; set; }
+        public DateTime RecallAt { get; set; }
+        public DateTime ReturnAt { get; set; }
+    }
+
+    public class FleetHypotesis
     {
         public Celestial Origin { get; set; }
         public Coordinate Destination { get; set; }
         public Ships Ships { get; set; }
-        public Resources Payload { get; set; }
         public Missions Mission { get; set; }
         public decimal Speed { get; set; }
-        public DateTime Departure { get; set; }
-        public DateTime Arrival { get; set; }
-        public DateTime Comeback { get; set; }
         public long Duration { get; set; }
-        public DateTime SendAt { get; set; }
-        public DateTime RecallAt { get; set; }
-        public DateTime ReturnAt { get; set; }
+        public long Fuel { get; set; }
     }
 
     public class ProxySettings

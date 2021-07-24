@@ -25,6 +25,10 @@
 		"WakeUp": "07:05",
 		"TelegramMessenger": {
 			"Active": false
+		},
+		"AutoFleetSave": {
+			"Active": true,
+			"ForceUnsafe": true
 		}
 	},
 	"Defender": {
