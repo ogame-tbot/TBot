@@ -747,6 +747,36 @@ namespace Tbot.Services
             else return JsonConvert.DeserializeObject<FleetPrediction>(JsonConvert.SerializeObject(result.Result));
         }
 
+        public FleetPrediction AlternatePredictFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed)
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/predict-fleet",
+                Method = Method.GET,
+            };
+
+            request.AddParameter("destGalaxy", destination.Galaxy, ParameterType.GetOrPost);
+            request.AddParameter("destSystem", destination.System, ParameterType.GetOrPost);
+            request.AddParameter("destPosition", destination.Position, ParameterType.GetOrPost);
+            request.AddParameter("origin", origin.ID, ParameterType.GetOrPost);
+            request.AddParameter("mission", (int)mission, ParameterType.GetOrPost);
+            request.AddParameter("speed", speed.ToString(), ParameterType.GetOrPost);
+
+            foreach (PropertyInfo prop in ships.GetMovableShips().GetType().GetProperties())
+            {
+                long qty = (long)prop.GetValue(ships, null);
+                if (qty == 0) continue;
+                request.AddParameter(prop.Name, prop.GetValue(ships, null), ParameterType.GetOrPost);
+            }            
+
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return JsonConvert.DeserializeObject<FleetPrediction>(JsonConvert.SerializeObject(result.Result));
+        }
+
         public bool CancelFleet(Fleet fleet)
         {
             try
