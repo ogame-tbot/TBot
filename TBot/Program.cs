@@ -1531,25 +1531,35 @@ namespace Tbot
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
                         {
                             ships.Add(preferredShip, idealShips);
-                            destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
 
-                            var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
-                            float metProd = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
-                            var metProdInFlightTime = metProd * flightPrediction.Time * 9.93;
-                            float criProd = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
-                            var criProdInFlightTime = criProd * flightPrediction.Time * 9.93;
-                            float deutProd = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
-                            var deutProdInFlightTime = deutProd * flightPrediction.Time * 9.93;
+                            if (destination.Coordinate.Type == Celestials.Planet)
+                            {
+                                destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
 
-                            if (missingResources.Metal >= metProdInFlightTime || missingResources.Crystal >= criProdInFlightTime || missingResources.Deuterium >= deutProdInFlightTime)
+                                var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
+                                var flightTime = flightPrediction.Time * 9.93;
+                                float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                var metProdInFlightTime = metProdInASecond * flightTime;
+                                float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                var criProdInFlightTime = criProdInASecond * flightTime;
+                                float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                var deutProdInFlightTime = deutProdInASecond * flightTime;
+
+                                if (missingResources.Metal >= metProdInFlightTime || missingResources.Crystal >= criProdInFlightTime || missingResources.Deuterium >= deutProdInFlightTime)
+                                {
+                                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
+                                    SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                                }
+                                else
+                                {
+                                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
+                                }
+                            }
+                            else
                             {
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
                                 SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
                             }
-                            else
-                            {
-                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
-                            }                            
                         }
                         else
                         {
@@ -1713,6 +1723,11 @@ namespace Tbot
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + celestial.ToString() + ": celestial in exclude list.");
                             continue;
                         }
+                        if (celestial.Coordinate.IsSame(destinationCoordinate))
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + celestial.ToString() + ": celestial is the target.");
+                            continue;
+                        }
 
                         var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
@@ -1817,6 +1832,16 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: there are no ships to send");
                 return 0;
             }
+            if (origin.Coordinate.IsSame(destination))
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: origin and destination are the same");
+                return 0;
+            }
+            if (destination.Galaxy <= 0 || destination.Galaxy > serverData.Galaxies || destination.System <= 0 || destination.System > 500 || destination.Position <= 0 || destination.Position > 17)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: invalid destination");
+                return 0;
+            }
 
             if (
                 playerClass != Classes.General && (
@@ -1844,6 +1869,8 @@ namespace Tbot
                 Missions.Expedition => (long)Math.Round((2 * fleetPrediction.Time * 9.93) + 3600, 0, MidpointRounding.ToPositiveInfinity),
                 _ => (long)Math.Round((2 * fleetPrediction.Time * 9.93), 0, MidpointRounding.ToPositiveInfinity),
             };
+            //var altFleetPrediction = ogamedService.AlternatePredictFleet(origin, ships, destination, mission, speed);
+
             var now = GetDateTime();
             if (DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
             {
