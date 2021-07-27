@@ -1102,7 +1102,7 @@ namespace Tbot.Includes
                     break;
                 case Buildables.GaussCannon:
                     oneItemCost.Metal = (long)(20000);
-                    oneItemCost.Crystal = (long)(15000;
+                    oneItemCost.Crystal = (long)(15000);
                     oneItemCost.Deuterium = (long)(2000);
                     break;
                 case Buildables.IonCannon:
