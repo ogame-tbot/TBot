@@ -1082,6 +1082,138 @@ namespace Tbot.Includes
             return output;
         }
 
+        public static long CalcMaxBuildableNumber(Buildables buildable, Resources resources)
+        {
+            long output;
+            Resources oneItemCost = new();
+
+            switch (buildable)
+            {
+                case Buildables.RocketLauncher:
+                    oneItemCost.Metal = (long)(2000);
+                    break;
+                case Buildables.LightLaser:
+                    oneItemCost.Metal = (long)(1500);
+                    oneItemCost.Crystal = (long)(500);
+                    break;
+                case Buildables.HeavyLaser:
+                    oneItemCost.Metal = (long)(6000);
+                    oneItemCost.Crystal = (long)(2000);
+                    break;
+                case Buildables.GaussCannon:
+                    oneItemCost.Metal = (long)(20000);
+                    oneItemCost.Crystal = (long)(15000;
+                    oneItemCost.Deuterium = (long)(2000);
+                    break;
+                case Buildables.IonCannon:
+                    oneItemCost.Metal = (long)(5000);
+                    oneItemCost.Crystal = (long)(3000);
+                    break;
+                case Buildables.PlasmaTurret:
+                    oneItemCost.Metal = (long)(50000);
+                    oneItemCost.Crystal = (long)(50000);
+                    oneItemCost.Deuterium = (long)(30000);
+                    break;
+                case Buildables.SmallShieldDome:
+                    oneItemCost.Metal = (long)(10000);
+                    oneItemCost.Crystal = (long)(10000);
+                    break;
+                case Buildables.LargeShieldDome:
+                    oneItemCost.Metal = (long)(50000);
+                    oneItemCost.Crystal = (long)(50000);
+                    break;
+                case Buildables.AntiBallisticMissiles:
+                    break;
+                case Buildables.InterplanetaryMissiles:
+                    break;
+                case Buildables.SmallCargo:
+                    oneItemCost.Metal = (long)(2000);
+                    oneItemCost.Crystal = (long)(2000);
+                    break;
+                case Buildables.LargeCargo:
+                    oneItemCost.Metal = (long)(6000);
+                    oneItemCost.Crystal = (long)(6000);
+                    break;
+                case Buildables.LightFighter:
+                    oneItemCost.Metal = (long)(3000);
+                    oneItemCost.Crystal = (long)(1000);
+                    break;
+                case Buildables.HeavyFighter:
+                    oneItemCost.Metal = (long)(6000);
+                    oneItemCost.Crystal = (long)(4000);
+                    break;
+                case Buildables.Cruiser:
+                    oneItemCost.Metal = (long)(20000);
+                    oneItemCost.Crystal = (long)(7000);
+                    oneItemCost.Deuterium = (long)(2000);
+                    break;
+                case Buildables.Battleship:
+                    oneItemCost.Metal = (long)(35000);
+                    oneItemCost.Crystal = (long)(15000);
+                    break;
+                case Buildables.ColonyShip:
+                    oneItemCost.Metal = (long)(10000);
+                    oneItemCost.Crystal = (long)(20000);
+                    oneItemCost.Deuterium = (long)(10000);
+                    break;
+                case Buildables.Recycler:
+                    oneItemCost.Metal = (long)(10000);
+                    oneItemCost.Crystal = (long)(6000);
+                    oneItemCost.Deuterium = (long)(2000);
+                    break;
+                case Buildables.EspionageProbe:
+                    oneItemCost.Crystal = (long)(1000);
+                    break;
+                case Buildables.Bomber:
+                    oneItemCost.Metal = (long)(50000);
+                    oneItemCost.Crystal = (long)(25000);
+                    oneItemCost.Deuterium = (long)(15000);
+                    break;
+                case Buildables.SolarSatellite:
+                    oneItemCost.Crystal = (long)(2000);
+                    oneItemCost.Deuterium = (long)(500);
+                    break;
+                case Buildables.Destroyer:
+                    oneItemCost.Metal = (long)(60000);
+                    oneItemCost.Crystal = (long)(50000);
+                    oneItemCost.Deuterium = (long)(15000);
+                    break;
+                case Buildables.Deathstar:
+                    oneItemCost.Metal = (long)(5000000);
+                    oneItemCost.Crystal = (long)(4000000);
+                    oneItemCost.Deuterium = (long)(1000000);
+                    break;
+                case Buildables.Battlecruiser:
+                    oneItemCost.Metal = (long)(30000);
+                    oneItemCost.Crystal = (long)(40000);
+                    oneItemCost.Deuterium = (long)(15000);
+                    break;
+                case Buildables.Crawler:
+                    break;
+                case Buildables.Reaper:
+                    oneItemCost.Metal = (long)(85000);
+                    oneItemCost.Crystal = (long)(55000);
+                    oneItemCost.Deuterium = (long)(20000);
+                    break;
+                case Buildables.Pathfinder:
+                    oneItemCost.Metal = (long)(8000);
+                    oneItemCost.Crystal = (long)(15000);
+                    oneItemCost.Deuterium = (long)(8000);
+                    break;
+                default:
+                    break;
+            }
+
+            long maxPerMet = (long)Math.Round((decimal)resources.Metal / (decimal)oneItemCost.Metal, 0, MidpointRounding.ToZero);
+            long maxPerCry = (long)Math.Round((decimal)resources.Crystal / (decimal)oneItemCost.Crystal, 0, MidpointRounding.ToZero);
+            long maxPerDeut = (long)Math.Round((decimal)resources.Deuterium / (decimal)oneItemCost.Deuterium, 0, MidpointRounding.ToZero);
+
+            output = Math.Min(maxPerMet, maxPerCry);
+            output = Math.Min(output, maxPerDeut);
+
+            return output;
+        }
+
         /*Tralla 12/2/2020
          * 
          * Added helper to calc delta

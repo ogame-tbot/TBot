@@ -1239,7 +1239,8 @@ namespace Tbot
                             nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory) && tempCelestial.Productions.Count == 0)
                         {
                             //Manage the need of nanites
                             xBuildable = Buildables.NaniteFactory;
@@ -1251,13 +1252,13 @@ namespace Tbot
                             xBuildable = Buildables.RoboticsFactory;
                             nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard) && tempCelestial.Productions.Count == 0)
                         {
                             //Manage the need of shipyard
                             xBuildable = Buildables.Shipyard;
                             nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
                         }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab))
+                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab) && tempCelestial.Constructions.ResearchID == 0)
                         {
                             //Manage the need of lab
                             xBuildable = Buildables.ResearchLab;
@@ -1614,9 +1615,16 @@ namespace Tbot
                         foreach (Production production in tempCelestial.Productions)
                         {
                             Buildables productionType = (Buildables)production.ID;
-                            Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are already in production.");
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - " + production.Nbr + "x" + productionType.ToString() + " are already in production.");
                         }
                         continue;
+                    }
+                    tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
+                    if (tempCelestial.Constructions.BuildingID == (int)Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int)Buildables.NaniteFactory)
+                    {
+                        Buildables buildingInProgress = (Buildables)tempCelestial.Constructions.BuildingID;
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - The " + buildingInProgress.ToString() + " is upgrading. Skipping planet.");
+
                     }
 
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
@@ -1625,7 +1633,7 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + tempCelestial.Resources.TotalResources.ToString("N0"));
                     if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
                     {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
                         continue;
                     }
                     if (capacity <= tempCelestial.Resources.TotalResources)
@@ -1635,7 +1643,7 @@ namespace Tbot
                         Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
                         long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
 
                         /*Tralla 14/2/21
                          * 
@@ -1651,12 +1659,20 @@ namespace Tbot
                         if (tempCelestial.Resources.IsEnoughFor(cost))
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + neededCargos + "x" + preferredCargoShip.ToString());  
                         else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString());
-                        var result = ogamedService.BuildShips(tempCelestial, preferredCargoShip, neededCargos);
-                        if (result)
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
-                        else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship construction.");
+                        {
+                            var buildableCargos = Helpers.CalcMaxBuildableNumber(preferredCargoShip, tempCelestial.Resources);
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Not enough resources to build " + neededCargos + "x" + preferredCargoShip.ToString() + ". " + buildableCargos.ToString() + " will be built instead.");
+                            neededCargos = buildableCargos;
+                        }
+                        
+                        if (neededCargos > 0)
+                        {
+                            var result = ogamedService.BuildShips(tempCelestial, preferredCargoShip, neededCargos);
+                            if (result)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Production succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start ship production.");
+                        }                        
 
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
                         foreach (Production production in tempCelestial.Productions)
