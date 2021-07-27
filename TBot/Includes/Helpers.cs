@@ -1204,12 +1204,18 @@ namespace Tbot.Includes
                     break;
             }
 
-            long maxPerMet = (long)Math.Round((decimal)resources.Metal / (decimal)oneItemCost.Metal, 0, MidpointRounding.ToZero);
-            long maxPerCry = (long)Math.Round((decimal)resources.Crystal / (decimal)oneItemCost.Crystal, 0, MidpointRounding.ToZero);
-            long maxPerDeut = (long)Math.Round((decimal)resources.Deuterium / (decimal)oneItemCost.Deuterium, 0, MidpointRounding.ToZero);
+            long maxPerMet = 0;
+            long maxPerCry = 0;
+            long maxPerDeut = 0;
 
-            output = Math.Min(maxPerMet, maxPerCry);
-            output = Math.Min(output, maxPerDeut);
+            if (oneItemCost.Metal > 0)
+                maxPerMet = (long)Math.Round((decimal)resources.Metal / (decimal)oneItemCost.Metal, 0, MidpointRounding.ToZero);
+            if (oneItemCost.Crystal > 0)
+                maxPerCry = (long)Math.Round((decimal)resources.Crystal / (decimal)oneItemCost.Crystal, 0, MidpointRounding.ToZero);
+            if (oneItemCost.Deuterium > 0)
+                maxPerDeut = (long)Math.Round((decimal)resources.Deuterium / (decimal)oneItemCost.Deuterium, 0, MidpointRounding.ToZero);
+
+            output = Math.Min(maxPerMet, Math.Min(maxPerCry, maxPerDeut));
 
             return output;
         }
