@@ -719,23 +719,24 @@ namespace Tbot
                 }
             }
 
+            forceUnsafe = (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe;
             Missions mission = Missions.Deploy;
-            FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
-            if (fleetHypotesis.Origin.Coordinate.Type == Celestials.Moon) {
+            FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
+            if ((fleetHypotesis.Origin.Coordinate.Type == Celestials.Moon) || forceUnsafe) {
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0)
                 {
                     mission = Missions.Spy;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
                 }
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
                 {
                     mission = Missions.Colonize;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
                 }
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0)
                 {
                     mission = Missions.Harvest;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
                 }
             }
             if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)))
