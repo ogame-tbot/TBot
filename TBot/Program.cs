@@ -721,20 +721,22 @@ namespace Tbot
 
             Missions mission = Missions.Deploy;
             FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
-            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0)
-            {
-                mission = Missions.Spy;
-                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
-            }
-            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
-            {
-                mission = Missions.Colonize;
-                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
-            }
-            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0)
-            {
-                mission = Missions.Harvest;
-                fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+            if (fleetHypotesis.Origin.Coordinate.Type == Celestials.Moon) {
+                if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0)
+                {
+                    mission = Missions.Spy;
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                }
+                if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
+                {
+                    mission = Missions.Colonize;
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                }
+                if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0)
+                {
+                    mission = Missions.Harvest;
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe);
+                }
             }
             if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)))
             {
@@ -813,7 +815,7 @@ namespace Tbot
                 case Missions.Deploy:
                     possibleDestinations = celestials
                         .Where(planet => planet.ID != origin.ID)
-                        .Where(planet => planet.Coordinate.Type == Celestials.Moon || forceUnsafe)
+                        .Where(planet => (planet.Coordinate.Type == Celestials.Moon) || forceUnsafe)
                         .OrderBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
                         .Select(planet => planet.Coordinate)
                         .ToList();                    
