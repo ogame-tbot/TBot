@@ -23,14 +23,14 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", bool lobbyPioneers = false, ProxySettings proxySettings = null)
         {
-            ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
+            ExecuteOgamedExecutable(credentials, host, port, captchaKey, lobbyPioneers, proxySettings);
             Url = "http://" + host + ":" + port;
             Client = new RestClient(Url);
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", bool lobbyPioneers = false, ProxySettings proxySettings = null)
         {
             try
             {
@@ -46,6 +46,8 @@ namespace Tbot.Services
                     if (proxySettings.Password != "")
                         args += " --proxy-password=" + proxySettings.Password;
                 }
+                if (lobbyPioneers)
+                    args += " --lobby=lobby-pioneers";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     Process.Start("ogamed.exe", args);
                 else
@@ -744,7 +746,11 @@ namespace Tbot.Services
             {
                 throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
             }
-            else return JsonConvert.DeserializeObject<FleetPrediction>(JsonConvert.SerializeObject(result.Result));
+            else return new()
+            {
+                Time = result.Result.Secs,
+                Fuel = result.Result.Fuel
+            };
         }
 
         public bool CancelFleet(Fleet fleet)

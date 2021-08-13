@@ -70,6 +70,7 @@ namespace Tbot
                 string host = (string)settings.General.Host ?? "localhost";
                 string port = (string)settings.General.Port ?? "8080";
                 string captchaKey = (string)settings.General.CaptchaAPIKey ?? "";
+                bool lobbyPioneers = (bool)settings.Credentials.LobbyPioneers;
                 ProxySettings proxy = null;
                 if ((bool)settings.General.Proxy.Active && (string)settings.General.Proxy.Address != "")
                 {
@@ -81,7 +82,7 @@ namespace Tbot
                     proxy.Password = (string)settings.General.Proxy.Password ?? "";
 
                 }
-                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, proxy);
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, lobbyPioneers, proxy);
             }
             catch (Exception e)
             {
@@ -833,7 +834,7 @@ namespace Tbot
                                 Ships = origin.Ships.GetMovableShips(),
                                 Mission = mission,
                                 Speed = currentSpeed,
-                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0),
+                                Duration = fleetPrediction.Time,
                                 Fuel = fleetPrediction.Fuel
                             };
                             if (fleetHypotesis.Duration >= minFlightTime)
@@ -856,7 +857,7 @@ namespace Tbot
                             Ships = origin.Ships.GetMovableShips(),
                             Mission = mission,
                             Speed = currentSpeed,
-                            Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                            Duration = fleetPrediction.Time,
                             Fuel = fleetPrediction.Fuel
                         };
                         if (fleetHypotesis.Duration >= minFlightTime / 2)
@@ -894,7 +895,7 @@ namespace Tbot
                                 Ships = origin.Ships.GetMovableShips(),
                                 Mission = mission,
                                 Speed = currentSpeed,
-                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                                Duration = fleetPrediction.Time,
                                 Fuel = fleetPrediction.Fuel
                             };
                             if (fleetHypotesis.Duration >= minFlightTime / 2)
@@ -930,7 +931,7 @@ namespace Tbot
                                 Ships = origin.Ships.GetMovableShips(),
                                 Mission = mission,
                                 Speed = currentSpeed,
-                                Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                                Duration = fleetPrediction.Time,
                                 Fuel = fleetPrediction.Fuel
                             };
                             if (fleetHypotesis.Duration >= minFlightTime / 2)
@@ -960,7 +961,7 @@ namespace Tbot
                     Ships = origin.Ships.GetMovableShips(),
                     Mission = mission,
                     Speed = Speeds.TenPercent,
-                    Duration = (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
+                    Duration = fleetPrediction.Time,
                     Fuel = fleetPrediction.Fuel
                 };
             } 
@@ -1541,7 +1542,7 @@ namespace Tbot
                                 destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
 
                                 var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
-                                var flightTime = flightPrediction.Time * 9.93;
+                                var flightTime = flightPrediction.Time;
                                 float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
                                 var metProdInFlightTime = metProdInASecond * flightTime;
                                 float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
@@ -1884,14 +1885,13 @@ namespace Tbot
             var fleetPrediction = ogamedService.PredictFleet(origin, ships, destination, mission, speed);
             var flightTime = mission switch
             {
-                Missions.Deploy => (long)Math.Round(fleetPrediction.Time * 9.93, 0, MidpointRounding.ToPositiveInfinity),
-                Missions.Expedition => (long)Math.Round((2 * fleetPrediction.Time * 9.93) + 3600, 0, MidpointRounding.ToPositiveInfinity),
-                _ => (long)Math.Round((2 * fleetPrediction.Time * 9.93), 0, MidpointRounding.ToPositiveInfinity),
+                Missions.Deploy => fleetPrediction.Time,
+                Missions.Expedition => (long)Math.Round((double)(2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
+                _ => (long)Math.Round((double)(2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
             };
-            //var altFleetPrediction = ogamedService.AlternatePredictFleet(origin, ships, destination, mission, speed);
 
             var now = GetDateTime();
-            if (DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
+            if ((bool)settings.SleepMode.Active && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
             {
                 if (now >= wakeUp)
                 {
