@@ -716,7 +716,7 @@ namespace Tbot.Services
         {
             var request = new RestRequest
             {
-                Resource = "/bot/planets/" + origin.ID + "/predict-fleet",
+                Resource = "/bot/planets/" + origin.ID + "/flighttime",
                 Method = Method.POST,
             };
 
