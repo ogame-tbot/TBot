@@ -1050,8 +1050,10 @@ namespace Tbot
 
                 if ((bool)settings.SleepMode.AutoFleetSave.Active)
                 {
-                    celestials = UpdateCelestials();
-                    foreach (Celestial celestial in celestials)
+                    var celestialsToFleetsave = UpdateCelestials();
+                    if ((bool)settings.SleepMode.AutoFleetSave.OnlyMoons)
+                        celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
+                    foreach (Celestial celestial in celestialsToFleetsave)
                         AutoFleetSave(celestial, true);
                 }
 
@@ -1111,6 +1113,14 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Defender].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Defender].Release();
+                    return;
+                }
+
                 bool isUnderAttack = ogamedService.IsUnderAttack();
                 DateTime time = GetDateTime();
                 if (isUnderAttack)
@@ -1120,7 +1130,8 @@ namespace Tbot
                     Helpers.SetTitle("ENEMY ACTIVITY DETECTED - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
                     Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
                     attacks = ogamedService.GetAttacks();
-                    HandleAttack(state);
+                    foreach(AttackerFleet attack in attacks)
+                        HandleAttack(attack);
                 }
                 else
                 {
@@ -1203,6 +1214,13 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
 
                 fleets = UpdateFleets();
 
@@ -1524,9 +1542,13 @@ namespace Tbot
                 else
                 {
                     var missingResources = resources.Difference(destination.Resources);
-                    
-                    origin = UpdatePlanet(origin, UpdateType.Resources);                    
-                    if (origin.Resources.IsEnoughFor(missingResources))
+
+                    Resources resToLeave = new();
+                    if ((long)settings.Brain.AutoMine.Trasports.DeutToLeave > 0)
+                        resToLeave.Deuterium = (long)settings.Brain.AutoMine.Trasports.DeutToLeave;
+
+                    origin = UpdatePlanet(origin, UpdateType.Resources);
+                    if (origin.Resources.IsEnoughFor(missingResources, resToLeave))
                     {
                         origin = UpdatePlanet(origin, UpdateType.Ships);
                         Buildables preferredShip = Buildables.SmallCargo;
@@ -1550,7 +1572,14 @@ namespace Tbot
                                 float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
                                 var deutProdInFlightTime = deutProdInASecond * flightTime;
 
-                                if (missingResources.Metal >= metProdInFlightTime || missingResources.Crystal >= criProdInFlightTime || missingResources.Deuterium >= deutProdInFlightTime)
+                                if (
+                                    missingResources.Metal >= metProdInFlightTime ||
+                                    missingResources.Crystal >= criProdInFlightTime ||
+                                    missingResources.Deuterium >= deutProdInFlightTime ||
+                                    resources.Metal > Helpers.CalcDepositCapacity(destination.Buildings.MetalStorage) ||
+                                    resources.Crystal > Helpers.CalcDepositCapacity(destination.Buildings.CrystalStorage) ||
+                                    resources.Deuterium > Helpers.CalcDepositCapacity(destination.Buildings.DeuteriumTank)
+                                )
                                 {
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
                                     SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
@@ -1592,6 +1621,14 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
+
                 fleets = UpdateFleets();
                 List<Celestial> newCelestials = celestials.ToList();
                 List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoCargo.Exclude, celestials);
@@ -1722,6 +1759,13 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
 
                 if (settings.Brain.AutoRepatriate.Target)
                 {
@@ -1890,9 +1934,21 @@ namespace Tbot
                 _ => (long)Math.Round((double)(2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
             };
 
-            var now = GetDateTime();
-            if ((bool)settings.SleepMode.Active && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) && DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
+            origin = UpdatePlanet(origin, UpdateType.Resources);
+            if (origin.Resources.Deuterium < fleetPrediction.Fuel)
             {
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: not enough deuterium!");
+                return 0;
+            }                
+            
+            if (
+                (bool)settings.SleepMode.Active &&
+                DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) &&
+                DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) &&
+                !force
+            )
+            {
+                var now = GetDateTime();
                 if (now >= wakeUp)
                 {
                     if (goToSleep < wakeUp)
@@ -1906,10 +1962,13 @@ namespace Tbot
                         wakeUp = wakeUp.AddDays(1);
                 }
                 var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
-
-                if (now.CompareTo(lastDepartureTime) > 0 && !force)
+                var minReturnTime = now.Add(TimeSpan.FromSeconds(flightTime));
+                if (
+                    now.CompareTo(lastDepartureTime) > 0 &&
+                    minReturnTime.CompareTo(wakeUp) < 0
+                )
                 {
-                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: it would come back after sleep time");
+                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: it would come back during sleep time");
                     return 0;
                 }
             }            
@@ -1918,9 +1977,7 @@ namespace Tbot
             if (slots.Free > 1 || force)
             {
                 if (payload == null)
-                {
-                    payload = new Resources { Metal = 0, Crystal = 0, Deuterium = 0 };
-                }
+                    payload = new();
                 try
                 {
                     Fleet fleet = ogamedService.SendFleet(origin, ships, destination, mission, speed, payload);
@@ -1983,13 +2040,14 @@ namespace Tbot
             }
         }
 
-        private static void RetireFleet(object state)
+        private static void RetireFleet(object fleet)
         {
-            CancelFleet((Fleet)state);
+            CancelFleet((Fleet)fleet);
         }
 
-        private static void HandleAttack(object state)
+        private static void HandleAttack(object _attack )
         {
+            AttackerFleet attack = _attack as AttackerFleet;
             if (celestials.Count == 0)
             {
                 DateTime time = GetDateTime();
@@ -2000,109 +2058,152 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                 return;
             }
-            foreach (AttackerFleet attack in attacks)
+
+            if ((settings.Defender.WhiteList as int[]).Any())
             {
-                if (attack.IsOnlyProbes())
+                foreach (int playerID in (int[])settings.Defender.WhiteList)
                 {
-                    if (attack.MissionType == Missions.Spy)
-                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
-                    else
-                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
-
-                    continue;
-                }
-                if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
-                {
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
-                }
-                Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.Coordinate.Galaxy == attack.Destination.Galaxy && planet.Coordinate.System == attack.Destination.System && planet.Coordinate.Position == attack.Destination.Position && planet.Coordinate.Type == attack.Destination.Type);
-                attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
-                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
-                if ((bool)settings.Defender.SpyAttacker.Active)
-                {
-                    slots = UpdateSlots();
-                    if (slots.Free > 0)
+                    if (attack.AttackerID == playerID)
                     {
-                        if (attackedCelestial.Ships.EspionageProbe == 0)
-                        {
-                            Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not spy attacker: no probes available.");
-                        }
-                        else
-                        {
-                            try
-                            {
-                                Coordinate destination = attack.Origin;
-                                Ships ships = new() { EspionageProbe = (int)settings.Defender.SpyAttacker.Probes };
-                                int fleetId = SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent, new Resources(), userInfo.Class);
-                                Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
-                                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Spying attacker from " + attackedCelestial.ToString() + " to " + destination.ToString() + " with " + settings.Defender.SpyAttacker.Probes + " probes. Arrival at " + fleet.ArrivalTime.ToString());
-                            }
-                            catch (Exception e)
-                            {
-                                Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not spy attacker: an exception has occurred: " + e.Message);
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not send probes: no slots available.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: attacker " + attack.AttackerName + " whitelisted.");
+                        return;
                     }
                 }
-                if ((bool)settings.Defender.MessageAttacker.Active)
+            }
+            
+            if ((bool)settings.Defender.IgnoreProbes && attack.IsOnlyProbes())
+            {
+                if (attack.MissionType == Missions.Spy)
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
+                else
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
+
+                return;
+            }
+            if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
+            {
+                telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+            }
+            Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.HasCoords(attack.Destination));            
+            Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+            attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
+
+            if ((bool)settings.Defender.SpyAttacker.Active)
+            {
+                slots = UpdateSlots();
+                if (attackedCelestial.Ships.EspionageProbe == 0)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not spy attacker: no probes available.");
+                }
+                else
                 {
                     try
                     {
-                        Random random = new();
-                        string[] messages = settings.Defender.MessageAttacker.Messages;
-                        string message = messages.ToList().Shuffle().First();
-                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sending message \"" + message + "\" to attacker" + attack.AttackerName);
-                        var result = ogamedService.SendMessage(attack.AttackerID, message);
-                        if (result)
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Message succesfully sent.");
-                        else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable send message.");
-
+                        Coordinate destination = attack.Origin;
+                        Ships ships = new() { EspionageProbe = (int)settings.Defender.SpyAttacker.Probes };
+                        int fleetId = SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent, new Resources(), userInfo.Class);
+                        Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Spying attacker from " + attackedCelestial.ToString() + " to " + destination.ToString() + " with " + settings.Defender.SpyAttacker.Probes + " probes. Arrival at " + fleet.ArrivalTime.ToString());
                     }
                     catch (Exception e)
                     {
-                        Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not message attacker: an exception has occurred: " + e.Message);
+                        Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not spy attacker: an exception has occurred: " + e.Message);
                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                     }
-                }
-                if ((bool)settings.Defender.Autofleet.Active)
+                }                
+            }
+            if ((bool)settings.Defender.MessageAttacker.Active)
+            {
+                try
                 {
-                    slots = UpdateSlots();
-                    if (slots.Free > 0)
+                    Random random = new();
+                    string[] messages = settings.Defender.MessageAttacker.Messages;
+                    string message = messages.ToList().Shuffle().First();
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sending message \"" + message + "\" to attacker" + attack.AttackerName);
+                    var result = ogamedService.SendMessage(attack.AttackerID, message);
+                    if (result)
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Message succesfully sent.");
+                    else
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable send message.");
+
+                }
+                catch (Exception e)
+                {
+                    Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not message attacker: an exception has occurred: " + e.Message);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                }
+            }
+            if ((bool)settings.Defender.Autofleet.Active)
+            {
+                slots = UpdateSlots();
+                if (slots.Free > 0)
+                {
+                    try
                     {
-                        try
+                        attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Resources);
+                        Celestial destination;
+                        Missions mission = Missions.Deploy;
+                        destination = celestials
+                            .Where(planet => planet.ID != attackedCelestial.ID)
+                            .Where(planet => planet.Coordinate.Type == Celestials.Moon)
+                            .OrderBy(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData))
+                            .FirstOrDefault() ?? new Celestial { ID = 0 };
+                        if (destination.ID == 0)
                         {
-                            attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Resources);
-                            Celestial destination;
-                            Missions mission = Missions.Deploy;
                             destination = celestials
                                 .Where(planet => planet.ID != attackedCelestial.ID)
-                                .Where(planet => planet.Coordinate.Type == Celestials.Moon)
                                 .OrderBy(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData))
                                 .FirstOrDefault() ?? new Celestial { ID = 0 };
-                            if (destination.ID == 0)
-                            {
-                                destination = celestials
-                                    .Where(planet => planet.ID != attackedCelestial.ID)
-                                    .OrderBy(planet => Helpers.CalcDistance(attackedCelestial.Coordinate, planet.Coordinate, serverData))
-                                    .FirstOrDefault() ?? new Celestial { ID = 0 };
-                            }
-                            if (destination.ID == 0)
-                            {
-                                destination.ID = -99;
-                                destination.Coordinate = new Coordinate();
-                                mission = Missions.Transport;
-                            }
+                        }
+                        if (destination.ID == 0)
+                        {
+                            destination.ID = -99;
+                            destination.Coordinate = new Coordinate();
+                            mission = Missions.Transport;
+                        }
 
-                            if (destination.ID == 0)
+                        if (destination.ID == 0)
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no valid destination exists");
+                            DateTime time = GetDateTime();
+                            int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                            DateTime newTime = time.AddMilliseconds(interval);
+                            timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
+                            Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+                            return;
+                        }
+
+                        Ships ships = attackedCelestial.Ships.GetMovableShips();
+                        if (!ships.HasMovableFleet())
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: there is no fleet.");
+                            return;
+                        }
+                        else
+                        {
+                            Resources resources = Helpers.CalcMaxTransportableResources(ships, attackedCelestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
+                            int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, mission, Speeds.TenPercent, resources, userInfo.Class, true);
+                            if (fleetId != 0)
                             {
-                                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no valid destination exists");
+                                Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+                                Helpers.WriteLog(LogType.Info, LogSender.Defender, "Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
+                                if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.Autofleet.TelegramMessenger.Active)
+                                {
+                                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
+                                }
+                                if ((bool)settings.Defender.Autofleet.Recall)
+                                {
+                                    DateTime time = GetDateTime();
+                                    var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 30)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                    DateTime newTime = time.AddMilliseconds(interval);
+                                    timers.Add(attack.ID.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+                                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an unknown error has occurred.");
                                 DateTime time = GetDateTime();
                                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
@@ -2110,66 +2211,29 @@ namespace Tbot
                                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                                 return;
                             }
-
-                            Ships ships = attackedCelestial.Ships;
-                            ships.Crawler = 0;
-                            ships.SolarSatellite = 0;
-                            if (ships.IsEmpty())
-                            {
-                                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: there is no fleet.");
-                            }
-                            else
-                            {
-                                Resources resources = Helpers.CalcMaxTransportableResources(ships, attackedCelestial.Resources, researches.HyperspaceTechnology, userInfo.Class);
-                                int fleetId = SendFleet(attackedCelestial, ships, destination.Coordinate, mission, Speeds.TenPercent, resources, userInfo.Class, true);
-                                if (fleetId != 0)
-                                {
-                                    Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
-                                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
-                                    if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.Autofleet.TelegramMessenger.Active)
-                                    {
-                                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleetsaved to " + destination.ToString() + ". Arrival at " + fleet.ArrivalTime.ToString());
-                                    }
-                                    if ((bool)settings.Defender.Autofleet.Recall)
-                                    {
-                                        DateTime time = GetDateTime();
-                                        var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 30)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                        DateTime newTime = time.AddMilliseconds(interval);
-                                        timers.Add(attack.ID.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
-                                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
-                                    }
-                                }
-                                else
-                                {
-                                    Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an unknown error has occurred.");
-                                    DateTime time = GetDateTime();
-                                    int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
-                                    DateTime newTime = time.AddMilliseconds(interval);
-                                    timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
-                                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an exception has occurred: " + e.Message);
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                            DateTime time = GetDateTime();
-                            int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
-                            DateTime newTime = time.AddMilliseconds(interval);
-                            timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
-                            Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                         }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no slots available.");
+                        Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not fleetsave: an exception has occurred: " + e.Message);
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                         DateTime time = GetDateTime();
                         int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                         DateTime newTime = time.AddMilliseconds(interval);
                         timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                         Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+                        return;
                     }
+                }
+                else
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no slots available.");
+                    DateTime time = GetDateTime();
+                    int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
+                    return;
                 }
             }
         }
@@ -2181,6 +2245,13 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Expeditions].WaitOne();
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Expeditions].Release();
+                    return;
+                }
 
                 if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
                 {
@@ -2396,6 +2467,13 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Harvest].WaitOne();
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Harvest].Release();
+                    return;
+                }
 
                 if ((bool)settings.AutoHarvest.Active)
                 {

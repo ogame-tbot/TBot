@@ -29,7 +29,10 @@
 		},
 		"AutoFleetSave": {
 			"Active": true,
-			"ForceUnsafe": true
+			"OnlyMoons": true,
+			"ForceUnsafe": true,
+			"DeutToLeave": 200000,
+			"Recall": true
 		}
 	},
 	"Defender": {
@@ -44,6 +47,11 @@
 				"Active": false
 			}
 		},
+		"WhiteList": [
+			100000,
+			100003,
+			100004
+		],
 		"SpyAttacker": {
 			"Active": true,
 			"Probes": 20
@@ -90,6 +98,7 @@
 			"Trasports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
+				"DeutToLeave": 1000000,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,

@@ -1572,7 +1572,7 @@ namespace Tbot.Includes
             List<Celestial> output = new();
             try
             {
-                foreach(var celestialToParse in source)
+                foreach (var celestialToParse in source)
                 {
                     Coordinate parsedCoords = new(
                         (int)celestialToParse.Galaxy,
@@ -1582,9 +1582,10 @@ namespace Tbot.Includes
                     );
 
                     Celestial parsedCelestial = currentCelestials
-                        .Single(cel => cel.HasCoords(parsedCoords));
+                        .SingleOrDefault(cel => cel.HasCoords(parsedCoords)) ?? new Celestial() { ID = 0 };
 
-                    output.Add(parsedCelestial);
+                    if (parsedCelestial.ID != 0)
+                        output.Add(parsedCelestial);
                 }
             }
             catch

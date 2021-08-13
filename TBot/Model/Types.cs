@@ -279,13 +279,21 @@ namespace Tbot.Model
             return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
         }
 
-        public bool IsEnoughFor(Resources cost)
+        public bool IsEnoughFor(Resources cost, Resources resToLeave = null)
         {
-            if (cost.Metal <= Metal && cost.Crystal <= Crystal && cost.Deuterium <= Deuterium)
+            var tempMet = Metal;
+            var tempCry = Crystal;
+            var tempDeut = Deuterium;
+            if (resToLeave != null)
             {
-                return true;
+                tempMet -= resToLeave.Metal;
+                tempCry -= resToLeave.Crystal;
+                tempDeut -= resToLeave.Deuterium;
             }
-            else return false;
+            if (cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut)
+                return true;
+            else
+                return false;
         }
 
         public bool IsEmpty()

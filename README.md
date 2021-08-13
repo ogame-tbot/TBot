@@ -24,7 +24,7 @@ Testing and PR are very much appreciated!
 ## Features
 
 * Defender: TBot checks periodically for incoming attacks
-  * Autofleet: TBot deploys your endangered fleet and resources to your closest celestial
+  * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible
     * Recall: TBot can autorecall the fleet
   * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in settings.json
   * SpyAttacker: TBot automatically spies attacker with set number of probes
@@ -39,12 +39,14 @@ Testing and PR are very much appreciated!
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
+  * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time
 * Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a proxy
   * Fill the settings in settings.json. The settings are quite self-explainatory. If you need assistance ping me on Discord
+* LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
 ## Settings Hot Reload
 
