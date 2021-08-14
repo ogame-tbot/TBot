@@ -25,7 +25,6 @@ Testing and PR are very much appreciated!
 
 * Defender: TBot checks periodically for incoming attacks
   * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible
-    * Recall: TBot can autorecall the fleet
   * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in settings.json
   * SpyAttacker: TBot automatically spies attacker with set number of probes
   * Alarm: TBot plays a nasty sound if under attack
@@ -117,4 +116,4 @@ Releases are automated by GitHub Actions, take a look at the [workflows](https:/
 
 TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
 
-MacOS ARM will be supported when .NET 6 will be officially released
+MacOS ARM will be natively supported when .NET 6 will be officially released, for the time beeing the MacOS 64bit version works fine in emulation on M1
