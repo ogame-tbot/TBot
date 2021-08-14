@@ -697,12 +697,21 @@ namespace Tbot
             timers.Remove("FleetSchedulerTimer");
         }
 
-        private static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0)
+        private static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false)
         {
             celestial = UpdatePlanet(celestial, UpdateType.Ships);
+            if (celestial.Ships.GetMovableShips().IsEmpty())
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : there is no fleet to save!");
+                return;
+            }                
+
             celestial = UpdatePlanet(celestial, UpdateType.Resources);
             Celestial destination = new() { ID = 0 };
-            bool forceUnsafe = false;
+            if (!forceUnsafe)
+                forceUnsafe = (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe;
+            bool recall = false;
+            long maxDeuterium = celestial.Resources.Deuterium;
 
             DateTime departureTime = GetDateTime();
 
@@ -712,7 +721,6 @@ namespace Tbot
                     if (departureTime >= wakeUp)
                         wakeUp = wakeUp.AddDays(1);
                     minDuration = (long)wakeUp.Subtract(departureTime).TotalSeconds;
-                    forceUnsafe = true;
                 }
                 else
                 {
@@ -720,32 +728,45 @@ namespace Tbot
                 }
             }
 
-            forceUnsafe = (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe;
+            
             Missions mission = Missions.Deploy;
-            FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
+            FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+            if ((bool)settings.SleepMode.AutoFleetSave.Recall)
+                recall = true;
             if ((fleetHypotesis.Origin.Coordinate.Type == Celestials.Moon) || forceUnsafe) {
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0)
                 {
                     mission = Missions.Spy;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
                 }
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
                 {
                     mission = Missions.Colonize;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
                 }
                 if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0)
                 {
                     mission = Missions.Harvest;
-                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, forceUnsafe);
-                }
-            }
-            if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)))
-            {
-                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave from " + celestial.ToString() + " : no safe destination exists");
+                    fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+                }                
             }
 
-            SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, celestial.Resources, userInfo.Class, forceUnsafe);
+            var payload = celestial.Resources;
+            if ((long)settings.SleepMode.AutoFleetSave.DeutToLeave > 0)
+                payload.Deuterium -= (long)settings.SleepMode.AutoFleetSave.DeutToLeave;
+            if (payload.Deuterium < 0)
+                payload.Deuterium = 0;
+
+            int fleetId = SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, payload, userInfo.Class, forceUnsafe);
+            if (recall && fleetId != 0)
+            {
+                Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+                DateTime time = GetDateTime();
+                var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.Add(fleetId.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+                Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
+            }
 
             /*
             destination = celestials
@@ -806,7 +827,7 @@ namespace Tbot
             */
         }
 
-        private static FleetHypotesis GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, bool forceUnsafe = false)
+        private static FleetHypotesis GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false)
         {
             var validSpeeds = userInfo.Class == Classes.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
             List<FleetHypotesis> possibleFleets = new();
@@ -948,11 +969,13 @@ namespace Tbot
             if (possibleFleets.Count > 0)
             {
                 return possibleFleets
+                    .Where(pf => pf.Fuel <= maxFuel)
                     .OrderBy(pf => pf.Fuel)
                     .ThenBy(pf => pf.Duration)
                     .First();
             }
             else {
+                mission = Missions.Transport;
                 FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), new Coordinate(), mission, Speeds.TenPercent);
                 return new()
                 {
@@ -1158,7 +1181,8 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[Feature.Defender].Release();
+                if (!isSleeping)
+                    xaSem[Feature.Defender].Release();
             }
 
         }
@@ -1184,14 +1208,17 @@ namespace Tbot
             }
             finally
             {
-                var time = GetDateTime();
-                var interval = Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
-                var newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
-                UpdateTitle();
-                //Release its semaphore
-                xaSem[Feature.Brain].Release();
+                if (!isSleeping)
+                {
+                    var time = GetDateTime();
+                    var interval = Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+                    var newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
+                    UpdateTitle();
+                    //Release its semaphore
+                    xaSem[Feature.Brain].Release();
+                }                    
             }
         }
 
@@ -1339,17 +1366,20 @@ namespace Tbot
             }
             finally
             {
-                var time = GetDateTime();
-                //celestials = UpdatePlanets(UpdateType.Constructions);
-                //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
-                //var interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
-                var newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
-                UpdateTitle();
-                //Release its semaphore
-                xaSem[Feature.Brain].Release();
+                if (!isSleeping)
+                {
+                    var time = GetDateTime();
+                    //celestials = UpdatePlanets(UpdateType.Constructions);
+                    //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
+                    //var interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                    var newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
+                    UpdateTitle();
+                    //Release its semaphore
+                    xaSem[Feature.Brain].Release();
+                }                    
             }
         }
 
@@ -1739,14 +1769,17 @@ namespace Tbot
             }
             finally
             {
-                var time = GetDateTime();
-                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
-                var newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
-                UpdateTitle();
-                //Release its semaphore
-                xaSem[Feature.Brain].Release();
+                if (!isSleeping)
+                {
+                    var time = GetDateTime();
+                    var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
+                    var newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
+                    UpdateTitle();
+                    //Release its semaphore
+                    xaSem[Feature.Brain].Release();
+                }                
             }
         }
 
@@ -1873,14 +1906,17 @@ namespace Tbot
             }
             finally
             {
-                var time = GetDateTime();
-                var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
-                var newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
-                UpdateTitle();
-                //Release its semaphore
-                xaSem[Feature.Brain].Release();
+                if (!isSleeping)
+                {
+                    var time = GetDateTime();
+                    var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
+                    var newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
+                    UpdateTitle();
+                    //Release its semaphore
+                    xaSem[Feature.Brain].Release();
+                }                    
             }
         }
 
@@ -2135,6 +2171,9 @@ namespace Tbot
             }
             if ((bool)settings.Defender.Autofleet.Active)
             {
+                var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (Helpers.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
+                AutoFleetSave(attackedCelestial, false, minFlightTime, true);
+                /*
                 slots = UpdateSlots();
                 if (slots.Free > 0)
                 {
@@ -2142,7 +2181,7 @@ namespace Tbot
                     {
                         attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Resources);
                         Celestial destination;
-                        Missions mission = Missions.Deploy;
+                       Missions mission = Missions.Deploy;
                         destination = celestials
                             .Where(planet => planet.ID != attackedCelestial.ID)
                             .Where(planet => planet.Coordinate.Type == Celestials.Moon)
@@ -2225,6 +2264,7 @@ namespace Tbot
                         return;
                     }
                 }
+                
                 else
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Could not fleetsave: no slots available.");
@@ -2235,6 +2275,7 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                     return;
                 }
+                */
             }
         }
 
@@ -2455,7 +2496,8 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[Feature.Expeditions].Release();
+                if (!isSleeping)
+                    xaSem[Feature.Expeditions].Release();
             }
 
         }
@@ -2588,7 +2630,8 @@ namespace Tbot
             finally
             {
                 //Release its semaphore
-                xaSem[Feature.Harvest].Release();
+                if (!isSleeping)
+                    xaSem[Feature.Harvest].Release();
             }
 
         }

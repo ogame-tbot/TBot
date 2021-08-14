@@ -42,7 +42,6 @@
 		"IgnoreProbes": true,
 		"Autofleet": {
 			"Active": true,
-			"Recall": false,
 			"TelegramMessenger": {
 				"Active": false
 			}
