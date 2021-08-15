@@ -1067,6 +1067,53 @@ namespace Tbot
 
         private static void GoToSleep(object state)
         {
+            fleets = UpdateFleets();
+            if (fleets.Count > 0)
+            {
+                if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
+                {
+                    DateTime time = GetDateTime();
+                    if (goToSleep < wakeUp)
+                        goToSleep = goToSleep.AddDays(1);
+                    if (goToSleep > wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                    List<Fleet> tempFleets = new();
+                    var timeToWakeup = wakeUp.Subtract(time).TotalSeconds;
+                    tempFleets.AddRange(fleets
+                        .Where(f => f.Mission == Missions.Deploy)
+                        .Where(f => f.ArriveIn <= timeToWakeup)
+                    );
+                    tempFleets.AddRange(fleets
+                        .Where(f => f.Mission != Missions.Deploy)
+                        .Where(f => f.BackIn <= timeToWakeup)
+                    );
+                    if (tempFleets.Count > 0)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "There are fleets that would come back during sleep time. Delaying sleep mode.");
+                        long interval = 0;
+                        foreach(Fleet tempFleet in tempFleets)
+                        {
+                            if (tempFleet.Mission == Missions.Deploy)
+                            {
+                                if (tempFleet.ArriveIn > interval)
+                                    interval = (long)tempFleet.ArriveIn;
+                            }
+                            else
+                            {
+                                if (tempFleet.BackIn > interval)
+                                    interval = (long)tempFleet.BackIn;
+                            }
+                        }
+                        DateTime newTime = time.AddSeconds(interval);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                    }
+                }
+                else
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
+                }
+            }
             try
             {
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
@@ -2035,20 +2082,16 @@ namespace Tbot
             }                      
         }
 
-        private static bool CancelFleet(Fleet fleet)
+        private static void CancelFleet(Fleet fleet)
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Recalling fleet id " + fleet.ID + " originally from " + fleet.Origin.ToString() + " to " + fleet.Destination.ToString() + " with mission: " + fleet.Mission.ToString() + ". Start time: " + fleet.StartTime.ToString() + " - Arrival time: " + fleet.ArrivalTime.ToString() + " - Ships: " + fleet.Ships.ToString());
             slots = UpdateSlots();
             try
             {
-                var result = ogamedService.CancelFleet(fleet);
-                if (result)
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Fleet succesfully recalled.");
-                else
-                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to recall fleet.");
+                ogamedService.CancelFleet(fleet);
                 Thread.Sleep((int)IntervalType.AFewSeconds);
                 fleets = UpdateFleets();
-                var recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID);
+                Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = 0 };
                 if (recalledFleet.ID == 0)
                 {
                     Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an unknon error has occurred.");
@@ -2062,7 +2105,7 @@ namespace Tbot
                 {
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled.");
                 }
-                return result;
+                return;
             }
             catch (Exception e)
             {
@@ -2072,7 +2115,7 @@ namespace Tbot
                 {
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an exception has occurred.");
                 }
-                return false;
+                return;
             }
         }
 
