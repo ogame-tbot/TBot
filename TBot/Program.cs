@@ -1019,9 +1019,17 @@ namespace Tbot
                 }
                 else
                 {
-                    long interval;
-
-                    if (time >= wakeUp)
+                    long interval = 0; ;
+                    if (time >= goToSleep)
+                    {
+                        if (goToSleep > wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        DateTime newTime = time.AddMilliseconds(interval);
+                        GoToSleep(newTime);
+                    }
+                    else if (time >= wakeUp)
                     {
                         if (goToSleep < wakeUp)
                             goToSleep = goToSleep.AddDays(1);
@@ -1031,18 +1039,8 @@ namespace Tbot
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         WakeUp(newTime);
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
                     }
-                    if (time >= goToSleep)
-                    {
-                        if (goToSleep > wakeUp)
-                            wakeUp = wakeUp.AddDays(1);
-                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        GoToSleep(newTime);
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
-                    }
+                    
 
                 }
             }
@@ -1070,6 +1068,7 @@ namespace Tbot
         private static void GoToSleep(object state)
         {
             fleets = UpdateFleets();
+            bool delayed = false;
             if (fleets.Count > 0)
             {
                 if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
@@ -1106,8 +1105,10 @@ namespace Tbot
                                     interval = (long)tempFleet.BackIn;
                             }
                         }
-                        DateTime newTime = time.AddSeconds(interval);
+                        interval *= 1000;
+                        DateTime newTime = time.AddMilliseconds(interval);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        delayed = true;
                         Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
                     }
                 }
@@ -1116,38 +1117,41 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
                 }
             }
-            try
+            if (!delayed)
             {
-                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
-
-                if ((bool)settings.SleepMode.AutoFleetSave.Active)
+                try
                 {
-                    var celestialsToFleetsave = UpdateCelestials();
-                    if ((bool)settings.SleepMode.AutoFleetSave.OnlyMoons)
-                        celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
-                    foreach (Celestial celestial in celestialsToFleetsave)
-                        AutoFleetSave(celestial, true);
-                }
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 
-                if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
-                {
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Going to sleep");
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Waking Up at " + state.ToString());
+                    if ((bool)settings.SleepMode.AutoFleetSave.Active)
+                    {
+                        var celestialsToFleetsave = UpdateCelestials();
+                        if ((bool)settings.SleepMode.AutoFleetSave.OnlyMoons)
+                            celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
+                        foreach (Celestial celestial in celestialsToFleetsave)
+                            AutoFleetSave(celestial, true);
+                    }
+
+                    if ((bool)settings.TelegramMessenger.Active && (bool)settings.SleepMode.TelegramMessenger.Active)
+                    {
+                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Going to sleep");
+                        telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Waking Up at " + state.ToString());
+                    }
+                    isSleeping = true;
+                    InitializeFeatures();
                 }
-                isSleeping = true;
-                InitializeFeatures();
-            }
-            catch (Exception e)
-            {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                DateTime time = GetDateTime();
-                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
-                DateTime newTime = time.AddMilliseconds(interval);
-                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
-                UpdateTitle();
-            }
+                catch (Exception e)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                    DateTime time = GetDateTime();
+                    int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                    DateTime newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                    UpdateTitle();
+                }
+            }            
         }
 
         private static void WakeUp(object state)
