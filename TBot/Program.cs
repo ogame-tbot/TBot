@@ -2057,10 +2057,10 @@ namespace Tbot
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an unknon error has occurred.");
                     }
                 }
-                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled: return time: " + fleet.BackTime.ToString());
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled.");
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                 {
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled: return time: " + fleet.BackTime.ToString());
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled.");
                 }
                 return result;
             }
@@ -2081,9 +2081,8 @@ namespace Tbot
             CancelFleet((Fleet)fleet);
         }
 
-        private static void HandleAttack(object _attack )
+        private static void HandleAttack(AttackerFleet attack )
         {
-            AttackerFleet attack = _attack as AttackerFleet;
             if (celestials.Count == 0)
             {
                 DateTime time = GetDateTime();
@@ -2095,35 +2094,50 @@ namespace Tbot
                 return;
             }
 
-            if ((settings.Defender.WhiteList as int[]).Any())
+            try
             {
-                foreach (int playerID in (int[])settings.Defender.WhiteList)
+                if ((settings.Defender.WhiteList as int[]).Count() > 0)
                 {
-                    if (attack.AttackerID == playerID)
+                    foreach (int playerID in (int[])settings.Defender.WhiteList)
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: attacker " + attack.AttackerName + " whitelisted.");
-                        return;
+                        if (attack.AttackerID == playerID)
+                        {
+                            Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: attacker " + attack.AttackerName + " whitelisted.");
+                            return;
+                        }
                     }
                 }
             }
-            
-            if ((bool)settings.Defender.IgnoreProbes && attack.IsOnlyProbes())
+            catch
             {
-                if (attack.MissionType == Missions.Spy)
-                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
-                else
-                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
-
-                return;
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking Defender WhiteList");
             }
+            
+            try
+            {
+                if ((bool)settings.Defender.IgnoreProbes && attack.IsOnlyProbes())
+                {
+                    if (attack.MissionType == Missions.Spy)
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
+                    else
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: only Espionage Probes.");
+
+                    return;
+                }
+            }
+            catch
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking attacker fleet composition");
+            }
+
             if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
             {
                 telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
             }
             Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.HasCoords(attack.Destination));            
             Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+            
             attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
-
             if ((bool)settings.Defender.SpyAttacker.Active)
             {
                 slots = UpdateSlots();
@@ -2148,6 +2162,7 @@ namespace Tbot
                     }
                 }                
             }
+
             if ((bool)settings.Defender.MessageAttacker.Active)
             {
                 try
@@ -2169,6 +2184,7 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 }
             }
+
             if ((bool)settings.Defender.Autofleet.Active)
             {
                 var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (Helpers.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
