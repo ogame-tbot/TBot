@@ -23,14 +23,14 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", bool lobbyPioneers = false, ProxySettings proxySettings = null)
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
         {
-            ExecuteOgamedExecutable(credentials, host, port, captchaKey, lobbyPioneers, proxySettings);
+            ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
             Url = "http://" + host + ":" + port;
             Client = new RestClient(Url);
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", bool lobbyPioneers = false, ProxySettings proxySettings = null)
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
         {
             try
             {
@@ -46,8 +46,13 @@ namespace Tbot.Services
                     if (proxySettings.Password != "")
                         args += " --proxy-password=" + proxySettings.Password;
                 }
-                if (lobbyPioneers)
+                if (credentials.IsLobbyPioneers)
                     args += " --lobby=lobby-pioneers";
+                if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "")
+                {
+                    args += " --basic-auth-username=" + credentials.BasicAuthUsername;
+                    args += " --basic-auth-password=" + credentials.BasicAuthPassword;
+                }
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     Process.Start("ogamed.exe", args);
                 else

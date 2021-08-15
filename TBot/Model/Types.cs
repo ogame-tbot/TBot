@@ -12,6 +12,9 @@ namespace Tbot.Model
         public string Username { get; set; }
         public string Password { get; set; }
         public string Language { get; set; }
+        public bool IsLobbyPioneers { get; set; }
+        public string BasicAuthUsername { get; set; }
+        public string BasicAuthPassword { get; set; }
     }
 
     public class OgamedResponse

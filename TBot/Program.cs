@@ -57,7 +57,10 @@ namespace Tbot
                 Universe = (string)settings.Credentials.Universe,
                 Username = (string)settings.Credentials.Email,
                 Password = (string)settings.Credentials.Password,
-                Language = (string)settings.Credentials.Language
+                Language = (string)settings.Credentials.Language,
+                IsLobbyPioneers = (bool)settings.Credentials.LobbyPioneers,
+                BasicAuthUsername = (string)settings.Credentials.BasicAuth.Username,
+                BasicAuthPassword = (string)settings.Credentials.BasicAuth.Password
             };
 
             try
@@ -70,7 +73,6 @@ namespace Tbot
                 string host = (string)settings.General.Host ?? "localhost";
                 string port = (string)settings.General.Port ?? "8080";
                 string captchaKey = (string)settings.General.CaptchaAPIKey ?? "";
-                bool lobbyPioneers = (bool)settings.Credentials.LobbyPioneers;
                 ProxySettings proxy = null;
                 if ((bool)settings.General.Proxy.Active && (string)settings.General.Proxy.Address != "")
                 {
@@ -82,7 +84,7 @@ namespace Tbot
                     proxy.Password = (string)settings.General.Proxy.Password ?? "";
 
                 }
-                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, lobbyPioneers, proxy);
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, proxy);
             }
             catch (Exception e)
             {
