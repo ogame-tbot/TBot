@@ -439,6 +439,27 @@ namespace Tbot.Model
             }
         }
 
+        public long GetFleetPoints()
+        {
+            long output = 0;
+            output += LightFighter * 4;
+            output += HeavyFighter * 10;
+            output += Cruiser * 29;
+            output += Battleship * 60;
+            output += Battlecruiser * 85;
+            output += Bomber * 90;
+            output += Destroyer * 125;
+            output += Deathstar * 10000;
+            output += SmallCargo * 4;
+            output += LargeCargo * 12;
+            output += ColonyShip * 40;
+            output += Recycler * 18;
+            output += EspionageProbe * 1;
+            output += Reaper * 160;
+            output += Pathfinder * 31;
+            return output;
+        }
+
         public bool HasMovableFleet()
         {
             if

@@ -2130,7 +2130,7 @@ namespace Tbot
             CancelFleet((Fleet)fleet);
         }
 
-        private static void HandleAttack(AttackerFleet attack )
+        private static void HandleAttack(AttackerFleet attack)
         {
             if (celestials.Count == 0)
             {
@@ -2142,6 +2142,9 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
                 return;
             }
+
+            Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.HasCoords(attack.Destination));
+            attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
 
             try
             {
@@ -2173,6 +2176,11 @@ namespace Tbot
 
                     return;
                 }
+                if ((bool)settings.Defender.IgnoreWeakAttack && attack.Ships.GetFleetPoints() < (attackedCelestial.Ships.GetFleetPoints() / 3))
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: weak attack.");
+                    return;
+                }
             }
             catch
             {
@@ -2182,11 +2190,9 @@ namespace Tbot
             if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
             {
                 telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
-            }
-            Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.HasCoords(attack.Destination));            
+            }            
             Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
             
-            attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
             if ((bool)settings.Defender.SpyAttacker.Active)
             {
                 slots = UpdateSlots();
