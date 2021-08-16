@@ -2145,9 +2145,9 @@ namespace Tbot
 
             try
             {
-                if ((settings.Defender.WhiteList as int[]).Count() > 0)
+                if ((settings.Defender.WhiteList as long[]).Count() > 0)
                 {
-                    foreach (int playerID in (int[])settings.Defender.WhiteList)
+                    foreach (int playerID in (long[])settings.Defender.WhiteList)
                     {
                         if (attack.AttackerID == playerID)
                         {
