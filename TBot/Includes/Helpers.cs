@@ -658,6 +658,8 @@ namespace Tbot.Includes
                 _ => 30,
             };
             baseProd *= speedFactor;
+            if (level == 0)
+                return baseProd;
             int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level)));
             int plasmaProd = (int)Math.Round(prod * 0.01 * plasma);
             int geologistProd = 0;
@@ -700,6 +702,8 @@ namespace Tbot.Includes
                 _ => 20,
             };
             baseProd *= speedFactor;
+            if (level == 0)
+                return baseProd;
             int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level)));
             int plasmaProd = (int)Math.Round(prod * 0.0066 * plasma);
             int geologistProd = 0;
@@ -734,6 +738,8 @@ namespace Tbot.Includes
 
         public static long CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
+            if (level == 0)
+                return 0;
             int baseProd = 10 * speedFactor;
             int prod = (int)Math.Round((float)(baseProd * level * Math.Pow(1.1, level) * ((-0.004 * temp) + 1.36)));
             int plasmaProd = (int)Math.Round(prod * 0.0033 * plasma);
@@ -1358,23 +1364,18 @@ namespace Tbot.Includes
 
         public static Buildables GetNextMineToBuild(Planet planet, int speedFactor, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
         {
-            var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
-            Dictionary<Buildables, float> rois = new();
-            foreach (var mine in mines)
-            {
-                if (mine == Buildables.MetalMine && GetNextLevel(planet, mine) > maxMetalMine)
-                    continue;
-                if (mine == Buildables.CrystalMine && GetNextLevel(planet, mine) > maxCrystalMine)
-                    continue;
-                if (mine == Buildables.DeuteriumSynthesizer && GetNextLevel(planet, mine) > maxDeuteriumSynthetizer)
-                    continue;
+            float metalROI = CalcROI(planet, Buildables.MetalMine, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            float crystalROI = CalcROI(planet, Buildables.CrystalMine, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
+            float deuteriumROI = CalcROI(planet, Buildables.DeuteriumSynthesizer, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
 
-                rois.Add(mine, CalcROI(planet, mine, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff));
-            }
-            if (rois.Count == 0)
-                return Buildables.Null;
-
-            return rois.OrderByDescending(roi => roi.Value).First().Key;
+            if (planet.Buildings.MetalMine + 1 <= maxMetalMine && metalROI >= crystalROI && metalROI >= deuteriumROI)
+                return Buildables.MetalMine;
+            else if (planet.Buildings.CrystalMine + 1 <= maxCrystalMine && crystalROI >= metalROI && crystalROI >= deuteriumROI)
+                return Buildables.CrystalMine;
+            else if (planet.Buildings.DeuteriumSynthesizer + 1 <= maxDeuteriumSynthetizer && deuteriumROI >= metalROI && deuteriumROI >= crystalROI)
+                return Buildables.DeuteriumSynthesizer;
+            else
+                return Buildables.MetalMine;
         }
 
         public static float CalcROI(Planet planet, Buildables buildable, int speedFactor, float ratio = 1, Researches researches = null, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
@@ -1385,18 +1386,18 @@ namespace Tbot.Includes
             switch (buildable)
             {
                 case Buildables.MetalMine:
-                    currentProd = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) * (float)2.5;
-                    nextLevelProd = CalcMetalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)2.5;
+                    currentProd = CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)2.5;
+                    nextLevelProd = CalcMetalProduction(planet.Buildings.MetalMine + 1, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)2.5;
                     cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
                     break;
                 case Buildables.CrystalMine:
-                    currentProd = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) * (float)1.5;
-                    nextLevelProd = CalcCrystalProduction(GetNextLevel(planet, buildable), planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)1.5;
+                    currentProd = CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)1.5;
+                    nextLevelProd = CalcCrystalProduction(planet.Buildings.CrystalMine + 1, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * (float)1.5;
                     cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
                     break;
                 case Buildables.DeuteriumSynthesizer:
-                    currentProd = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
-                    nextLevelProd = CalcDeuteriumProduction(GetNextLevel(planet, buildable), planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    currentProd = CalcDeuteriumProduction(planet.Buildings.DeuteriumSynthesizer, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
+                    nextLevelProd = CalcDeuteriumProduction(planet.Buildings.DeuteriumSynthesizer + 1, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff);
                     cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
                     break;
                 default:
