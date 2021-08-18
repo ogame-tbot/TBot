@@ -22,7 +22,8 @@
 			"Password": ""
 		},
 		"CaptchaAPIKey": "",
-		"CustomTitle": ""
+		"CustomTitle": "",
+		"SlotsToLeaveFree": 1
 	},
 	"SleepMode": {
 		"Active": false,

@@ -1019,17 +1019,9 @@ namespace Tbot
                 }
                 else
                 {
-                    long interval = 0; ;
-                    if (time >= goToSleep)
-                    {
-                        if (goToSleep > wakeUp)
-                            wakeUp = wakeUp.AddDays(1);
-                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        GoToSleep(newTime);
-                    }
-                    else if (time >= wakeUp)
+                    long interval;
+
+                    if (time >= wakeUp)
                     {
                         if (goToSleep < wakeUp)
                             goToSleep = goToSleep.AddDays(1);
@@ -1039,6 +1031,17 @@ namespace Tbot
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         WakeUp(newTime);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
+                    }
+                    else if (time >= goToSleep)
+                    {
+                        if (goToSleep > wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        DateTime newTime = time.AddMilliseconds(interval);
+                        GoToSleep(newTime);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
                     }
                     
 
@@ -2063,7 +2066,8 @@ namespace Tbot
             }            
 
             slots = UpdateSlots();
-            if (slots.Free > 1 || force)
+            int slotsToLeaveFree = (int)settings.General.SlotsToLeaveFree;
+            if (slots.Free > slotsToLeaveFree || force)
             {
                 if (payload == null)
                     payload = new();
@@ -2106,10 +2110,10 @@ namespace Tbot
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an unknon error has occurred.");
                     }
                 }
-                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled.");
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled. Arrival time: " + recalledFleet.BackTime.ToString());
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                 {
-                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled.");
+                    telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled. Arrival time: " + recalledFleet.BackTime.ToString());
                 }
                 return;
             }
