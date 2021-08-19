@@ -108,7 +108,7 @@
 					"Galaxy": 3,
 					"System": 333,
 					"Position": 8,
-					"Type": "Planet"
+					"Type": "Moon"
 				}
 			},
 			"RandomOrder": true,
@@ -120,6 +120,43 @@
 					"Type": "Planet"
 				}
 			],
+			"CheckIntervalMin": 10,
+			"CheckIntervalMax": 20
+		},
+		"AutoResearch": {
+			"Active": true,
+			"MaxEnergyTechnology": 20,
+			"MaxLaserTechnology": 12,
+			"MaxIonTechnology": 5,
+			"MaxHyperspaceTechnology": 20,
+			"MaxPlasmaTechnology": 20,
+			"MaxCombustionDrive": 19,
+			"MaxImpulseDrive": 17,
+			"MaxHyperspaceDrive": 15,
+			"MaxEspionageTechnology": 8,
+			"MaxComputerTechnology": 20,
+			"MaxAstrophysics": 23,
+			"MaxIntergalacticResearchNetwork": 12,
+			"MaxWeaponsTechnology": 25,
+			"MaxShieldingTechnology": 25,
+			"MaxArmourTechnology": 25,
+			"Target": {
+				"Galaxy": 3,
+				"System": 333,
+				"Position": 8,
+				"Type": "Planet"
+			},
+			"Trasports": {
+				"Active": true,
+				"CargoType": "SmallCargo",
+				"DeutToLeave": 1000000,
+				"Origin": {
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 8,
+					"Type": "Moon"
+				}
+			},
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -136,7 +173,7 @@
 					"Galaxy": 3,
 					"System": 333,
 					"Position": 15,
-					"Type": "Planet"
+					"Type": "Moon"
 				}
 			],
 			"CheckIntervalMin": 60,

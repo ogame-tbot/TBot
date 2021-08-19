@@ -230,6 +230,7 @@ namespace Tbot.Model
 		BrainAutoRepatriate = 3,
 		BrainAutoMine = 4,
 		BrainOfferOfTheDay = 5,
+		BrainAutoResearch = 10,
 		Expeditions = 6,
 		Harvest = 7,
 		FleetScheduler = 8,

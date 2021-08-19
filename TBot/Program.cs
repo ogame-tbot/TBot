@@ -174,6 +174,7 @@ namespace Tbot
                     features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
+                    features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
                     features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
@@ -224,6 +225,10 @@ namespace Tbot
                     case Feature.BrainOfferOfTheDay:
                         if (currentValue)
                             StopBrainOfferOfTheDay();
+                        return false;
+                    case Feature.BrainAutoResearch:
+                        if (currentValue)
+                            StopBrainAutoResearch();
                         return false;
                     case Feature.Expeditions:
                         if (currentValue)
@@ -317,6 +322,19 @@ namespace Tbot
                             StopBrainOfferOfTheDay();
                         return false;
                     }
+                case Feature.BrainAutoResearch:
+                    if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoResearch.Active)
+                    {
+                        if (!currentValue)
+                            InitializeBrainAutoResearch();
+                        return true;
+                    }
+                    else
+                    {
+                        if (currentValue)
+                            StopBrainAutoResearch();
+                        return false;
+                    }
                 case Feature.Expeditions:
                     if ((bool)settings.Expeditions.Active)
                     {
@@ -381,6 +399,7 @@ namespace Tbot
             features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
+            features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);            
         }
@@ -645,6 +664,19 @@ namespace Tbot
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
             timers.GetValueOrDefault("OfferOfTheDayTimer").Dispose();
             timers.Remove("OfferOfTheDayTimer");
+        }
+
+        private static void InitializeBrainAutoResearch()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autoresearch...");
+            timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax)));
+        }
+
+        private static void StopBrainAutoResearch()
+        {
+            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autoresearch...");
+            timers.GetValueOrDefault("AutoResearchTimer").Dispose();
+            timers.Remove("AutoResearchTimer");
         }
 
         private static void InitializeExpeditions()
@@ -1278,6 +1310,97 @@ namespace Tbot
             }
         }
 
+        private static void AutoResearch(object state)
+        {
+            try
+            {
+                xaSem[Feature.Brain].WaitOne();
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch");
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
+
+                researches = ogamedService.GetResearches();
+                Planet celestial = celestials
+                    .Single(c => c.HasCoords(new(
+                        (int)settings.Brain.AutoResearch.Target.Galaxy,
+                        (int)settings.Brain.AutoResearch.Target.System,
+                        (int)settings.Brain.AutoResearch.Target.Position,
+                        Celestials.Planet
+                        )
+                    )) as Planet;
+                celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
+                if (celestial.Constructions.ResearchID != 0)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
+                    return;
+                }
+                if (celestial.Constructions.BuildingID != (int)Buildables.ResearchLab)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: the Research Lab is upgrading.");
+                    return;
+                }
+                Buildables research = Helpers.GetNextResearchToBuild(celestial, researches, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
+                int level = Helpers.GetNextLevel(researches, research);
+                if (research != Buildables.Null)
+                {
+                    Resources cost = Helpers.CalcPrice(research, level);
+                    if (celestial.Resources.IsEnoughFor(cost))
+                    {
+                        var result = ogamedService.BuildCancelable(celestial, research);
+                        if (result)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Research  " + research.ToString() + " level " + level.ToString() + " started on " + celestial.ToString());
+                        else
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Research  " + research.ToString() + " level " + level.ToString() + " could not be started on " + celestial.ToString());
+                    }
+                    else
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + research.ToString() + " level " + level.ToString() + " on " + celestial.ToString());
+                        if ((bool)settings.Brain.AutoMine.Trasports.Active)
+                        {
+                            if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                            {
+                                HandleMinerTrasport(celestial, cost);
+                            }
+                            else
+                            {
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoResearch Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+            }
+            finally
+            {
+                if (!isSleeping)
+                {
+                    var time = GetDateTime();
+                    celestials = UpdatePlanets(UpdateType.Constructions);
+                    var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.ResearchCountdown) * 1000;
+                    long interval;
+                    if (nextTimeToCompletion != 0)
+                        interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    else
+                        interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
+                    var newTime = time.AddMilliseconds(interval);
+                    timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
+                    UpdateTitle();
+                    //Release its semaphore
+                    xaSem[Feature.Brain].Release();
+                }
+            }
+        }
+
         /*Lorenzo 06/02/2021
          * 
          * Method call by the timer to manage the auto build for mines.
@@ -1402,7 +1525,7 @@ namespace Tbot
                     celestials = UpdatePlanets(UpdateType.Constructions);
                     var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
                     long interval;
-                    if (nextTimeToCompletion == 0)
+                    if (nextTimeToCompletion != 0)
                         interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     else 
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);

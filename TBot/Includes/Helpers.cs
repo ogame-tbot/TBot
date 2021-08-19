@@ -1275,6 +1275,22 @@ namespace Tbot.Includes
             return output;
         }
 
+        public static int GetNextLevel(Researches researches, Buildables buildable)
+        {
+            int output = 0;
+            if (output == 0)
+            {
+                foreach (PropertyInfo prop in researches.GetType().GetProperties())
+                {
+                    if (prop.Name == buildable.ToString())
+                    {
+                        output = (int)prop.GetValue(researches) + 1;
+                    }
+                }
+            }
+            return output;
+        }
+
         public static long CalcDepositCapacity(int level)
         {
             return 5000 * (long)(2.5 * Math.Pow(Math.E, (20 * level / 33)));
@@ -1570,6 +1586,102 @@ namespace Tbot.Includes
                 return true;
             else
                 return false;
+        }
+
+        public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, int maxEnergyTechnology = 20, int maxLaserTechnology = 12,int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25)
+        {
+            List<Buildables> researchesList = new() {
+                Buildables.EnergyTechnology,
+                Buildables.LaserTechnology,
+                Buildables.IonTechnology,
+                Buildables.HyperspaceTechnology,
+                Buildables.PlasmaTechnology,
+                Buildables.CombustionDrive,
+                Buildables.ImpulseDrive,
+                Buildables.HyperspaceDrive,
+                Buildables.EspionageTechnology,
+                Buildables.ComputerTechnology,
+                Buildables.Astrophysics,
+                Buildables.IntergalacticResearchNetwork,
+                Buildables.WeaponsTechnology,
+                Buildables.ShieldingTechnology,
+                Buildables.ArmourTechnology
+            };
+            Dictionary<Buildables, long> dic = new();
+            foreach (Buildables research in researchesList)
+            {
+                switch (research) {
+                    case Buildables.EnergyTechnology:
+                        if (GetNextLevel(researches, research) > maxEnergyTechnology)
+                            continue;
+                        break;
+                    case Buildables.LaserTechnology:
+                        if (GetNextLevel(researches, research) > maxLaserTechnology)
+                            continue;
+                        break;
+                    case Buildables.IonTechnology:
+                        if (GetNextLevel(researches, research) > maxIonTechnology)
+                            continue;
+                        break;
+                    case Buildables.HyperspaceTechnology:
+                        if (GetNextLevel(researches, research) > maxHyperspaceTechnology)
+                            continue;
+                        break;
+                    case Buildables.PlasmaTechnology:
+                        if (GetNextLevel(researches, research) > maxPlasmaTechnology)
+                            continue;
+                        break;
+                    case Buildables.CombustionDrive:
+                        if (GetNextLevel(researches, research) > maxCombustionDrive)
+                            continue;
+                        break;
+                    case Buildables.ImpulseDrive:
+                        if (GetNextLevel(researches, research) > maxImpulseDrive)
+                            continue;
+                        break;
+                    case Buildables.HyperspaceDrive:
+                        if (GetNextLevel(researches, research) > maxHyperspaceDrive)
+                            continue;
+                        break;
+                    case Buildables.EspionageTechnology:
+                        if (GetNextLevel(researches, research) > maxEspionageTechnology)
+                            continue;
+                        break;
+                    case Buildables.ComputerTechnology:
+                        if (GetNextLevel(researches, research) > maxComputerTechnology)
+                            continue;
+                        break;
+                    case Buildables.Astrophysics:
+                        if (GetNextLevel(researches, research) > maxAstrophysics)
+                            continue;
+                        break;
+                    case Buildables.IntergalacticResearchNetwork:
+                        if (GetNextLevel(researches, research) > maxIntergalacticResearchNetwork)
+                            continue;
+                        break;
+                    case Buildables.WeaponsTechnology:
+                        if (GetNextLevel(researches, research) > maxWeaponsTechnology)
+                            continue;
+                        break;
+                    case Buildables.ShieldingTechnology:
+                        if (GetNextLevel(researches, research) > maxShieldingTechnology)
+                            continue;
+                        break;
+                    case Buildables.ArmourTechnology:
+                        if (GetNextLevel(researches, research) > maxArmourTechnology)
+                            continue;
+                        break;
+
+                }
+
+                dic.Add(research, CalcPrice(research, GetNextLevel(researches, research)).ConvertedDeuterium);
+            }
+            if (dic.Count == 0)
+                return Buildables.Null;
+
+            dic = dic.OrderBy(m => m.Value)
+                .ToDictionary(m => m.Key, m => m.Value);
+            return dic.FirstOrDefault().Key;
         }
 
         public static bool IsThereTransportTowardsCelestial(Celestial celestial, List<Fleet> fleets)
