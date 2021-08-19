@@ -1588,7 +1588,7 @@ namespace Tbot.Includes
                 return false;
         }
 
-        public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, int maxEnergyTechnology = 20, int maxLaserTechnology = 12,int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25)
+        public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25)
         {
             List<Buildables> researchesList = new() {
                 Buildables.EnergyTechnology,
@@ -1612,63 +1612,117 @@ namespace Tbot.Includes
             {
                 switch (research) {
                     case Buildables.EnergyTechnology:
+                        if (celestial.Facilities.ResearchLab < 1)
+                            continue;
                         if (GetNextLevel(researches, research) > maxEnergyTechnology)
                             continue;
                         break;
                     case Buildables.LaserTechnology:
+                        if (celestial.Facilities.ResearchLab < 1)
+                            continue;
+                        if (researches.EnergyTechnology < 2)
+                            continue;
                         if (GetNextLevel(researches, research) > maxLaserTechnology)
                             continue;
                         break;
                     case Buildables.IonTechnology:
+                        if (celestial.Facilities.ResearchLab < 4)
+                            continue;
+                        if (researches.EnergyTechnology < 4 && researches.LaserTechnology < 5)
+                            continue;
                         if (GetNextLevel(researches, research) > maxIonTechnology)
                             continue;
                         break;
                     case Buildables.HyperspaceTechnology:
+                        if (celestial.Facilities.ResearchLab < 7)
+                            continue;
+                        if (researches.EnergyTechnology < 5 && researches.ShieldingTechnology < 5)
+                            continue;
                         if (GetNextLevel(researches, research) > maxHyperspaceTechnology)
                             continue;
                         break;
                     case Buildables.PlasmaTechnology:
+                        if (celestial.Facilities.ResearchLab < 4)
+                            continue;
+                        if (researches.EnergyTechnology < 8 && researches.LaserTechnology < 10 && researches.IonTechnology < 5)
+                            continue;
                         if (GetNextLevel(researches, research) > maxPlasmaTechnology)
                             continue;
                         break;
                     case Buildables.CombustionDrive:
+                        if (celestial.Facilities.ResearchLab < 1)
+                            continue;
+                        if (researches.EnergyTechnology < 1)
+                            continue;
                         if (GetNextLevel(researches, research) > maxCombustionDrive)
                             continue;
                         break;
                     case Buildables.ImpulseDrive:
+                        if (celestial.Facilities.ResearchLab < 2)
+                            continue;
+                        if (researches.EnergyTechnology < 1)
+                            continue;
                         if (GetNextLevel(researches, research) > maxImpulseDrive)
                             continue;
                         break;
                     case Buildables.HyperspaceDrive:
+                        if (celestial.Facilities.ResearchLab < 7)
+                            continue;
+                        if (researches.HyperspaceTechnology < 3)
+                            continue;
                         if (GetNextLevel(researches, research) > maxHyperspaceDrive)
                             continue;
                         break;
                     case Buildables.EspionageTechnology:
+                        if (celestial.Facilities.ResearchLab < 3)
+                            continue;
                         if (GetNextLevel(researches, research) > maxEspionageTechnology)
                             continue;
                         break;
                     case Buildables.ComputerTechnology:
+                        if (celestial.Facilities.ResearchLab < 1)
+                            continue;
                         if (GetNextLevel(researches, research) > maxComputerTechnology)
                             continue;
                         break;
                     case Buildables.Astrophysics:
+                        if (celestial.Facilities.ResearchLab < 3)
+                            continue;
+                        if (researches.EspionageTechnology < 4 && researches.ImpulseDrive < 3)
+                            continue;
                         if (GetNextLevel(researches, research) > maxAstrophysics)
                             continue;
                         break;
                     case Buildables.IntergalacticResearchNetwork:
+                        if (celestial.Facilities.ResearchLab < 10)
+                            continue;
+                        if (researches.ComputerTechnology < 8 && researches.HyperspaceTechnology < 8)
+                            continue;
                         if (GetNextLevel(researches, research) > maxIntergalacticResearchNetwork)
                             continue;
                         break;
                     case Buildables.WeaponsTechnology:
+                        if (celestial.Facilities.ResearchLab < 4)
+                            continue;
                         if (GetNextLevel(researches, research) > maxWeaponsTechnology)
                             continue;
                         break;
                     case Buildables.ShieldingTechnology:
+                        if (celestial.Facilities.ResearchLab < 6)
+                            continue;
+                        if (researches.EnergyTechnology < 3)
+                            continue;
                         if (GetNextLevel(researches, research) > maxShieldingTechnology)
                             continue;
                         break;
                     case Buildables.ArmourTechnology:
+                        if (celestial.Facilities.ResearchLab < 2)
+                            continue;
                         if (GetNextLevel(researches, research) > maxArmourTechnology)
+                            continue;
+                        break;
+                    case Buildables.GravitonTechnology:
+                        if (celestial.Facilities.ResearchLab < 12)
                             continue;
                         break;
 

@@ -1339,28 +1339,30 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
                     return;
                 }
-                if (celestial.Constructions.BuildingID != (int)Buildables.ResearchLab)
+                if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: the Research Lab is upgrading.");
                     return;
                 }
-                Buildables research = Helpers.GetNextResearchToBuild(celestial, researches, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
+                celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
+                Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
                 int level = Helpers.GetNextLevel(researches, research);
                 if (research != Buildables.Null)
                 {
+                    celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
                     Resources cost = Helpers.CalcPrice(research, level);
                     if (celestial.Resources.IsEnoughFor(cost))
                     {
                         var result = ogamedService.BuildCancelable(celestial, research);
                         if (result)
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Research  " + research.ToString() + " level " + level.ToString() + " started on " + celestial.ToString());
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Research " + research.ToString() + " level " + level.ToString() + " started on " + celestial.ToString());
                         else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Research  " + research.ToString() + " level " + level.ToString() + " could not be started on " + celestial.ToString());
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Research " + research.ToString() + " level " + level.ToString() + " could not be started on " + celestial.ToString());
                     }
                     else
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + research.ToString() + " level " + level.ToString() + " on " + celestial.ToString());
-                        if ((bool)settings.Brain.AutoMine.Trasports.Active)
+                        if ((bool)settings.Brain.AutoResearch.Trasports.Active)
                         {
                             if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                             {
@@ -1383,9 +1385,17 @@ namespace Tbot
             {
                 if (!isSleeping)
                 {
+                    Planet celestial = celestials
+                        .Single(c => c.HasCoords(new(
+                            (int)settings.Brain.AutoResearch.Target.Galaxy,
+                            (int)settings.Brain.AutoResearch.Target.System,
+                            (int)settings.Brain.AutoResearch.Target.Position,
+                            Celestials.Planet
+                            )
+                        )) as Planet;
                     var time = GetDateTime();
-                    celestials = UpdatePlanets(UpdateType.Constructions);
-                    var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.ResearchCountdown) * 1000;
+                    celestial = UpdatePlanet(celestial, UpdateType.Productions) as Planet;
+                    var nextTimeToCompletion = celestial.Constructions.ResearchCountdown * 1000;
                     long interval;
                     if (nextTimeToCompletion != 0)
                         interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1393,7 +1403,7 @@ namespace Tbot
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoResearch check at " + newTime.ToString());
                     UpdateTitle();
                     //Release its semaphore
                     xaSem[Feature.Brain].Release();
