@@ -1345,35 +1345,9 @@ namespace Tbot
                         }
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory) && tempCelestial.Productions.Count == 0)
+                        if (xBuildable == Buildables.Null)
                         {
-                            //Manage the need of nanites
-                            xBuildable = Buildables.NaniteFactory;
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
-                        }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory))
-                        {
-                            //Manage the need of robotics factory
-                            xBuildable = Buildables.RoboticsFactory;
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
-                        }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard) && tempCelestial.Productions.Count == 0)
-                        {
-                            //Manage the need of shipyard
-                            xBuildable = Buildables.Shipyard;
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
-                        }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab) && tempCelestial.Constructions.ResearchID == 0)
-                        {
-                            //Manage the need of lab
-                            xBuildable = Buildables.ResearchLab;
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
-                        }
-                        if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo))
-                        {
-                            //Manage the need of missile silo
-                            xBuildable = Buildables.MissileSilo;
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
+                            mHandleFacilities(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
                         if (xBuildable == Buildables.Null)
                         {
@@ -1425,10 +1399,13 @@ namespace Tbot
                 if (!isSleeping)
                 {
                     var time = GetDateTime();
-                    //celestials = UpdatePlanets(UpdateType.Constructions);
-                    //var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
-                    //var interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                    celestials = UpdatePlanets(UpdateType.Constructions);
+                    var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
+                    long interval;
+                    if (nextTimeToCompletion == 0)
+                        interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    else 
+                        interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
@@ -1523,13 +1500,55 @@ namespace Tbot
         {
             try
             {
-                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, researches, userInfo.Class);
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleMines Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+            }
+        }
+
+        private static void mHandleFacilities(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
+        {
+            try
+            {
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Productions.Count == 0)
+                {
+                    //Manage the need of nanites
+                    xBuildable = Buildables.NaniteFactory;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
+                {
+                    //Manage the need of robotics factory
+                    xBuildable = Buildables.RoboticsFactory;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Productions.Count == 0)
+                {
+                    //Manage the need of shipyard
+                    xBuildable = Buildables.Shipyard;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Constructions.ResearchID == 0)
+                {
+                    //Manage the need of lab
+                    xBuildable = Buildables.ResearchLab;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
+                {
+                    //Manage the need of missile silo
+                    xBuildable = Buildables.MissileSilo;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleFacilities Exception: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
             }
         }

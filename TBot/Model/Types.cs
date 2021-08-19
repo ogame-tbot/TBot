@@ -267,7 +267,7 @@ namespace Tbot.Model
         {
             get
             {
-                return (long)Math.Round(Metal / 2.5, 0) + (long)Math.Round(Crystal / 1.5, 0) + Deuterium;
+                return (long)Math.Round((Metal / 2.5) + (Crystal / 1.5) + Deuterium, 0, MidpointRounding.ToPositiveInfinity);
             }
         }
         public long TotalResources
