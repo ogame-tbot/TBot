@@ -1392,14 +1392,15 @@ namespace Tbot.Includes
         {
             if (planet.Buildings.MetalMine < 10 || planet.Buildings.CrystalMine < 7 || planet.Buildings.DeuteriumSynthesizer < 5)
             {
-                if (planet.Buildings.MetalMine <= planet.Buildings.CrystalMine + 2)
+                if (planet.Buildings.MetalMine <= planet.Buildings.CrystalMine + 2 && planet.Buildings.MetalMine < maxMetalMine)
                     return Buildables.MetalMine;
-                else if (planet.Buildings.CrystalMine <= planet.Buildings.DeuteriumSynthesizer + 2)
+                else if (planet.Buildings.CrystalMine <= planet.Buildings.DeuteriumSynthesizer + 2 && planet.Buildings.CrystalMine < maxCrystalMine)
                     return Buildables.CrystalMine;
-                else
+                else if (planet.Buildings.DeuteriumSynthesizer < maxDeuteriumSynthetizer)
                     return Buildables.DeuteriumSynthesizer;
             }
 
+            /*
             float metalROI = CalcROI(planet, Buildables.MetalMine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
             float crystalROI = CalcROI(planet, Buildables.CrystalMine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
             float deuteriumROI = CalcROI(planet, Buildables.DeuteriumSynthesizer, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
@@ -1412,6 +1413,27 @@ namespace Tbot.Includes
                 return Buildables.DeuteriumSynthesizer;
             else
                 return Buildables.MetalMine;
+            */
+
+            var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
+            Dictionary<Buildables, float> dic = new();
+            foreach (var mine in mines)
+            {
+                if (mine == Buildables.MetalMine && GetNextLevel(planet, mine) > maxMetalMine)
+                    continue;
+                if (mine == Buildables.CrystalMine && GetNextLevel(planet, mine) > maxCrystalMine)
+                    continue;
+                if (mine == Buildables.DeuteriumSynthesizer && GetNextLevel(planet, mine) > maxDeuteriumSynthetizer)
+                    continue;
+
+                dic.Add(mine, CalcROI(planet, mine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff));
+            }
+            if (dic.Count == 0)
+                return Buildables.Null;
+
+            dic = dic.OrderByDescending(m => m.Value)
+                .ToDictionary(m => m.Key, m => m.Value);
+            return dic.FirstOrDefault().Key;
         }
 
         public static float CalcROI(Planet planet, Buildables buildable, Researches researches = null, int speedFactor = 1, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
@@ -1592,13 +1614,13 @@ namespace Tbot.Includes
         {
             if (researches.EnergyTechnology == 0 && celestial.Facilities.ResearchLab > 0)
                 return Buildables.EnergyTechnology;
-            if (researches.CombustionDrive < 2 && celestial.Facilities.ResearchLab > 0)
+            if (researches.CombustionDrive < 2 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology >= 1)
                 return Buildables.CombustionDrive;
             if (researches.EspionageTechnology < 4 && celestial.Facilities.ResearchLab >= 3)
                 return Buildables.EspionageTechnology;
-            if (researches.ImpulseDrive < 3 && celestial.Facilities.ResearchLab >= 2)
+            if (researches.ImpulseDrive < 3 && celestial.Facilities.ResearchLab >= 2 && researches.EnergyTechnology >= 1)
                 return Buildables.ImpulseDrive;
-            if (researches.Astrophysics == 0 && celestial.Facilities.ResearchLab >= 3)
+            if (researches.Astrophysics == 0 && celestial.Facilities.ResearchLab >= 3 && researches.EspionageTechnology >= 4 && researches.ImpulseDrive >= 3)
                 return Buildables.Astrophysics;
 
             List<Buildables> researchesList;
