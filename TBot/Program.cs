@@ -1024,7 +1024,6 @@ namespace Tbot
             } 
         }
 
-
         private static void HandleSleepMode(object state)
         {
             try
@@ -1053,30 +1052,25 @@ namespace Tbot
                 {
                     long interval;
 
+                    if (time > goToSleep && time > wakeUp)
+                        goToSleep = goToSleep.AddDays(1);
+                    if (goToSleep > wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+
                     if (time >= wakeUp)
                     {
-                        if (goToSleep < wakeUp)
-                            goToSleep = goToSleep.AddDays(1);
-                        if (goToSleep > wakeUp)
-                            wakeUp = wakeUp.AddDays(1);
                         interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         WakeUp(newTime);
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
                     }
                     else if (time >= goToSleep)
                     {
-                        if (goToSleep > wakeUp)
-                            wakeUp = wakeUp.AddDays(1);
                         interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         GoToSleep(newTime);
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking up at " + newTime.ToString());
                     }
-                    
-
                 }
             }
             catch (Exception e)
@@ -1104,12 +1098,12 @@ namespace Tbot
         {
             fleets = UpdateFleets();
             bool delayed = false;
-            if (fleets.Count > 0)
+            if ((bool)settings.SleepMode.PreventIfThereAreFleets && fleets.Count > 0)
             {
                 if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
                 {
                     DateTime time = GetDateTime();
-                    if (goToSleep < wakeUp)
+                    if (time > goToSleep && time > wakeUp)
                         goToSleep = goToSleep.AddDays(1);
                     if (goToSleep > wakeUp)
                         wakeUp = wakeUp.AddDays(1);
@@ -2208,23 +2202,16 @@ namespace Tbot
                 !force
             )
             {
-                var now = GetDateTime();
-                if (now >= wakeUp)
-                {
-                    if (goToSleep < wakeUp)
-                        goToSleep = goToSleep.AddDays(1);
-                    if (goToSleep > wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
-                }
-                if (now >= goToSleep)
-                {
-                    if (goToSleep > wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
-                }
+                var time = GetDateTime();
+                if (time > goToSleep && time > wakeUp)
+                    goToSleep = goToSleep.AddDays(1);
+                if (goToSleep > wakeUp)
+                    wakeUp = wakeUp.AddDays(1);
+
                 var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
-                var minReturnTime = now.Add(TimeSpan.FromSeconds(flightTime));
+                var minReturnTime = time.Add(TimeSpan.FromSeconds(flightTime));
                 if (
-                    now.CompareTo(lastDepartureTime) > 0 &&
+                    time.CompareTo(lastDepartureTime) > 0 &&
                     minReturnTime.CompareTo(wakeUp) < 0
                 )
                 {

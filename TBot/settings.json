@@ -29,6 +29,7 @@
 		"Active": false,
 		"GoToSleep": "23:15",
 		"WakeUp": "07:05",
+		"PreventIfThereAreFleets": true,
 		"TelegramMessenger": {
 			"Active": false
 		},
