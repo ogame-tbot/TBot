@@ -1053,23 +1053,30 @@ namespace Tbot
                     long interval;
 
                     if (time > goToSleep && time > wakeUp)
-                        goToSleep = goToSleep.AddDays(1);
-                    if (goToSleep > wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
+                        goToSleep = goToSleep.AddDays(1);                    
 
                     if (time >= wakeUp)
                     {
-                        interval = (long)goToSleep.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        if (goToSleep > wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+                        interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         WakeUp(newTime);
                     }
                     else if (time >= goToSleep)
                     {
-                        interval = (long)wakeUp.Subtract(DateTime.Now).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         DateTime newTime = time.AddMilliseconds(interval);
                         GoToSleep(newTime);
+                    }
+                    else
+                    {
+                        interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                        DateTime newTime = time.AddMilliseconds(interval);
+                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
                     }
                 }
             }
@@ -1151,6 +1158,7 @@ namespace Tbot
                 try
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
+                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
 
                     if ((bool)settings.SleepMode.AutoFleetSave.Active)
                     {
@@ -1389,7 +1397,7 @@ namespace Tbot
                             )
                         )) as Planet;
                     var time = GetDateTime();
-                    celestial = UpdatePlanet(celestial, UpdateType.Productions) as Planet;
+                    celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                     long interval;
                     if (celestial.Constructions.ResearchCountdown != 0)
                         interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
