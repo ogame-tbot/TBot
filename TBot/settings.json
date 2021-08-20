@@ -120,6 +120,7 @@
 					"Type": "Planet"
 				}
 			],
+			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},

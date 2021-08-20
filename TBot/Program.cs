@@ -1532,13 +1532,14 @@ namespace Tbot
                 if (!isSleeping)
                 {
                     var time = GetDateTime();
-                    celestials = UpdatePlanets(UpdateType.Constructions);
-                    var nextTimeToCompletion = celestials.Min(celestial => celestial.Constructions.BuildingCountdown) * 1000;
-                    long interval;
-                    if (nextTimeToCompletion != 0)
-                        interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    else 
-                        interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                    long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+                    if (celestials.Count == 1)
+                    {
+                        var celestial = UpdatePlanet(celestials.First(), UpdateType.Constructions);
+                        var nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;
+                        if (nextTimeToCompletion != 0)
+                            interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    }
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
@@ -1648,6 +1649,19 @@ namespace Tbot
         {
             try
             {
+                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets && xCelestial.Fields.Built < 20)
+                {
+                    if (xCelestial.Facilities.RoboticsFactory < 10 && xCelestial.Facilities.RoboticsFactory < (int)settings.Brain.AutoMine.MaxRoboticsFactory)
+                    {
+                        xBuildable = Buildables.RoboticsFactory;
+                        nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    }
+                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory)
+                    {
+                        xBuildable = Buildables.NaniteFactory;
+                        nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    }
+                }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Productions.Count == 0)
                 {
                     //Manage the need of nanites
