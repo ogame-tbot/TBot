@@ -1622,38 +1622,30 @@ namespace Tbot.Includes
                 return Buildables.ImpulseDrive;
             if (researches.Astrophysics == 0 && celestial.Facilities.ResearchLab >= 3 && researches.EspionageTechnology >= 4 && researches.ImpulseDrive >= 3)
                 return Buildables.Astrophysics;
+            if (researches.ShieldingTechnology < 2 && celestial.Facilities.ResearchLab > 5)
+                return Buildables.ShieldingTechnology;
+            if (researches.CombustionDrive >= 2 && researches.CombustionDrive < 6 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology >= 1)
+                return Buildables.CombustionDrive;
 
-            List<Buildables> researchesList;
-            /*
-            if (researches.Astrophysics == 0)
-                researchesList = new()
-                {
-                    Buildables.EnergyTechnology,
-                    Buildables.CombustionDrive,
-                    Buildables.ImpulseDrive,
-                    Buildables.EspionageTechnology,
-                    Buildables.Astrophysics
-                };
-            else
-            */
-                researchesList = new() {
-                    Buildables.EnergyTechnology,
-                    Buildables.LaserTechnology,
-                    Buildables.IonTechnology,
-                    Buildables.HyperspaceTechnology,
-                    Buildables.PlasmaTechnology,
-                    Buildables.CombustionDrive,
-                    Buildables.ImpulseDrive,
-                    Buildables.HyperspaceDrive,
-                    Buildables.EspionageTechnology,
-                    Buildables.ComputerTechnology,
-                    Buildables.Astrophysics,
-                    Buildables.IntergalacticResearchNetwork,
-                    Buildables.WeaponsTechnology,
-                    Buildables.ShieldingTechnology,
-                    Buildables.ArmourTechnology,
-                    Buildables.GravitonTechnology
-                };
+            List<Buildables> researchesList = new()
+            {
+                Buildables.EnergyTechnology,
+                Buildables.LaserTechnology,
+                Buildables.IonTechnology,
+                Buildables.HyperspaceTechnology,
+                Buildables.PlasmaTechnology,
+                Buildables.CombustionDrive,
+                Buildables.ImpulseDrive,
+                Buildables.HyperspaceDrive,
+                Buildables.EspionageTechnology,
+                Buildables.ComputerTechnology,
+                Buildables.Astrophysics,
+                Buildables.IntergalacticResearchNetwork,
+                Buildables.WeaponsTechnology,
+                Buildables.ShieldingTechnology,
+                Buildables.ArmourTechnology,
+                Buildables.GravitonTechnology
+            };
 
             Dictionary<Buildables, long> dic = new();
             foreach (Buildables research in researchesList)
