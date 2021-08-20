@@ -1345,6 +1345,7 @@ namespace Tbot
                     return;
                 }
                 celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
+                celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
                 Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
                 int level = Helpers.GetNextLevel(researches, research);
                 if (research != Buildables.Null)
