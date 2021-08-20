@@ -22,6 +22,7 @@ Use this bot at your own risk!!
 Testing and PR are very much appreciated!
 
 ## Features
+TBot has a wide variety of useful features. They all can be configured and customized editing settings.json. Here follows a shot explaination of each of them:
 
 * Defender: TBot checks periodically for incoming attacks
   * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible
@@ -34,9 +35,10 @@ Testing and PR are very much appreciated!
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
-  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. An origin can be set in settings.json to send the necessary resources from.
+  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! An origin can be set in settings.json to send the necessary resources from.
+  * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
-* AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
+* AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs (CURRENTLY BROKEN)
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
   * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time
 * Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
@@ -98,13 +100,13 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
 TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Just follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
   
 ## Development Plans
-Sleep mode and a better auto fleet save are the next features I plan to write.
+A web config interface should be written soon or later, as well as a database persistence.
 
 Also, a proper documentation about how to deal with settings.json should be written sooner or later.
 
 As for translations, at the moment the bot is not really suitable for "production" and should be used only for testing and hacking purposes. If you are a dev, you can probably cope with my brokenish English. If and when this project becomes something bigger than what it currently is, I may reconsider this.
 
-Feel free to give suggestions posting an Issue or joining the Discord chat.
+Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
 
 ## Building
 
@@ -116,4 +118,4 @@ Releases are automated by GitHub Actions, take a look at the [workflows](https:/
 
 TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
 
-MacOS ARM will be natively supported when .NET 6 will be officially released, for the time beeing the MacOS 64bit version works fine in emulation on M1
+MacOS ARM will be natively supported when .NET 6 will be officially released, for the time beeing the MacOS 64bit version works fine in emulation on M1.
