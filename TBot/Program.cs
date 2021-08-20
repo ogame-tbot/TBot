@@ -1395,10 +1395,11 @@ namespace Tbot
                         )) as Planet;
                     var time = GetDateTime();
                     celestial = UpdatePlanet(celestial, UpdateType.Productions) as Planet;
-                    var nextTimeToCompletion = celestial.Constructions.ResearchCountdown * 1000;
                     long interval;
-                    if (nextTimeToCompletion != 0)
-                        interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    if (celestial.Constructions.ResearchCountdown != 0)
+                        interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
+                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);                    
                     else
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     var newTime = time.AddMilliseconds(interval);
