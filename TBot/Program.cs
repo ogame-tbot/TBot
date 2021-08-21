@@ -1052,31 +1052,101 @@ namespace Tbot
                 {
                     long interval;
 
-                    if (time > goToSleep && time > wakeUp)
-                        goToSleep = goToSleep.AddDays(1);                    
-
-                    if (time >= wakeUp)
+                    if (time >= goToSleep)
                     {
-                        if (goToSleep > wakeUp)
-                            wakeUp = wakeUp.AddDays(1);
-                        interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        WakeUp(newTime);
-                    }
-                    else if (time >= goToSleep)
-                    {
-                        interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        GoToSleep(newTime);
+                        if  (time >= wakeUp)
+                        {
+                            if (goToSleep >= wakeUp)
+                            {
+                                /*YES YES YES*/
+                                /*ASLEEP*/
+                                /*WAKE UP NEXT DAY*/
+                                interval = (long)wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                GoToSleep(newTime);
+                            }
+                            else
+                            {
+                                /*YES YES NO*/
+                                /*AWAKE*/
+                                /*GO TO SLEEP NEXT DAY*/
+                                interval = (long)goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                WakeUp(newTime);
+                            }
+                        }
+                        else
+                        {
+                            if (goToSleep >= wakeUp)
+                            {
+                                /*YES NO YES*/
+                                /*THIS SHOULDNT HAPPEN*/
+                                interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                            }
+                            else
+                            {
+                                /*YES NO NO */
+                                /*ASLEEP*/
+                                /*WAKE UP SAME DAY*/
+                                interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                GoToSleep(newTime);
+                            }
+                        }
                     }
                     else
                     {
-                        interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep at " + newTime.ToString());
+                        if (time >= wakeUp)
+                        {
+                            if (goToSleep >= wakeUp)
+                            {
+                                /*NO YES YES*/
+                                /*AWAKE*/
+                                /*GO TO SLEEP SAME DAY*/
+                                interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                WakeUp(newTime);
+                            }
+                            else
+                            {
+                                /*NO YES NO*/
+                                /*THIS SHOULDNT HAPPEN*/
+                                interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                            }
+                        }
+                        else
+                        {
+                            if (goToSleep >= wakeUp)
+                            {
+                                /*NO NO YES*/
+                                /*ASLEEP*/
+                                /*WAKE UP SAME DAY*/
+                                interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                GoToSleep(newTime);
+                            }
+                            else
+                            {
+                                /*NO NO NO*/
+                                /*AWAKE*/
+                                /*GO TO SLEEP SAME DAY*/
+                                interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                DateTime newTime = time.AddMilliseconds(interval);
+                                WakeUp(newTime);
+                            }
+                        }
                     }
                 }
             }
@@ -1085,7 +1155,7 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while handling sleep mode: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
-                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                long interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
@@ -1110,10 +1180,11 @@ namespace Tbot
                 if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
                 {
                     DateTime time = GetDateTime();
-                    if (time > goToSleep && time > wakeUp)
+                    if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
                         goToSleep = goToSleep.AddDays(1);
-                    if (goToSleep > wakeUp)
+                    if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
                         wakeUp = wakeUp.AddDays(1);
+
                     List<Fleet> tempFleets = new();
                     var timeToWakeup = wakeUp.Subtract(time).TotalSeconds;
                     tempFleets.AddRange(fleets
@@ -2246,10 +2317,10 @@ namespace Tbot
                 !force
             )
             {
-                var time = GetDateTime();
-                if (time > goToSleep && time > wakeUp)
+                DateTime time = GetDateTime();
+                if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
                     goToSleep = goToSleep.AddDays(1);
-                if (goToSleep > wakeUp)
+                if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
                     wakeUp = wakeUp.AddDays(1);
 
                 var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
