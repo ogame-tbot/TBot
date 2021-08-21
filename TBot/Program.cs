@@ -798,7 +798,7 @@ namespace Tbot
                 DateTime time = GetDateTime();
                 var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                 DateTime newTime = time.AddMilliseconds(interval);
-                timers.Add(fleetId.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+                timers.Add("RecallTimer-" + fleetId.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
             }
 
@@ -2325,6 +2325,11 @@ namespace Tbot
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an exception has occurred.");
                 }
                 return;
+            }
+            finally
+            {
+                timers.GetValueOrDefault("RecallTimer-" + fleet.ID.ToString()).Dispose();
+                timers.Remove("RecallTimer-" + fleet.ID.ToString());
             }
         }
 
