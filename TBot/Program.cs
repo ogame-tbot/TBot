@@ -1445,6 +1445,7 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + research.ToString() + " level " + level.ToString() + " on " + celestial.ToString());
                         if ((bool)settings.Brain.AutoResearch.Trasports.Active)
                         {
+                            fleets = UpdateFleets();
                             if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                             {
                                 Celestial origin = celestials
@@ -1859,6 +1860,7 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
                     if ((bool)settings.Brain.AutoMine.Trasports.Active)
                     {
+                        fleets = UpdateFleets();
                         if (!Helpers.IsThereTransportTowardsCelestial(xCelestial, fleets))
                         {
                             Celestial origin = celestials
@@ -2006,6 +2008,7 @@ namespace Tbot
 
                     var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
+                    fleets = UpdateFleets();
                     if ((bool)settings.Brain.AutoCargo.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(tempCelestial, fleets))
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is a transport incoming.");
@@ -2161,6 +2164,7 @@ namespace Tbot
 
                         var tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
 
+                        fleets = UpdateFleets();
                         if ((bool)settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                         {
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is a transport incoming.");
