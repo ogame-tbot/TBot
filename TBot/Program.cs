@@ -1285,6 +1285,12 @@ namespace Tbot
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Buying offer of the day...");
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
                 var result = ogamedService.BuyOfferOfTheDay();
                 if (result)
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Offer of the day succesfully bought.");
@@ -1314,6 +1320,7 @@ namespace Tbot
 
         private static void AutoResearch(object state)
         {
+            int fleetId = 0;
             try
             {
                 xaSem[Feature.Brain].WaitOne();
@@ -1369,11 +1376,28 @@ namespace Tbot
                         {
                             if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                             {
-                                HandleMinerTrasport(celestial, cost);
+                                Celestial origin = celestials
+                                    .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoResearch.Trasports.Origin.Galaxy)
+                                    .Where(c => c.Coordinate.System == (int)settings.Brain.AutoResearch.Trasports.Origin.System)
+                                    .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoResearch.Trasports.Origin.Position)
+                                    .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoResearch.Trasports.Origin.Type))
+                                    .SingleOrDefault() ?? new() { ID = 0 };
+                                fleetId = HandleMinerTrasport(origin, celestial, cost);
                             }
                             else
                             {
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
+                                fleetId = fleets
+                                    .Where(f => f.Mission == Missions.Transport)
+                                    .Where(f => f.Resources.TotalResources > 0)
+                                    .Where(f => f.ReturnFlight == false)
+                                    .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+                                    .Where(f => f.Destination.System == celestial.Coordinate.System)
+                                    .Where(f => f.Destination.Position == celestial.Coordinate.Position)
+                                    .Where(f => f.Destination.Type == celestial.Coordinate.Type)
+                                    .OrderByDescending(f => f.ArriveIn)
+                                    .First()
+                                    .ID;
                             }
                         }
                     }
@@ -1401,8 +1425,14 @@ namespace Tbot
                     long interval;
                     if (celestial.Constructions.ResearchCountdown != 0)
                         interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    else if (fleetId != 0)
+                    {
+                        fleets = UpdateFleets();
+                        var fleet = fleets.Single(f => f.ID == fleetId);
+                        interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    }
                     else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
-                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);                    
+                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     else
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     var newTime = time.AddMilliseconds(interval);
@@ -1760,7 +1790,13 @@ namespace Tbot
                     {
                         if (!Helpers.IsThereTransportTowardsCelestial(xCelestial, fleets))
                         {
-                            HandleMinerTrasport(xCelestial, xCostBuildable);
+                            Celestial origin = celestials
+                                    .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
+                                    .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
+                                    .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
+                                    .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
+                                    .SingleOrDefault() ?? new() { ID = 0 };
+                            HandleMinerTrasport(origin, xCelestial, xCostBuildable);
                         }
                         else
                         {
@@ -1776,24 +1812,19 @@ namespace Tbot
             }
         }
 
-        private static void HandleMinerTrasport(Celestial destination, Resources resources)
+        private static int HandleMinerTrasport(Celestial origin, Celestial destination, Resources resources)
         {
             try
             {
-                Celestial origin = celestials
-                    .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
-                    .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
-                    .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
-                    .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
-                    .SingleOrDefault() ?? new() { ID = 0 };
-
                 if (origin.ID == destination.ID)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
+                    return 0;
                 }
                 else if (origin.ID == 0)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: unable to parse transport origin.");
+                    return 0;
                 }
                 else
                 {
@@ -1818,6 +1849,7 @@ namespace Tbot
                             if (destination.Coordinate.Type == Celestials.Planet)
                             {
                                 destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
+                                destination = UpdatePlanet(destination, UpdateType.Buildings);
 
                                 var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
                                 var flightTime = flightPrediction.Time;
@@ -1838,27 +1870,30 @@ namespace Tbot
                                 )
                                 {
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
-                                    SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                                    return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
                                 }
                                 else
-                                {
+                                {                                    
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
+                                    return 0;
                                 }
                             }
                             else
                             {
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
-                                SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
+                                return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
                             }
                         }
                         else
                         {
                             Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough ships to transport required resources.");
+                            return 0;
                         }
                     }
                     else
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough resources in orgin.");
+                        return 0;
                     }
                 }
             }
@@ -1866,6 +1901,7 @@ namespace Tbot
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTrasport Exception: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                return 0;
             }
         }
 
