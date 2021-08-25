@@ -2919,6 +2919,7 @@ namespace Tbot
                         if (hasMoon)
                         {
                             moon = celestials.Single(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) as Moon;
+                            moon = UpdatePlanet(moon, UpdateType.Ships) as Moon;
                         }
 
                         if ((bool)settings.AutoHarvest.HarvestOwnDF)
@@ -2938,8 +2939,8 @@ namespace Tbot
                                     dic.Add(dest, moon);
                                 else if (tempCelestial.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
                                     dic.Add(dest, tempCelestial);
-                                else if (moon.Ships.Recycler > 0)
-                                    dic.Add(dest, moon);
+                                else if (tempCelestial.Ships.Recycler > 0)
+                                    dic.Add(dest, tempCelestial);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough recyclers.");
                             }
@@ -2947,22 +2948,22 @@ namespace Tbot
 
                         if ((bool)settings.AutoHarvest.HarvestDeepSpace)
                         {                            
-                            Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, 16, Celestials.DeepSpace);
+                            Coordinate dest = new(tempCelestial.Coordinate.Galaxy, tempCelestial.Coordinate.System, 16, Celestials.DeepSpace);
                             if (dic.Keys.Any(d => d.IsSame(dest)))
                                 continue;
                             if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
                                 continue;
-                            ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(planet.Coordinate).ExpeditionDebris;
+                            ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(tempCelestial.Coordinate).ExpeditionDebris;
                             if (expoDebris != null && expoDebris.Resources.TotalResources >= (long)settings.AutoHarvest.MinimumResources)
                             {
                                 if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
                                     dic.Add(dest, moon);
                                 else if (moon.Ships.Pathfinder > 0)
                                     dic.Add(dest, moon);
-                                else if (planet.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
-                                    dic.Add(dest, planet);
-                                else if (planet.Ships.Pathfinder > 0)
-                                    dic.Add(dest, moon);
+                                else if (tempCelestial.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
+                                    dic.Add(dest, tempCelestial);
+                                else if (tempCelestial.Ships.Pathfinder > 0)
+                                    dic.Add(dest, tempCelestial);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough pathfinders.");
                             }
