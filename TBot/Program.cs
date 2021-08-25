@@ -2906,6 +2906,8 @@ namespace Tbot
                     List<Celestial> newCelestials = celestials.ToList();
                     var dic = new Dictionary<Coordinate, Celestial>();
 
+                    fleets = UpdateFleets();
+
                     foreach (Planet planet in celestials.Where(c => c is Planet))
                     {
                         Planet tempCelestial = UpdatePlanet(planet, UpdateType.Fast) as Planet;
@@ -2927,7 +2929,6 @@ namespace Tbot
                             Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris);
                             if (dic.Keys.Any(d => d.IsSame(dest)))
                                 continue;
-                            fleets = UpdateFleets();
                             if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
                                 continue;
                             tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Debris) as Planet;
