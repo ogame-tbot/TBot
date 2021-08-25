@@ -200,7 +200,8 @@ namespace Tbot.Model
 		Productions,
 		Constructions,
 		ResourceSettings,
-		ResourceProduction
+		ResourceProduction,
+		Debris
 	}
 
 	public enum LogType

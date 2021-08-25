@@ -118,6 +118,7 @@ namespace Tbot.Model
         public Constructions Constructions { get; set; }
         public ResourceSettings ResourceSettings { get; set; }
         public Resources ResourceProduction { get; set; }
+        public Debris Debris { get; set; }
         public override string ToString()
         {
             return Name + " " + Coordinate.ToString();
@@ -161,7 +162,6 @@ namespace Tbot.Model
         public Player Player { get; set; }
         public Alliance Alliance { get; set; }
         public Temperature Temperature { get; set; }
-        public Debris Debris { get; set; }
         public Moon Moon { get; set; }
     }
 

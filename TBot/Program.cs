@@ -559,6 +559,13 @@ namespace Tbot
                         planet.Ships = techs.ships;
                         planet.Buildings = techs.supplies;
                         break;
+                    case UpdateType.Debris:
+                        if (planet is Moon)
+                            break;
+                        var galaxyInfo = ogamedService.GetGalaxyInfo(planet.Coordinate);
+                        var thisPlanetDebris = galaxyInfo.Planets.Where(p => p.Coordinate.IsSame(planet.Coordinate)).Single().Debris;
+                        planet.Debris = thisPlanetDebris;
+                        break;
                     case UpdateType.Full:
                     default:
                         planet.Resources = ogamedService.GetResources(planet);
@@ -2903,8 +2910,8 @@ namespace Tbot
 
                     foreach (Planet planet in celestials.Where(c => c is Planet))
                     {
-                        var tempCelestial = UpdatePlanet(planet, UpdateType.Fast);
-                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+                        Planet tempCelestial = UpdatePlanet(planet, UpdateType.Fast) as Planet;
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
                         Moon moon = new()
                         {
                             Ships = new()
@@ -2919,45 +2926,42 @@ namespace Tbot
                         if ((bool)settings.AutoHarvest.HarvestOwnDF)
                         {
                             Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris);
-                            if (planet.Debris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
+                            if (dic.Keys.Any(d => d.IsSame(dest)))
+                                continue;
+                            tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Debris) as Planet;
+                            if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long)settings.AutoHarvest.MinimumResources)
                             {
-                                if (moon.Ships.Recycler >= planet.Debris.RecyclersNeeded)
+                                if (moon.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
                                     dic.Add(dest, moon);
-                                else if (planet.Ships.Recycler >= planet.Debris.RecyclersNeeded)
-                                    dic.Add(dest, planet);
+                                else if (moon.Ships.Recycler > 0)
+                                    dic.Add(dest, moon);
+                                else if (tempCelestial.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
+                                    dic.Add(dest, tempCelestial);
+                                else if (moon.Ships.Recycler > 0)
+                                    dic.Add(dest, moon);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough recyclers.");
-                            }
-                            else if (planet.Debris.Resources.TotalResources == 0)
-                            {
-                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
-                            }
-                            else
-                            {
-                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
                             }
                         }
 
                         if ((bool)settings.AutoHarvest.HarvestDeepSpace)
-                        {
-                            ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(planet.Coordinate).ExpeditionDebris;
+                        {                            
                             Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, 16, Celestials.DeepSpace);
-                            if (expoDebris.Resources.TotalResources >= settings.AutoHarvest.MinimumResources)
+                            if (dic.Keys.Any(d => d.IsSame(dest)))
+                                continue;
+                            ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(planet.Coordinate).ExpeditionDebris;
+                            if (expoDebris != null && expoDebris.Resources.TotalResources >= (long)settings.AutoHarvest.MinimumResources)
                             {
                                 if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
                                     dic.Add(dest, moon);
+                                else if (moon.Ships.Pathfinder > 0)
+                                    dic.Add(dest, moon);
                                 else if (planet.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
                                     dic.Add(dest, planet);
+                                else if (planet.Ships.Pathfinder > 0)
+                                    dic.Add(dest, moon);
                                 else
                                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": not enough pathfinders.");
-                            }
-                            else if (expoDebris.Resources.TotalResources == 0)
-                            {
-                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": there are no debris");
-                            }
-                            else
-                            {
-                                //Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest in " + dest.ToString() + ": resources under set limit.");
                             }
                         }
 
@@ -2971,16 +2975,16 @@ namespace Tbot
                         Celestial origin = dic[destination];
                         if (destination.Position == 16)
                         {
-                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;
-                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString());
+                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;                            
                             long pathfindersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + pathfindersToSend.ToString() + " " + Buildables.Pathfinder.ToString());
                             SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
                         }
                         else
                         {
                             Debris debris = (celestials.Where(c => c.HasCoords(destination)).First() as Planet).Debris;
-                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString());
-                            long recyclersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            long recyclersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class);
+                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + recyclersToSend.ToString() + " " + Buildables.Recycler.ToString());
                             SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
                         }
                     }
