@@ -26,7 +26,6 @@ namespace Tbot
         static volatile UserInfo userInfo;
         static volatile List<Celestial> celestials;
         static volatile List<Fleet> fleets;
-        static volatile List<GalaxyInfo> galaxyInfos;
         static volatile List<AttackerFleet> attacks;
         static volatile Slots slots;
         static volatile Researches researches;
