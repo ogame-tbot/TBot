@@ -38,7 +38,7 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
-* AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs (CURRENTLY BROKEN)
+* AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
   * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time
 * Local Proxy (tnx to ogamed): Tbot allows you to play in your browser

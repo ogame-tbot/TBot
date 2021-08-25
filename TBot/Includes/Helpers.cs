@@ -1633,7 +1633,7 @@ namespace Tbot.Includes
             if (prioritizeRobotsAndNanitesOnNewPlanets && researches.ComputerTechnology < 10 && celestial.Facilities.ResearchLab >= 1 && researches.ComputerTechnology < maxComputerTechnology)
                 return Buildables.ComputerTechnology;
 
-            if (slots != null && slots.ExpTotal < slots.Total && researches.ComputerTechnology < maxComputerTechnology)
+            if (slots != null && slots.ExpTotal + 1 > slots.Total && researches.ComputerTechnology < maxComputerTechnology)
                 return Buildables.ComputerTechnology;
 
             List<Buildables> researchesList = new()

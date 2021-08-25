@@ -563,8 +563,8 @@ namespace Tbot
                         if (planet is Moon)
                             break;
                         var galaxyInfo = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                        var thisPlanetDebris = galaxyInfo.Planets.Where(p => p.Coordinate.IsSame(planet.Coordinate)).Single().Debris;
-                        planet.Debris = thisPlanetDebris;
+                        var thisPlanetGalaxyInfo = galaxyInfo.Planets.Single(p => p != null && p.Coordinate.IsSame(planet.Coordinate));
+                        planet.Debris = thisPlanetGalaxyInfo.Debris;
                         break;
                     case UpdateType.Full:
                     default:
@@ -2904,7 +2904,6 @@ namespace Tbot
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Detecting harvest targets");
 
-                    galaxyInfos = UpdateGalaxyInfos();
                     List<Celestial> newCelestials = celestials.ToList();
                     var dic = new Dictionary<Coordinate, Celestial>();
 
@@ -2928,6 +2927,9 @@ namespace Tbot
                             Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris);
                             if (dic.Keys.Any(d => d.IsSame(dest)))
                                 continue;
+                            fleets = UpdateFleets();
+                            if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
+                                continue;
                             tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Debris) as Planet;
                             if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long)settings.AutoHarvest.MinimumResources)
                             {
@@ -2949,6 +2951,8 @@ namespace Tbot
                             Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, 16, Celestials.DeepSpace);
                             if (dic.Keys.Any(d => d.IsSame(dest)))
                                 continue;
+                            if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
+                                continue;
                             ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(planet.Coordinate).ExpeditionDebris;
                             if (expoDebris != null && expoDebris.Resources.TotalResources >= (long)settings.AutoHarvest.MinimumResources)
                             {
@@ -2969,6 +2973,9 @@ namespace Tbot
                         newCelestials.Add(tempCelestial);
                     }
                     celestials = newCelestials;
+
+                    if (dic.Count == 0)
+                        Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Skipping harvest: there are no fields to harvest.");
 
                     foreach (Coordinate destination in dic.Keys)
                     {
