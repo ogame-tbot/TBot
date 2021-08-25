@@ -47,6 +47,7 @@
 		"CheckIntervalMax": 22,
 		"IgnoreProbes": true,
 		"IgnoreWeakAttack": true,
+		"WeakAttackRatio": 3,
 		"Autofleet": {
 			"Active": true,
 			"TelegramMessenger": {

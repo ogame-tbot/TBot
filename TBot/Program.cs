@@ -2483,7 +2483,7 @@ namespace Tbot
 
                     return;
                 }
-                if ((bool)settings.Defender.IgnoreWeakAttack && attack.Ships.GetFleetPoints() < (attackedCelestial.Ships.GetFleetPoints() / 3))
+                if ((bool)settings.Defender.IgnoreWeakAttack && attack.Ships.GetFleetPoints() < (attackedCelestial.Ships.GetFleetPoints() / (int)settings.Defender.WeakAttackRatio))
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attack " + attack.ID.ToString() + " skipped: weak attack.");
                     return;
