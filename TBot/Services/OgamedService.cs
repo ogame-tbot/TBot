@@ -37,7 +37,7 @@ namespace Tbot.Services
                 string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
                 if (captchaKey != "")
                     args += " --nja-api-key=" + captchaKey;
-                if (proxySettings != null && proxySettings.Enabled)
+                if (proxySettings.Enabled)
                 {
                     args += " --proxy=" + proxySettings.Address;
                     args += " --proxy-type=" + proxySettings.Type;
