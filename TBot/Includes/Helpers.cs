@@ -1624,7 +1624,9 @@ namespace Tbot.Includes
                 return Buildables.ComputerTechnology;
             if (researches.Astrophysics == 0 && celestial.Facilities.ResearchLab >= 3 && researches.EspionageTechnology >= 4 && researches.ImpulseDrive >= 3 && researches.Astrophysics < maxAstrophysics)
                 return Buildables.Astrophysics;
-            if (researches.ShieldingTechnology < 2 && celestial.Facilities.ResearchLab > 5 && researches.ShieldingTechnology < maxShieldingTechnology)
+            if (researches.EnergyTechnology >= 1 && researches.EnergyTechnology < 3 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology < maxEnergyTechnology)
+                return Buildables.EnergyTechnology;
+            if (researches.ShieldingTechnology < 2 && celestial.Facilities.ResearchLab > 5 && researches.EnergyTechnology >= 3 && researches.ShieldingTechnology < maxShieldingTechnology)
                 return Buildables.ShieldingTechnology;
             if (researches.CombustionDrive >= 2 && researches.CombustionDrive < 6 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology >= 1 && researches.CombustionDrive < maxComputerTechnology)
                 return Buildables.CombustionDrive;

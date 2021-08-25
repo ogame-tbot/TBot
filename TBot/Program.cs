@@ -89,7 +89,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to start ogamed: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
             }
 
             try
@@ -99,7 +99,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to set user agent: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 
@@ -112,7 +112,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
             }
             Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 
@@ -579,13 +579,13 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "Exception: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "An error has occurred. Skipping update");
             }
             return planet;
         }
 
-        private static void UpdateTitle(bool force = true)
+        private static void UpdateTitle(bool force = true, bool underAttack = false)
         {
             if (force)
             {
@@ -595,10 +595,15 @@ namespace Tbot
                 celestials = UpdateCelestials();
                 researches = UpdateResearches();
             }
+            string title = "[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank + " - http://" + (string)settings.General.Host + ":" + (string)settings.General.Port;
+            if ((bool)settings.General.Proxy.Enabled)
+                title += " (Proxy active)";
             if ((string)settings.General.CustomTitle != "")
-                Helpers.SetTitle((string)settings.General.CustomTitle + " - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
-            else
-                Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                title = (string)settings.General.CustomTitle + " - " + title;
+            if (underAttack)
+                title = "ENEMY ACTIVITY! - " + title;
+
+            Helpers.SetTitle(title);
         }
 
         private static void InitializeDefender()
@@ -799,7 +804,7 @@ namespace Tbot
                 var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.Add("RecallTimer-" + fleetId.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
-                Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
+                Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "The fleet will be recalled at " + newTime.ToString());
             }
 
             /*
@@ -1156,7 +1161,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while handling sleep mode: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
                 long interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                 DateTime newTime = time.AddMilliseconds(interval);
@@ -1254,7 +1259,7 @@ namespace Tbot
                 catch (Exception e)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
                     DateTime time = GetDateTime();
                     int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                     DateTime newTime = time.AddMilliseconds(interval);
@@ -1282,7 +1287,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
@@ -1314,7 +1319,7 @@ namespace Tbot
                 {
                     if ((bool)settings.Defender.Alarm.Active)
                         Task.Factory.StartNew(() => Helpers.PlayAlarm());
-                    Helpers.SetTitle("ENEMY ACTIVITY DETECTED - [" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                    UpdateTitle(false, true);
                     Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
                     attacks = ogamedService.GetAttacks();
                     foreach(AttackerFleet attack in attacks)
@@ -1334,7 +1339,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking for attacks: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
@@ -1358,6 +1363,14 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
+
+                if (isSleeping)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+                    xaSem[Feature.Brain].Release();
+                    return;
+                }
+
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Buying offer of the day...");
                 if (isSleeping)
                 {
@@ -2500,7 +2513,7 @@ namespace Tbot
                     catch (Exception e)
                     {
                         Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not spy attacker: an exception has occurred: " + e.Message);
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                        Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Stacktrace: " + e.StackTrace);
                     }
                 }                
             }
@@ -2515,15 +2528,15 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Sending message \"" + message + "\" to attacker" + attack.AttackerName);
                     var result = ogamedService.SendMessage(attack.AttackerID, message);
                     if (result)
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Message succesfully sent.");
+                        Helpers.WriteLog(LogType.Info, LogSender.Defender, "Message succesfully sent.");
                     else
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable send message.");
+                        Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Unable send message.");
 
                 }
                 catch (Exception e)
                 {
                     Helpers.WriteLog(LogType.Error, LogSender.Defender, "Could not message attacker: an exception has occurred: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Stacktrace: " + e.StackTrace);
                 }
             }
 
@@ -2698,7 +2711,7 @@ namespace Tbot
                                     catch (Exception e)
                                     {
                                         Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, "Exception: " + e.Message);
-                                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Stacktrace: " + e.StackTrace);
                                         Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse custom origin");
 
                                         celestials = UpdatePlanets(UpdateType.Ships);
@@ -2848,7 +2861,7 @@ namespace Tbot
             catch (Exception e)
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "HandleExpeditions exception: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Stacktrace: " + e.StackTrace);
                 int interval = (int)(Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                 var time = GetDateTime();
                 DateTime newTime = time.AddMilliseconds(interval);
