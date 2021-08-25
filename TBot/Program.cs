@@ -73,11 +73,11 @@ namespace Tbot
                 string host = (string)settings.General.Host ?? "localhost";
                 string port = (string)settings.General.Port ?? "8080";
                 string captchaKey = (string)settings.General.CaptchaAPIKey ?? "";
-                ProxySettings proxy = null;
-                if ((bool)settings.General.Proxy.Active && (string)settings.General.Proxy.Address != "")
+                ProxySettings proxy = new();
+                if ((bool)settings.General.Proxy.Enabled && (string)settings.General.Proxy.Address != "")
                 {
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
-                    proxy.Enabled = (bool)settings.General.Proxy.Active;
+                    proxy.Enabled = (bool)settings.General.Proxy.Enabled;
                     proxy.Address = (string)settings.General.Proxy.Address;
                     proxy.Type = (string)settings.General.Proxy.Type ?? "socks5";
                     proxy.Username = (string)settings.General.Proxy.Username ?? "";
