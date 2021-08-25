@@ -867,13 +867,16 @@ namespace Tbot
             List<FleetHypotesis> possibleFleets = new();
             List<Coordinate> possibleDestinations = new();
 
+            origin = UpdatePlanet(origin, UpdateType.Resources);
+
             switch (mission)
             {
                 case Missions.Deploy:
                     possibleDestinations = celestials
                         .Where(planet => planet.ID != origin.ID)
                         .Where(planet => (planet.Coordinate.Type == Celestials.Moon) || forceUnsafe)
-                        .OrderBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
+                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                        .ThenBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
                         .Select(planet => planet.Coordinate)
                         .ToList();                    
 
@@ -1426,7 +1429,8 @@ namespace Tbot
                 }
                 celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
                 celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
-                Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
+                slots = UpdateSlots();
+                Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
                 int level = Helpers.GetNextLevel(researches, research);
                 if (research != Buildables.Null)
                 {
@@ -1755,7 +1759,7 @@ namespace Tbot
         {
             try
             {
-                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets && xCelestial.Fields.Built < 20)
+                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets)
                 {
                     if (xCelestial.Facilities.RoboticsFactory < 10 && xCelestial.Facilities.RoboticsFactory < (int)settings.Brain.AutoMine.MaxRoboticsFactory)
                     {
@@ -2259,24 +2263,24 @@ namespace Tbot
 
         private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + (speed * 10).ToString() + "% . Ships: " + ships.ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "Sending fleet from " + origin.Coordinate.ToString() + " to " + destination.ToString() + ". Mission: " + mission.ToString() + ". Speed: " + (speed * 10).ToString() + "% . Ships: " + ships.ToString());
             
             if (playerClass == Classes.NoClass)
                 playerClass = userInfo.Class;
 
             if (!ships.HasMovableFleet())
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: there are no ships to send");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: there are no ships to send");
                 return 0;
             }
             if (origin.Coordinate.IsSame(destination))
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: origin and destination are the same");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
                 return 0;
             }
             if (destination.Galaxy <= 0 || destination.Galaxy > serverData.Galaxies || destination.System <= 0 || destination.System > 500 || destination.Position <= 0 || destination.Position > 17)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: invalid destination");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
                 return 0;
             }
 
@@ -2295,7 +2299,7 @@ namespace Tbot
                 )
             )
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: speed not available for your class");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
                 return 0;
             }
 
@@ -2310,7 +2314,7 @@ namespace Tbot
             origin = UpdatePlanet(origin, UpdateType.Resources);
             if (origin.Resources.Deuterium < fleetPrediction.Fuel)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: not enough deuterium!");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
                 return 0;
             }                
             
@@ -2334,7 +2338,7 @@ namespace Tbot
                     minReturnTime.CompareTo(wakeUp) < 0
                 )
                 {
-                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet: it would come back during sleep time");
+                    Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
                     return 0;
                 }
             }            
@@ -2354,21 +2358,21 @@ namespace Tbot
                 }
                 catch (Exception e)
                 {
-                    Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to send fleet: an exception has occurred: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                    Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to send fleet: an exception has occurred: " + e.Message);
+                    Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Stacktrace: " + e.StackTrace);
                     return 0;
                 }
             }
             else
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to send fleet, no slots available");
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
                 return 0;
             }                      
         }
 
         private static void CancelFleet(Fleet fleet)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Recalling fleet id " + fleet.ID + " originally from " + fleet.Origin.ToString() + " to " + fleet.Destination.ToString() + " with mission: " + fleet.Mission.ToString() + ". Start time: " + fleet.StartTime.ToString() + " - Arrival time: " + fleet.ArrivalTime.ToString() + " - Ships: " + fleet.Ships.ToString());
+            Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "Recalling fleet id " + fleet.ID + " originally from " + fleet.Origin.ToString() + " to " + fleet.Destination.ToString() + " with mission: " + fleet.Mission.ToString() + ". Start time: " + fleet.StartTime.ToString() + " - Arrival time: " + fleet.ArrivalTime.ToString() + " - Ships: " + fleet.Ships.ToString());
             slots = UpdateSlots();
             try
             {
@@ -2378,13 +2382,13 @@ namespace Tbot
                 Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = 0 };
                 if (recalledFleet.ID == 0)
                 {
-                    Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an unknon error has occurred.");
+                    Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred.");
                     if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                     {
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an unknon error has occurred.");
                     }
                 }
-                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Fleet recalled. Arrival time: " + recalledFleet.BackTime.ToString());
+                Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "Fleet recalled. Arrival time: " + recalledFleet.BackTime.ToString());
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                 {
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Fleet recalled. Arrival time: " + recalledFleet.BackTime.ToString());
@@ -2393,8 +2397,8 @@ namespace Tbot
             }
             catch (Exception e)
             {
-                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to recall fleet: an exception has occurred: " + e.Message);
-                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an exception has occurred: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Stacktrace: " + e.StackTrace);
                 if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
                 {
                     telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Unable to recall fleet: an exception has occurred.");
@@ -2775,9 +2779,14 @@ namespace Tbot
                                                 };
                                             }
                                             slots = UpdateSlots();
+                                            Resources payload = new();
+                                            if ((long)settings.Expeditions.AutoSendExpeditions.FuelToCarry > 0)
+                                            {
+                                                payload.Deuterium = (long)settings.Expeditions.AutoSendExpeditions.FuelToCarry;
+                                            }
                                             if (slots.ExpFree > 0)
                                             {
-                                                SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent);
+                                                SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
                                                 Thread.Sleep((int)IntervalType.AFewSeconds);
                                             }
                                             else

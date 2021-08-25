@@ -224,6 +224,7 @@
 			"WaitForAllExpeditions": false,
 			"SplitExpeditionsBetweenSystems": false,
 			"RandomizeOrder": true,
+			"FuelToCarry": 20000,
 			"Origin": [
 				{
 					"Galaxy": 5,
