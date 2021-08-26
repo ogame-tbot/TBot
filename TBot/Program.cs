@@ -1796,13 +1796,13 @@ namespace Tbot
                         xBuildable = Buildables.RoboticsFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
-                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory)
-                    {
+                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
+                    {                        
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Productions.Count == 0)
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
                 {
                     //Manage the need of nanites
                     xBuildable = Buildables.NaniteFactory;
@@ -1814,7 +1814,7 @@ namespace Tbot
                     xBuildable = Buildables.RoboticsFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Productions.Count == 0)
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
                 {
                     //Manage the need of shipyard
                     xBuildable = Buildables.Shipyard;
