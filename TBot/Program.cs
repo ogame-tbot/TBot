@@ -749,13 +749,19 @@ namespace Tbot
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : there is no fleet to save!");
                 return;
-            }                
+            }
 
             celestial = UpdatePlanet(celestial, UpdateType.Resources);
             Celestial destination = new() { ID = 0 };
             if (!forceUnsafe)
                 forceUnsafe = (bool)settings.SleepMode.AutoFleetSave.ForceUnsafe;
-            bool recall = false;
+            bool recall = false;            
+
+            if (celestial.Resources.Deuterium == 0)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : there is no fuel!");
+                return;
+            }
             long maxDeuterium = celestial.Resources.Deuterium;
 
             DateTime departureTime = GetDateTime();
@@ -770,9 +776,9 @@ namespace Tbot
                 else
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Could not plan fleetsave from " + celestial.ToString() + " : unable to parse comeback time");
+                    return;
                 }
             }
-
             
             Missions mission = Missions.Deploy;
             FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
@@ -794,6 +800,11 @@ namespace Tbot
                     mission = Missions.Harvest;
                     fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
                 }                
+            }
+            if (celestial.Resources.Deuterium < fleetHypotesis.Fuel)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : not enough fuel!");
+                return;
             }
 
             var payload = celestial.Resources;
@@ -886,7 +897,7 @@ namespace Tbot
                     possibleDestinations = celestials
                         .Where(planet => planet.ID != origin.ID)
                         .Where(planet => (planet.Coordinate.Type == Celestials.Moon) || forceUnsafe)
-                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
+                        .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon ? 0 : 1)
                         .ThenBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
                         .Select(planet => planet.Coordinate)
                         .ToList();                    
