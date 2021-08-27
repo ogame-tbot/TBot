@@ -217,7 +217,7 @@ namespace Tbot.Model
         public bool RapidFire { get; set; }
         public bool DefToTF { get; set; }
         public float DebrisFactor { get; set; }
-        public int DebrisFactorDef { get; set; }
+        public float DebrisFactorDef { get; set; }
         public float RepairFactor { get; set; }
         public int NewbieProtectionLimit { get; set; }
         public int NewbieProtectionHigh { get; set; }
