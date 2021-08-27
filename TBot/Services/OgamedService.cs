@@ -45,6 +45,7 @@ namespace Tbot.Services
                         args += " --proxy-username=" + proxySettings.Username;
                     if (proxySettings.Password != "")
                         args += " --proxy-password=" + proxySettings.Password;
+                    args += " --proxy-login-only=true";
                 }
                 if (credentials.IsLobbyPioneers)
                     args += " --lobby=lobby-pioneers";
