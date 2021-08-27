@@ -787,6 +787,7 @@ namespace Tbot.Model
         public string Type { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+		public string LoginOnly { get; set; }
     }
 
 }

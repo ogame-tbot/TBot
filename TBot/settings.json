@@ -19,7 +19,8 @@
 			"Address": "",
 			"Type": "socks5",
 			"Username": "",
-			"Password": ""
+			"Password": "",
+			"LoginOnly": true
 		},
 		"CaptchaAPIKey": "",
 		"CustomTitle": "",
