@@ -1610,24 +1610,25 @@ namespace Tbot
                     {
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
-                        if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
-                        {
-                            //Checks if energy is needed
-                            xBuildable = Helpers.GetNextEnergySourceToBuild(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
-                        }
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
-                        if (xBuildable == Buildables.Null)
-                        {
-                            mHandleFacilities(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
                         if (xBuildable == Buildables.Null)
                         {
                             //Manage the need of build some deposit
                             mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
                         //If it isn't needed to build deposit
+                        if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
+                        {
+                            //Checks if energy is needed
+                            xBuildable = Helpers.GetNextEnergySourceToBuild(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
+                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
+                        }
+  
+                        if (xBuildable == Buildables.Null)
+                        {
+                            mHandleFacilities(tempCelestial, ref xBuildable, ref nLevelToReach);
+                        }
                         //check if it needs to build some mines 
                         if (xBuildable == Buildables.Null)
                         {
