@@ -1300,7 +1300,7 @@ namespace Tbot.Includes
         {
             long metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
-            if (metalCapacity < hours * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
+            if (metalCapacity < hours * metalProduction || planet.Resources.Metal >= metalCapacity && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
                 return true;
             else
                 return false;
@@ -1310,7 +1310,7 @@ namespace Tbot.Includes
         {
             long crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
-            if (crystalCapacity < hours * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
+            if (crystalCapacity < hours * crystalProduction || planet.Resources.Crystal >= crystalCapacity && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
                 return true;
             else
                 return false;
@@ -1320,7 +1320,7 @@ namespace Tbot.Includes
         {
             long deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
             long deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
-            if (deuteriumCapacity < hours * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
+            if (deuteriumCapacity < hours * deuteriumProduction || planet.Resources.Deuterium >= deuteriumCapacity && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
                 return true;
             else
                 return false;
