@@ -1612,6 +1612,7 @@ namespace Tbot.Includes
 
         public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25)
         {
+            /*
             if (researches.EnergyTechnology == 0 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology < maxEnergyTechnology)
                 return Buildables.EnergyTechnology;
             if (researches.CombustionDrive < 2 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology >= 1 && researches.CombustionDrive < maxCombustionDrive)
@@ -1635,6 +1636,7 @@ namespace Tbot.Includes
 
             if (slots != null && slots.ExpTotal + 1 > slots.Total && researches.ComputerTechnology < maxComputerTechnology)
                 return Buildables.ComputerTechnology;
+            */
 
             List<Buildables> researchesList = new()
             {
@@ -1778,8 +1780,9 @@ namespace Tbot.Includes
                         break;
 
                 }
-
-                dic.Add(research, CalcPrice(research, GetNextLevel(researches, research)).ConvertedDeuterium);
+                Resources xCostBuildable = CalcPrice(research, GetNextLevel(researches, research));
+                if (celestial.Resources.IsEnoughFor(xCostBuildable))
+                    dic.Add(research, CalcPrice(research, GetNextLevel(researches, research)).ConvertedDeuterium);
             }
             if (dic.Count == 0)
                 return Buildables.Null;

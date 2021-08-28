@@ -1778,6 +1778,9 @@ namespace Tbot
                 xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                    xBuildable = Buildables.Null;
             }
             catch (Exception e)
             {
@@ -1796,11 +1799,17 @@ namespace Tbot
                     {
                         xBuildable = Buildables.RoboticsFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                        if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                            xBuildable = Buildables.Null;
                     }
                     else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
-                    {                        
+                    {
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                        Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                        if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                            xBuildable = Buildables.Null;
                     }
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
@@ -1808,30 +1817,45 @@ namespace Tbot
                     //Manage the need of nanites
                     xBuildable = Buildables.NaniteFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
                 {
                     //Manage the need of robotics factory
                     xBuildable = Buildables.RoboticsFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
                 {
                     //Manage the need of shipyard
                     xBuildable = Buildables.Shipyard;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Constructions.ResearchID == 0)
                 {
                     //Manage the need of lab
                     xBuildable = Buildables.ResearchLab;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
                 {
                     //Manage the need of missile silo
                     xBuildable = Buildables.MissileSilo;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
+                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
+                        xBuildable = Buildables.Null;
                 }
             }
             catch (Exception e)
