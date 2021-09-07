@@ -1612,12 +1612,6 @@ namespace Tbot
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
-                        if (xBuildable == Buildables.Null)
-                        {
-                            //Manage the need of build some deposit
-                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-                        //If it isn't needed to build deposit
                         if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
                         {
                             //Checks if energy is needed
@@ -1637,6 +1631,13 @@ namespace Tbot
 
                         if (xBuildable != Buildables.Null && nLevelToReach > 0)
                             mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
+
+                        if (xBuildable == Buildables.Null)
+                        {
+                            //Manage the need of build some deposit
+                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
+                        }
+                        //If it isn't needed to build deposit
                     }
                     else
                     {

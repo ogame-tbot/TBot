@@ -28,6 +28,8 @@ namespace Tbot.Services
             ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
             Url = "http://" + host + ":" + port;
             Client = new RestClient(Url);
+            Client.Timeout = 86400000;
+            Client.ReadWriteTimeout = 86400000;
         }
 
         internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
