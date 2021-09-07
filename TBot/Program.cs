@@ -1212,12 +1212,13 @@ namespace Tbot
 
                     List<Fleet> tempFleets = new();
                     var timeToWakeup = wakeUp.Subtract(time).TotalSeconds;
+                    // All Deployment Missions that will arrive during sleep
                     tempFleets.AddRange(fleets
                         .Where(f => f.Mission == Missions.Deploy)
                         .Where(f => f.ArriveIn <= timeToWakeup)
                     );
+                    // All other Fleets.Mission
                     tempFleets.AddRange(fleets
-                        .Where(f => f.Mission != Missions.Deploy)
                         .Where(f => f.BackIn <= timeToWakeup)
                     );
                     if (tempFleets.Count > 0)
