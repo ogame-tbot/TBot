@@ -2824,6 +2824,10 @@ namespace Tbot
                                                     Position = 16,
                                                     Type = Celestials.DeepSpace
                                                 };
+                                                if (destination.System == 0)
+                                                    destination.System = 499;
+                                                if (destination.System == 500)
+                                                    destination.System = 1;
                                             }
                                             else
                                             {
