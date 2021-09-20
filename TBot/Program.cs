@@ -2826,20 +2826,21 @@ namespace Tbot
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)
                                         {
                                             Coordinate destination;
-                                            if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
+                                            if ((bool)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Active)
                                             {
                                                 var rand = new Random();
 
+                                                int range = (int)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Range;
                                                 destination = new Coordinate
                                                 {
                                                     Galaxy = origin.Coordinate.Galaxy,
-                                                    System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
+                                                    System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
                                                     Position = 16,
                                                     Type = Celestials.DeepSpace
                                                 };
-                                                if (destination.System == 0)
+                                                if (destination.System <= 0)
                                                     destination.System = 499;
-                                                if (destination.System == 500)
+                                                if (destination.System >= 500)
                                                     destination.System = 1;
                                             }
                                             else

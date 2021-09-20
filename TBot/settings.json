@@ -228,7 +228,10 @@
 			"MainShip": "LargeCargo",
 			"MinCargosToSend": 1000,
 			"WaitForAllExpeditions": false,
-			"SplitExpeditionsBetweenSystems": false,
+			"SplitExpeditionsBetweenSystems": {
+				"Active": false,
+				"Range": 1
+			},
 			"RandomizeOrder": true,
 			"FuelToCarry": 20000,
 			"Origin": [
