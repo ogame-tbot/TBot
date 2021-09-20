@@ -123,7 +123,9 @@
 					"Type": "Planet"
 				}
 			],
+			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
+			"BuildDepositIfFull": false,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -161,6 +163,8 @@
 					"Type": "Moon"
 				}
 			},
+			"OptimizeForStart": true,
+			"EnsureExpoSlots": true,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
