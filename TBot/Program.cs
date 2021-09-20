@@ -448,11 +448,18 @@ namespace Tbot
             {
                 newPlanet = planet;
                 var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris ?? new();
-                galaxyInfos.Add(gi);
-                Planet oldPlanet = celestials.Single(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
-                newCelestials.Remove(oldPlanet);
-                newCelestials.Add(newPlanet);
+                if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                {
+                    newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
+                    galaxyInfos.Add(gi);
+                }
+                
+                if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
+                {
+                    Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                    newCelestials.Remove(oldPlanet);
+                    newCelestials.Add(newPlanet);
+                }                
             }
             celestials = newCelestials;
             return galaxyInfos;
@@ -562,7 +569,7 @@ namespace Tbot
                         if (planet is Moon)
                             break;
                         var galaxyInfo = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                        var thisPlanetGalaxyInfo = galaxyInfo.Planets.Single(p => p != null && p.Coordinate.IsSame(planet.Coordinate));
+                        var thisPlanetGalaxyInfo = galaxyInfo.Planets.Single(p => p != null && p.Coordinate.IsSame(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet)));
                         planet.Debris = thisPlanetGalaxyInfo.Debris;
                         break;
                     case UpdateType.Full:
@@ -1808,9 +1815,6 @@ namespace Tbot
                 xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                    xBuildable = Buildables.Null;
             }
             catch (Exception e)
             {
