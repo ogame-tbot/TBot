@@ -692,7 +692,7 @@ namespace Tbot.Model
         {
             get
             {
-                if (Resources == null) return new Resources
+                return new Resources
                 {
                     Metal = Metal,
                     Crystal = Crystal,
@@ -700,7 +700,6 @@ namespace Tbot.Model
                     Darkmatter = 0,
                     Energy = 0
                 };
-                else return Resources;
             }
         }
     }
@@ -714,7 +713,7 @@ namespace Tbot.Model
         {
             get
             {
-                if (Resources == null) return new Resources
+                return new Resources
                 {
                     Metal = Metal,
                     Crystal = Crystal,
@@ -722,7 +721,6 @@ namespace Tbot.Model
                     Darkmatter = 0,
                     Energy = 0
                 };
-                else return Resources;
             }
         }
     }

@@ -3045,17 +3045,20 @@ namespace Tbot
                         Celestial origin = dic[destination];
                         if (destination.Position == 16)
                         {
-                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;                            
-                            long pathfindersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;
+                            long pathfindersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Pathfinder);
                             Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + pathfindersToSend.ToString() + " " + Buildables.Pathfinder.ToString());
                             SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
                         }
                         else
                         {
-                            Debris debris = (celestials.Where(c => c.HasCoords(destination)).First() as Planet).Debris;
-                            long recyclersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class);
-                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + recyclersToSend.ToString() + " " + Buildables.Recycler.ToString());
-                            SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+                            if (celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))))
+                            {
+                                Debris debris = (celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
+                                long recyclersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Recycler);
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + recyclersToSend.ToString() + " " + Buildables.Recycler.ToString());
+                                SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+                            }                            
                         }
                     }
 
