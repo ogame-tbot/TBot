@@ -1289,10 +1289,12 @@ namespace Tbot
             {
                 try
                 {
+                    /*
                     if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
                         AutoMine(null);
                     if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
                         AutoResearch(null);
+                    */
 
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
@@ -2223,10 +2225,12 @@ namespace Tbot
                     return;
                 }
 
+                /*
                 if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
                     AutoMine(null);
                 if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
                     AutoResearch(null);
+                */
 
                 if (settings.Brain.AutoRepatriate.Target)
                 {
