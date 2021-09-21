@@ -71,6 +71,7 @@ namespace Tbot
                  */
                 string host = (string)settings.General.Host ?? "localhost";
                 string port = (string)settings.General.Port ?? "8080";
+                string newApiHostname = (string)settings.General.NewApiHostname;
                 string captchaKey = (string)settings.General.CaptchaAPIKey ?? "";
                 ProxySettings proxy = new();
                 if ((bool)settings.General.Proxy.Enabled && (string)settings.General.Proxy.Address != "")
@@ -83,7 +84,7 @@ namespace Tbot
                     proxy.Password = (string)settings.General.Proxy.Password ?? "";
 
                 }
-                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, proxy);
+                ogamedService = new OgamedService(credentials, (string)host, int.Parse(port), (string)captchaKey, proxy, (string)newApiHostname);
             }
             catch (Exception e)
             {

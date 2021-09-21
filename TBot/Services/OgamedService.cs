@@ -23,20 +23,24 @@ namespace Tbot.Services
         * 
         * add ability to set custom host 
         */
-        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
+        public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string NewApiHostname = "")
         {
-            ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
+            ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, NewApiHostname);
             Url = "http://" + host + ":" + port;
             Client = new RestClient(Url);
             Client.Timeout = 86400000;
             Client.ReadWriteTimeout = 86400000;
         }
 
-        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null)
+        internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string newApiHostname = "")
         {
             try
             {
-                string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
+                string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --cookies-filename=cookies.txt";
+                if (newApiHostname != "")
+                {
+                    args += " --api-new-hostname=" + newApiHostname;
+                }
                 if (captchaKey != "")
                     args += " --nja-api-key=" + captchaKey;
                 if (proxySettings.Enabled)
