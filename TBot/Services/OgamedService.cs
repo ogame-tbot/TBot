@@ -510,6 +510,100 @@ namespace Tbot.Services
             else return (bool)result.Result;
         }
 
+        public bool HasCommander()
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/has-commander",
+                Method = Method.GET
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return (bool)result.Result;
+        }
+
+        public bool HasAdmiral()
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/has-admiral",
+                Method = Method.GET
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return (bool)result.Result;
+        }
+
+        public bool HasEngineer()
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/has-engineer",
+                Method = Method.GET
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return (bool)result.Result;
+        }
+
+        public bool HasGeologist()
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/has-geologist",
+                Method = Method.GET
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return (bool)result.Result;
+        }
+
+        public bool HasTechnocrat()
+        {
+            var request = new RestRequest
+            {
+                Resource = "/bot/has-technocrat",
+                Method = Method.GET
+            };
+            var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+            if (result.Status != "ok")
+            {
+                throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+            }
+            else return (bool)result.Result;
+        }
+
+        public Staff GetStaff()
+        {
+            try
+            {
+                return new()
+                {
+                    Commander = HasCommander(),
+                    Admiral = HasAdmiral(),
+                    Engineer = HasEngineer(),
+                    Geologist = HasGeologist(),
+                    Technocrat = HasTechnocrat()
+                };
+            }
+            catch
+            {
+                return new();
+            }
+        }
+
         public bool BuyOfferOfTheDay()
         {
             try
