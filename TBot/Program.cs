@@ -449,11 +449,18 @@ namespace Tbot
             {
                 newPlanet = planet;
                 var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris ?? new();
-                galaxyInfos.Add(gi);
-                Planet oldPlanet = celestials.Single(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
-                newCelestials.Remove(oldPlanet);
-                newCelestials.Add(newPlanet);
+                if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                {
+                    newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
+                    galaxyInfos.Add(gi);
+                }
+                
+                if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
+                {
+                    Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                    newCelestials.Remove(oldPlanet);
+                    newCelestials.Add(newPlanet);
+                }                
             }
             celestials = newCelestials;
             return galaxyInfos;
@@ -563,7 +570,7 @@ namespace Tbot
                         if (planet is Moon)
                             break;
                         var galaxyInfo = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                        var thisPlanetGalaxyInfo = galaxyInfo.Planets.Single(p => p != null && p.Coordinate.IsSame(planet.Coordinate));
+                        var thisPlanetGalaxyInfo = galaxyInfo.Planets.Single(p => p != null && p.Coordinate.IsSame(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet)));
                         planet.Debris = thisPlanetGalaxyInfo.Debris;
                         break;
                     case UpdateType.Full:
@@ -820,6 +827,8 @@ namespace Tbot
                 Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
                 DateTime time = GetDateTime();
                 var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                if (interval <= 0)
+                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.Add("RecallTimer-" + fleetId.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
                 Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "The fleet will be recalled at " + newTime.ToString());
@@ -1089,6 +1098,8 @@ namespace Tbot
                                 /*WAKE UP NEXT DAY*/
                                 interval = (long)wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 GoToSleep(newTime);
                             }
@@ -1099,6 +1110,8 @@ namespace Tbot
                                 /*GO TO SLEEP NEXT DAY*/
                                 interval = (long)goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 WakeUp(newTime);
                             }
@@ -1110,6 +1123,8 @@ namespace Tbot
                                 /*YES NO YES*/
                                 /*THIS SHOULDNT HAPPEN*/
                                 interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
@@ -1121,6 +1136,8 @@ namespace Tbot
                                 /*WAKE UP SAME DAY*/
                                 interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 GoToSleep(newTime);
                             }
@@ -1137,6 +1154,8 @@ namespace Tbot
                                 /*GO TO SLEEP SAME DAY*/
                                 interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 WakeUp(newTime);
                             }
@@ -1145,6 +1164,8 @@ namespace Tbot
                                 /*NO YES NO*/
                                 /*THIS SHOULDNT HAPPEN*/
                                 interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                                 Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
@@ -1159,6 +1180,8 @@ namespace Tbot
                                 /*WAKE UP SAME DAY*/
                                 interval = (long)wakeUp.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 GoToSleep(newTime);
                             }
@@ -1169,6 +1192,8 @@ namespace Tbot
                                 /*GO TO SLEEP SAME DAY*/
                                 interval = (long)goToSleep.Subtract(time).TotalMilliseconds + (long)Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
                                 timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                                if (interval <= 0)
+                                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                 DateTime newTime = time.AddMilliseconds(interval);
                                 WakeUp(newTime);
                             }
@@ -1240,6 +1265,8 @@ namespace Tbot
                             }
                         }
                         interval *= 1000;
+                        if (interval <= 0)
+                            interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                         DateTime newTime = time.AddMilliseconds(interval);
                         timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
                         delayed = true;
@@ -1350,6 +1377,8 @@ namespace Tbot
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
                 }
                 int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
+                if (interval <= 0)
+                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
@@ -1414,6 +1443,8 @@ namespace Tbot
                 {
                     var time = GetDateTime();
                     var interval = Helpers.CalcRandomInterval((int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int)settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
@@ -1462,7 +1493,7 @@ namespace Tbot
                 celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
                 celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
                 slots = UpdateSlots();
-                Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology);
+                Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int)settings.Brain.AutoResearch.MaxEnergyTechnology, (int)settings.Brain.AutoResearch.MaxLaserTechnology, (int)settings.Brain.AutoResearch.MaxIonTechnology, (int)settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int)settings.Brain.AutoResearch.MaxPlasmaTechnology, (int)settings.Brain.AutoResearch.MaxCombustionDrive, (int)settings.Brain.AutoResearch.MaxImpulseDrive, (int)settings.Brain.AutoResearch.MaxHyperspaceDrive, (int)settings.Brain.AutoResearch.MaxEspionageTechnology, (int)settings.Brain.AutoResearch.MaxComputerTechnology, (int)settings.Brain.AutoResearch.MaxAstrophysics, (int)settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int)settings.Brain.AutoResearch.MaxWeaponsTechnology, (int)settings.Brain.AutoResearch.MaxShieldingTechnology, (int)settings.Brain.AutoResearch.MaxArmourTechnology, (bool)settings.Brain.AutoResearch.OptimizeForStart, (bool)settings.Brain.AutoResearch.EnsureExpoSlots);
                 int level = Helpers.GetNextLevel(researches, research);
                 if (research != Buildables.Null)
                 {
@@ -1543,6 +1574,8 @@ namespace Tbot
                         interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     else
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoResearch check at " + newTime.ToString());
@@ -1684,6 +1717,8 @@ namespace Tbot
                         if (nextTimeToCompletion != 0)
                             interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     }
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("AutoMineTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check at " + newTime.ToString());
@@ -1716,7 +1751,7 @@ namespace Tbot
             try
             {
                 //Check if it is necessary to build a Deuterium tank
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1728,7 +1763,7 @@ namespace Tbot
 
 
                 //Check if it is necessary to build a Crystal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1739,7 +1774,7 @@ namespace Tbot
                 }
 
                 //Check if it is necessary to build a Metal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1781,9 +1816,6 @@ namespace Tbot
                 xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                    xBuildable = Buildables.Null;
             }
             catch (Exception e)
             {
@@ -1802,17 +1834,11 @@ namespace Tbot
                     {
                         xBuildable = Buildables.RoboticsFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                        Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                        if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                            xBuildable = Buildables.Null;
                     }
                     else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
                     {
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                        Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                        if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                            xBuildable = Buildables.Null;
                     }
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
@@ -1820,45 +1846,30 @@ namespace Tbot
                     //Manage the need of nanites
                     xBuildable = Buildables.NaniteFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
                 {
                     //Manage the need of robotics factory
                     xBuildable = Buildables.RoboticsFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
                 {
                     //Manage the need of shipyard
                     xBuildable = Buildables.Shipyard;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Constructions.ResearchID == 0)
                 {
                     //Manage the need of lab
                     xBuildable = Buildables.ResearchLab;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                        xBuildable = Buildables.Null;
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
                 {
                     //Manage the need of missile silo
                     xBuildable = Buildables.MissileSilo;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
-                    Resources xCostBuildable = Helpers.CalcPrice(xBuildable, nLevelToReach);
-                    if (!xCelestial.Resources.IsEnoughFor(xCostBuildable))
-                        xBuildable = Buildables.Null;
                 }
             }
             catch (Exception e)
@@ -2171,6 +2182,8 @@ namespace Tbot
                 {
                     var time = GetDateTime();
                     var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoCargo.CheckIntervalMin, (int)settings.Brain.AutoCargo.CheckIntervalMax);
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
@@ -2309,6 +2322,8 @@ namespace Tbot
                 {
                     var time = GetDateTime();
                     var interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoRepatriate.CheckIntervalMin, (int)settings.Brain.AutoRepatriate.CheckIntervalMax);
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
@@ -2650,6 +2665,8 @@ namespace Tbot
                                 {
                                     DateTime time = GetDateTime();
                                     var interval = (((attack.ArriveIn * 1000) + (((attack.ArriveIn * 1000) / 100) * 30)) / 2) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                    if (interval <= 0)
+                                            interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                                     DateTime newTime = time.AddMilliseconds(interval);
                                     timers.Add(attack.ID.ToString(), new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
                                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "The fleet will be recalled at " + newTime.ToString());
@@ -2814,17 +2831,22 @@ namespace Tbot
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)
                                         {
                                             Coordinate destination;
-                                            if (settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems)
+                                            if ((bool)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Active)
                                             {
                                                 var rand = new Random();
 
+                                                int range = (int)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Range;
                                                 destination = new Coordinate
                                                 {
                                                     Galaxy = origin.Coordinate.Galaxy,
-                                                    System = rand.Next(origin.Coordinate.System - 1, origin.Coordinate.System + 2),
+                                                    System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
                                                     Position = 16,
                                                     Type = Celestials.DeepSpace
                                                 };
+                                                if (destination.System <= 0)
+                                                    destination.System = 499;
+                                                if (destination.System >= 500)
+                                                    destination.System = 1;
                                             }
                                             else
                                             {
@@ -2896,6 +2918,8 @@ namespace Tbot
                         interval = (int)((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
                     }
                     var time = GetDateTime();
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     DateTime newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
@@ -3022,22 +3046,27 @@ namespace Tbot
                         Celestial origin = dic[destination];
                         if (destination.Position == 16)
                         {
-                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;                            
-                            long pathfindersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class);
+                            ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;
+                            long pathfindersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Pathfinder);
                             Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + pathfindersToSend.ToString() + " " + Buildables.Pathfinder.ToString());
                             SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
                         }
                         else
                         {
-                            Debris debris = (celestials.Where(c => c.HasCoords(destination)).First() as Planet).Debris;
-                            long recyclersToSend = Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class);
-                            Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + recyclersToSend.ToString() + " " + Buildables.Recycler.ToString());
-                            SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+                            if (celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))))
+                            {
+                                Debris debris = (celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
+                                long recyclersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Recycler);
+                                Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Harvesting debris in " + destination.ToString() + " from " + origin.ToString() + " with " + recyclersToSend.ToString() + " " + Buildables.Recycler.ToString());
+                                SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+                            }                            
                         }
                     }
 
                     int interval = (int)Helpers.CalcRandomInterval((int)settings.AutoHarvest.CheckIntervalMin, (int)settings.AutoHarvest.CheckIntervalMax);
                     var time = GetDateTime();
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     DateTime newTime = time.AddMilliseconds(interval);
                     timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
                     Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());
@@ -3049,6 +3078,8 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.Harvest, "Stacktrace: " + e.StackTrace);
                 int interval = (int)Helpers.CalcRandomInterval((int)settings.AutoHarvest.CheckIntervalMin, (int)settings.AutoHarvest.CheckIntervalMax);
                 var time = GetDateTime();
+                if (interval <= 0)
+                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                 DateTime newTime = time.AddMilliseconds(interval);
                 timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
                 Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());

@@ -11,7 +11,7 @@
 		}
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"NewApiHostname": "http://localhost:8080",
@@ -124,7 +124,9 @@
 					"Type": "Planet"
 				}
 			],
+			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
+			"BuildDepositIfFull": false,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -162,6 +164,8 @@
 					"Type": "Moon"
 				}
 			},
+			"OptimizeForStart": true,
+			"EnsureExpoSlots": true,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -225,7 +229,10 @@
 			"MainShip": "LargeCargo",
 			"MinCargosToSend": 1000,
 			"WaitForAllExpeditions": false,
-			"SplitExpeditionsBetweenSystems": false,
+			"SplitExpeditionsBetweenSystems": {
+				"Active": false,
+				"Range": 1
+			},
 			"RandomizeOrder": true,
 			"FuelToCarry": 20000,
 			"Origin": [
