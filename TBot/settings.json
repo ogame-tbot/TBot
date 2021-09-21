@@ -39,7 +39,9 @@
 			"OnlyMoons": true,
 			"ForceUnsafe": true,
 			"DeutToLeave": 200000,
-			"Recall": true
+			"Recall": true,
+			"RunAutomineFirst": true,
+			"RunAutoResearchFirst": true
 		}
 	},
 	"Defender": {
@@ -212,6 +214,8 @@
 					"Type": "Planet"
 				}
 			],
+			"RunAutoMineFirst": true,
+			"RunAutoResearchFirst": true,
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},
