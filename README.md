@@ -7,7 +7,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.1!
+TBot supports Ogame v8.3!
 
 Feel free to publish issues or pull requests
 
@@ -102,7 +102,7 @@ TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Jus
 ## Development Plans
 A web config interface should be written soon or later, as well as a database persistence.
 
-Also, a proper documentation about how to deal with settings.json should be written sooner or later.
+Also, a proper documentation about how to deal with settings.json would no doubt be helpful, especially for new users.
 
 As for translations, at the moment the bot is not really suitable for "production" and should be used only for testing and hacking purposes. If you are a dev, you can probably cope with my brokenish English. If and when this project becomes something bigger than what it currently is, I may reconsider this.
 

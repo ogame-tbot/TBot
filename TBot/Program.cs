@@ -1576,18 +1576,25 @@ namespace Tbot
                     var time = GetDateTime();
                     celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                     long interval;
-                    if (celestial.Constructions.ResearchCountdown != 0)
-                        interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    else if (fleetId != 0)
+                    try
                     {
-                        fleets = UpdateFleets();
-                        var fleet = fleets.Single(f => f.ID == fleetId);
-                        interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        if (celestial.Constructions.ResearchCountdown != 0)
+                            interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        else if (fleetId != 0)
+                        {
+                            fleets = UpdateFleets();
+                            var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+                            interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        }
+                        else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
+                            interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        else
+                            interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     }
-                    else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
-                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    else
+                    catch
+                    {
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
+                    }                    
                     if (interval <= 0)
                         interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
@@ -1934,6 +1941,29 @@ namespace Tbot
                     else
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                        if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
+                        {
+                            float oneDayProd = 1;
+                            switch (xBuildableToBuild)
+                            {
+                                case Buildables.MetalMine:
+                                    oneDayProd = Helpers.CalcMetalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)2.5 * 24;
+                                    break;
+                                case Buildables.CrystalMine:
+                                    oneDayProd = Helpers.CalcCrystalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)1.5 * 24;
+                                    break;
+                                case Buildables.DeuteriumSynthesizer:
+                                    oneDayProd = Helpers.CalcDeuteriumProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) * 24;
+                                    break;
+                                default:
+                                    
+                                    break;
+                            }
+                            long cost = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild).ConvertedDeuterium;
+                            double daysOfReturn = cost / oneDayProd;
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
+                        }
+                            
                         result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
                     }
 
