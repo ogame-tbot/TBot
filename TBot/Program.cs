@@ -31,6 +31,7 @@ namespace Tbot
         static volatile Researches researches;
         static volatile ConcurrentDictionary<Feature, bool> features;
         static volatile List<FleetSchedule> scheduledFleets;
+        static volatile Staff staff;
         static volatile bool isSleeping;
 
         /*Lorenzo 07/02/2021
@@ -126,6 +127,7 @@ namespace Tbot
                 serverInfo = UpdateServerInfo();
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
+                staff = UpdateStaff();
 
                 UpdateTitle(false);
 
@@ -493,6 +495,11 @@ namespace Tbot
             return ogamedService.GetResearches();
         }
 
+        private static Staff UpdateStaff()
+        {
+            return ogamedService.GetStaff();
+        }
+
         private static List<Celestial> GetPlanets()
         {
             List<Celestial> localPlanets = celestials ?? new();
@@ -606,8 +613,9 @@ namespace Tbot
                 serverInfo = UpdateServerInfo();
                 serverData = UpdateServerData();
                 userInfo = UpdateUserInfo();
+                staff = UpdateStaff();
                 celestials = UpdateCelestials();
-                researches = UpdateResearches();
+                researches = UpdateResearches();                
             }
             string title = "[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank + " - http://" + (string)settings.General.Host + ":" + (string)settings.General.Port;
             if ((bool)settings.General.Proxy.Enabled)
@@ -1282,6 +1290,13 @@ namespace Tbot
             {
                 try
                 {
+                    /*
+                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
+                        AutoMine(null);
+                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
+                        AutoResearch(null);
+                    */
+
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
                     Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
 
@@ -1562,18 +1577,25 @@ namespace Tbot
                     var time = GetDateTime();
                     celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                     long interval;
-                    if (celestial.Constructions.ResearchCountdown != 0)
-                        interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    else if (fleetId != 0)
+                    try
                     {
-                        fleets = UpdateFleets();
-                        var fleet = fleets.Single(f => f.ID == fleetId);
-                        interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        if (celestial.Constructions.ResearchCountdown != 0)
+                            interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        else if (fleetId != 0)
+                        {
+                            fleets = UpdateFleets();
+                            var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+                            interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        }
+                        else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
+                            interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        else
+                            interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     }
-                    else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
-                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    else
+                    catch
+                    {
                         interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
+                    }                    
                     if (interval <= 0)
                         interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
@@ -1751,7 +1773,7 @@ namespace Tbot
             try
             {
                 //Check if it is necessary to build a Deuterium tank
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildDeuteriumTank((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxDeuteriumTank, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1763,7 +1785,7 @@ namespace Tbot
 
 
                 //Check if it is necessary to build a Crystal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildCrystalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxCrystalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1774,7 +1796,7 @@ namespace Tbot
                 }
 
                 //Check if it is necessary to build a Metal storage
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMetalStorage((Planet)xCelestial, (int)settings.Brain.AutoMine.MaxMetalStorage, (int)settings.Brain.AutoMine.DepositHours, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull, (bool)settings.Brain.AutoMine.BuildDepositIfFull))
                 {
                     //Yes, need it
 
@@ -1813,7 +1835,7 @@ namespace Tbot
         {
             try
             {
-                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class);
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
@@ -1841,31 +1863,31 @@ namespace Tbot
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
                 {
                     //Manage the need of nanites
                     xBuildable = Buildables.NaniteFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildRoboticFactory(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxRoboticsFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull))
                 {
                     //Manage the need of robotics factory
                     xBuildable = Buildables.RoboticsFactory;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && !xCelestial.HasProduction())
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildShipyard(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxShipyard, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
                 {
                     //Manage the need of shipyard
                     xBuildable = Buildables.Shipyard;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class) && xCelestial.Constructions.ResearchID == 0)
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildResearchLab(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxResearchLab, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && xCelestial.Constructions.ResearchID == 0)
                 {
                     //Manage the need of lab
                     xBuildable = Buildables.ResearchLab;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class))
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildMissileSilo(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxMissileSilo, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull))
                 {
                     //Manage the need of missile silo
                     xBuildable = Buildables.MissileSilo;
@@ -1920,6 +1942,29 @@ namespace Tbot
                     else
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
+                        if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
+                        {
+                            float oneDayProd = 1;
+                            switch (xBuildableToBuild)
+                            {
+                                case Buildables.MetalMine:
+                                    oneDayProd = Helpers.CalcMetalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)2.5 * 24;
+                                    break;
+                                case Buildables.CrystalMine:
+                                    oneDayProd = Helpers.CalcCrystalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)1.5 * 24;
+                                    break;
+                                case Buildables.DeuteriumSynthesizer:
+                                    oneDayProd = Helpers.CalcDeuteriumProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) * 24;
+                                    break;
+                                default:
+                                    
+                                    break;
+                            }
+                            long cost = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild).ConvertedDeuterium;
+                            double daysOfReturn = cost / oneDayProd;
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
+                        }
+                            
                         result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
                     }
 
@@ -1999,11 +2044,11 @@ namespace Tbot
 
                                 var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
                                 var flightTime = flightPrediction.Time;
-                                float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
                                 var metProdInFlightTime = metProdInASecond * flightTime;
-                                float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
                                 var criProdInFlightTime = criProdInASecond * flightTime;
-                                float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class) / (float)60 / (float)60;
+                                float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
                                 var deutProdInFlightTime = deutProdInASecond * flightTime;
 
                                 if (
@@ -2210,6 +2255,13 @@ namespace Tbot
                     xaSem[Feature.Brain].Release();
                     return;
                 }
+
+                /*
+                if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
+                    AutoMine(null);
+                if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
+                    AutoResearch(null);
+                */
 
                 if (settings.Brain.AutoRepatriate.Target)
                 {

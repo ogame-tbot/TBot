@@ -790,4 +790,29 @@ namespace Tbot.Model
 		public bool LoginOnly { get; set; }
     }
 
+    public class Staff
+    {
+        public Staff()
+        {
+            Commander = false;
+            Admiral = false;
+            Engineer = false;
+            Geologist = false;
+            Technocrat = false;
+        }
+        public bool Commander { get; set; }
+        public bool Admiral { get; set; }
+        public bool Engineer { get; set; }
+        public bool Geologist { get; set; }
+        public bool Technocrat { get; set; }
+        public bool IsFull {
+            get {
+                if (Commander && Admiral && Engineer && Geologist && Technocrat)
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+
 }
