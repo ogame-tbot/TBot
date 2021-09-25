@@ -2883,7 +2883,7 @@ namespace Tbot
                                             Enum.TryParse<Buildables>(settings.Expeditions.AutoSendExpeditions.SecondaryShip, out secondaryShip);
                                             if (secondaryShip != Buildables.Null)
                                             {
-                                                long secondaryToSend = Math.Round(origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin, );
+                                                long secondaryToSend = (long)Math.Round(origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin, 0, MidpointRounding.ToZero);
                                                 if (secondaryToSend < (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend)
                                                 {
                                                     Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend);
