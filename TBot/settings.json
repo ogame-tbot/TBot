@@ -126,6 +126,7 @@
 			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
 			"BuildDepositIfFull": false,
+			"MaxDaysOfInvestmentReturn": 365,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},

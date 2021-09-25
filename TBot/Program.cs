@@ -1834,7 +1834,7 @@ namespace Tbot
         {
             try
             {
-                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull, (bool)settings.Brain.AutoMine.OptimizeForStart, (int)settings.Brain.AutoMine.MaxDaysOfInvestmentReturn);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
@@ -1919,8 +1919,14 @@ namespace Tbot
         {
             try
             {
-                Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Best building for celestial " + xCelestial.ToString() + ": " + xBuildableToBuild.ToString());
+                if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
+                {
+                    float daysOfReturn = Helpers.CalcDaysOfInvestmentReturn(xCelestial as Planet, xBuildableToBuild, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
+                }
 
+                Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
                 if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
                 {
                     bool result = false;
@@ -1940,30 +1946,7 @@ namespace Tbot
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
-                        if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
-                        {
-                            float oneDayProd = 1;
-                            switch (xBuildableToBuild)
-                            {
-                                case Buildables.MetalMine:
-                                    oneDayProd = Helpers.CalcMetalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)2.5 * 24;
-                                    break;
-                                case Buildables.CrystalMine:
-                                    oneDayProd = Helpers.CalcCrystalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)1.5 * 24;
-                                    break;
-                                case Buildables.DeuteriumSynthesizer:
-                                    oneDayProd = Helpers.CalcDeuteriumProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) * 24;
-                                    break;
-                                default:
-                                    
-                                    break;
-                            }
-                            long cost = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild).ConvertedDeuterium;
-                            double daysOfReturn = cost / oneDayProd;
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
-                        }
-                            
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());                            
                         result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
                     }
 
