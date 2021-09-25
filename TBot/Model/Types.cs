@@ -408,6 +408,45 @@ namespace Tbot.Model
         public long Crawler { get; set; }
         public long Reaper { get; set; }
         public long Pathfinder { get; set; }
+
+        public Ships(
+            long lightFighter = 0,
+            long heavyFighter = 0,
+            long cruiser = 0,
+            long battleship = 0,
+            long battlecruiser = 0,
+            long bomber = 0,
+            long destroyer = 0,
+            long deathstar = 0,
+            long smallCargo = 0,
+            long largeCargo = 0,
+            long colonyShip = 0,
+            long recycler = 0,
+            long espionageProbe = 0,
+            long solarSatellite = 0,
+            long crawler = 0,
+            long reaper = 0,
+            long pathfinder = 0
+        )
+        {
+            LightFighter = lightFighter;
+            HeavyFighter = heavyFighter;
+            Cruiser = cruiser;
+            Battleship = battleship;
+            Battlecruiser = battlecruiser;
+            Bomber = bomber;
+            Destroyer = destroyer;
+            Deathstar = deathstar;
+            SmallCargo = smallCargo;
+            LargeCargo = largeCargo;
+            ColonyShip = colonyShip;
+            Recycler = recycler;
+            EspionageProbe = espionageProbe;
+            SolarSatellite = solarSatellite;
+            Crawler = crawler;
+            Reaper = reaper;
+            Pathfinder = pathfinder;
+        }
         public bool IsEmpty()
         {
             if

@@ -2863,7 +2863,25 @@ namespace Tbot
                                         Ships fleet;
                                         if ((bool)settings.Expeditions.AutoSendExpeditions.ManualShips.Active)
                                         {
-                                            fleet = (Ships)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships;
+                                            fleet = new(
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.LightFighter,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.HeavyFighter,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Cruiser,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Battleship,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Battlecruiser,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Bomber,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Destroyer,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Deathstar,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.SmallCargo,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.LargeCargo,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.ColonyShip,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Recycler,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.EspionageProbe,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.SolarSatellite,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Crawler,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Reaper,
+                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Pathfinder
+                                            );
                                             if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
                                             {
                                                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: not enough ships in origin " + origin.ToString());
@@ -2896,8 +2914,9 @@ namespace Tbot
                                                     Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend);
                                                     continue;
                                                 }
+                                                else
+                                                    fleet.Add(secondaryShip, secondaryToSend);
                                             }
-
                                         }                                        
 
                                         Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSendFromThisOrigin.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
