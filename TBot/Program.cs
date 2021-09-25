@@ -1948,13 +1948,19 @@ namespace Tbot
                     else
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());                            
-                        result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
+                        result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);                                               
                     }
 
                     if (result)
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                    {
+                        xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
+                        if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                        else
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                    }                        
                     else
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction.");
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
                 }
                 else
                 {
