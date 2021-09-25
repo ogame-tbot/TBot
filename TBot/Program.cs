@@ -1849,14 +1849,14 @@ namespace Tbot
         {
             try
             {
-                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets)
+                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanites)
                 {
                     if (xCelestial.Facilities.RoboticsFactory < 10 && xCelestial.Facilities.RoboticsFactory < (int)settings.Brain.AutoMine.MaxRoboticsFactory)
                     {
                         xBuildable = Buildables.RoboticsFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
-                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
+                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
                     {
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
