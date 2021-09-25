@@ -237,29 +237,29 @@
 				"Reaper": 1,
 				"Pathfinder": 1,
 				"EspionageProbe": 1
+			}
+		},
+		"WaitForAllExpeditions": false,
+		"SplitExpeditionsBetweenSystems": {
+			"Active": false,
+			"Range": 1
+		},
+		"RandomizeOrder": true,
+		"FuelToCarry": 20000,
+		"Origin": [
+			{
+				"Galaxy": 5,
+				"System": 63,
+				"Position": 8,
+				"Type": "Moon"
 			},
-			"WaitForAllExpeditions": false,
-			"SplitExpeditionsBetweenSystems": {
-				"Active": false,
-				"Range": 1
-			},
-			"RandomizeOrder": true,
-			"FuelToCarry": 20000,
-			"Origin": [
-				{
-					"Galaxy": 5,
-					"System": 63,
-					"Position": 8,
-					"Type": "Moon"
-				},
-				{
-					"Galaxy": 5,
-					"System": 64,
-					"Position": 8,
-					"Type": "Moon"
-				}
-			]
-		}
+			{
+				"Galaxy": 5,
+				"System": 64,
+				"Position": 8,
+				"Type": "Moon"
+			}
+		]
 	},
 	"AutoHarvest": {
 		"Active": false,
