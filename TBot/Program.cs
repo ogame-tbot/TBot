@@ -2768,13 +2768,13 @@ namespace Tbot
                     return;
                 }
 
-                if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
+                if ((bool)settings.Expeditions.Active)
                 {
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
                     serverData = ogamedService.GetServerData();
                     int expsToSend;
-                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    if ((bool)settings.Expeditions.WaitForAllExpeditions)
                     {
                         if (slots.ExpInUse == 0)
                             expsToSend = slots.ExpTotal;
@@ -2793,11 +2793,11 @@ namespace Tbot
                             if (slots.Free > 0)
                             {
                                 List<Celestial> origins = new();
-                                if (settings.Expeditions.AutoSendExpeditions.Origin.Length > 0)
+                                if (settings.Expeditions.Origin.Length > 0)
                                 {
                                     try
                                     {
-                                        foreach (var origin in settings.Expeditions.AutoSendExpeditions.Origin)
+                                        foreach (var origin in settings.Expeditions.Origin)
                                         {
                                             Coordinate customOriginCoords = new(
                                                 (int)origin.Galaxy,
@@ -2834,7 +2834,7 @@ namespace Tbot
                                         .First()
                                     );
                                 }
-                                if ((bool)settings.Expeditions.AutoSendExpeditions.RandomizeOrder)
+                                if ((bool)settings.Expeditions.RandomizeOrder)
                                 {
                                     origins = origins.Shuffle().ToList();
                                 }
@@ -2861,26 +2861,26 @@ namespace Tbot
                                     else
                                     {
                                         Ships fleet;
-                                        if ((bool)settings.Expeditions.AutoSendExpeditions.ManualShips.Active)
+                                        if ((bool)settings.Expeditions.ManualShips.Active)
                                         {
                                             fleet = new(
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.LightFighter,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.HeavyFighter,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Cruiser,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Battleship,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Battlecruiser,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Bomber,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Destroyer,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Deathstar,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.SmallCargo,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.LargeCargo,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.ColonyShip,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Recycler,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.EspionageProbe,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.SolarSatellite,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Crawler,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Reaper,
-                                                (long)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships.Pathfinder
+                                                (long)settings.Expeditions.ManualShips.Ships.LightFighter,
+                                                (long)settings.Expeditions.ManualShips.Ships.HeavyFighter,
+                                                (long)settings.Expeditions.ManualShips.Ships.Cruiser,
+                                                (long)settings.Expeditions.ManualShips.Ships.Battleship,
+                                                (long)settings.Expeditions.ManualShips.Ships.Battlecruiser,
+                                                (long)settings.Expeditions.ManualShips.Ships.Bomber,
+                                                (long)settings.Expeditions.ManualShips.Ships.Destroyer,
+                                                (long)settings.Expeditions.ManualShips.Ships.Deathstar,
+                                                (long)settings.Expeditions.ManualShips.Ships.SmallCargo,
+                                                (long)settings.Expeditions.ManualShips.Ships.LargeCargo,
+                                                (long)settings.Expeditions.ManualShips.Ships.ColonyShip,
+                                                (long)settings.Expeditions.ManualShips.Ships.Recycler,
+                                                (long)settings.Expeditions.ManualShips.Ships.EspionageProbe,
+                                                (long)settings.Expeditions.ManualShips.Ships.SolarSatellite,
+                                                (long)settings.Expeditions.ManualShips.Ships.Crawler,
+                                                (long)settings.Expeditions.ManualShips.Ships.Reaper,
+                                                (long)settings.Expeditions.ManualShips.Ships.Pathfinder
                                             );
                                             if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
                                             {
@@ -2891,7 +2891,7 @@ namespace Tbot
                                         else
                                         {
                                             Buildables primaryShip = Buildables.LargeCargo;
-                                            Enum.TryParse<Buildables>(settings.Expeditions.AutoSendExpeditions.PrimaryShip.ToString(), out primaryShip);
+                                            Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), out primaryShip);
                                             if (primaryShip == Buildables.Null)
                                             {
                                                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
@@ -2899,19 +2899,30 @@ namespace Tbot
                                             }
 
                                             fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
-                                            if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.AutoSendExpeditions.MinPrimaryToSend)
+                                            if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.MinPrimaryToSend)
                                             {
-                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.AutoSendExpeditions.MinPrimaryToSend);
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.MinPrimaryToSend);
                                                 continue;
                                             }
                                             Buildables secondaryShip = Buildables.Null;
-                                            Enum.TryParse<Buildables>(settings.Expeditions.AutoSendExpeditions.SecondaryShip, out secondaryShip);
+                                            Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, out secondaryShip);
                                             if (secondaryShip != Buildables.Null)
                                             {
-                                                long secondaryToSend = (long)Math.Round(origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin, 0, MidpointRounding.ToZero);
-                                                if (secondaryToSend < (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend)
+                                                long secondaryToSend = Math.Min(
+                                                    (long)Math.Round(
+                                                        origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin,
+                                                        0,
+                                                        MidpointRounding.ToZero
+                                                    ),
+                                                    (long)Math.Round(
+                                                        fleet.GetAmount(primaryShip) * (float)settings.Expeditions.SecondaryToPrimaryRatio,
+                                                        0,
+                                                        MidpointRounding.ToZero
+                                                    )
+                                                );
+                                                if (secondaryToSend < (long)settings.Expeditions.MinSecondaryToSend)
                                                 {
-                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend);
+                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.MinSecondaryToSend);
                                                     continue;
                                                 }
                                                 else
@@ -2923,11 +2934,11 @@ namespace Tbot
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)
                                         {
                                             Coordinate destination;
-                                            if ((bool)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Active)
+                                            if ((bool)settings.Expeditions.SplitExpeditionsBetweenSystems.Active)
                                             {
                                                 var rand = new Random();
 
-                                                int range = (int)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Range;
+                                                int range = (int)settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
                                                 destination = new Coordinate
                                                 {
                                                     Galaxy = origin.Coordinate.Galaxy,
@@ -2952,9 +2963,9 @@ namespace Tbot
                                             }
                                             slots = UpdateSlots();
                                             Resources payload = new();
-                                            if ((long)settings.Expeditions.AutoSendExpeditions.FuelToCarry > 0)
+                                            if ((long)settings.Expeditions.FuelToCarry > 0)
                                             {
-                                                payload.Deuterium = (long)settings.Expeditions.AutoSendExpeditions.FuelToCarry;
+                                                payload.Deuterium = (long)settings.Expeditions.FuelToCarry;
                                             }
                                             if (slots.ExpFree > 0)
                                             {
@@ -2986,7 +2997,7 @@ namespace Tbot
                     List<Fleet> orderedFleets = fleets
                         .Where(fleet => fleet.Mission == Missions.Expedition)
                         .ToList();
-                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    if ((bool)settings.Expeditions.WaitForAllExpeditions)
                     {
                         orderedFleets = orderedFleets
                             .OrderByDescending(fleet => fleet.BackIn)
