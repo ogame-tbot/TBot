@@ -1488,7 +1488,7 @@ namespace Tbot.Includes
             else return float.MaxValue;
         }
 
-        public static Buildables GetNextLunarFacilityToBuild(Moon moon, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
+        public static Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
         {
             if (ShouldBuildLunarBase(moon, maxLunarBase))
                 return Buildables.LunarBase;
@@ -1496,7 +1496,7 @@ namespace Tbot.Includes
                 return Buildables.RoboticsFactory;
             if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
                 return Buildables.SensorPhalanx;
-            if (ShouldBuildJumpGate(moon, maxJumpGate))
+            if (ShouldBuildJumpGate(moon, maxJumpGate, researches))
                 return Buildables.JumpGate;
             if (ShouldBuildShipyard(moon, maxShipyard))
                 return Buildables.Shipyard;
@@ -1596,7 +1596,7 @@ namespace Tbot.Includes
             var nextNanitesLevel = GetNextLevel(celestial, Buildables.NaniteFactory);
             var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
 
-            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 10)
+            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10)
                 return true;
             else
                 return false;
@@ -1616,17 +1616,17 @@ namespace Tbot.Includes
         {
             var nextSensorPhalanxLevel = GetNextLevel(moon, Buildables.SensorPhalanx);
 
-            if (nextSensorPhalanxLevel <= maxLevel && moon.Fields.Free > 1)
+            if (nextSensorPhalanxLevel <= maxLevel && moon.Facilities.LunarBase >= 1 && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1)
+        public static bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1, Researches researches = null)
         {
             var nextJumpGateLevel = GetNextLevel(moon, Buildables.JumpGate);
 
-            if (nextJumpGateLevel <= maxLevel && moon.Fields.Free > 1)
+            if (nextJumpGateLevel <= maxLevel && moon.Facilities.LunarBase >= 1 && researches.HyperspaceTechnology >= 7 && moon.Fields.Free > 1)
                 return true;
             else
                 return false;

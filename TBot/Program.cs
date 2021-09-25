@@ -1702,6 +1702,7 @@ namespace Tbot
 
                         xBuildable = Helpers.GetNextLunarFacilityToBuild(
                             tempCelestial as Moon,
+                            researches,
                             (int)settings.Brain.AutoMine.MaxLunarBase,
                             (int)settings.Brain.AutoMine.MaxLunarRoboticsFactory,
                             (int)settings.Brain.AutoMine.MaxSensorPhalanx,
