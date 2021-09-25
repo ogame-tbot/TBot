@@ -2926,7 +2926,14 @@ namespace Tbot
                                                     continue;
                                                 }
                                                 else
+                                                {
                                                     fleet.Add(secondaryShip, secondaryToSend);
+                                                    if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                                    {
+                                                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: not enough ships in origin " + origin.ToString());
+                                                        continue;
+                                                    }
+                                                }                                                    
                                             }
                                         }                                        
 
