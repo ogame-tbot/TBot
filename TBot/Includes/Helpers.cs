@@ -543,12 +543,12 @@ namespace Tbot.Includes
                 return Buildables.Null;
         }
 
-        public static Ships CalcExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, int ecoSpeed, long topOnePoints, int hyperspaceTech, Classes playerClass)
+        public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int ecoSpeed, long topOnePoints, int hyperspaceTech, Classes playerClass)
         {
-            Ships ideal = CalcIdealExpeditionShips(buildable, ecoSpeed, topOnePoints, hyperspaceTech, playerClass);
+            Ships ideal = CalcIdealExpeditionShips(primaryShip, ecoSpeed, topOnePoints, hyperspaceTech, playerClass);
             foreach (PropertyInfo prop in fleet.GetType().GetProperties())
             {
-                if (prop.Name == buildable.ToString())
+                if (prop.Name == primaryShip.ToString())
                 {
                     long availableVal = (long)prop.GetValue(fleet);
                     long idealVal = (long)prop.GetValue(ideal);
@@ -562,9 +562,9 @@ namespace Tbot.Includes
             return ideal;
         }
 
-        public static Ships CalcExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
+        public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
         {
-            return CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata.Speed, serverdata.TopScore, researches.HyperspaceTechnology, playerClass);
+            return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata.Speed, serverdata.TopScore, researches.HyperspaceTechnology, playerClass);
         }
 
         public static bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber)
@@ -581,9 +581,9 @@ namespace Tbot.Includes
             return false;
         }
 
-        public static Ships CalcFullExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
+        public static Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
         {
-            Ships oneExpeditionFleet = CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata, researches, playerClass);
+            Ships oneExpeditionFleet = CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata, researches, playerClass);
 
             if (MayAddShipToExpedition(fleet, Buildables.EspionageProbe, expeditionsNumber))
                 oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);

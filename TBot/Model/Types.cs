@@ -496,6 +496,7 @@ namespace Tbot.Model
             tempShips.Crawler = 0;
             return tempShips;
         }
+
         public Ships Add(Buildables buildable, long quantity)
         {
             foreach (PropertyInfo prop in this.GetType().GetProperties())
@@ -534,6 +535,18 @@ namespace Tbot.Model
                 }
             }
             return 0;
+        }
+
+        public bool HasAtLeast(Ships ships, long times = 1)
+        {
+            foreach (PropertyInfo prop in this.GetType().GetProperties())
+            {
+                if ((long)prop.GetValue(this) * times < (long)prop.GetValue(ships))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public override string ToString()

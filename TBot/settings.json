@@ -226,8 +226,20 @@
 		"Active": true,
 		"AutoSendExpeditions": {
 			"Active": true,
-			"MainShip": "LargeCargo",
-			"MinCargosToSend": 1000,
+			"PrimaryShip": "LargeCargo",
+			"MinPrimaryToSend": 1000,
+			"SecondaryShip": "Null",
+			"MinSecondaryToSend": 0,
+			"ManualShips": {
+				"Active": false,
+				"Ships": {
+					"LargeCargo": 1300,
+					"LightFighter": 26000,
+					"Reaper": 1,
+					"Pathfinder": 1,
+					"EspionageProbe": 1
+				}
+			},
 			"WaitForAllExpeditions": false,
 			"SplitExpeditionsBetweenSystems": {
 				"Active": false,

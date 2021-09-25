@@ -2853,13 +2853,45 @@ namespace Tbot
                                     }
                                     else
                                     {
-                                        Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
-                                        Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
-                                        if (fleet.GetAmount(mainShip) < (long)settings.Expeditions.AutoSendExpeditions.MinCargosToSend)
+                                        Ships fleet;
+                                        if ((bool)settings.Expeditions.AutoSendExpeditions.ManualShips.Active)
                                         {
-                                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: cargos under set number");
-                                            continue;
+                                            fleet = (Ships)settings.Expeditions.AutoSendExpeditions.ManualShips.Ships;
+                                            if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: not enough ships in origin " + origin.ToString());
+                                                continue;
+                                            }
                                         }
+                                        else
+                                        {
+                                            Buildables primaryShip = Buildables.LargeCargo;
+                                            Enum.TryParse<Buildables>(settings.Expeditions.AutoSendExpeditions.PrimaryShip.ToString(), out primaryShip);
+                                            if (primaryShip == Buildables.Null)
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
+                                                continue;
+                                            }
+
+                                            fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
+                                            if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.AutoSendExpeditions.MinPrimaryToSend)
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.AutoSendExpeditions.MinPrimaryToSend);
+                                                continue;
+                                            }
+                                            Buildables secondaryShip = Buildables.Null;
+                                            Enum.TryParse<Buildables>(settings.Expeditions.AutoSendExpeditions.SecondaryShip, out secondaryShip);
+                                            if (secondaryShip != Buildables.Null)
+                                            {
+                                                long secondaryToSend = Math.Round(origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin, );
+                                                if (secondaryToSend < (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend)
+                                                {
+                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.AutoSendExpeditions.MinSecondaryToSend);
+                                                    continue;
+                                                }
+                                            }
+
+                                        }                                        
 
                                         Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSendFromThisOrigin.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)
