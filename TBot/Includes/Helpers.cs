@@ -791,8 +791,8 @@ namespace Tbot.Includes
             switch (buildable)
             {
                 case Buildables.MetalMine:
-                    output.Metal = (long)(60 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(15 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(60 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(15 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -802,8 +802,8 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.CrystalMine:
-                    output.Metal = (long)(48 * Math.Pow(1.6, (level - 1)));
-                    output.Crystal = (long)(24 * Math.Pow(1.6, (level - 1)));
+                    output.Metal = (long)Math.Round(48 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(24 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -813,8 +813,8 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.DeuteriumSynthesizer:
-                    output.Metal = (long)(225 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(75 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(225 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -824,13 +824,13 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((20 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.SolarPlant:
-                    output.Metal = (long)(75 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(30 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(30 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.FusionReactor:
-                    output.Metal = (long)(900 * Math.Pow(1.8, (level - 1)));
-                    output.Crystal = (long)(360 * Math.Pow(1.8, (level - 1)));
-                    output.Deuterium = (long)(180 * Math.Pow(1.8, (level - 1)));
+                    output.Metal = (long)Math.Round(900 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(360 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Deuterium = (long)Math.Round(180 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.MetalStorage:
                     output.Metal = (long)(500 * Math.Pow(2, level));
