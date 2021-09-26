@@ -31,22 +31,22 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
-  * AutoSendExpeditions: TBot automatically optimizes expeditions for your account, sending them from the origin(s) setted in settings.json
+  * TBot can automatically optimize expeditions for your account, sending them from the one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
-  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! An origin can be set in settings.json to send the necessary resources from.
+  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
-  * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time
+  * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time (deploy with recall is supported!)
 * Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a proxy
-  * Fill the settings in settings.json. The settings are quite self-explainatory. If you need assistance ping me on Discord
+  * Fill the settings in settings.json. The settings are quite self-explainatory.
 * LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
 ## Settings Hot Reload
