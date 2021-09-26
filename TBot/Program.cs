@@ -2901,8 +2901,12 @@ namespace Tbot
                                             fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
                                             if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.MinPrimaryToSend)
                                             {
-                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.MinPrimaryToSend);
-                                                continue;
+                                                fleet.SetAmount(primaryShip, (long)settings.Expeditions.MinPrimaryToSend);
+                                                if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                                {
+                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.MinPrimaryToSend);
+                                                    continue;
+                                                }                                                
                                             }
                                             Buildables secondaryShip = Buildables.Null;
                                             Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, out secondaryShip);

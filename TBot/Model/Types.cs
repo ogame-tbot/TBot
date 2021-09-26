@@ -576,6 +576,18 @@ namespace Tbot.Model
             return 0;
         }
 
+        public void SetAmount(Buildables buildable, long number)
+        {
+            foreach (PropertyInfo prop in this.GetType().GetProperties())
+            {
+                if (prop.Name == buildable.ToString())
+                {
+                    prop.SetValue(this, number);
+                    return;
+                }
+            }
+        }
+
         public bool HasAtLeast(Ships ships, long times = 1)
         {
             foreach (PropertyInfo prop in this.GetType().GetProperties())
