@@ -408,6 +408,45 @@ namespace Tbot.Model
         public long Crawler { get; set; }
         public long Reaper { get; set; }
         public long Pathfinder { get; set; }
+
+        public Ships(
+            long lightFighter = 0,
+            long heavyFighter = 0,
+            long cruiser = 0,
+            long battleship = 0,
+            long battlecruiser = 0,
+            long bomber = 0,
+            long destroyer = 0,
+            long deathstar = 0,
+            long smallCargo = 0,
+            long largeCargo = 0,
+            long colonyShip = 0,
+            long recycler = 0,
+            long espionageProbe = 0,
+            long solarSatellite = 0,
+            long crawler = 0,
+            long reaper = 0,
+            long pathfinder = 0
+        )
+        {
+            LightFighter = lightFighter;
+            HeavyFighter = heavyFighter;
+            Cruiser = cruiser;
+            Battleship = battleship;
+            Battlecruiser = battlecruiser;
+            Bomber = bomber;
+            Destroyer = destroyer;
+            Deathstar = deathstar;
+            SmallCargo = smallCargo;
+            LargeCargo = largeCargo;
+            ColonyShip = colonyShip;
+            Recycler = recycler;
+            EspionageProbe = espionageProbe;
+            SolarSatellite = solarSatellite;
+            Crawler = crawler;
+            Reaper = reaper;
+            Pathfinder = pathfinder;
+        }
         public bool IsEmpty()
         {
             if
@@ -496,6 +535,7 @@ namespace Tbot.Model
             tempShips.Crawler = 0;
             return tempShips;
         }
+
         public Ships Add(Buildables buildable, long quantity)
         {
             foreach (PropertyInfo prop in this.GetType().GetProperties())
@@ -534,6 +574,30 @@ namespace Tbot.Model
                 }
             }
             return 0;
+        }
+
+        public void SetAmount(Buildables buildable, long number)
+        {
+            foreach (PropertyInfo prop in this.GetType().GetProperties())
+            {
+                if (prop.Name == buildable.ToString())
+                {
+                    prop.SetValue(this, number);
+                    return;
+                }
+            }
+        }
+
+        public bool HasAtLeast(Ships ships, long times = 1)
+        {
+            foreach (PropertyInfo prop in this.GetType().GetProperties())
+            {
+                if ((long)prop.GetValue(this) * times < (long)prop.GetValue(ships))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public override string ToString()

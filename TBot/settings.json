@@ -125,8 +125,9 @@
 				}
 			],
 			"OptimizeForStart": true,
-			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
+			"PrioritizeRobotsAndNanites": true,
 			"BuildDepositIfFull": false,
+			"MaxDaysOfInvestmentReturn": 365,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -224,32 +225,42 @@
 	},
 	"Expeditions": {
 		"Active": true,
-		"AutoSendExpeditions": {
-			"Active": true,
-			"MainShip": "LargeCargo",
-			"MinCargosToSend": 1000,
-			"WaitForAllExpeditions": false,
-			"SplitExpeditionsBetweenSystems": {
-				"Active": false,
-				"Range": 1
+		"PrimaryShip": "LargeCargo",
+		"MinPrimaryToSend": 1000,
+		"SecondaryShip": "Null",
+		"MinSecondaryToSend": 0,
+		"SecondaryToPrimaryRatio": 2,
+		"ManualShips": {
+			"Active": false,
+			"Ships": {
+				"LargeCargo": 1300,
+				"LightFighter": 26000,
+				"Reaper": 1,
+				"Pathfinder": 1,
+				"EspionageProbe": 1
+			}
+		},
+		"WaitForAllExpeditions": false,
+		"SplitExpeditionsBetweenSystems": {
+			"Active": false,
+			"Range": 1
+		},
+		"RandomizeOrder": true,
+		"FuelToCarry": 20000,
+		"Origin": [
+			{
+				"Galaxy": 5,
+				"System": 63,
+				"Position": 8,
+				"Type": "Moon"
 			},
-			"RandomizeOrder": true,
-			"FuelToCarry": 20000,
-			"Origin": [
-				{
-					"Galaxy": 5,
-					"System": 63,
-					"Position": 8,
-					"Type": "Moon"
-				},
-				{
-					"Galaxy": 5,
-					"System": 64,
-					"Position": 8,
-					"Type": "Moon"
-				}
-			]
-		}
+			{
+				"Galaxy": 5,
+				"System": 64,
+				"Position": 8,
+				"Type": "Moon"
+			}
+		]
 	},
 	"AutoHarvest": {
 		"Active": false,

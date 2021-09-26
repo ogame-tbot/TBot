@@ -1703,6 +1703,7 @@ namespace Tbot
 
                         xBuildable = Helpers.GetNextLunarFacilityToBuild(
                             tempCelestial as Moon,
+                            researches,
                             (int)settings.Brain.AutoMine.MaxLunarBase,
                             (int)settings.Brain.AutoMine.MaxLunarRoboticsFactory,
                             (int)settings.Brain.AutoMine.MaxSensorPhalanx,
@@ -1835,7 +1836,7 @@ namespace Tbot
         {
             try
             {
-                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+                xBuildable = Helpers.GetNextMineToBuild(xCelestial as Planet, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull, (bool)settings.Brain.AutoMine.OptimizeForStart, (int)settings.Brain.AutoMine.MaxDaysOfInvestmentReturn);
                 if (xBuildable != Buildables.Null)
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
             }
@@ -1850,14 +1851,14 @@ namespace Tbot
         {
             try
             {
-                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets)
+                if ((bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanites)
                 {
                     if (xCelestial.Facilities.RoboticsFactory < 10 && xCelestial.Facilities.RoboticsFactory < (int)settings.Brain.AutoMine.MaxRoboticsFactory)
                     {
                         xBuildable = Buildables.RoboticsFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
-                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
+                    else if (xCelestial.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && xCelestial.Facilities.NaniteFactory < (int)settings.Brain.AutoMine.MaxNaniteFactory && !xCelestial.HasProduction())
                     {
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
@@ -1920,8 +1921,14 @@ namespace Tbot
         {
             try
             {
-                Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Best building for celestial " + xCelestial.ToString() + ": " + xBuildableToBuild.ToString());
+                if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
+                {
+                    float daysOfReturn = Helpers.CalcDaysOfInvestmentReturn(xCelestial as Planet, xBuildableToBuild, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
+                }
 
+                Resources xCostBuildable = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild);
                 if (xCelestial.Resources.IsEnoughFor(xCostBuildable))
                 {
                     bool result = false;
@@ -1941,37 +1948,20 @@ namespace Tbot
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());
-                        if (xBuildableToBuild == Buildables.MetalMine || xBuildableToBuild == Buildables.CrystalMine || xBuildableToBuild == Buildables.DeuteriumSynthesizer)
-                        {
-                            float oneDayProd = 1;
-                            switch (xBuildableToBuild)
-                            {
-                                case Buildables.MetalMine:
-                                    oneDayProd = Helpers.CalcMetalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)2.5 * 24;
-                                    break;
-                                case Buildables.CrystalMine:
-                                    oneDayProd = Helpers.CalcCrystalProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)1.5 * 24;
-                                    break;
-                                case Buildables.DeuteriumSynthesizer:
-                                    oneDayProd = Helpers.CalcDeuteriumProduction(xCelestial as Planet, serverData.Speed, 1, researches, userInfo.Class, staff.Geologist, staff.IsFull) * 24;
-                                    break;
-                                default:
-                                    
-                                    break;
-                            }
-                            long cost = Helpers.CalcPrice(xBuildableToBuild, nLevelToBuild).ConvertedDeuterium;
-                            double daysOfReturn = cost / oneDayProd;
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Investment return: " + Math.Round(daysOfReturn, 2).ToString() + " days.");
-                        }
-                            
-                        result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building " + xBuildableToBuild.ToString() + " level " + nLevelToBuild.ToString() + " on " + xCelestial.ToString());                            
+                        result = ogamedService.BuildConstruction(xCelestial, xBuildableToBuild);                                               
                     }
 
                     if (result)
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                    {
+                        xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
+                        if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
+                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                        else
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                    }                        
                     else
-                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction.");
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
                 }
                 else
                 {
@@ -2779,13 +2769,13 @@ namespace Tbot
                     return;
                 }
 
-                if ((bool)settings.Expeditions.AutoSendExpeditions.Active)
+                if ((bool)settings.Expeditions.Active)
                 {
                     slots = UpdateSlots();
                     fleets = UpdateFleets();
                     serverData = ogamedService.GetServerData();
                     int expsToSend;
-                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    if ((bool)settings.Expeditions.WaitForAllExpeditions)
                     {
                         if (slots.ExpInUse == 0)
                             expsToSend = slots.ExpTotal;
@@ -2804,11 +2794,11 @@ namespace Tbot
                             if (slots.Free > 0)
                             {
                                 List<Celestial> origins = new();
-                                if (settings.Expeditions.AutoSendExpeditions.Origin.Length > 0)
+                                if (settings.Expeditions.Origin.Length > 0)
                                 {
                                     try
                                     {
-                                        foreach (var origin in settings.Expeditions.AutoSendExpeditions.Origin)
+                                        foreach (var origin in settings.Expeditions.Origin)
                                         {
                                             Coordinate customOriginCoords = new(
                                                 (int)origin.Galaxy,
@@ -2845,7 +2835,7 @@ namespace Tbot
                                         .First()
                                     );
                                 }
-                                if ((bool)settings.Expeditions.AutoSendExpeditions.RandomizeOrder)
+                                if ((bool)settings.Expeditions.RandomizeOrder)
                                 {
                                     origins = origins.Shuffle().ToList();
                                 }
@@ -2871,23 +2861,96 @@ namespace Tbot
                                     }
                                     else
                                     {
-                                        Buildables mainShip = Enum.Parse<Buildables>(settings.Expeditions.AutoSendExpeditions.MainShip.ToString() ?? "LargeCargo") ?? Buildables.LargeCargo;
-                                        Ships fleet = Helpers.CalcFullExpeditionShips(origin.Ships, mainShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
-                                        if (fleet.GetAmount(mainShip) < (long)settings.Expeditions.AutoSendExpeditions.MinCargosToSend)
+                                        Ships fleet;
+                                        if ((bool)settings.Expeditions.ManualShips.Active)
                                         {
-                                            Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: cargos under set number");
-                                            continue;
+                                            fleet = new(
+                                                (long)settings.Expeditions.ManualShips.Ships.LightFighter,
+                                                (long)settings.Expeditions.ManualShips.Ships.HeavyFighter,
+                                                (long)settings.Expeditions.ManualShips.Ships.Cruiser,
+                                                (long)settings.Expeditions.ManualShips.Ships.Battleship,
+                                                (long)settings.Expeditions.ManualShips.Ships.Battlecruiser,
+                                                (long)settings.Expeditions.ManualShips.Ships.Bomber,
+                                                (long)settings.Expeditions.ManualShips.Ships.Destroyer,
+                                                (long)settings.Expeditions.ManualShips.Ships.Deathstar,
+                                                (long)settings.Expeditions.ManualShips.Ships.SmallCargo,
+                                                (long)settings.Expeditions.ManualShips.Ships.LargeCargo,
+                                                (long)settings.Expeditions.ManualShips.Ships.ColonyShip,
+                                                (long)settings.Expeditions.ManualShips.Ships.Recycler,
+                                                (long)settings.Expeditions.ManualShips.Ships.EspionageProbe,
+                                                (long)settings.Expeditions.ManualShips.Ships.SolarSatellite,
+                                                (long)settings.Expeditions.ManualShips.Ships.Crawler,
+                                                (long)settings.Expeditions.ManualShips.Ships.Reaper,
+                                                (long)settings.Expeditions.ManualShips.Ships.Pathfinder
+                                            );
+                                            if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: not enough ships in origin " + origin.ToString());
+                                                continue;
+                                            }
                                         }
+                                        else
+                                        {
+                                            Buildables primaryShip = Buildables.LargeCargo;
+                                            Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), out primaryShip);
+                                            if (primaryShip == Buildables.Null)
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
+                                                continue;
+                                            }
+
+                                            fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
+                                            if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.MinPrimaryToSend)
+                                            {
+                                                fleet.SetAmount(primaryShip, (long)settings.Expeditions.MinPrimaryToSend);
+                                                if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                                {
+                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + primaryShip.ToString() + " in origin " + origin.ToString() + " under set min number of " + (long)settings.Expeditions.MinPrimaryToSend);
+                                                    continue;
+                                                }                                                
+                                            }
+                                            Buildables secondaryShip = Buildables.Null;
+                                            Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, out secondaryShip);
+                                            if (secondaryShip != Buildables.Null)
+                                            {
+                                                long secondaryToSend = Math.Min(
+                                                    (long)Math.Round(
+                                                        origin.Ships.GetAmount(secondaryShip) / (float)expsToSendFromThisOrigin,
+                                                        0,
+                                                        MidpointRounding.ToZero
+                                                    ),
+                                                    (long)Math.Round(
+                                                        fleet.GetAmount(primaryShip) * (float)settings.Expeditions.SecondaryToPrimaryRatio,
+                                                        0,
+                                                        MidpointRounding.ToZero
+                                                    )
+                                                );
+                                                if (secondaryToSend < (long)settings.Expeditions.MinSecondaryToSend)
+                                                {
+                                                    Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: available " + secondaryShip.ToString() + " in origin " + origin.ToString() + " under set number of " + (long)settings.Expeditions.MinSecondaryToSend);
+                                                    continue;
+                                                }
+                                                else
+                                                {
+                                                    fleet.Add(secondaryShip, secondaryToSend);
+                                                    if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin))
+                                                    {
+                                                        Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: not enough ships in origin " + origin.ToString());
+                                                        continue;
+                                                    }
+                                                }                                                    
+                                            }
+                                        }                                        
 
                                         Helpers.WriteLog(LogType.Info, LogSender.Expeditions, expsToSendFromThisOrigin.ToString() + " expeditions with " + fleet.ToString() + " will be sent from " + origin.ToString());
                                         for (int i = 0; i < expsToSendFromThisOrigin; i++)
                                         {
                                             Coordinate destination;
-                                            if ((bool)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Active)
+                                            if ((bool)settings.Expeditions.SplitExpeditionsBetweenSystems.Active)
                                             {
                                                 var rand = new Random();
 
-                                                int range = (int)settings.Expeditions.AutoSendExpeditions.SplitExpeditionsBetweenSystems.Range;
+                                                int range = (int)settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
                                                 destination = new Coordinate
                                                 {
                                                     Galaxy = origin.Coordinate.Galaxy,
@@ -2912,9 +2975,9 @@ namespace Tbot
                                             }
                                             slots = UpdateSlots();
                                             Resources payload = new();
-                                            if ((long)settings.Expeditions.AutoSendExpeditions.FuelToCarry > 0)
+                                            if ((long)settings.Expeditions.FuelToCarry > 0)
                                             {
-                                                payload.Deuterium = (long)settings.Expeditions.AutoSendExpeditions.FuelToCarry;
+                                                payload.Deuterium = (long)settings.Expeditions.FuelToCarry;
                                             }
                                             if (slots.ExpFree > 0)
                                             {
@@ -2946,7 +3009,7 @@ namespace Tbot
                     List<Fleet> orderedFleets = fleets
                         .Where(fleet => fleet.Mission == Missions.Expedition)
                         .ToList();
-                    if ((bool)settings.Expeditions.AutoSendExpeditions.WaitForAllExpeditions)
+                    if ((bool)settings.Expeditions.WaitForAllExpeditions)
                     {
                         orderedFleets = orderedFleets
                             .OrderByDescending(fleet => fleet.BackIn)

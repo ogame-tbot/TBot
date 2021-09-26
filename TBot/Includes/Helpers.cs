@@ -543,12 +543,12 @@ namespace Tbot.Includes
                 return Buildables.Null;
         }
 
-        public static Ships CalcExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, int ecoSpeed, long topOnePoints, int hyperspaceTech, Classes playerClass)
+        public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int ecoSpeed, long topOnePoints, int hyperspaceTech, Classes playerClass)
         {
-            Ships ideal = CalcIdealExpeditionShips(buildable, ecoSpeed, topOnePoints, hyperspaceTech, playerClass);
+            Ships ideal = CalcIdealExpeditionShips(primaryShip, ecoSpeed, topOnePoints, hyperspaceTech, playerClass);
             foreach (PropertyInfo prop in fleet.GetType().GetProperties())
             {
-                if (prop.Name == buildable.ToString())
+                if (prop.Name == primaryShip.ToString())
                 {
                     long availableVal = (long)prop.GetValue(fleet);
                     long idealVal = (long)prop.GetValue(ideal);
@@ -562,9 +562,9 @@ namespace Tbot.Includes
             return ideal;
         }
 
-        public static Ships CalcExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
+        public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
         {
-            return CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata.Speed, serverdata.TopScore, researches.HyperspaceTechnology, playerClass);
+            return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata.Speed, serverdata.TopScore, researches.HyperspaceTechnology, playerClass);
         }
 
         public static bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber)
@@ -581,9 +581,9 @@ namespace Tbot.Includes
             return false;
         }
 
-        public static Ships CalcFullExpeditionShips(Ships fleet, Buildables buildable, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
+        public static Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, Classes playerClass)
         {
-            Ships oneExpeditionFleet = CalcExpeditionShips(fleet, buildable, expeditionsNumber, serverdata, researches, playerClass);
+            Ships oneExpeditionFleet = CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata, researches, playerClass);
 
             if (MayAddShipToExpedition(fleet, Buildables.EspionageProbe, expeditionsNumber))
                 oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);
@@ -791,8 +791,8 @@ namespace Tbot.Includes
             switch (buildable)
             {
                 case Buildables.MetalMine:
-                    output.Metal = (long)(60 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(15 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(60 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(15 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -802,8 +802,8 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.CrystalMine:
-                    output.Metal = (long)(48 * Math.Pow(1.6, (level - 1)));
-                    output.Crystal = (long)(24 * Math.Pow(1.6, (level - 1)));
+                    output.Metal = (long)Math.Round(48 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(24 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -813,8 +813,8 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.DeuteriumSynthesizer:
-                    output.Metal = (long)(225 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(75 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(225 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     /*Lorenzo 06/02/2021
                      * Added the calc for the energy needed
                      */
@@ -824,13 +824,13 @@ namespace Tbot.Includes
                     output.Energy = (long)Math.Round((20 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.SolarPlant:
-                    output.Metal = (long)(75 * Math.Pow(1.5, (level - 1)));
-                    output.Crystal = (long)(30 * Math.Pow(1.5, (level - 1)));
+                    output.Metal = (long)Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(30 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.FusionReactor:
-                    output.Metal = (long)(900 * Math.Pow(1.8, (level - 1)));
-                    output.Crystal = (long)(360 * Math.Pow(1.8, (level - 1)));
-                    output.Deuterium = (long)(180 * Math.Pow(1.8, (level - 1)));
+                    output.Metal = (long)Math.Round(900 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Crystal = (long)Math.Round(360 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
+                    output.Deuterium = (long)Math.Round(180 * Math.Pow(1.8, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.MetalStorage:
                     output.Metal = (long)(500 * Math.Pow(2, level));
@@ -1361,9 +1361,9 @@ namespace Tbot.Includes
             return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
         }
 
-        public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100)
+        public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, bool optimizeForStart = true)
         {
-            if (planet.Buildings.MetalMine < 10 || planet.Buildings.CrystalMine < 7 || planet.Buildings.DeuteriumSynthesizer < 5)
+            if (optimizeForStart && (planet.Buildings.MetalMine < 10 || planet.Buildings.CrystalMine < 7 || planet.Buildings.DeuteriumSynthesizer < 5))
             {
                 if (planet.Buildings.MetalMine <= planet.Buildings.CrystalMine + 2)
                     return Buildables.MetalMine;
@@ -1394,9 +1394,9 @@ namespace Tbot.Includes
             return dic.FirstOrDefault().Key;
         }
 
-        public static Buildables GetNextMineToBuild(Planet planet, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static Buildables GetNextMineToBuild(Planet planet, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
-            if (planet.Buildings.MetalMine < 10 || planet.Buildings.CrystalMine < 7 || planet.Buildings.DeuteriumSynthesizer < 5)
+            if (optimizeForStart && (planet.Buildings.MetalMine < 10 || planet.Buildings.CrystalMine < 7 || planet.Buildings.DeuteriumSynthesizer < 5))
             {
                 if (planet.Buildings.MetalMine <= planet.Buildings.CrystalMine + 2 && planet.Buildings.MetalMine < maxMetalMine)
                     return Buildables.MetalMine;
@@ -1405,21 +1405,6 @@ namespace Tbot.Includes
                 else if (planet.Buildings.DeuteriumSynthesizer < maxDeuteriumSynthetizer)
                     return Buildables.DeuteriumSynthesizer;
             }
-
-            /*
-            float metalROI = CalcROI(planet, Buildables.MetalMine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
-            float crystalROI = CalcROI(planet, Buildables.CrystalMine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
-            float deuteriumROI = CalcROI(planet, Buildables.DeuteriumSynthesizer, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff);
-
-            if (planet.Buildings.MetalMine + 1 <= maxMetalMine && metalROI >= crystalROI && metalROI >= deuteriumROI)
-                return Buildables.MetalMine;
-            else if (planet.Buildings.CrystalMine + 1 <= maxCrystalMine && crystalROI >= metalROI && crystalROI >= deuteriumROI)
-                return Buildables.CrystalMine;
-            else if (planet.Buildings.DeuteriumSynthesizer + 1 <= maxDeuteriumSynthetizer && deuteriumROI >= metalROI && deuteriumROI >= crystalROI)
-                return Buildables.DeuteriumSynthesizer;
-            else
-                return Buildables.MetalMine;
-            */
 
             var mines = new List<Buildables> { Buildables.MetalMine, Buildables.CrystalMine, Buildables.DeuteriumSynthesizer };
             Dictionary<Buildables, float> dic = new();
@@ -1439,7 +1424,12 @@ namespace Tbot.Includes
 
             dic = dic.OrderByDescending(m => m.Value)
                 .ToDictionary(m => m.Key, m => m.Value);
-            return dic.FirstOrDefault().Key;
+            var bestMine = dic.FirstOrDefault().Key;
+
+            if (maxDaysOfInvestmentReturn >= CalcDaysOfInvestmentReturn(planet, bestMine, researches, speedFactor, ratio, playerClass, hasGeologist, hasStaff))
+                return bestMine;
+            else
+                return Buildables.Null;
         }
 
         public static float CalcROI(Planet planet, Buildables buildable, Researches researches = null, int speedFactor = 1, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
@@ -1472,7 +1462,33 @@ namespace Tbot.Includes
             return delta / cost;
         }
 
-        public static Buildables GetNextLunarFacilityToBuild(Moon moon, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
+        public static float CalcDaysOfInvestmentReturn(Planet planet, Buildables buildable, Researches researches = null, int speedFactor = 1, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        {
+            if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer)
+            {
+                float oneDayProd = 1;
+                switch (buildable)
+                {
+                    case Buildables.MetalMine:
+                        oneDayProd = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) / (float)2.5 * 24;
+                        break;
+                    case Buildables.CrystalMine:
+                        oneDayProd = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) / (float)1.5 * 24;
+                        break;
+                    case Buildables.DeuteriumSynthesizer:
+                        oneDayProd = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff) * 24;
+                        break;
+                    default:
+
+                        break;
+                }
+                long cost = CalcPrice(buildable, GetNextLevel(planet, buildable)).ConvertedDeuterium;
+                return cost / oneDayProd;
+            }
+            else return float.MaxValue;
+        }
+
+        public static Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
         {
             if (ShouldBuildLunarBase(moon, maxLunarBase))
                 return Buildables.LunarBase;
@@ -1480,18 +1496,18 @@ namespace Tbot.Includes
                 return Buildables.RoboticsFactory;
             if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
                 return Buildables.SensorPhalanx;
-            if (ShouldBuildJumpGate(moon, maxJumpGate))
+            if (ShouldBuildJumpGate(moon, maxJumpGate, researches))
                 return Buildables.JumpGate;
             if (ShouldBuildShipyard(moon, maxShipyard))
                 return Buildables.Shipyard;
             else return Buildables.Null;
         }
 
-        public static bool ShouldBuildRoboticFactory(Celestial celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildRoboticFactory(Celestial celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
             if (celestial is Planet)
             {
-                var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff);
+                var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
                 var nextMineLevel = GetNextLevel(celestial, nextMine);
                 var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
@@ -1514,11 +1530,11 @@ namespace Tbot.Includes
             }
         }
 
-        public static bool ShouldBuildShipyard(Celestial celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildShipyard(Celestial celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
             if (celestial is Planet)
             {
-                var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff);
+                var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
                 var nextMineLevel = GetNextLevel(celestial, nextMine);
                 var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
@@ -1541,9 +1557,9 @@ namespace Tbot.Includes
             }
         }
 
-        public static bool ShouldBuildResearchLab(Planet celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildResearchLab(Planet celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
-            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff);
+            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
             var nextMineLevel = GetNextLevel(celestial, nextMine);
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
@@ -1556,9 +1572,9 @@ namespace Tbot.Includes
                 return false;
         }
 
-        public static bool ShouldBuildMissileSilo(Planet celestial, int maxLevel = 6, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildMissileSilo(Planet celestial, int maxLevel = 6, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
-            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff);
+            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
             var nextMineLevel = GetNextLevel(celestial, nextMine);
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
@@ -1571,16 +1587,16 @@ namespace Tbot.Includes
                 return false;
         }
 
-        public static bool ShouldBuildNanites(Planet celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false)
+        public static bool ShouldBuildNanites(Planet celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
         {
-            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff);
+            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
             var nextMineLevel = GetNextLevel(celestial, nextMine);
             var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
 
             var nextNanitesLevel = GetNextLevel(celestial, Buildables.NaniteFactory);
             var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
 
-            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 10)
+            if (nextNanitesLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextNanitesPrice.ConvertedDeuterium && celestial.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10)
                 return true;
             else
                 return false;
@@ -1600,23 +1616,23 @@ namespace Tbot.Includes
         {
             var nextSensorPhalanxLevel = GetNextLevel(moon, Buildables.SensorPhalanx);
 
-            if (nextSensorPhalanxLevel <= maxLevel && moon.Fields.Free > 1)
+            if (nextSensorPhalanxLevel <= maxLevel && moon.Facilities.LunarBase >= 1 && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
         }
 
-        public static bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1)
+        public static bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1, Researches researches = null)
         {
             var nextJumpGateLevel = GetNextLevel(moon, Buildables.JumpGate);
 
-            if (nextJumpGateLevel <= maxLevel && moon.Fields.Free > 1)
+            if (nextJumpGateLevel <= maxLevel && moon.Facilities.LunarBase >= 1 && researches.HyperspaceTechnology >= 7 && moon.Fields.Free > 1)
                 return true;
             else
                 return false;
         }
 
-        public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25, bool optimizeForStart = false, bool ensureExpoSlots = true)
+        public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25, bool optimizeForStart = true, bool ensureExpoSlots = true)
         {
             if (optimizeForStart)
             {
