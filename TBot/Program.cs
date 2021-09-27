@@ -1387,7 +1387,7 @@ namespace Tbot
                 }
                 else
                 {
-                    Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                    Helpers.SetTitle();
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
                 }
                 int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
@@ -1668,7 +1668,7 @@ namespace Tbot
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
-                        tempCelestial = UpdatePlanet(xCelestial, UpdateType.ResourcesProduction);
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.ResourcesProduction);
 
                         mHandleFields(tempCelestial, ref xBuildable, ref nLevelToReach);
 
