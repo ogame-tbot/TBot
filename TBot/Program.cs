@@ -1953,11 +1953,22 @@ namespace Tbot
 
                     if (result)
                     {
-                        xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
-                        if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                        if (xBuildableToBuild == Buildables.SolarSatellite)
+                        {
+                            xCelestial = UpdatePlanet(xCelestial, UpdateType.Productions);
+                            if (xCelestial.Productions.First().ID == (int)xBuildableToBuild)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, xCelestial.Productions.First().Nbr.ToString() + "x " + xBuildableToBuild.ToString() + " succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start " + nLevelToBuild.ToString() + "x " + xBuildableToBuild.ToString() + " construction: an unknow error has occurred");
+                        }
                         else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                        {
+                            xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
+                            if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                        }                        
                     }                        
                     else
                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
