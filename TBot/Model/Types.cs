@@ -117,7 +117,7 @@ namespace Tbot.Model
         public List<Production> Productions { get; set; }
         public Constructions Constructions { get; set; }
         public ResourceSettings ResourceSettings { get; set; }
-        public Resources ResourceProduction { get; set; }
+        public ResourcesProduction ResourcesProduction { get; set; }
         public Debris Debris { get; set; }
         public override string ToString()
         {
@@ -877,6 +877,35 @@ namespace Tbot.Model
                     return false;
             }
         }
+    }
+
+    public class Resource
+    {
+        public long Available { get; set; }
+        public long StorageCapacity { get; set; }
+        public long CurrentProduction { get; set; }
+    }
+
+    public class Energy
+    {
+        public long Available { get; set; }
+        public long CurrentProduction { get; set; }
+        public long Consumption { get; set; }
+    }
+
+    public class Darkmatter
+    {
+        public long Available { get; set; }
+        public long Purchased { get; set; }
+        public long Found { get; set; }
+    }    
+
+    public class ResourcesProduction{
+        public Resource Metal { get; set; }
+        public Resource Crystal { get; set; }
+        public Resource Deuterium { get; set; }
+        public Energy Energy { get; set; }
+        public Darkmatter Darkmatter { get; set; }
     }
 
 }

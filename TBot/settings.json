@@ -98,6 +98,8 @@
 			"MaxResearchLab": 12,
 			"MaxMissileSilo": 0,
 			"MaxNaniteFactory": 7,
+			"MaxTerraformer": 8,
+			"MaxSpaceDock": 8,
 			"MaxLunarBase": 8,
 			"MaxLunarShipyard": 0,
 			"MaxLunarRoboticsFactory": 8,
