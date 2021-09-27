@@ -123,7 +123,6 @@ namespace Tbot.Model
         {
             return Name + " " + Coordinate.ToString();
         }
-
         public bool HasProduction()
         {
             try
@@ -138,13 +137,34 @@ namespace Tbot.Model
                 return false;
             }
         }
-
         public bool HasCoords(Coordinate coords)
         {
             if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
                 return true;
             else
                 return false;
+        }
+        public int GetLevel(Buildables building)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in Buildings.GetType().GetProperties())
+            {
+                if (prop.Name == building.ToString())
+                {
+                    output = (int)prop.GetValue(Buildings);
+                }
+            }
+            if (output == 0)
+            {
+                foreach (PropertyInfo prop in Facilities.GetType().GetProperties())
+                {
+                    if (prop.Name == building.ToString())
+                    {
+                        output = (int)prop.GetValue(Facilities);
+                    }
+                }
+            }
+            return output;
         }
     }
 
@@ -385,6 +405,18 @@ namespace Tbot.Model
         public long LargeShieldDome { get; set; }
         public long AntiBallisticMissiles { get; set; }
         public long InterplanetaryMissiles { get; set; }
+        public int GetAmount(Buildables defence)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in GetType().GetProperties())
+            {
+                if (prop.Name == defence.ToString())
+                {
+                    output = (int)prop.GetValue(this);
+                }
+            }
+            return output;
+        }
     }
 
     public class Defenses : Defences { }
@@ -722,6 +754,18 @@ namespace Tbot.Model
         public int WeaponsTechnology { get; set; }
         public int ShieldingTechnology { get; set; }
         public int ArmourTechnology { get; set; }
+        public int GetLevel(Buildables research)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in GetType().GetProperties())
+            {
+                if (prop.Name == research.ToString())
+                {
+                    output = (int)prop.GetValue(this);
+                }
+            }
+            return output;
+        }
     }
 
     public class Production

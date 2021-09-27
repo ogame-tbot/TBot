@@ -2012,7 +2012,14 @@ namespace Tbot
                             if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
                                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
                             else
-                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                            {
+                                xCelestial = UpdatePlanet(xCelestial, UpdateType.Buildings);
+                                xCelestial = UpdatePlanet(xCelestial, UpdateType.Facilities);
+                                if (xCelestial.GetLevel(xBuildableToBuild) != nLevelToBuild)
+                                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknown error has occurred");
+                                else
+                                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            }                                
                         }                        
                     }                        
                     else
