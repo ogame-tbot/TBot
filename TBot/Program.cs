@@ -1485,14 +1485,35 @@ namespace Tbot
                 }
 
                 researches = ogamedService.GetResearches();
-                Planet celestial = celestials
-                    .Single(c => c.HasCoords(new(
+                Planet celestial;
+                var parseSucceded = celestials
+                    .Any(c => c.HasCoords(new(
                         (int)settings.Brain.AutoResearch.Target.Galaxy,
                         (int)settings.Brain.AutoResearch.Target.System,
                         (int)settings.Brain.AutoResearch.Target.Position,
                         Celestials.Planet
-                        )
-                    )) as Planet;
+                    ))
+                );
+                if (parseSucceded)
+                {
+                    celestial = celestials
+                        .Single(c => c.HasCoords(new(
+                            (int)settings.Brain.AutoResearch.Target.Galaxy,
+                            (int)settings.Brain.AutoResearch.Target.System,
+                            (int)settings.Brain.AutoResearch.Target.Position,
+                            Celestials.Planet
+                            )
+                        )) as Planet;
+                }
+                else
+                {
+                    celestials = UpdatePlanets(UpdateType.Facilities);
+                    celestial = celestials
+                        .Where(c => c.Coordinate.Type == Celestials.Planet)
+                        .OrderByDescending(c => c.Facilities.ResearchLab)
+                        .First() as Planet;
+                }
+                
                 celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                 if (celestial.Constructions.ResearchID != 0)
                 {
