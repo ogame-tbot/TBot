@@ -200,7 +200,7 @@ namespace Tbot.Model
 		Productions,
 		Constructions,
 		ResourceSettings,
-		ResourceProduction,
+		ResourcesProduction,
 		Debris
 	}
 

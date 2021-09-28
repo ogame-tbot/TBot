@@ -560,10 +560,10 @@ namespace Tbot
                             planet.ResourceSettings = ogamedService.GetResourceSettings(planet as Planet);
                         }
                         break;
-                    case UpdateType.ResourceProduction:
+                    case UpdateType.ResourcesProduction:
                         if (planet is Planet)
                         {
-                            planet.ResourceProduction = ogamedService.GetResourceProduction(planet as Planet);
+                            planet.ResourcesProduction = ogamedService.GetResourcesProduction(planet as Planet);
                         }
                         break;
                     case UpdateType.Techs:
@@ -588,7 +588,7 @@ namespace Tbot
                         if (planet is Planet)
                         {
                             planet.ResourceSettings = ogamedService.GetResourceSettings(planet as Planet);
-                            planet.ResourceProduction = ogamedService.GetResourceProduction(planet as Planet);
+                            planet.ResourcesProduction = ogamedService.GetResourcesProduction(planet as Planet);
                         }
                         planet.Buildings = ogamedService.GetBuildings(planet);
                         planet.Facilities = ogamedService.GetFacilities(planet);
@@ -1388,7 +1388,7 @@ namespace Tbot
                 }
                 else
                 {
-                    Helpers.SetTitle("[" + serverInfo.Name + "." + serverInfo.Language + "]" + " " + userInfo.PlayerName + " - Rank: " + userInfo.Rank);
+                    Helpers.SetTitle();
                     Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
                 }
                 int interval = Helpers.CalcRandomInterval((int)settings.Defender.CheckIntervalMin, (int)settings.Defender.CheckIntervalMax);
@@ -1669,18 +1669,25 @@ namespace Tbot
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Buildings);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
-                        if (Helpers.ShouldBuildEnergySource(tempCelestial as Planet))
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.ResourcesProduction);
+
+                        mHandleFields(tempCelestial, ref xBuildable, ref nLevelToReach);
+
+                        if (xBuildable == Buildables.Null)
                         {
-                            //Checks if energy is needed
-                            xBuildable = Helpers.GetNextEnergySourceToBuild(tempCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
-                            nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable);
+                            mHandleEnergy(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
-  
+
+                        if (xBuildable == Buildables.Null)
+                        {
+                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
+                        }
+
                         if (xBuildable == Buildables.Null)
                         {
                             mHandleFacilities(tempCelestial, ref xBuildable, ref nLevelToReach);
                         }
-                        //check if it needs to build some mines 
+
                         if (xBuildable == Buildables.Null)
                         {
                             mHandleMines(tempCelestial, ref xBuildable, ref nLevelToReach);
@@ -1688,13 +1695,6 @@ namespace Tbot
 
                         if (xBuildable != Buildables.Null && nLevelToReach > 0)
                             mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
-
-                        if (xBuildable == Buildables.Null)
-                        {
-                            //Manage the need of build some deposit
-                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-                        //If it isn't needed to build deposit
                     }
                     else
                     {
@@ -1847,6 +1847,45 @@ namespace Tbot
             }
         }
 
+        private static void mHandleFields(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
+        {
+            try
+            {
+                if (Helpers.ShouldBuildTerraformer(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock))
+                {                    
+                    xBuildable = Buildables.Terraformer;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, Buildables.Terraformer);
+                    if (xCelestial.ResourcesProduction.Energy.CurrentProduction < Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy)
+                    {
+                        xBuildable = Buildables.SolarSatellite;
+                        nLevelToReach = Helpers.CalcNeededSolarSatellites(xCelestial as Planet, Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy - xCelestial.ResourcesProduction.Energy.CurrentProduction);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleFields Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+            }
+        }
+
+        private static void mHandleEnergy(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
+        {
+            try
+            {
+                if (Helpers.ShouldBuildEnergySource(xCelestial as Planet))
+                {
+                    xBuildable = Helpers.GetNextEnergySourceToBuild(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSolarPlant, (int)settings.Brain.AutoMine.MaxFusionReactor);
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
+                }
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "mHandleEnergy Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+            }
+        }
+
         private static void mHandleFacilities(Celestial xCelestial, ref Buildables xBuildable, ref int nLevelToReach)
         {
             try
@@ -1863,6 +1902,12 @@ namespace Tbot
                         xBuildable = Buildables.NaniteFactory;
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
+                }
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
+                {
+                    //Manage the need of space dock
+                    xBuildable = Buildables.SpaceDock;
+                    nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                 }
                 if (xBuildable == Buildables.Null && Helpers.ShouldBuildNanites(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
                 {
@@ -1954,11 +1999,29 @@ namespace Tbot
 
                     if (result)
                     {
-                        xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
-                        if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
-                            Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                        if (xBuildableToBuild == Buildables.SolarSatellite)
+                        {
+                            xCelestial = UpdatePlanet(xCelestial, UpdateType.Productions);
+                            if (xCelestial.Productions.First().ID == (int)xBuildableToBuild)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, xCelestial.Productions.First().Nbr.ToString() + "x " + xBuildableToBuild.ToString() + " succesfully started.");
+                            else
+                                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start " + nLevelToBuild.ToString() + "x " + xBuildableToBuild.ToString() + " construction: an unknow error has occurred");
+                        }
                         else
-                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknow error has occurred");
+                        {
+                            xCelestial = UpdatePlanet(xCelestial, UpdateType.Constructions);
+                            if (xCelestial.Constructions.BuildingID == (int)xBuildableToBuild)
+                                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            else
+                            {
+                                xCelestial = UpdatePlanet(xCelestial, UpdateType.Buildings);
+                                xCelestial = UpdatePlanet(xCelestial, UpdateType.Facilities);
+                                if (xCelestial.GetLevel(xBuildableToBuild) != nLevelToBuild)
+                                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknown error has occurred");
+                                else
+                                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                            }                                
+                        }                        
                     }                        
                     else
                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");

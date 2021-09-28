@@ -117,13 +117,12 @@ namespace Tbot.Model
         public List<Production> Productions { get; set; }
         public Constructions Constructions { get; set; }
         public ResourceSettings ResourceSettings { get; set; }
-        public Resources ResourceProduction { get; set; }
+        public ResourcesProduction ResourcesProduction { get; set; }
         public Debris Debris { get; set; }
         public override string ToString()
         {
             return Name + " " + Coordinate.ToString();
         }
-
         public bool HasProduction()
         {
             try
@@ -138,13 +137,34 @@ namespace Tbot.Model
                 return false;
             }
         }
-
         public bool HasCoords(Coordinate coords)
         {
             if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
                 return true;
             else
                 return false;
+        }
+        public int GetLevel(Buildables building)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in Buildings.GetType().GetProperties())
+            {
+                if (prop.Name == building.ToString())
+                {
+                    output = (int)prop.GetValue(Buildings);
+                }
+            }
+            if (output == 0)
+            {
+                foreach (PropertyInfo prop in Facilities.GetType().GetProperties())
+                {
+                    if (prop.Name == building.ToString())
+                    {
+                        output = (int)prop.GetValue(Facilities);
+                    }
+                }
+            }
+            return output;
         }
     }
 
@@ -385,6 +405,18 @@ namespace Tbot.Model
         public long LargeShieldDome { get; set; }
         public long AntiBallisticMissiles { get; set; }
         public long InterplanetaryMissiles { get; set; }
+        public int GetAmount(Buildables defence)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in GetType().GetProperties())
+            {
+                if (prop.Name == defence.ToString())
+                {
+                    output = (int)prop.GetValue(this);
+                }
+            }
+            return output;
+        }
     }
 
     public class Defenses : Defences { }
@@ -722,6 +754,18 @@ namespace Tbot.Model
         public int WeaponsTechnology { get; set; }
         public int ShieldingTechnology { get; set; }
         public int ArmourTechnology { get; set; }
+        public int GetLevel(Buildables research)
+        {
+            int output = 0;
+            foreach (PropertyInfo prop in GetType().GetProperties())
+            {
+                if (prop.Name == research.ToString())
+                {
+                    output = (int)prop.GetValue(this);
+                }
+            }
+            return output;
+        }
     }
 
     public class Production
@@ -877,6 +921,35 @@ namespace Tbot.Model
                     return false;
             }
         }
+    }
+
+    public class Resource
+    {
+        public long Available { get; set; }
+        public long StorageCapacity { get; set; }
+        public long CurrentProduction { get; set; }
+    }
+
+    public class Energy
+    {
+        public long Available { get; set; }
+        public long CurrentProduction { get; set; }
+        public long Consumption { get; set; }
+    }
+
+    public class Darkmatter
+    {
+        public long Available { get; set; }
+        public long Purchased { get; set; }
+        public long Found { get; set; }
+    }    
+
+    public class ResourcesProduction{
+        public Resource Metal { get; set; }
+        public Resource Crystal { get; set; }
+        public Resource Deuterium { get; set; }
+        public Energy Energy { get; set; }
+        public Darkmatter Darkmatter { get; set; }
     }
 
 }

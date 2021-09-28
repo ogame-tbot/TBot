@@ -884,6 +884,9 @@ namespace Tbot.Includes
                     output.Energy = (long)(1000 * Math.Pow(2, level - 1));
                     break;
                 case Buildables.SpaceDock:
+                    output.Metal = (long)(200 * Math.Pow(5, level - 1));
+                    output.Deuterium = (long)(50 * Math.Pow(5, level - 1));
+                    output.Energy = (long)Math.Round(50 * Math.Pow(2.5, level - 1), 0, MidpointRounding.ToPositiveInfinity);
                     break;
                 case Buildables.LunarBase:
                     output.Metal = (long)(20000 * Math.Pow(2, level - 1));
@@ -1354,11 +1357,16 @@ namespace Tbot.Includes
             return (int)Math.Round((planet.Temperature.Average + 160) / 6);
         }
 
-        public static int CalcNeededSolarSatellites(Planet planet)
+        public static int CalcNeededSolarSatellites(Planet planet, long requiredEnergy = 0)
         {
-            if (planet.Resources.Energy > 0)
-                return 0;
-            return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+            if (requiredEnergy == 0)
+            {
+                if (planet.Resources.Energy > 0)
+                    return 0;
+                return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+            }
+            else
+                return (int)Math.Round((float)(requiredEnergy / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
         }
 
         public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, bool optimizeForStart = true)
@@ -1600,6 +1608,28 @@ namespace Tbot.Includes
                 return true;
             else
                 return false;
+        }
+
+        public static bool ShouldBuildTerraformer(Planet celestial, int maxLevel = 10)
+        {
+            var nextLevel = GetNextLevel(celestial, Buildables.Terraformer);
+            var price = CalcPrice(Buildables.Terraformer, nextLevel);
+            if (celestial.Fields.Free == 1 && nextLevel <= maxLevel)
+                return true;
+            else return false;
+        }
+
+        public static bool ShouldBuildSpaceDock(Planet celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
+        {
+            var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
+            var nextMineLevel = GetNextLevel(celestial, nextMine);
+            var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+
+            var nextSpaceDockLevel = GetNextLevel(celestial, Buildables.SpaceDock);
+            var nextSpaceDockPrice = CalcPrice(Buildables.SpaceDock, nextSpaceDockLevel);
+            if (nextSpaceDockLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSpaceDockPrice.ConvertedDeuterium && celestial.ResourcesProduction.Energy.CurrentProduction >= nextSpaceDockPrice.Energy)
+                return true;
+            else return false;
         }
 
         public static bool ShouldBuildLunarBase(Moon moon, int maxLevel = 8)

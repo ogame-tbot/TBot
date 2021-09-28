@@ -716,11 +716,11 @@ namespace Tbot.Services
             else return JsonConvert.DeserializeObject<ResourceSettings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
         }
 
-        public Model.Resources GetResourceProduction(Planet planet)
+        public ResourcesProduction GetResourcesProduction(Planet planet)
         {
             var request = new RestRequest
             {
-                Resource = "/bot/planets/" + planet.ID + "/resource-details",
+                Resource = "/bot/planets/" + planet.ID + "/resources-details",
                 Method = Method.GET,
             };
             var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -728,7 +728,7 @@ namespace Tbot.Services
             {
                 throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
             }
-            else return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+            else return JsonConvert.DeserializeObject<Model.ResourcesProduction>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
         }
 
         public Constructions GetConstructions(Celestial celestial)
