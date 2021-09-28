@@ -1850,7 +1850,7 @@ namespace Tbot
         {
             try
             {
-                if (Helpers.ShouldBuildTerraformer(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock))
+                if (Helpers.ShouldBuildTerraformer(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxTerraformer))
                 {                    
                     xBuildable = Buildables.Terraformer;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, Buildables.Terraformer);
@@ -1902,7 +1902,7 @@ namespace Tbot
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
                 {
                     //Manage the need of space dock
                     xBuildable = Buildables.SpaceDock;
