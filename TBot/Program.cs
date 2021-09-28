@@ -1857,7 +1857,7 @@ namespace Tbot
                     if (xCelestial.ResourcesProduction.Energy.CurrentProduction < Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy)
                     {
                         xBuildable = Buildables.SolarSatellite;
-                        nLevelToReach = Helpers.CalcNeededSolarSatellites(xCelestial as Planet, Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy - xCelestial.ResourcesProduction.Energy.CurrentProduction);
+                        nLevelToReach = Helpers.CalcNeededSolarSatellites(xCelestial as Planet, Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy - xCelestial.ResourcesProduction.Energy.CurrentProduction, userInfo.Class == Classes.Collector, staff.Engineer);
                     }
                 }
             }
