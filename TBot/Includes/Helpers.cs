@@ -146,7 +146,7 @@ namespace Tbot.Includes
                     baseCargo = 7000;
                     break;
                 case Buildables.Pathfinder:
-                    baseCargo = 12000;
+                    baseCargo = 10000;
                     if (playerClass == Classes.General) bonus += 25;
                     break;
                 default:
