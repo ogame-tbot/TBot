@@ -84,6 +84,41 @@ TBot supports the editing of the settings even while it is running. It will take
 * Run TBot
   * `./TBot`
 
+## Running on Amazon Web Services
+Some successful tests have been done to run TBot on the smallest instance of LightSail (1 vCPU, 20 GB SSD, 500 MB RAM and 1 TB outbound traffic) on Amazon Linux 2, which is free for a three month trial. In order to run it, steps should be as follow:
+* Create your account on Amazon Web Services (Credit Card required), and create a LightSail Instance running Amazon Linux 2. The smallest one fits into the "Free Tier" Program, which allows a 3 month free trial.
+* Select the ports where you want to connect, and open them in the Networking Settings on the instance's AWS Console (ex. ports 8000 - 8020 open for TCP and from any ip address if you don't know where you will be connecting from). This should make it accessible to the public internet.
+* Connecto to AWS instance using SSH and the .pem key you get during the instance setup:
+```
+$ ssh -i ~/pem/<my>.pem ec2-user@<instance's public ip-address>
+```
+
+* Update the system with  
+```
+sudo yum update
+```
+
+* Install the .NET 5 tuntime, which can be done using [these instructions for CentOs](https://docs.servicestack.net/deploy-netcore-to-amazon-linux-2-ami), and which is something like
+```
+$ sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+$ sudo yum install aspnetcore-runtime-5.0
+$ sudo yum install dotnet-sdk-5.0
+```
+
+* Upload your TBot files, which were previously downloaded and setup correctly. You can do this by using something like FileZilla using sftp and the same credentials as the ssh connection and then copy your TBot folder into the user's home directory in the server. Make sure your settings file has the public ip of the aws instance and the port where you want to connect.
+* Follow the instructions as written above for Linux by changing permissions.
+
+***Very important***: if you run TBot by using the command ```./TBot``` and then disconnect from the ssh connection, it'll kill TBot. In order to prevent this, you have to use a service called screen, and run the TBot instance like this:
+```
+$ screen ./TBot
+```
+then press <Ctrl + a + d>  in order to detach the console.
+
+Once it is detached you may close the ssh instance and TBot will run fine. You can repeat the process in order to run another instance of TBot on the server, as long as you detach it every time after you run the command.
+
+The testing was done on the smallest LightSail instance has been running up to 4 instances of TBot (different accounts each), with no problems so far, however if you run a 5th instance, it can cause the server to run out of RAM and it'll crash.
+
+
 ### Telegram
 TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
 * Create a new Telegram bot
