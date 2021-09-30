@@ -2176,7 +2176,7 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Ruuning autocargo...");
 
                 if (isSleeping)
                 {
@@ -2234,15 +2234,21 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
                         continue;
                     }
-                    if (capacity <= tempCelestial.Resources.TotalResources)
+                    long neededCargos;
+                    Buildables preferredCargoShip = Buildables.SmallCargo;
+                    Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
+                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCago.LimitToCapacity)
                     {
-                        long difference = tempCelestial.Resources.TotalResources - capacity;
-                        Buildables preferredCargoShip = Buildables.SmallCargo;
-                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
+                        long difference = tempCelestial.Resources.TotalResources - capacity;                        
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
-                        long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
+                        neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
-
+                    }
+                    else
+                    {
+                        neededCargos = tempCelestial.Ships.GetAmount(preferredCargoShip) - (long)settings.Brain.AutoCago.MaxCargosToKeep;
+                    }
+                    if (neededCargos > 0) {
                         /*Tralla 14/2/21
                          * 
                          * Add settings to provide a better autocargo configurability
@@ -2281,7 +2287,7 @@ namespace Tbot
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Capacity is ok.");
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - No ships will be built.");
                     }
 
                     newCelestials.Remove(celestial);
