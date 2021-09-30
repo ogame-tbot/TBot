@@ -1509,10 +1509,10 @@ namespace Tbot.Includes
                 return Buildables.LunarBase;
             if (ShouldBuildRoboticFactory(moon, maxRoboticsFactory))
                 return Buildables.RoboticsFactory;
-            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
-                return Buildables.SensorPhalanx;
             if (ShouldBuildJumpGate(moon, maxJumpGate, researches))
                 return Buildables.JumpGate;
+            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
+                return Buildables.SensorPhalanx;            
             if (ShouldBuildShipyard(moon, maxShipyard))
                 return Buildables.Shipyard;
             else return Buildables.Null;
