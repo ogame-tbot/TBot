@@ -1634,7 +1634,7 @@ namespace Tbot.Includes
 
             var nextSpaceDockLevel = GetNextLevel(celestial, Buildables.SpaceDock);
             var nextSpaceDockPrice = CalcPrice(Buildables.SpaceDock, nextSpaceDockLevel);
-            if (nextSpaceDockLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSpaceDockPrice.ConvertedDeuterium && celestial.ResourcesProduction.Energy.CurrentProduction >= nextSpaceDockPrice.Energy)
+            if (nextSpaceDockLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSpaceDockPrice.ConvertedDeuterium && celestial.ResourcesProduction.Energy.CurrentProduction >= nextSpaceDockPrice.Energy && celestial.Facilities.Shipyard >= 2)
                 return true;
             else return false;
         }
