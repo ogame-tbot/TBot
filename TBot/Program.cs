@@ -1604,6 +1604,44 @@ namespace Tbot
                 List<Celestial> newCelestials = celestials.ToList();
                 List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
 
+                Buildings maxBuildings = new()
+                {
+                    MetalMine = (int)settings.Brain.AutoMine.MaxMetalMine,
+                    CrystalMine = (int)settings.Brain.Automine.MaxCrystalMine,
+                    DeuteriumSynthesizer = (int)settings.Brain.Automine.MaxDeuteriumSynthesizer,
+                    SolarPlant = (int)settings.Brain.Automine.MaxSolarPlant,
+                    FusionReactor = (int)settings.Brain.Automine.MaxFusionReactor,
+                    MetalStorage = (int)settings.Brain.Automine.MaxMetalStorage,
+                    CrystalStorage = (int)settings.Brain.Automine.MaxCrystalStorage,
+                    DeuteriumTank = (int)settings.Brain.Automine.MaxDeuteriumTank
+                };
+                Facilities maxFacilities = new()
+                {
+                    RoboticsFactory = (int)settings.Brain.AutoMine.MaxRoboticsFactory,
+                    Shipyard = (int)settings.Brain.AutoMine.MaxShipyard,
+                    ResearchLab = (int)settings.Brain.AutoMine.MaxResearchLab,
+                    MissileSilo = (int)settings.Brain.AutoMine.MaxMissileSilo,
+                    NaniteFactory = (int)settings.Brain.AutoMine.MaxNaniteFactory,
+                    Terraformer = (int)settings.Brain.AutoMine.MaxTerraformer,
+                    SpaceDock = (int)settings.Brain.AutoMine.MaxSpaceDock
+                };
+                Facilities maxLunarFacilities = new()
+                {
+                    LunarBase = (int)settings.Brain.AutoMine.MaxLunarBase,
+                    RoboticsFactory = (int)settings.Brain.AutoMine.MaxLunarRoboticsFactory,
+                    SensorPhalanx = (int)settings.Brain.AutoMine.MaxSensorPhalanx,
+                    JumpGate = (int)settings.Brain.AutoMine.MaxJumpGate,
+                    Shipyard = (int)settings.Brain.AutoMine.MaxLunarShipyard
+                };
+                AutoMinerSettings autoMinerSettings = new()
+                {
+                    OptimizeForStart = (bool)settings.Brain.AutoMine.OptimizeForStart,
+                    PrioritizeRobotsAndNanites = (bool)settings.Brain.AutoMine.PrioritizeRobotsAndNanites,
+                    MaxDaysOfInvestmentReturn = (int)settings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
+                    DepositHours = (int)settings.Brain.AutoMine.DepositHours,
+                    BuildDepositIfFull = (bool)settings.Brain.AutoMine.BuildDepositIfFull
+                };
+
                 foreach (Celestial xCelestial in (bool)settings.Brain.AutoMine.RandomOrder ? celestials.Shuffle().ToList() : celestials)
                 {
                     if (celestialsToExclude.Has(xCelestial))
@@ -1612,19 +1650,22 @@ namespace Tbot
                         continue;
                     }
 
-                    var tempCelestial = UpdatePlanet(xCelestial, UpdateType.Fast);
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + tempCelestial.ToString());
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + xCelestial.ToString());
+
+                    var tempCelestial = UpdatePlanet(xCelestial, UpdateType.Fast);                    
+                    if (tempCelestial.Fields.Free == 0)
+                    {
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": not enough fields available.");
+                        continue;
+                    }
+
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
                     if (tempCelestial.Constructions.BuildingID != 0)
                     {
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": there is already a building in production.");
                         continue;
                     }
-                    if (tempCelestial.Fields.Free == 0)
-                    {
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": not enough fields available.");
-                        continue;
-                    }
+                    
                     if (tempCelestial is Planet)
                     {
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
@@ -1633,50 +1674,24 @@ namespace Tbot
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.ResourcesProduction);
 
-                        mHandleFields(tempCelestial, ref xBuildable, ref nLevelToReach);
-
-                        if (xBuildable == Buildables.Null)
-                        {
-                            mHandleEnergy(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-
-                        if (xBuildable == Buildables.Null)
-                        {
-                            mHandleDeposit(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-
-                        if (xBuildable == Buildables.Null)
-                        {
-                            mHandleFacilities(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-
-                        if (xBuildable == Buildables.Null)
-                        {
-                            mHandleMines(tempCelestial, ref xBuildable, ref nLevelToReach);
-                        }
-
-                        if (xBuildable != Buildables.Null && nLevelToReach > 0)
-                            mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
+                        xBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings);
+                        nLevelToReach = Helpers.GetNextLevel(tempCelestial as Planet, xBuildable, userInfo.Class == Classes.Collector, staff.Engineer);                        
                     }
                     else
                     {
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
-                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);                        
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
+                        tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Productions);
 
-                        xBuildable = Helpers.GetNextLunarFacilityToBuild(
-                            tempCelestial as Moon,
-                            researches,
-                            (int)settings.Brain.AutoMine.MaxLunarBase,
-                            (int)settings.Brain.AutoMine.MaxLunarRoboticsFactory,
-                            (int)settings.Brain.AutoMine.MaxSensorPhalanx,
-                            (int)settings.Brain.AutoMine.MaxJumpGate,
-                            (int)settings.Brain.AutoMine.MaxLunarShipyard
-                        );
+                        xBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
                         nLevelToReach = Helpers.GetNextLevel(tempCelestial as Moon, xBuildable);
-
-                        if (xBuildable != Buildables.Null && nLevelToReach > 0)
-                            mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
                     }
+
+                    if (xBuildable != Buildables.Null && nLevelToReach > 0)
+                        mHandleBuildCelestialBuild(tempCelestial, xBuildable, nLevelToReach);
+                    else
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping celestial " + tempCelestial.ToString() + ": nothing to build.");
+
                     newCelestials.Remove(xCelestial);
                     newCelestials.Add(tempCelestial);
                     xBuildable = Buildables.Null;
@@ -1865,7 +1880,7 @@ namespace Tbot
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull))
                 {
                     //Manage the need of space dock
                     xBuildable = Buildables.SpaceDock;

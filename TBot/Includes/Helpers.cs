@@ -1503,19 +1503,127 @@ namespace Tbot.Includes
             else return float.MaxValue;
         }
 
+        public static Buildings GetMaxBuildings(int maxMetalMine, int maxCrystalMine, int maxDeuteriumSynthetizer, int maxSolarPlant,int maxFusionReactor, int maxMetalStorage, int maxCrystalStorage, int maxDeuteriumTank)
+        {
+            return new()
+            {
+                MetalMine = maxMetalMine,
+                CrystalMine = maxCrystalMine,
+                DeuteriumSynthesizer = maxDeuteriumSynthetizer,
+                SolarPlant = maxSolarPlant,
+                FusionReactor = maxFusionReactor,
+                MetalStorage = maxMetalMine,
+                CrystalStorage = maxCrystalStorage,
+                DeuteriumTank = maxDeuteriumTank
+            };
+        }
+        public static Facilities GetMaxFacilities(int maxRoboticsFactory, int maxShipyard, int maxResearchLab, int maxMissileSilo, int maxNaniteFactory, int maxTerraformer, int maxSpaceDock)
+        {
+            return new()
+            {
+                RoboticsFactory = maxRoboticsFactory,
+                Shipyard = maxShipyard,
+                ResearchLab = maxResearchLab,
+                MissileSilo = maxMissileSilo,
+                NaniteFactory = maxNaniteFactory,
+                Terraformer = maxTerraformer,
+                SpaceDock = maxSpaceDock
+            };
+        }
+
+        public static Facilities GetMaxLunarFacilities(int maxLunarBase, int maxLunarShipyard, int maxLunarRoboticsFactory, int maxSensorPhalanx, int maxJumpGate)
+        {
+            return new()
+            {
+                LunarBase = maxLunarBase,
+                Shipyard = maxLunarShipyard,
+                RoboticsFactory = maxLunarRoboticsFactory,
+                SensorPhalanx = maxSensorPhalanx,
+                JumpGate = maxJumpGate
+            };
+        }
+
+        public static Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
+        {
+            Buildables buildableToBuild = Buildables.Null;
+            if (ShouldBuildTerraformer(planet, maxFacilities.Terraformer))
+                buildableToBuild = Buildables.Terraformer;
+            if (buildableToBuild == Buildables.Null && ShouldBuildEnergySource(planet))
+                buildableToBuild = GetNextEnergySourceToBuild(planet, maxBuildings.SolarPlant, maxBuildings.FusionReactor);
+            if (buildableToBuild == Buildables.Null)
+                buildableToBuild = GetNextDepositToBuild(planet, researches, maxBuildings, playerClass, staff, serverData, settings, ratio);
+            if (buildableToBuild == Buildables.Null)
+                buildableToBuild = GetNextFacilityToBuild(planet, researches, maxBuildings, maxFacilities, playerClass, staff, serverData, settings, ratio);
+            if (buildableToBuild == Buildables.Null)
+                buildableToBuild = GetNextMineToBuild(planet, researches, maxBuildings, maxFacilities, playerClass, staff, serverData, settings, ratio);
+
+            return buildableToBuild;
+        }
+
+        public static Buildables GetNextDepositToBuild(Planet planet,Researches researches, Buildings maxBuildings, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
+        {
+            Buildables depositToBuild = Buildables.Null;
+            if (depositToBuild == Buildables.Null && ShouldBuildDeuteriumTank(planet, maxBuildings.DeuteriumTank, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+                depositToBuild = Buildables.DeuteriumTank;
+            if (depositToBuild == Buildables.Null && ShouldBuildCrystalStorage(planet, maxBuildings.CrystalStorage, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+                depositToBuild = Buildables.CrystalStorage;
+            if (depositToBuild == Buildables.Null && ShouldBuildMetalStorage(planet, maxBuildings.MetalStorage, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+                depositToBuild = Buildables.MetalStorage;
+
+            return depositToBuild;
+        }
+        public static Buildables GetNextFacilityToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
+        {
+            Buildables facilityToBuild = Buildables.Null;
+            if (settings.PrioritizeRobotsAndNanites)
+                if (planet.Facilities.RoboticsFactory < 10 && planet.Facilities.RoboticsFactory < maxFacilities.RoboticsFactory)
+                    facilityToBuild = Buildables.RoboticsFactory;
+                else if (planet.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && planet.Facilities.NaniteFactory < maxFacilities.NaniteFactory && !planet.HasProduction())
+                    facilityToBuild = Buildables.NaniteFactory;
+            if (facilityToBuild == Buildables.Null && ShouldBuildSpaceDock(planet, maxFacilities.SpaceDock, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull))
+                facilityToBuild = Buildables.SpaceDock;
+            if (facilityToBuild == Buildables.Null && ShouldBuildNanites(planet, maxFacilities.NaniteFactory, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull) && !planet.HasProduction())
+                facilityToBuild = Buildables.NaniteFactory;
+            if (facilityToBuild == Buildables.Null && ShouldBuildRoboticFactory(planet, maxFacilities.RoboticsFactory, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull))
+                facilityToBuild = Buildables.RoboticsFactory;
+            if (facilityToBuild == Buildables.Null && ShouldBuildShipyard(planet, maxFacilities.Shipyard, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull) && !planet.HasProduction())
+                facilityToBuild = Buildables.Shipyard;
+            if (facilityToBuild == Buildables.Null && ShouldBuildResearchLab(planet, maxFacilities.ResearchLab, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull) && planet.Constructions.ResearchID == 0)
+                facilityToBuild = Buildables.ResearchLab;
+            if (facilityToBuild == Buildables.Null && ShouldBuildMissileSilo(planet, maxFacilities.MissileSilo, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull))
+                facilityToBuild = Buildables.MissileSilo;
+
+            return facilityToBuild;
+        }
+
+        public static Buildables GetNextMineToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
+        {
+            Buildables mineToBuild = Buildables.Null;
+            mineToBuild = GetNextMineToBuild(planet, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, ratio, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn);
+
+            return mineToBuild;
+        }
+
+        public static Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, Facilities maxLunarFacilities)
+        {
+            return GetNextLunarFacilityToBuild(moon, researches, maxLunarFacilities.LunarBase, maxLunarFacilities.RoboticsFactory, maxLunarFacilities.SensorPhalanx, maxLunarFacilities.JumpGate, maxLunarFacilities.Shipyard);
+        }
+
         public static Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0)
         {
+            Buildables lunarFacilityToBuild = Buildables.Null;
             if (ShouldBuildLunarBase(moon, maxLunarBase))
-                return Buildables.LunarBase;
-            if (ShouldBuildRoboticFactory(moon, maxRoboticsFactory))
-                return Buildables.RoboticsFactory;
-            if (ShouldBuildJumpGate(moon, maxJumpGate, researches))
-                return Buildables.JumpGate;
-            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
-                return Buildables.SensorPhalanx;            
-            if (ShouldBuildShipyard(moon, maxShipyard))
-                return Buildables.Shipyard;
-            else return Buildables.Null;
+                lunarFacilityToBuild = Buildables.LunarBase;
+            if (lunarFacilityToBuild == Buildables.Null && ShouldBuildRoboticFactory(moon, maxRoboticsFactory))
+                lunarFacilityToBuild = Buildables.RoboticsFactory;
+            if (lunarFacilityToBuild == Buildables.Null && ShouldBuildJumpGate(moon, maxJumpGate, researches))
+                lunarFacilityToBuild = Buildables.JumpGate;
+            if (lunarFacilityToBuild == Buildables.Null && ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
+                lunarFacilityToBuild = Buildables.SensorPhalanx;            
+            if (lunarFacilityToBuild == Buildables.Null && ShouldBuildShipyard(moon, maxShipyard))
+                lunarFacilityToBuild = Buildables.Shipyard;
+
+            return lunarFacilityToBuild;
         }
 
         public static bool ShouldBuildRoboticFactory(Celestial celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, Classes playerClass = Classes.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, int maxDaysOfInvestmentReturn = 36500)
