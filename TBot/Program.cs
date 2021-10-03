@@ -1486,14 +1486,35 @@ namespace Tbot
                 }
 
                 researches = ogamedService.GetResearches();
-                Planet celestial = celestials
-                    .Single(c => c.HasCoords(new(
+                Planet celestial;
+                var parseSucceded = celestials
+                    .Any(c => c.HasCoords(new(
                         (int)settings.Brain.AutoResearch.Target.Galaxy,
                         (int)settings.Brain.AutoResearch.Target.System,
                         (int)settings.Brain.AutoResearch.Target.Position,
                         Celestials.Planet
-                        )
-                    )) as Planet;
+                    ))
+                );
+                if (parseSucceded)
+                {
+                    celestial = celestials
+                        .Single(c => c.HasCoords(new(
+                            (int)settings.Brain.AutoResearch.Target.Galaxy,
+                            (int)settings.Brain.AutoResearch.Target.System,
+                            (int)settings.Brain.AutoResearch.Target.Position,
+                            Celestials.Planet
+                            )
+                        )) as Planet;
+                }
+                else
+                {
+                    celestials = UpdatePlanets(UpdateType.Facilities);
+                    celestial = celestials
+                        .Where(c => c.Coordinate.Type == Celestials.Planet)
+                        .OrderByDescending(c => c.Facilities.ResearchLab)
+                        .First() as Planet;
+                }
+                
                 celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                 if (celestial.Constructions.ResearchID != 0)
                 {
@@ -1851,14 +1872,14 @@ namespace Tbot
         {
             try
             {
-                if (Helpers.ShouldBuildTerraformer(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock))
+                if (Helpers.ShouldBuildTerraformer(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxTerraformer))
                 {                    
                     xBuildable = Buildables.Terraformer;
                     nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, Buildables.Terraformer);
                     if (xCelestial.ResourcesProduction.Energy.CurrentProduction < Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy)
                     {
                         xBuildable = Buildables.SolarSatellite;
-                        nLevelToReach = Helpers.CalcNeededSolarSatellites(xCelestial as Planet, Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy - xCelestial.ResourcesProduction.Energy.CurrentProduction);
+                        nLevelToReach = Helpers.CalcNeededSolarSatellites(xCelestial as Planet, Helpers.CalcPrice(Buildables.Terraformer, nLevelToReach).Energy - xCelestial.ResourcesProduction.Energy.CurrentProduction, userInfo.Class == Classes.Collector, staff.Engineer);
                     }
                 }
             }
@@ -1903,7 +1924,7 @@ namespace Tbot
                         nLevelToReach = Helpers.GetNextLevel(xCelestial as Planet, xBuildable);
                     }
                 }
-                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxNaniteFactory, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
+                if (xBuildable == Buildables.Null && Helpers.ShouldBuildSpaceDock(xCelestial as Planet, (int)settings.Brain.AutoMine.MaxSpaceDock, researches, serverData.Speed, (int)settings.Brain.AutoMine.MaxMetalMine, (int)settings.Brain.AutoMine.MaxCrystalMine, (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer, 1, userInfo.Class, staff.Geologist, staff.IsFull) && !xCelestial.HasProduction())
                 {
                     //Manage the need of space dock
                     xBuildable = Buildables.SpaceDock;
@@ -2156,7 +2177,7 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Checking capacity...");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Ruuning autocargo...");
 
                 if (isSleeping)
                 {
@@ -2214,15 +2235,21 @@ namespace Tbot
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " is a moon - Skipping moon.");
                         continue;
                     }
-                    if (capacity <= tempCelestial.Resources.TotalResources)
+                    long neededCargos;
+                    Buildables preferredCargoShip = Buildables.SmallCargo;
+                    Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
+                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCago.LimitToCapacity)
                     {
-                        long difference = tempCelestial.Resources.TotalResources - capacity;
-                        Buildables preferredCargoShip = Buildables.SmallCargo;
-                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
+                        long difference = tempCelestial.Resources.TotalResources - capacity;                        
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
-                        long neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
+                        neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
-
+                    }
+                    else
+                    {
+                        neededCargos = tempCelestial.Ships.GetAmount(preferredCargoShip) - (long)settings.Brain.AutoCago.MaxCargosToKeep;
+                    }
+                    if (neededCargos > 0) {
                         /*Tralla 14/2/21
                          * 
                          * Add settings to provide a better autocargo configurability
@@ -2261,7 +2288,7 @@ namespace Tbot
                     }
                     else
                     {
-                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - Capacity is ok.");
+                        Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Celestial " + tempCelestial.ToString() + " - No ships will be built.");
                     }
 
                     newCelestials.Remove(celestial);

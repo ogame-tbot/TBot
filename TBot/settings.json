@@ -90,7 +90,6 @@
 			"MaxDeuteriumSynthetizer": 37,
 			"MaxSolarPlant": 20,
 			"MaxFusionReactor": 20,
-			"DepositHours": 6,
 			"MaxMetalStorage": 13,
 			"MaxCrystalStorage": 12,
 			"MaxDeuteriumTank": 11,
@@ -129,6 +128,7 @@
 			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanites": true,
 			"BuildDepositIfFull": false,
+			"DepositHours": 6,
 			"MaxDaysOfInvestmentReturn": 365,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
@@ -179,6 +179,7 @@
 			"RandomOrder": true,
 			"MaxCargosToBuild": 50,
 			"MaxCargosToKeep": 50,
+			"LimitToCapacity": true,
 			"SkipIfIncomingTransport": true,
 			"Exclude": [
 				{

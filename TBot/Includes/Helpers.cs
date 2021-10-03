@@ -146,7 +146,7 @@ namespace Tbot.Includes
                     baseCargo = 7000;
                     break;
                 case Buildables.Pathfinder:
-                    baseCargo = 12000;
+                    baseCargo = 10000;
                     if (playerClass == Classes.General) bonus += 25;
                     break;
                 default:
@@ -1249,12 +1249,12 @@ namespace Tbot.Includes
             else return 0;
         }
 
-        public static int GetNextLevel(Celestial planet, Buildables buildable)
+        public static int GetNextLevel(Celestial planet, Buildables buildable, bool isCollector = false, bool hasEngineer = false)
         {
             int output = 0;
             if (buildable == Buildables.SolarSatellite)
                 if (planet is Planet)
-                    output = CalcNeededSolarSatellites(planet as Planet);
+                    output = CalcNeededSolarSatellites(planet as Planet, planet.Resources.Energy, isCollector, hasEngineer);
             if (output == 0 && planet is Planet)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
@@ -1352,21 +1352,28 @@ namespace Tbot.Includes
             return Buildables.SolarSatellite;
         }
 
-        public static int GetSolarSatelliteOutput(Planet planet)
+        public static int GetSolarSatelliteOutput(Planet planet, bool isCollector = false, bool hasEngineer = false)
         {
-            return (int)Math.Round((planet.Temperature.Average + 160) / 6);
+            float production = (planet.Temperature.Average + 160) / 6;
+            float collectorProd = 0;
+            float engineerProd = 0;
+            if (isCollector)
+                collectorProd = (float)0.1 * production;
+            if (isCollector)
+                engineerProd = (float)0.1 * production;
+            return (int)Math.Round(production + collectorProd + engineerProd);
         }
 
-        public static int CalcNeededSolarSatellites(Planet planet, long requiredEnergy = 0)
+        public static int CalcNeededSolarSatellites(Planet planet, long requiredEnergy = 0, bool isCollector = false, bool hasEngineer = false)
         {
             if (requiredEnergy == 0)
             {
                 if (planet.Resources.Energy > 0)
                     return 0;
-                return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+                return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet, isCollector, hasEngineer)), MidpointRounding.ToPositiveInfinity);
             }
             else
-                return (int)Math.Round((float)(requiredEnergy / GetSolarSatelliteOutput(planet)), MidpointRounding.ToPositiveInfinity);
+                return (int)Math.Round((float)(requiredEnergy / GetSolarSatelliteOutput(planet, isCollector, hasEngineer)), MidpointRounding.ToPositiveInfinity);
         }
 
         public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, bool optimizeForStart = true)
@@ -1502,10 +1509,10 @@ namespace Tbot.Includes
                 return Buildables.LunarBase;
             if (ShouldBuildRoboticFactory(moon, maxRoboticsFactory))
                 return Buildables.RoboticsFactory;
-            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
-                return Buildables.SensorPhalanx;
             if (ShouldBuildJumpGate(moon, maxJumpGate, researches))
                 return Buildables.JumpGate;
+            if (ShouldBuildSensorPhalanx(moon, maxSensorPhalanx))
+                return Buildables.SensorPhalanx;            
             if (ShouldBuildShipyard(moon, maxShipyard))
                 return Buildables.Shipyard;
             else return Buildables.Null;
@@ -1627,7 +1634,7 @@ namespace Tbot.Includes
 
             var nextSpaceDockLevel = GetNextLevel(celestial, Buildables.SpaceDock);
             var nextSpaceDockPrice = CalcPrice(Buildables.SpaceDock, nextSpaceDockLevel);
-            if (nextSpaceDockLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSpaceDockPrice.ConvertedDeuterium && celestial.ResourcesProduction.Energy.CurrentProduction >= nextSpaceDockPrice.Energy)
+            if (nextSpaceDockLevel <= maxLevel && nextMinePrice.ConvertedDeuterium > nextSpaceDockPrice.ConvertedDeuterium && celestial.ResourcesProduction.Energy.CurrentProduction >= nextSpaceDockPrice.Energy && celestial.Facilities.Shipyard >= 2)
                 return true;
             else return false;
         }
