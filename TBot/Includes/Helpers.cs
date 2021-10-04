@@ -1249,12 +1249,12 @@ namespace Tbot.Includes
             else return 0;
         }
 
-        public static int GetNextLevel(Celestial planet, Buildables buildable, bool isCollector = false, bool hasEngineer = false)
+        public static int GetNextLevel(Celestial planet, Buildables buildable, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false)
         {
             int output = 0;
             if (buildable == Buildables.SolarSatellite)
                 if (planet is Planet)
-                    output = CalcNeededSolarSatellites(planet as Planet, planet.Resources.Energy, isCollector, hasEngineer);
+                    output = CalcNeededSolarSatellites(planet as Planet, planet.Resources.Energy, isCollector, hasEngineer, hasFullStaff);
             if (output == 0 && planet is Planet)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
@@ -1352,28 +1352,31 @@ namespace Tbot.Includes
             return Buildables.SolarSatellite;
         }
 
-        public static int GetSolarSatelliteOutput(Planet planet, bool isCollector = false, bool hasEngineer = false)
+        public static int GetSolarSatelliteOutput(Planet planet, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false)
         {
             float production = (planet.Temperature.Average + 160) / 6;
             float collectorProd = 0;
             float engineerProd = 0;
+            float staffProd = 0;
             if (isCollector)
                 collectorProd = (float)0.1 * production;
-            if (isCollector)
+            if (hasEngineer)
                 engineerProd = (float)0.1 * production;
-            return (int)Math.Round(production + collectorProd + engineerProd);
+            if (hasFullStaff)
+                staffProd = (float)0.02 * production;
+            return (int)Math.Round(production + collectorProd + engineerProd + staffProd);
         }
 
-        public static int CalcNeededSolarSatellites(Planet planet, long requiredEnergy = 0, bool isCollector = false, bool hasEngineer = false)
+        public static int CalcNeededSolarSatellites(Planet planet, long requiredEnergy = 0, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false)
         {
             if (requiredEnergy == 0)
             {
                 if (planet.Resources.Energy > 0)
                     return 0;
-                return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet, isCollector, hasEngineer)), MidpointRounding.ToPositiveInfinity);
+                return (int)Math.Round((float)(Math.Abs(planet.Resources.Energy) / GetSolarSatelliteOutput(planet, isCollector, hasEngineer, hasFullStaff)), MidpointRounding.ToPositiveInfinity);
             }
             else
-                return (int)Math.Round((float)(requiredEnergy / GetSolarSatelliteOutput(planet, isCollector, hasEngineer)), MidpointRounding.ToPositiveInfinity);
+                return (int)Math.Round((float)(requiredEnergy / GetSolarSatelliteOutput(planet, isCollector, hasEngineer, hasFullStaff)), MidpointRounding.ToPositiveInfinity);
         }
 
         public static Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, bool optimizeForStart = true)
@@ -1512,7 +1515,7 @@ namespace Tbot.Includes
                 DeuteriumSynthesizer = maxDeuteriumSynthetizer,
                 SolarPlant = maxSolarPlant,
                 FusionReactor = maxFusionReactor,
-                MetalStorage = maxMetalMine,
+                MetalStorage = maxMetalStorage,
                 CrystalStorage = maxCrystalStorage,
                 DeuteriumTank = maxDeuteriumTank
             };
@@ -1563,11 +1566,11 @@ namespace Tbot.Includes
         public static Buildables GetNextDepositToBuild(Planet planet,Researches researches, Buildings maxBuildings, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
         {
             Buildables depositToBuild = Buildables.Null;
-            if (depositToBuild == Buildables.Null && ShouldBuildDeuteriumTank(planet, maxBuildings.DeuteriumTank, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+            if (depositToBuild == Buildables.Null && ShouldBuildDeuteriumTank(planet, maxBuildings.DeuteriumTank, serverData.Speed, settings.DepositHours, ratio, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
                 depositToBuild = Buildables.DeuteriumTank;
-            if (depositToBuild == Buildables.Null && ShouldBuildCrystalStorage(planet, maxBuildings.CrystalStorage, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+            if (depositToBuild == Buildables.Null && ShouldBuildCrystalStorage(planet, maxBuildings.CrystalStorage, serverData.Speed, settings.DepositHours, ratio, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
                 depositToBuild = Buildables.CrystalStorage;
-            if (depositToBuild == Buildables.Null && ShouldBuildMetalStorage(planet, maxBuildings.MetalStorage, serverData.Speed, settings.DepositHours, 1, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
+            if (depositToBuild == Buildables.Null && ShouldBuildMetalStorage(planet, maxBuildings.MetalStorage, serverData.Speed, settings.DepositHours, ratio, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
                 depositToBuild = Buildables.MetalStorage;
 
             return depositToBuild;
@@ -1598,10 +1601,7 @@ namespace Tbot.Includes
 
         public static Buildables GetNextMineToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
         {
-            Buildables mineToBuild = Buildables.Null;
-            mineToBuild = GetNextMineToBuild(planet, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, ratio, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn);
-
-            return mineToBuild;
+            return GetNextMineToBuild(planet, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, ratio, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn);
         }
 
         public static Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, Facilities maxLunarFacilities)
@@ -1728,7 +1728,6 @@ namespace Tbot.Includes
         public static bool ShouldBuildTerraformer(Planet celestial, int maxLevel = 10)
         {
             var nextLevel = GetNextLevel(celestial, Buildables.Terraformer);
-            var price = CalcPrice(Buildables.Terraformer, nextLevel);
             if (celestial.Fields.Free == 1 && nextLevel <= maxLevel)
                 return true;
             else return false;
