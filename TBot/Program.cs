@@ -607,6 +607,7 @@ namespace Tbot
 
         private static void UpdateTitle(bool force = true, bool underAttack = false)
         {
+            CheckNewCelestials();
             if (force)
             {
                 serverInfo = UpdateServerInfo();
@@ -625,7 +626,6 @@ namespace Tbot
                 title = "ENEMY ACTIVITY! - " + title;
 
             Helpers.SetTitle(title);
-            CheckNewCelestials();
         }
 
         private static void CheckNewCelestials()
