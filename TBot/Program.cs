@@ -1902,13 +1902,17 @@ namespace Tbot
                                 {
                                     var missingResources = price.Difference(celestial.Resources);
                                     celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
-                                    float metProdInASecond = Helpers.CalcMetalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                    float cryProdInASecond = Helpers.CalcCrystalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                    float deutProdInASecond = Helpers.CalcDeuteriumProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                    float metProductionTime = missingResources.Metal / metProdInASecond;
-                                    float cryProductionTime = missingResources.Crystal / cryProdInASecond;
-                                    float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
-                                    interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                    celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+                                    float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                    float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                    float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
+                                    if (metProdInASecond > 0 && cryProdInASecond > 0 && deutProdInASecond > 0)
+                                    {
+                                        float metProductionTime = missingResources.Metal / metProdInASecond;
+                                        float cryProductionTime = missingResources.Crystal / cryProdInASecond;
+                                        float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
+                                        interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                    }
                                 }
                             }
                         }
@@ -1961,17 +1965,22 @@ namespace Tbot
                             {
                                 destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
                                 destination = UpdatePlanet(destination, UpdateType.Buildings);
+                                destination = UpdatePlanet(destination, UpdateType.ResourcesProduction);
 
                                 var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
                                 var flightTime = flightPrediction.Time;
-                                float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
+                                
+                                float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                float deutProdInASecond = destination.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
                                 var metProdInFlightTime = metProdInASecond * flightTime;
-                                float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
-                                var criProdInFlightTime = criProdInASecond * flightTime;
-                                float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
+                                var criProdInFlightTime = cryProdInASecond * flightTime;
                                 var deutProdInFlightTime = deutProdInASecond * flightTime;
 
                                 if (
+                                    metProdInASecond == 0 ||
+                                    cryProdInASecond == 0 ||
+                                    deutProdInASecond == 0 ||
                                     missingResources.Metal >= metProdInFlightTime ||
                                     missingResources.Crystal >= criProdInFlightTime ||
                                     missingResources.Deuterium >= deutProdInFlightTime ||
