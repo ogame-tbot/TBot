@@ -1768,7 +1768,7 @@ namespace Tbot
                     celestial = UpdatePlanet(celestial, UpdateType.Productions);
 
                     buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
-                    level = Helpers.GetNextLevel(celestial as Moon, buildable);
+                    level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
                 }
 
                 if (buildable != Buildables.Null && level > 0)
@@ -1834,7 +1834,7 @@ namespace Tbot
                                 }
                             }
                         }
-                        else
+                        else if (buildable != Buildables.SolarSatellite)
                             Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
                     }
                     else
@@ -1884,29 +1884,32 @@ namespace Tbot
                     else
                     {
                         var nextTimeToCompletion = 0;
-                        celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                        nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;
-                        if (nextTimeToCompletion > 0)
-                            interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                        else
+                        if (buildable != Buildables.SolarSatellite)
                         {
-                            var price = Helpers.CalcPrice(buildable, level);
-                            if (
-                                celestial.Coordinate.Type == Celestials.Planet &&
-                                price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
-                                price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
-                                price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
-                            )
+                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                            nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;
+                            if (nextTimeToCompletion > 0)
+                                interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            else
                             {
-                                var missingResources = price.Difference(celestial.Resources);
-                                celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
-                                float metProdInASecond = Helpers.CalcMetalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                float cryProdInASecond = Helpers.CalcCrystalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                float deutProdInASecond = Helpers.CalcDeuteriumProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                                float metProductionTime = missingResources.Metal / metProdInASecond;
-                                float cryProductionTime = missingResources.Crystal / cryProdInASecond;
-                                float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
-                                interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                var price = Helpers.CalcPrice(buildable, level);
+                                if (
+                                    celestial.Coordinate.Type == Celestials.Planet &&
+                                    price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
+                                    price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
+                                    price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
+                                )
+                                {
+                                    var missingResources = price.Difference(celestial.Resources);
+                                    celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
+                                    float metProdInASecond = Helpers.CalcMetalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                                    float cryProdInASecond = Helpers.CalcCrystalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                                    float deutProdInASecond = Helpers.CalcDeuteriumProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                                    float metProductionTime = missingResources.Metal / metProdInASecond;
+                                    float cryProductionTime = missingResources.Crystal / cryProdInASecond;
+                                    float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
+                                    interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                }
                             }
                         }
                     }

@@ -1254,7 +1254,7 @@ namespace Tbot.Includes
             int output = 0;
             if (buildable == Buildables.SolarSatellite)
                 if (planet is Planet)
-                    output = CalcNeededSolarSatellites(planet as Planet, planet.Resources.Energy, isCollector, hasEngineer, hasFullStaff);
+                    output = CalcNeededSolarSatellites(planet as Planet, Math.Abs(planet.Resources.Energy), isCollector, hasEngineer, hasFullStaff);
             if (output == 0 && planet is Planet)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
