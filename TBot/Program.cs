@@ -1906,7 +1906,7 @@ namespace Tbot
                                     float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
                                     float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
                                     float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
-                                    if (metProdInASecond > 0 && cryProdInASecond > 0 && deutProdInASecond > 0)
+                                    if (!((missingResources.Metal > 0 && metProdInASecond < 1) || (missingResources.Crystal > 0 && cryProdInASecond < 1) || (missingResources.Deuterium > 0 && deutProdInASecond < 1)))
                                     {
                                         float metProductionTime = missingResources.Metal / metProdInASecond;
                                         float cryProductionTime = missingResources.Crystal / cryProdInASecond;
@@ -1974,15 +1974,15 @@ namespace Tbot
                                 float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
                                 float deutProdInASecond = destination.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
                                 var metProdInFlightTime = metProdInASecond * flightTime;
-                                var criProdInFlightTime = cryProdInASecond * flightTime;
+                                var cryProdInFlightTime = cryProdInASecond * flightTime;
                                 var deutProdInFlightTime = deutProdInASecond * flightTime;
 
                                 if (
-                                    metProdInASecond == 0 ||
-                                    cryProdInASecond == 0 ||
-                                    deutProdInASecond == 0 ||
+                                    (metProdInASecond == 0 && missingResources.Metal > 0 ) ||
+                                    (cryProdInFlightTime == 0 && missingResources.Crystal > 0) ||
+                                    (deutProdInFlightTime == 0 && missingResources.Deuterium > 0) ||
                                     missingResources.Metal >= metProdInFlightTime ||
-                                    missingResources.Crystal >= criProdInFlightTime ||
+                                    missingResources.Crystal >= cryProdInFlightTime ||
                                     missingResources.Deuterium >= deutProdInFlightTime ||
                                     resources.Metal > Helpers.CalcDepositCapacity(destination.Buildings.MetalStorage) ||
                                     resources.Crystal > Helpers.CalcDepositCapacity(destination.Buildings.CrystalStorage) ||
