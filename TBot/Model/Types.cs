@@ -952,4 +952,21 @@ namespace Tbot.Model
         public Darkmatter Darkmatter { get; set; }
     }
 
+    public class AutoMinerSettings
+    {
+        public bool OptimizeForStart { get; set; }
+        public bool PrioritizeRobotsAndNanites { get; set; }
+        public int MaxDaysOfInvestmentReturn { get; set; }
+        public int DepositHours { get; set; }
+        public bool BuildDepositIfFull { get; set; }
+        public AutoMinerSettings()
+        {
+            OptimizeForStart = true;
+            PrioritizeRobotsAndNanites = false;
+            MaxDaysOfInvestmentReturn = 36500;
+            DepositHours = 6;
+            BuildDepositIfFull = false;
+        }
+    }
+
 }
