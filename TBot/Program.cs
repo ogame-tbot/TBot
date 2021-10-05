@@ -128,8 +128,6 @@ namespace Tbot
                 userInfo = UpdateUserInfo();
                 staff = UpdateStaff();
 
-                UpdateTitle(false);
-
                 Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Server time: " + GetDateTime().ToString());
 
                 Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Player name: " + userInfo.PlayerName);
@@ -185,6 +183,7 @@ namespace Tbot
                     celestials = GetPlanets();
                     researches = ogamedService.GetResearches();
                     scheduledFleets = new();
+                    UpdateTitle(false);
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
                     InitializeFeatures();
@@ -607,7 +606,7 @@ namespace Tbot
 
         private static void UpdateTitle(bool force = true, bool underAttack = false)
         {
-            CheckNewCelestials();
+            CheckCelestials();
             if (force)
             {
                 serverInfo = UpdateServerInfo();
@@ -628,14 +627,15 @@ namespace Tbot
             Helpers.SetTitle(title);
         }
 
-        private static void CheckNewCelestials()
+        private static void CheckCelestials()
         {
             if (!isSleeping && celestials.Count != UpdateCelestials().Count)
             {
                 if (features.TryGetValue(Feature.BrainAutoMine, out bool value) && value)
                     timers.Remove("AutoMineTimer");
                     timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
-            }                
+            }
+            celestials = celestials.Unique().ToList();
         }
 
         private static void InitializeDefender()
@@ -1468,7 +1468,13 @@ namespace Tbot
                         .OrderByDescending(c => c.Facilities.ResearchLab)
                         .First() as Planet;
                 }
-                
+
+                celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
+                if (celestial.Facilities.ResearchLab == 0)
+                {
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: Research Lab is missing on target planet.");
+                    return;
+                }
                 celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                 if (celestial.Constructions.ResearchID != 0)
                 {
@@ -1541,19 +1547,19 @@ namespace Tbot
             {
                 if (!isSleeping)
                 {
+                    long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     Planet celestial = celestials
-                        .Single(c => c.HasCoords(new(
+                        .SingleOrDefault(c => c.HasCoords(new(
                             (int)settings.Brain.AutoResearch.Target.Galaxy,
                             (int)settings.Brain.AutoResearch.Target.System,
                             (int)settings.Brain.AutoResearch.Target.Position,
                             Celestials.Planet
                             )
-                        )) as Planet;
+                        )) as Planet ?? new Planet() { ID = 0 };
                     var time = GetDateTime();
-                    celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
-                    long interval;
-                    try
+                    if (celestial.ID != 0)
                     {
+                        celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
                         if (celestial.Constructions.ResearchCountdown != 0)
                             interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                         else if (fleetId != 0)
@@ -1566,11 +1572,7 @@ namespace Tbot
                             interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                         else
                             interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
-                    }
-                    catch
-                    {
-                        interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
-                    }                    
+                    }                  
                     if (interval <= 0)
                         interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                     var newTime = time.AddMilliseconds(interval);
@@ -1602,13 +1604,13 @@ namespace Tbot
                 Buildings maxBuildings = new()
                 {
                     MetalMine = (int)settings.Brain.AutoMine.MaxMetalMine,
-                    CrystalMine = (int)settings.Brain.Automine.MaxCrystalMine,
-                    DeuteriumSynthesizer = (int)settings.Brain.Automine.MaxDeuteriumSynthesizer,
-                    SolarPlant = (int)settings.Brain.Automine.MaxSolarPlant,
-                    FusionReactor = (int)settings.Brain.Automine.MaxFusionReactor,
-                    MetalStorage = (int)settings.Brain.Automine.MaxMetalStorage,
-                    CrystalStorage = (int)settings.Brain.Automine.MaxCrystalStorage,
-                    DeuteriumTank = (int)settings.Brain.Automine.MaxDeuteriumTank
+                    CrystalMine = (int)settings.Brain.AutoMine.MaxCrystalMine,
+                    DeuteriumSynthesizer = (int)settings.Brain.AutoMine.MaxDeuteriumSynthetizer,
+                    SolarPlant = (int)settings.Brain.AutoMine.MaxSolarPlant,
+                    FusionReactor = (int)settings.Brain.AutoMine.MaxFusionReactor,
+                    MetalStorage = (int)settings.Brain.AutoMine.MaxMetalStorage,
+                    CrystalStorage = (int)settings.Brain.AutoMine.MaxCrystalStorage,
+                    DeuteriumTank = (int)settings.Brain.AutoMine.MaxDeuteriumTank
                 };
                 Facilities maxFacilities = new()
                 {
@@ -1638,7 +1640,7 @@ namespace Tbot
                 };
 
                 List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
-                List<Celestial> celestialsToMine = celestials;
+                List<Celestial> celestialsToMine = new();
                 if (state == null)
                     celestialsToMine = celestials;
                 else
@@ -1673,13 +1675,12 @@ namespace Tbot
 
         private static void AutoMineCelestial(Celestial celestial, Buildings maxBuildings, Facilities maxFacilities, Facilities maxLunarFacilities, AutoMinerSettings autoMinerSettings)
         {
-            int fleetId = 0;            
+            int fleetId = 0;
+            Buildables buildable = Buildables.Null;
+            int level = 0;
             try
             {
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + celestial.ToString());
-                Buildables buildable = Buildables.Null;
-                int level = 0;
-
                 celestial = UpdatePlanet(celestial, UpdateType.Fast);
                 if (celestial.Fields.Free == 0)
                 {
@@ -1830,6 +1831,27 @@ namespace Tbot
                     nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;                    
                     if (nextTimeToCompletion > 0)
                         interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    else
+                    {
+                        var price = Helpers.CalcPrice(buildable, level);                        
+                        if (
+                            celestial.Coordinate.Type == Celestials.Planet &&
+                            price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
+                            price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
+                            price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
+                        )
+                        {
+                            var missingResources = price.Difference(celestial.Resources);
+                            celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
+                            float metProdInASecond = Helpers.CalcMetalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                            float cryProdInASecond = Helpers.CalcCrystalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                            float deutProdInASecond = Helpers.CalcDeuteriumProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
+                            float metProductionTime = missingResources.Metal / metProdInASecond;
+                            float cryProductionTime = missingResources.Crystal / cryProdInASecond;
+                            float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
+                            interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                        }
+                    }
                 }
                 if (interval <= 0)
                     interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);

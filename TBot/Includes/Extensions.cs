@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Tbot.Model;
@@ -33,5 +35,24 @@ namespace Tbot.Includes
             }
             return false;
         }
+
+        public static IEnumerable<Celestial> Unique(this IEnumerable<Celestial> source)
+        {
+            return source.Distinct(new CelestialComparer()).ToList();
+        }
+
+        public class CelestialComparer : IEqualityComparer<Celestial>
+        {
+            public bool Equals(Celestial x, Celestial y)
+            {
+                return x.ID == y.ID;
+            }
+
+            public int GetHashCode([DisallowNull] Celestial obj)
+            {
+                return obj.ID;
+            }
+        }
+
     }
 }

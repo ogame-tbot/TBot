@@ -1563,9 +1563,21 @@ namespace Tbot.Includes
             return buildableToBuild;
         }
 
-        public static Buildables GetNextDepositToBuild(Planet planet,Researches researches, Buildings maxBuildings, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
+        public static Buildables GetNextDepositToBuild(Planet planet, Researches researches, Buildings maxBuildings, Classes playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1)
         {
             Buildables depositToBuild = Buildables.Null;
+            if (
+                settings.OptimizeForStart &&
+                planet.Buildings.MetalMine < 13 &&
+                planet.Buildings.CrystalMine < 12 &&
+                planet.Buildings.DeuteriumSynthesizer < 10 &&
+                planet.Buildings.SolarPlant < 13 &&
+                planet.Buildings.FusionReactor < 5 &&
+                planet.Facilities.RoboticsFactory < 5 &&
+                planet.Facilities.Shipyard < 5 &&
+                planet.Facilities.ResearchLab < 5
+            )
+                return depositToBuild;
             if (depositToBuild == Buildables.Null && ShouldBuildDeuteriumTank(planet, maxBuildings.DeuteriumTank, serverData.Speed, settings.DepositHours, ratio, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
                 depositToBuild = Buildables.DeuteriumTank;
             if (depositToBuild == Buildables.Null && ShouldBuildCrystalStorage(planet, maxBuildings.CrystalStorage, serverData.Speed, settings.DepositHours, ratio, researches, playerClass, staff.Geologist, staff.IsFull, settings.BuildDepositIfFull))
