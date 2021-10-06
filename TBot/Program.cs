@@ -1976,7 +1976,13 @@ namespace Tbot
                                     float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
                                     float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
                                     float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
-                                    if (!((missingResources.Metal > 0 && metProdInASecond < 1) || (missingResources.Crystal > 0 && cryProdInASecond < 1) || (missingResources.Deuterium > 0 && deutProdInASecond < 1)))
+                                    if (
+                                        !(
+                                            (missingResources.Metal > 0 && metProdInASecond < 1) ||
+                                            (missingResources.Crystal > 0 && cryProdInASecond < 1) ||
+                                            (missingResources.Deuterium > 0 && deutProdInASecond < 1)
+                                        )
+                                    )
                                     {
                                         float metProductionTime = missingResources.Metal / metProdInASecond;
                                         float cryProductionTime = missingResources.Crystal / cryProdInASecond;
@@ -2456,17 +2462,20 @@ namespace Tbot
             )
             {
                 DateTime time = GetDateTime();
-                if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
-                    goToSleep = goToSleep.AddDays(1);
-                if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
-                    wakeUp = wakeUp.AddDays(1);
 
-                var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
-                var minReturnTime = time.Add(TimeSpan.FromSeconds(flightTime));
-                if (
-                    time.CompareTo(lastDepartureTime) > 0 &&
-                    minReturnTime.CompareTo(wakeUp) < 0
-                )
+                if (time >= goToSleep && time >= wakeUp)
+                {
+                    if (goToSleep >= wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                    else
+                        goToSleep = goToSleep.AddDays(1);
+                }
+
+                var maxDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime)).Subtract(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+                var returnTime = time.Add(TimeSpan.FromSeconds(flightTime)).Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+                var minReturnTime = wakeUp.Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+
+                if (time > maxDepartureTime || returnTime < minReturnTime)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
                     return 0;
