@@ -119,6 +119,7 @@ namespace Tbot
 
             if (!isLoggedIn)
             {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login.");
                 ogamedService.KillOgamedExecultable();
                 Console.ReadLine();
             }
@@ -182,7 +183,7 @@ namespace Tbot
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
                     celestials = GetPlanets();
-                    researches = ogamedService.GetResearches();
+                    researches = UpdateResearches();
                     scheduledFleets = new();
                     UpdateTitle(false);
 
@@ -424,90 +425,202 @@ namespace Tbot
 
         private static DateTime GetDateTime()
         {
-            DateTime dateTime = ogamedService.GetServerTime();
-            if (dateTime.Kind == DateTimeKind.Utc)
-                return dateTime.ToLocalTime();
-            else
-                return dateTime;
+            try
+            {
+                DateTime dateTime = ogamedService.GetServerTime();
+                if (dateTime.Kind == DateTimeKind.Utc)
+                    return dateTime.ToLocalTime();
+                else
+                    return dateTime;
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "GetDateTime() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                var fallback = new DateTime();
+                if (fallback.Kind == DateTimeKind.Utc)
+                    return fallback.ToLocalTime();
+                else
+                    return fallback;
+            }
         }
 
         private static Slots UpdateSlots()
         {
-            return ogamedService.GetSlots();
+            try
+            {
+                return ogamedService.GetSlots();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateSlots() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static List<Fleet> UpdateFleets()
         {
-            return ogamedService.GetFleets();
+            try
+            {
+                return ogamedService.GetFleets();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateFleets() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static List<GalaxyInfo> UpdateGalaxyInfos()
         {
-            List<GalaxyInfo> galaxyInfos = new();
-            Planet newPlanet = new();
-            List<Celestial> newCelestials = celestials.ToList();
-            foreach (Planet planet in celestials.Where(p => p is Planet))
+            try
             {
-                newPlanet = planet;
-                var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                List<GalaxyInfo> galaxyInfos = new();
+                Planet newPlanet = new();
+                List<Celestial> newCelestials = celestials.ToList();
+                foreach (Planet planet in celestials.Where(p => p is Planet))
                 {
-                    newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
-                    galaxyInfos.Add(gi);
+                    newPlanet = planet;
+                    var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
+                    if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                    {
+                        newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
+                        galaxyInfos.Add(gi);
+                    }
+
+                    if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
+                    {
+                        Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                        newCelestials.Remove(oldPlanet);
+                        newCelestials.Add(newPlanet);
+                    }
                 }
-                
-                if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
-                {
-                    Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
-                    newCelestials.Remove(oldPlanet);
-                    newCelestials.Add(newPlanet);
-                }                
+                celestials = newCelestials;
+                return galaxyInfos;
             }
-            celestials = newCelestials;
-            return galaxyInfos;
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateGalaxyInfos() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static ServerData UpdateServerData()
         {
-            return ogamedService.GetServerData();
+            try
+            {
+                return ogamedService.GetServerData();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateServerData() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static Server UpdateServerInfo()
         {
-            return ogamedService.GetServerInfo();
+            try
+            {
+                return ogamedService.GetServerInfo();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateServerInfo() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static UserInfo UpdateUserInfo()
         {
-            UserInfo user = ogamedService.GetUserInfo();
-            user.Class = ogamedService.GetUserClass();
-            return user;
+            try
+            {
+                UserInfo user = ogamedService.GetUserInfo();
+                user.Class = ogamedService.GetUserClass();
+                return user;
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateUserInfo() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new()
+                {
+                    PlayerID = 0,
+                    PlayerName = "Uninitialized",
+                    Class = Classes.NoClass,
+                    Points = 0,
+                    HonourPoints = 0,
+                    Rank = 0,
+                    Total = 0
+                };
+            }
         }
 
         private static List<Celestial> UpdateCelestials()
         {
-            return ogamedService.GetCelestials();
+            try
+            {
+                return ogamedService.GetCelestials();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateCelestials() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return celestials ?? new();
+            }
         }
 
         private static Researches UpdateResearches()
         {
-            return ogamedService.GetResearches();
+            try
+            {
+                return ogamedService.GetResearches();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateResearches() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static Staff UpdateStaff()
         {
-            return ogamedService.GetStaff();
+            try
+            {
+                return ogamedService.GetStaff();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateStaff() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }            
         }
 
         private static List<Celestial> GetPlanets()
         {
             List<Celestial> localPlanets = celestials ?? new();
-            List<Celestial> ogamedPlanets = ogamedService.GetCelestials();
-            if (localPlanets.Count == 0 || ogamedPlanets.Count != celestials.Count)
+            try
             {
-                localPlanets = ogamedPlanets.ToList();
+                List<Celestial> ogamedPlanets = ogamedService.GetCelestials();
+                if (localPlanets.Count == 0 || ogamedPlanets.Count != celestials.Count)
+                {
+                    localPlanets = ogamedPlanets.ToList();
+                }
+                return localPlanets;
             }
-            return localPlanets;
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "GetPlanets() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return localPlanets;
+            }
         }
 
         private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full)
@@ -515,11 +628,20 @@ namespace Tbot
             //Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
             List<Celestial> localPlanets = GetPlanets();
             List<Celestial> newPlanets = new();
-            foreach (Celestial planet in localPlanets)
+            try
             {
-                newPlanets.Add(UpdatePlanet(planet, updateType));
+                foreach (Celestial planet in localPlanets)
+                {
+                    newPlanets.Add(UpdatePlanet(planet, updateType));
+                }
+                return newPlanets;
             }
-            return newPlanets;
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdatePlanets(" + updateType.ToString() + ") Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return newPlanets;
+            }            
         }
 
         private static Celestial UpdatePlanet(Celestial planet, UpdateType updateType = UpdateType.Full)
@@ -630,13 +752,17 @@ namespace Tbot
 
         private static void CheckCelestials()
         {
-            if (!isSleeping && celestials.Count != UpdateCelestials().Count)
+            try
             {
-                if (features.TryGetValue(Feature.BrainAutoMine, out bool value) && value)
-                    timers.Remove("AutoMineTimer");
+                if (!isSleeping && celestials.Count != UpdateCelestials().Count)
+                {
+                    if (features.TryGetValue(Feature.BrainAutoMine, out bool value) && value)
+                        timers.Remove("AutoMineTimer");
                     timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+                }
+                celestials = celestials.Unique().ToList();
             }
-            celestials = celestials.Unique().ToList();
+            catch {}
         }
 
         private static void InitializeDefender()
@@ -1647,7 +1773,7 @@ namespace Tbot
                 else
                     celestialsToMine.Add(state as Celestial);
 
-                foreach (Celestial celestial in (bool)settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine)
+                foreach (Celestial celestial in (bool)settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine.OrderBy(c => c.Fields.Built).ToList())
                 {
                     if (celestialsToExclude.Has(celestial))
                     {
@@ -1714,7 +1840,7 @@ namespace Tbot
                     celestial = UpdatePlanet(celestial, UpdateType.Productions);
 
                     buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
-                    level = Helpers.GetNextLevel(celestial as Moon, buildable);
+                    level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
                 }
 
                 if (buildable != Buildables.Null && level > 0)
@@ -1780,7 +1906,7 @@ namespace Tbot
                                 }
                             }
                         }
-                        else
+                        else if (buildable != Buildables.SolarSatellite)
                             Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
                     }
                     else
@@ -1819,38 +1945,54 @@ namespace Tbot
                 var time = GetDateTime();
                 DateTime newTime;
                 long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
-                if (fleetId != 0)
+                if (buildable != Buildables.Null)
                 {
-                    fleets = UpdateFleets();
-                    var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-                    interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                }
-                else
-                {
-                    var nextTimeToCompletion = 0;
-                    celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                    nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;                    
-                    if (nextTimeToCompletion > 0)
-                        interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    if (fleetId != 0)
+                    {
+                        fleets = UpdateFleets();
+                        var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+                        interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    }
                     else
                     {
-                        var price = Helpers.CalcPrice(buildable, level);                        
-                        if (
-                            celestial.Coordinate.Type == Celestials.Planet &&
-                            price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
-                            price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
-                            price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
-                        )
+                        var nextTimeToCompletion = 0;
+                        if (buildable != Buildables.SolarSatellite)
                         {
-                            var missingResources = price.Difference(celestial.Resources);
-                            celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
-                            float metProdInASecond = Helpers.CalcMetalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                            float cryProdInASecond = Helpers.CalcCrystalProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                            float deutProdInASecond = Helpers.CalcDeuteriumProduction(celestial as Planet, serverData.Speed, 100 / celestial.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)3600;
-                            float metProductionTime = missingResources.Metal / metProdInASecond;
-                            float cryProductionTime = missingResources.Crystal / cryProdInASecond;
-                            float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
-                            interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                            nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;
+                            if (nextTimeToCompletion > 0)
+                                interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            else
+                            {
+                                var price = Helpers.CalcPrice(buildable, level);
+                                if (
+                                    celestial.Coordinate.Type == Celestials.Planet &&
+                                    price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
+                                    price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
+                                    price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
+                                )
+                                {
+                                    var missingResources = price.Difference(celestial.Resources);
+                                    celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
+                                    celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+                                    float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                    float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                    float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
+                                    if (
+                                        !(
+                                            (missingResources.Metal > 0 && metProdInASecond == 0) ||
+                                            (missingResources.Crystal > 0 && cryProdInASecond == 0) ||
+                                            (missingResources.Deuterium > 0 && deutProdInASecond == 0)
+                                        )
+                                    )
+                                    {
+                                        float metProductionTime = missingResources.Metal / metProdInASecond;
+                                        float cryProductionTime = missingResources.Crystal / cryProdInASecond;
+                                        float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
+                                        interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1901,19 +2043,24 @@ namespace Tbot
                             {
                                 destination = UpdatePlanet(destination, UpdateType.ResourceSettings);
                                 destination = UpdatePlanet(destination, UpdateType.Buildings);
+                                destination = UpdatePlanet(destination, UpdateType.ResourcesProduction);
 
                                 var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
                                 var flightTime = flightPrediction.Time;
-                                float metProdInASecond = (float)Helpers.CalcMetalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
+                                
+                                float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                float deutProdInASecond = destination.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
                                 var metProdInFlightTime = metProdInASecond * flightTime;
-                                float criProdInASecond = (float)Helpers.CalcCrystalProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
-                                var criProdInFlightTime = criProdInASecond * flightTime;
-                                float deutProdInASecond = (float)Helpers.CalcDeuteriumProduction(destination as Planet, serverData.Speed, 100 / destination.ResourceSettings.MetalMine, researches, userInfo.Class, staff.Geologist, staff.IsFull) / (float)60 / (float)60;
+                                var cryProdInFlightTime = cryProdInASecond * flightTime;
                                 var deutProdInFlightTime = deutProdInASecond * flightTime;
 
                                 if (
+                                    (metProdInASecond == 0 && missingResources.Metal > 0 ) ||
+                                    (cryProdInFlightTime == 0 && missingResources.Crystal > 0) ||
+                                    (deutProdInFlightTime == 0 && missingResources.Deuterium > 0) ||
                                     missingResources.Metal >= metProdInFlightTime ||
-                                    missingResources.Crystal >= criProdInFlightTime ||
+                                    missingResources.Crystal >= cryProdInFlightTime ||
                                     missingResources.Deuterium >= deutProdInFlightTime ||
                                     resources.Metal > Helpers.CalcDepositCapacity(destination.Buildings.MetalStorage) ||
                                     resources.Crystal > Helpers.CalcDepositCapacity(destination.Buildings.CrystalStorage) ||
@@ -2317,17 +2464,20 @@ namespace Tbot
             )
             {
                 DateTime time = GetDateTime();
-                if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
-                    goToSleep = goToSleep.AddDays(1);
-                if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
-                    wakeUp = wakeUp.AddDays(1);
 
-                var lastDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime));
-                var minReturnTime = time.Add(TimeSpan.FromSeconds(flightTime));
-                if (
-                    time.CompareTo(lastDepartureTime) > 0 &&
-                    minReturnTime.CompareTo(wakeUp) < 0
-                )
+                if (time >= goToSleep && time >= wakeUp)
+                {
+                    if (goToSleep >= wakeUp)
+                        wakeUp = wakeUp.AddDays(1);
+                    else
+                        goToSleep = goToSleep.AddDays(1);
+                }
+
+                var maxDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime)).Subtract(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+                var returnTime = time.Add(TimeSpan.FromSeconds(flightTime)).Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+                var minReturnTime = wakeUp.Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+
+                if (time > maxDepartureTime || returnTime < minReturnTime)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
                     return 0;

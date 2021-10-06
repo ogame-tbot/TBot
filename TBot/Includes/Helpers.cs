@@ -16,6 +16,7 @@ namespace Tbot.Includes
         {
             LogToConsole(type, sender, message);
             LogToFile(type, sender, message);
+            LogToCSV(type, sender, message);
         }
 
         public static void LogToConsole(LogType type, LogSender sender, string message)
@@ -47,6 +48,22 @@ namespace Tbot.Includes
             }
             catch (Exception) { }
         }
+        public static void LogToCSV(LogType type, LogSender sender, string message)
+        {
+            string path = Directory.GetCurrentDirectory() + "/log";
+            DirectoryInfo dir = new(path);
+            if (!dir.Exists)
+                dir.Create();
+            string fileName = "TBot_log.csv";
+            try
+            {
+                StreamWriter file = new(path + "/" + fileName, true);
+                file.WriteLine(type.ToString().EscapeForCSV() + "," + sender.ToString().EscapeForCSV() + "," + DateTime.Now.ToString().EscapeForCSV() + "," + message.EscapeForCSV());
+                file.Close();
+            }
+            catch (Exception) { }
+        }
+
         public static void SetTitle(string content = "")
         {
             AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
@@ -1254,7 +1271,7 @@ namespace Tbot.Includes
             int output = 0;
             if (buildable == Buildables.SolarSatellite)
                 if (planet is Planet)
-                    output = CalcNeededSolarSatellites(planet as Planet, planet.Resources.Energy, isCollector, hasEngineer, hasFullStaff);
+                    output = CalcNeededSolarSatellites(planet as Planet, Math.Abs(planet.Resources.Energy), isCollector, hasEngineer, hasFullStaff);
             if (output == 0 && planet is Planet)
             {
                 foreach (PropertyInfo prop in planet.Buildings.GetType().GetProperties())
