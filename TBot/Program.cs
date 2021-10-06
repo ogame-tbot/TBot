@@ -423,57 +423,115 @@ namespace Tbot
 
         private static DateTime GetDateTime()
         {
-            DateTime dateTime = ogamedService.GetServerTime();
-            if (dateTime.Kind == DateTimeKind.Utc)
-                return dateTime.ToLocalTime();
-            else
-                return dateTime;
+            try
+            {
+                DateTime dateTime = ogamedService.GetServerTime();
+                if (dateTime.Kind == DateTimeKind.Utc)
+                    return dateTime.ToLocalTime();
+                else
+                    return dateTime;
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "GetDateTime() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                var fallback = new DateTime();
+                if (fallback.Kind == DateTimeKind.Utc)
+                    return fallback.ToLocalTime();
+                else
+                    return fallback;
+            }
         }
 
         private static Slots UpdateSlots()
         {
-            return ogamedService.GetSlots();
+            try
+            {
+                return ogamedService.GetSlots();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateSlots() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static List<Fleet> UpdateFleets()
         {
-            return ogamedService.GetFleets();
+            try
+            {
+                return ogamedService.GetFleets();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateFleets() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static List<GalaxyInfo> UpdateGalaxyInfos()
         {
-            List<GalaxyInfo> galaxyInfos = new();
-            Planet newPlanet = new();
-            List<Celestial> newCelestials = celestials.ToList();
-            foreach (Planet planet in celestials.Where(p => p is Planet))
+            try
             {
-                newPlanet = planet;
-                var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
-                if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                List<GalaxyInfo> galaxyInfos = new();
+                Planet newPlanet = new();
+                List<Celestial> newCelestials = celestials.ToList();
+                foreach (Planet planet in celestials.Where(p => p is Planet))
                 {
-                    newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
-                    galaxyInfos.Add(gi);
+                    newPlanet = planet;
+                    var gi = ogamedService.GetGalaxyInfo(planet.Coordinate);
+                    if (gi.Planets.Any(p => p != null && p.ID == planet.ID))
+                    {
+                        newPlanet.Debris = gi.Planets.Single(p => p != null && p.ID == planet.ID).Debris;
+                        galaxyInfos.Add(gi);
+                    }
+
+                    if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
+                    {
+                        Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                        newCelestials.Remove(oldPlanet);
+                        newCelestials.Add(newPlanet);
+                    }
                 }
-                
-                if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
-                {
-                    Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
-                    newCelestials.Remove(oldPlanet);
-                    newCelestials.Add(newPlanet);
-                }                
+                celestials = newCelestials;
+                return galaxyInfos;
             }
-            celestials = newCelestials;
-            return galaxyInfos;
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateGalaxyInfos() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static ServerData UpdateServerData()
         {
-            return ogamedService.GetServerData();
+            try
+            {
+                return ogamedService.GetServerData();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateServerData() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static Server UpdateServerInfo()
         {
-            return ogamedService.GetServerInfo();
+            try
+            {
+                return ogamedService.GetServerInfo();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateServerInfo() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return new();
+            }
         }
 
         private static UserInfo UpdateUserInfo()
@@ -484,8 +542,10 @@ namespace Tbot
                 user.Class = ogamedService.GetUserClass();
                 return user;
             }
-            catch
+            catch (Exception e)
             {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateUserInfo() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 return new()
                 {
                     PlayerID = 0,
@@ -505,9 +565,11 @@ namespace Tbot
             {
                 return ogamedService.GetCelestials();
             }
-            catch
+            catch (Exception e)
             {
-                return new();
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateCelestials() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
+                return celestials ?? new();
             }
         }
 
@@ -517,8 +579,10 @@ namespace Tbot
             {
                 return ogamedService.GetResearches();
             }
-            catch
+            catch (Exception e)
             {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateResearches() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 return new();
             }
         }
@@ -529,8 +593,10 @@ namespace Tbot
             {
                 return ogamedService.GetStaff();
             }
-            catch
+            catch (Exception e)
             {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdateStaff() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 return new();
             }            
         }
@@ -547,8 +613,10 @@ namespace Tbot
                 }
                 return localPlanets;
             }
-            catch
+            catch (Exception e)
             {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "GetPlanets() Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 return localPlanets;
             }
         }
@@ -566,8 +634,10 @@ namespace Tbot
                 }
                 return newPlanets;
             }
-            catch
+            catch (Exception e)
             {
+                Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "UpdatePlanets(" + updateType.ToString() + ") Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
                 return newPlanets;
             }            
         }
