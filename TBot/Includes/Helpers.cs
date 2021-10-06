@@ -58,7 +58,7 @@ namespace Tbot.Includes
             try
             {
                 StreamWriter file = new(path + "/" + fileName, true);
-                file.WriteLine(type.ToString() + "," + sender.ToString() + "," + DateTime.Now.ToString() + "," + message);
+                file.WriteLine(type.ToString().EscapeForCSV() + "," + sender.ToString().EscapeForCSV() + "," + DateTime.Now.ToString().EscapeForCSV() + "," + message.EscapeForCSV());
                 file.Close();
             }
             catch (Exception) { }
