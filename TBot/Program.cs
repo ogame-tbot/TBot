@@ -1976,7 +1976,13 @@ namespace Tbot
                                     float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
                                     float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
                                     float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
-                                    if (!((missingResources.Metal > 0 && metProdInASecond < 1) || (missingResources.Crystal > 0 && cryProdInASecond < 1) || (missingResources.Deuterium > 0 && deutProdInASecond < 1)))
+                                    if (
+                                        !(
+                                            (missingResources.Metal > 0 && metProdInASecond < 1) ||
+                                            (missingResources.Crystal > 0 && cryProdInASecond < 1) ||
+                                            (missingResources.Deuterium > 0 && deutProdInASecond < 1)
+                                        )
+                                    )
                                     {
                                         float metProductionTime = missingResources.Metal / metProdInASecond;
                                         float cryProductionTime = missingResources.Crystal / cryProdInASecond;
