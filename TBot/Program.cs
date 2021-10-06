@@ -118,6 +118,7 @@ namespace Tbot
 
             if (!isLoggedIn)
             {
+                Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login.");
                 ogamedService.KillOgamedExecultable();
                 Console.ReadLine();
             }
@@ -1978,9 +1979,9 @@ namespace Tbot
                                     float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
                                     if (
                                         !(
-                                            (missingResources.Metal > 0 && metProdInASecond < 1) ||
-                                            (missingResources.Crystal > 0 && cryProdInASecond < 1) ||
-                                            (missingResources.Deuterium > 0 && deutProdInASecond < 1)
+                                            (missingResources.Metal > 0 && metProdInASecond == 0) ||
+                                            (missingResources.Crystal > 0 && cryProdInASecond == 0) ||
+                                            (missingResources.Deuterium > 0 && deutProdInASecond == 0)
                                         )
                                     )
                                     {
