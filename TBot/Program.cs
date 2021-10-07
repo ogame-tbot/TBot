@@ -257,8 +257,7 @@ namespace Tbot
                 case Feature.Defender:
                     if ((bool)settings.Defender.Active)
                     {
-                        if (!currentValue)
-                            InitializeDefender();
+                        InitializeDefender();
                         return true;
                     }
                     else
@@ -275,8 +274,7 @@ namespace Tbot
                 case Feature.BrainAutobuildCargo:
                     if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoCargo.Active)
                     {
-                        if (!currentValue)
-                            InitializeBrainAutoCargo();
+                        InitializeBrainAutoCargo();
                         return true;
                     }
                     else
@@ -288,8 +286,7 @@ namespace Tbot
                 case Feature.BrainAutoRepatriate:
                     if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoRepatriate.Active)
                     {
-                        if (!currentValue)
-                            InitializeBrainRepatriate();
+                        InitializeBrainRepatriate();
                         return true;
                     }
                     else
@@ -301,8 +298,7 @@ namespace Tbot
                 case Feature.BrainAutoMine:
                     if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoMine.Active)
                     {
-                        if (!currentValue)
-                            InitializeBrainAutoMine();
+                        InitializeBrainAutoMine();
                         return true;
                     }
                     else
@@ -314,8 +310,7 @@ namespace Tbot
                 case Feature.BrainOfferOfTheDay:
                     if ((bool)settings.Brain.Active && (bool)settings.Brain.BuyOfferOfTheDay.Active)
                     {
-                        if (!currentValue)
-                            InitializeBrainOfferOfTheDay();
+                        InitializeBrainOfferOfTheDay();
                         return true;
                     }
                     else
@@ -327,8 +322,7 @@ namespace Tbot
                 case Feature.BrainAutoResearch:
                     if ((bool)settings.Brain.Active && (bool)settings.Brain.AutoResearch.Active)
                     {
-                        if (!currentValue)
-                            InitializeBrainAutoResearch();
+                        InitializeBrainAutoResearch();
                         return true;
                     }
                     else
@@ -340,8 +334,7 @@ namespace Tbot
                 case Feature.Expeditions:
                     if ((bool)settings.Expeditions.Active)
                     {
-                        if (!currentValue)
-                            InitializeExpeditions();
+                        InitializeExpeditions();
                         return true;
                     }
                     else
@@ -353,8 +346,7 @@ namespace Tbot
                 case Feature.Harvest:
                     if ((bool)settings.AutoHarvest.Active)
                     {
-                        if (!currentValue)
-                            InitializeHarvest();
+                        InitializeHarvest();
                         return true;
                     }
                     else
@@ -377,8 +369,7 @@ namespace Tbot
                 case Feature.SleepMode:
                     if ((bool)settings.SleepMode.Active)
                     {
-                        if (!currentValue)
-                            InitializeSleepMode();
+                        InitializeSleepMode();
                         return true;
                     }
                     else
@@ -437,7 +428,7 @@ namespace Tbot
             {
                 Helpers.WriteLog(LogType.Debug, LogSender.Tbot, "GetDateTime() Exception: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Stacktrace: " + e.StackTrace);
-                var fallback = new DateTime();
+                var fallback = DateTime.Now;
                 if (fallback.Kind == DateTimeKind.Utc)
                     return fallback.ToLocalTime();
                 else
@@ -768,132 +759,166 @@ namespace Tbot
         private static void InitializeDefender()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
+            StopDefender(false);
             timers.Add("DefenderTimer", new Timer(Defender, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
         }
 
-        private static void StopDefender()
+        private static void StopDefender(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping defender...");
-            timers.GetValueOrDefault("DefenderTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping defender...");
+            if (timers.TryGetValue("DefenderTimer", out Timer value))
+                value.Dispose();
             timers.Remove("DefenderTimer");
         }
 
         private static void InitializeBrainAutoCargo()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autocargo...");
+            StopBrainAutoCargo(false);
             timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
         }
 
-        private static void StopBrainAutoCargo()
+        private static void StopBrainAutoCargo(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autocargo...");
-            timers.GetValueOrDefault("CapacityTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autocargo...");
+            if (timers.TryGetValue("CapacityTimer", out Timer value))
+                value.Dispose();
             timers.Remove("CapacityTimer");
         }
 
         private static void InitializeBrainRepatriate()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing repatriate...");
+            StopBrainRepatriate(false);
             timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
         }
 
-        private static void StopBrainRepatriate()
+        private static void StopBrainRepatriate(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping repatriate...");
-            timers.GetValueOrDefault("RepatriateTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping repatriate...");
+            if (timers.TryGetValue("RepatriateTimer", out Timer value))
+                value.Dispose();
             timers.Remove("RepatriateTimer");
         }
 
         private static void InitializeBrainAutoMine()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing automine...");
+            StopBrainAutoMine(false);
             timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
         }
 
-        private static void StopBrainAutoMine()
+        private static void StopBrainAutoMine(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping automine...");
-            timers.GetValueOrDefault("AutoMineTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping automine...");
+            if (timers.TryGetValue("AutoMineTimer", out Timer value))
+                value.Dispose();
             timers.Remove("AutoMineTimer");
-            foreach(var celestial in celestials)
+            foreach (var celestial in celestials)
+            {
+                if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out value))
+                    value.Dispose();
                 timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
+            }
         }
 
         private static void InitializeBrainOfferOfTheDay()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing offer of the day...");
+            StopBrainOfferOfTheDay(false);
             timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
         }
 
-        private static void StopBrainOfferOfTheDay()
+        private static void StopBrainOfferOfTheDay(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
-            timers.GetValueOrDefault("OfferOfTheDayTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
+            if (timers.TryGetValue("OfferOfTheDayTimer", out Timer value))
+                value.Dispose();
             timers.Remove("OfferOfTheDayTimer");
         }
 
         private static void InitializeBrainAutoResearch()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autoresearch...");
+            StopBrainAutoResearch(false);
             timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
         }
 
-        private static void StopBrainAutoResearch()
+        private static void StopBrainAutoResearch(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autoresearch...");
-            timers.GetValueOrDefault("AutoResearchTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autoresearch...");
+            if (timers.TryGetValue("AutoResearchTimer", out Timer value))
+                value.Dispose();
             timers.Remove("AutoResearchTimer");
         }
 
         private static void InitializeExpeditions()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
+            StopExpeditions(false);
             timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
         }
 
-        private static void StopExpeditions()
+        private static void StopExpeditions(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
-            timers.GetValueOrDefault("ExpeditionsTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
+            if (timers.TryGetValue("ExpeditionsTimer", out Timer value))
+                value.Dispose();
             timers.Remove("ExpeditionsTimer");
         }
 
         private static void InitializeHarvest()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing harvest...");
+            StopHarvest(false);
             timers.Add("HarvestTimer", new Timer(HandleHarvest, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
         }
 
-        private static void StopHarvest()
+        private static void StopHarvest(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
-            timers.GetValueOrDefault("HarvestTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
+            if (timers.TryGetValue("HarvestTimer", out Timer value))
+                value.Dispose();
             timers.Remove("HarvestTimer");
         }
 
         private static void InitializeSleepMode()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing sleep mode...");
+            StopSleepMode(false);
             timers.Add("SleepModeTimer", new Timer(HandleSleepMode, null, 0, Timeout.Infinite));
         }
 
-        private static void StopSleepMode()
+        private static void StopSleepMode(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping sleep mode...");
-            timers.GetValueOrDefault("SleepModeTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping sleep mode...");
+            if (timers.TryGetValue("SleepModeTimer", out Timer value))
+                value.Dispose();
             timers.Remove("SleepModeTimer");
         }
         private static void InitializeFleetScheduler()
         {
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing fleet scheduler...");
             scheduledFleets = new();
+            StopFleetScheduler(false);
             timers.Add("FleetSchedulerTimer", new Timer(HandleScheduledFleet, null, Timeout.Infinite, Timeout.Infinite));
         }
 
-        private static void StopFleetScheduler()
+        private static void StopFleetScheduler(bool echo = true)
         {
-            Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping fleet scheduler...");
-            timers.GetValueOrDefault("FleetSchedulerTimer").Dispose();
+            if (echo)
+                Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping fleet scheduler...");
+            if (timers.TryGetValue("FleetSchedulerTimer", out Timer value))
+                value.Dispose();
             timers.Remove("FleetSchedulerTimer");
         }
 
@@ -1945,63 +1970,124 @@ namespace Tbot
                 var time = GetDateTime();
                 DateTime newTime;
                 long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
-                if (buildable != Buildables.Null)
+                try
                 {
-                    if (fleetId != 0)
+                    celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+                    if (celestial.HasMines(maxBuildings))
                     {
-                        fleets = UpdateFleets();
-                        var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-                        interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer foundTimer))
+                            foundTimer.Dispose();
+                        timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
+                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": mines are at set level.");
                     }
                     else
                     {
-                        var nextTimeToCompletion = 0;
-                        if (buildable != Buildables.SolarSatellite)
+                        if (buildable != Buildables.Null)
                         {
-                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                            nextTimeToCompletion = celestial.Constructions.BuildingCountdown * 1000;
-                            if (nextTimeToCompletion > 0)
-                                interval = nextTimeToCompletion + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            if (fleetId != 0)
+                            {
+                                fleets = UpdateFleets();
+                                var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+                                interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            }
                             else
                             {
-                                var price = Helpers.CalcPrice(buildable, level);
-                                if (
-                                    celestial.Coordinate.Type == Celestials.Planet &&
-                                    price.Metal <= Helpers.CalcDepositCapacity(celestial.Buildings.MetalStorage) &&
-                                    price.Crystal <= Helpers.CalcDepositCapacity(celestial.Buildings.CrystalStorage) &&
-                                    price.Deuterium <= Helpers.CalcDepositCapacity(celestial.Buildings.DeuteriumTank)
-                                )
+                                if (buildable != Buildables.SolarSatellite)
                                 {
-                                    var missingResources = price.Difference(celestial.Resources);
-                                    celestial = UpdatePlanet(celestial, UpdateType.ResourceSettings);
-                                    celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
-                                    float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
-                                    float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
-                                    float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
-                                    if (
-                                        !(
-                                            (missingResources.Metal > 0 && metProdInASecond == 0) ||
-                                            (missingResources.Crystal > 0 && cryProdInASecond == 0) ||
-                                            (missingResources.Deuterium > 0 && deutProdInASecond == 0)
-                                        )
-                                    )
+                                    celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                                    if (celestial.HasConstruction())
                                     {
-                                        float metProductionTime = missingResources.Metal / metProdInASecond;
-                                        float cryProductionTime = missingResources.Crystal / cryProdInASecond;
-                                        float deutProductionTime = missingResources.Deuterium / deutProdInASecond;
-                                        interval = (long)Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000;
+                                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                    }
+                                    else
+                                    {
+                                        celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+                                        celestial = UpdatePlanet(celestial, UpdateType.Facilities);
+                                        if (celestial.GetLevel(buildable) == level)
+                                        {
+                                            interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                        }
+                                        else
+                                        {
+                                            var price = Helpers.CalcPrice(buildable, level);
+                                            celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+                                            if (
+                                                celestial.Coordinate.Type == Celestials.Planet &&
+                                                price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity &&
+                                                price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity &&
+                                                price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity
+                                            )
+                                            {
+                                                var missingResources = price.Difference(celestial.Resources);
+                                                float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                                float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                                float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
+                                                if (
+                                                    !(
+                                                        (missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
+                                                        (missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
+                                                        (missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
+                                                    )
+                                                )
+                                                {
+                                                    float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
+                                                    float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
+                                                    float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
+                                                    interval = (long)(Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0.0F) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                                    if (interval <= 0)
+                                                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                                }
+                                            }
+                                        }
                                     }
                                 }
+                                else
+                                {
+                                    interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                            fleets = UpdateFleets();
+                            if (celestial.HasConstruction())
+                            {
+                                interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            }
+                            else if (Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                            {
+                                var fleet = fleets
+                                    .Where(f => f.Mission == Missions.Transport)
+                                    .Where(f => f.Resources.TotalResources > 0)
+                                    .Where(f => f.ReturnFlight == false)
+                                    .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+                                    .Where(f => f.Destination.System == celestial.Coordinate.System)
+                                    .Where(f => f.Destination.Position == celestial.Coordinate.Position)
+                                    .Where(f => f.Destination.Type == celestial.Coordinate.Type)
+                                    .OrderBy(f => f.ArriveIn)
+                                    .First();
+                                interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                             }
                         }
                     }
                 }
-                if (interval <= 0)
-                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                newTime = time.AddMilliseconds(interval);
-                timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
-                timers.Add("AutoMineTimer-" + celestial.ID.ToString(), new Timer(AutoMine, celestial, interval, Timeout.Infinite));
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check for " + celestial.ToString() + " at " + newTime.ToString());
+                catch (Exception e)
+                {
+                    Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoMineCelestial Exception: " + e.Message);
+                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                }
+                finally
+                {
+                    if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer value))
+                        value.Dispose();
+                    timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
+                    if (interval <= 0)
+                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                    newTime = time.AddMilliseconds(interval);
+                    timers.Add("AutoMineTimer-" + celestial.ID.ToString(), new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check for " + celestial.ToString() + " at " + newTime.ToString());
+                }
             }
         }
 
@@ -2062,9 +2148,9 @@ namespace Tbot
                                     missingResources.Metal >= metProdInFlightTime ||
                                     missingResources.Crystal >= cryProdInFlightTime ||
                                     missingResources.Deuterium >= deutProdInFlightTime ||
-                                    resources.Metal > Helpers.CalcDepositCapacity(destination.Buildings.MetalStorage) ||
-                                    resources.Crystal > Helpers.CalcDepositCapacity(destination.Buildings.CrystalStorage) ||
-                                    resources.Deuterium > Helpers.CalcDepositCapacity(destination.Buildings.DeuteriumTank)
+                                    resources.Metal > destination.ResourcesProduction.Metal.StorageCapacity ||
+                                    resources.Crystal > destination.ResourcesProduction.Crystal.StorageCapacity ||
+                                    resources.Deuterium > destination.ResourcesProduction.Deuterium.StorageCapacity
                                 )
                                 {
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Sending " + ships.ToString() + " with " + missingResources.ToString() + " from " + origin.ToString() + " to " + destination.ToString());
@@ -2618,9 +2704,13 @@ namespace Tbot
             if ((bool)settings.TelegramMessenger.Active && (bool)settings.Defender.TelegramMessenger.Active)
             {
                 telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attack.Destination.ToString() + " arriving at " + attack.ArrivalTime.ToString());
+                if (attack.Ships != null)
+                    telegramMessenger.SendMessage("The attack is composed by: " + attack.Ships.ToString());
             }            
             Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Player " + attack.AttackerName + " (" + attack.AttackerID + ") is attacking your planet " + attackedCelestial.ToString() + " arriving at " + attack.ArrivalTime.ToString());
-            
+            if (attack.Ships != null)
+                Helpers.WriteLog(LogType.Warning, LogSender.Defender, "The attack is composed by: " + attack.Ships.ToString());
+
             if ((bool)settings.Defender.SpyAttacker.Active)
             {
                 slots = UpdateSlots();
