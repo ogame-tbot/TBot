@@ -2119,7 +2119,7 @@ namespace Tbot
                         origin = UpdatePlanet(origin, UpdateType.Ships);
                         Buildables preferredShip = Buildables.SmallCargo;
                         Enum.TryParse<Buildables>((string)settings.Brain.AutoMine.Trasports.CargoType, true, out preferredShip);
-                        long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                        long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
                         Ships ships = new();
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
                         {
@@ -2247,7 +2247,7 @@ namespace Tbot
 
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
                     tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
-                    var capacity = Helpers.CalcFleetCapacity(tempCelestial.Ships, researches.HyperspaceTechnology, userInfo.Class);
+                    var capacity = Helpers.CalcFleetCapacity(tempCelestial.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Celestial " + tempCelestial.ToString() + ": Available capacity: " + capacity.ToString("N0") + " - Resources: " + tempCelestial.Resources.TotalResources.ToString("N0"));
                     if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool)settings.Brain.AutoCargo.ExcludeMoons)
                     {
@@ -2260,7 +2260,7 @@ namespace Tbot
                     if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCago.LimitToCapacity)
                     {
                         long difference = tempCelestial.Resources.TotalResources - capacity;                        
-                        int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class);
+                        int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
                         neededCargos = (long)Math.Round((float)difference / (float)oneShipCapacity, MidpointRounding.ToPositiveInfinity);
                         Helpers.WriteLog(LogType.Info, LogSender.Brain, difference.ToString("N0") + " more capacity is needed, " + neededCargos + " more " + preferredCargoShip.ToString() + " are needed.");
                     }
@@ -2437,7 +2437,7 @@ namespace Tbot
                             continue;
                         }
 
-                        long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class);
+                        long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
                         Ships ships = new();
                         if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip))
@@ -2448,7 +2448,7 @@ namespace Tbot
                         {
                             ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
                         }
-                        payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class);
+                        payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
                         SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
                         
@@ -2832,7 +2832,7 @@ namespace Tbot
                                         celestials = UpdatePlanets(UpdateType.Ships);
                                         origins.Add(celestials
                                             .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                            .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo))
                                             .First()
                                         );
                                     }
@@ -2842,7 +2842,7 @@ namespace Tbot
                                     celestials = UpdatePlanets(UpdateType.Ships);
                                     origins.Add(celestials
                                         .OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-                                        .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class))
+                                        .OrderByDescending(planet => Helpers.CalcFleetCapacity(planet.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo))
                                         .First()
                                     );
                                 }
@@ -2910,7 +2910,7 @@ namespace Tbot
                                                 continue;
                                             }
 
-                                            fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class);
+                                            fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
                                             if (fleet.GetAmount(primaryShip) < (long)settings.Expeditions.MinPrimaryToSend)
                                             {
                                                 fleet.SetAmount(primaryShip, (long)settings.Expeditions.MinPrimaryToSend);
