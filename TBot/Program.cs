@@ -188,7 +188,7 @@ namespace Tbot
                     UpdateTitle(false);
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
-                    InitializeFeatures();
+                    InitializeSleepMode();
                 }
                 else
                 {
@@ -385,7 +385,7 @@ namespace Tbot
 
         private static void InitializeFeatures()
         {
-            features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+            //features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -410,7 +410,7 @@ namespace Tbot
             }
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
             ReadSettings();
-            InitializeFeatures();
+            InitializeSleepMode();
             UpdateTitle();
         }
 
@@ -1338,63 +1338,63 @@ namespace Tbot
 
         private static void GoToSleep(object state)
         {
-            fleets = UpdateFleets();
-            bool delayed = false;
-            if ((bool)settings.SleepMode.PreventIfThereAreFleets && fleets.Count > 0)
+            try
             {
-                if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
+                fleets = UpdateFleets();
+                bool delayed = false;
+                if ((bool)settings.SleepMode.PreventIfThereAreFleets && fleets.Count > 0)
                 {
-                    DateTime time = GetDateTime();
-                    if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
-                        goToSleep = goToSleep.AddDays(1);
-                    if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
-                        wakeUp = wakeUp.AddDays(1);
-
-                    List<Fleet> tempFleets = new();
-                    var timeToWakeup = wakeUp.Subtract(time).TotalSeconds;
-                    // All Deployment Missions that will arrive during sleep
-                    tempFleets.AddRange(fleets
-                        .Where(f => f.Mission == Missions.Deploy)
-                        .Where(f => f.ArriveIn <= timeToWakeup)
-                    );
-                    // All other Fleets.Mission
-                    tempFleets.AddRange(fleets
-                        .Where(f => f.BackIn <= timeToWakeup)
-                    );
-                    if (tempFleets.Count > 0)
+                    if (DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
                     {
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "There are fleets that would come back during sleep time. Delaying sleep mode.");
-                        long interval = 0;
-                        foreach(Fleet tempFleet in tempFleets)
+                        DateTime time = GetDateTime();
+                        if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
+                            goToSleep = goToSleep.AddDays(1);
+                        if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
+                            wakeUp = wakeUp.AddDays(1);
+
+                        List<Fleet> tempFleets = new();
+                        var timeToWakeup = wakeUp.Subtract(time).TotalSeconds;
+                        // All Deployment Missions that will arrive during sleep
+                        tempFleets.AddRange(fleets
+                            .Where(f => f.Mission == Missions.Deploy)
+                            .Where(f => f.ArriveIn <= timeToWakeup)
+                        );
+                        // All other Fleets.Mission
+                        tempFleets.AddRange(fleets
+                            .Where(f => f.BackIn <= timeToWakeup)
+                        );
+                        if (tempFleets.Count > 0)
                         {
-                            if (tempFleet.Mission == Missions.Deploy)
+                            Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "There are fleets that would come back during sleep time. Delaying sleep mode.");
+                            long interval = 0;
+                            foreach (Fleet tempFleet in tempFleets)
                             {
-                                if (tempFleet.ArriveIn > interval)
-                                    interval = (long)tempFleet.ArriveIn;
+                                if (tempFleet.Mission == Missions.Deploy)
+                                {
+                                    if (tempFleet.ArriveIn > interval)
+                                        interval = (long)tempFleet.ArriveIn;
+                                }
+                                else
+                                {
+                                    if (tempFleet.BackIn > interval)
+                                        interval = (long)tempFleet.BackIn;
+                                }
                             }
-                            else
-                            {
-                                if (tempFleet.BackIn > interval)
-                                    interval = (long)tempFleet.BackIn;
-                            }
+                            interval *= 1000;
+                            if (interval <= 0)
+                                interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                            DateTime newTime = time.AddMilliseconds(interval);
+                            timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                            delayed = true;
+                            Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
                         }
-                        interval *= 1000;
-                        if (interval <= 0)
-                            interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                        DateTime newTime = time.AddMilliseconds(interval);
-                        timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                        delayed = true;
-                        Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                    }
+                    else
+                    {
+                        Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
                     }
                 }
-                else
-                {
-                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
-                }
-            }
-            if (!delayed)
-            {
-                try
+                if (!delayed)
                 {
                     /*
                     if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
@@ -1421,20 +1421,20 @@ namespace Tbot
                         telegramMessenger.SendMessage("[" + userInfo.PlayerName + "@" + serverData.Name + "." + serverData.Language + "] Waking Up at " + state.ToString());
                     }
                     isSleeping = true;
-                    InitializeFeatures();
                 }
-                catch (Exception e)
-                {
-                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
-                    DateTime time = GetDateTime();
-                    int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
-                    DateTime newTime = time.AddMilliseconds(interval);
-                    timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
-                    Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
-                    UpdateTitle();
-                }
-            }            
+                InitializeFeatures();
+            }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
+                DateTime time = GetDateTime();
+                int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+                DateTime newTime = time.AddMilliseconds(interval);
+                timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
+                Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
+                UpdateTitle();
+            }
         }
 
         private static void WakeUp(object state)
@@ -1453,7 +1453,7 @@ namespace Tbot
             }
             catch (Exception e)
             {
-                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while going to sleep: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "An error has occurred while waking up: " + e.Message);
                 Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Stacktrace: " + e.StackTrace);
                 DateTime time = GetDateTime();
                 int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
@@ -1943,6 +1943,7 @@ namespace Tbot
                             if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                             {
                                 Celestial origin = celestials
+                                        .Unique()
                                         .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
                                         .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
                                         .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
@@ -2196,7 +2197,7 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Ruuning autocargo...");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autocargo...");
 
                 if (isSleeping)
                 {
@@ -2257,7 +2258,7 @@ namespace Tbot
                     long neededCargos;
                     Buildables preferredCargoShip = Buildables.SmallCargo;
                     Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
-                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCago.LimitToCapacity)
+                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCargo.LimitToCapacity)
                     {
                         long difference = tempCelestial.Resources.TotalResources - capacity;                        
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
@@ -2266,7 +2267,7 @@ namespace Tbot
                     }
                     else
                     {
-                        neededCargos = tempCelestial.Ships.GetAmount(preferredCargoShip) - (long)settings.Brain.AutoCago.MaxCargosToKeep;
+                        neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
                     }
                     if (neededCargos > 0) {
                         /*Tralla 14/2/21
