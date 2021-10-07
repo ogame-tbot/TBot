@@ -21,6 +21,13 @@ Use this bot at your own risk!!
 
 Testing and PR are very much appreciated!
 
+## Support TBot
+
+Do you like the project? Buy me a beer!
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=2QXP4KAKZRGL4)
+[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/3M7b6H9yyQVxW6JLgcW9rzbnCNQ2NGNxih)](https://en.cryptobadges.io/donate/3M7b6H9yyQVxW6JLgcW9rzbnCNQ2NGNxih)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/601D752873C215aa34E03DfdE0A0166D440De3B7)](https://en.cryptobadges.io/donate/601D752873C215aa34E03DfdE0A0166D440De3B7)
+
 ## Features
 TBot has a wide variety of useful features. They all can be configured and customized editing settings.json. Here follows a shot explaination of each of them:
 
