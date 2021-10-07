@@ -187,7 +187,7 @@ namespace Tbot
                     UpdateTitle(false);
 
                     Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
-                    InitializeFeatures();
+                    InitializeSleepMode();
                 }
                 else
                 {
@@ -384,7 +384,7 @@ namespace Tbot
 
         private static void InitializeFeatures()
         {
-            features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+            //features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
             features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -409,7 +409,7 @@ namespace Tbot
             }
             Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
             ReadSettings();
-            InitializeFeatures();
+            InitializeSleepMode();
             UpdateTitle();
         }
 
@@ -2195,7 +2195,7 @@ namespace Tbot
                 // Wait for the thread semaphore
                 // to avoid the concurrency with itself
                 xaSem[Feature.Brain].WaitOne();
-                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Ruuning autocargo...");
+                Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autocargo...");
 
                 if (isSleeping)
                 {
@@ -2256,7 +2256,7 @@ namespace Tbot
                     long neededCargos;
                     Buildables preferredCargoShip = Buildables.SmallCargo;
                     Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
-                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCago.LimitToCapacity)
+                    if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCargo.LimitToCapacity)
                     {
                         long difference = tempCelestial.Resources.TotalResources - capacity;                        
                         int oneShipCapacity = Helpers.CalcShipCapacity(preferredCargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
@@ -2265,7 +2265,7 @@ namespace Tbot
                     }
                     else
                     {
-                        neededCargos = tempCelestial.Ships.GetAmount(preferredCargoShip) - (long)settings.Brain.AutoCago.MaxCargosToKeep;
+                        neededCargos = (long)settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
                     }
                     if (neededCargos > 0) {
                         /*Tralla 14/2/21
