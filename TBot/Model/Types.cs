@@ -137,6 +137,20 @@ namespace Tbot.Model
                 return false;
             }
         }
+        internal bool HasConstruction()
+        {
+            try
+            {
+                if (Constructions.BuildingID != (int)Buildables.Null)
+                    return true;
+                else
+                    return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         public bool HasCoords(Coordinate coords)
         {
             if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
@@ -165,6 +179,18 @@ namespace Tbot.Model
                 }
             }
             return output;
+        }
+        public bool HasMines(Buildings buildings)
+        {
+            if (
+                Buildings.MetalMine >= buildings.MetalMine &&
+                Buildings.CrystalMine >= buildings.CrystalMine &&
+                Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer 
+
+            )
+                return true;
+            else
+                return false;
         }
     }
 
