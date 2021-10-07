@@ -483,7 +483,7 @@ namespace Tbot
 
                     if (celestials.Any(p => p.HasCoords(newPlanet.Coordinate)))
                     {
-                        Planet oldPlanet = celestials.SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
+                        Planet oldPlanet = celestials.Unique().SingleOrDefault(p => p.HasCoords(newPlanet.Coordinate)) as Planet;
                         newCelestials.Remove(oldPlanet);
                         newCelestials.Add(newPlanet);
                     }
@@ -970,7 +970,7 @@ namespace Tbot
                     mission = Missions.Spy;
                     fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
                 }
-                if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0)
+                if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0 && Helpers.CalcMaxPlanets(researches.Astrophysics) == celestials.Unique().Where(c => c.Coordinate.Type == Celestials.Planet).Count())
                 {
                     mission = Missions.Colonize;
                     fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
@@ -986,6 +986,11 @@ namespace Tbot
                 Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : not enough fuel!");
                 return;
             }
+            if (Helpers.CalcFleetFuelCapacity(fleetHypotesis.Ships, serverData.ProbeCargo) < fleetHypotesis.Fuel)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Skipping fleetsave from " + celestial.ToString() + " : ships don't have enough fuel capacity!");
+                return;
+            }
 
             var payload = celestial.Resources;
             if ((long)settings.SleepMode.AutoFleetSave.DeutToLeave > 0)
@@ -993,7 +998,7 @@ namespace Tbot
             if (payload.Deuterium < 0)
                 payload.Deuterium = 0;
 
-            int fleetId = SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, payload, userInfo.Class, forceUnsafe);
+            int fleetId = SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, payload, userInfo.Class, isSleepTimeFleetSave || forceUnsafe);
             if (recall && fleetId != 0)
             {
                 Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
@@ -1050,7 +1055,7 @@ namespace Tbot
                     }
                     break;
                 case Missions.Spy:
-                    Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.DeepSpace);
+                    Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
                     foreach (var currentSpeed in validSpeeds)
                     {
                         FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), destination, mission, currentSpeed);
@@ -1119,7 +1124,7 @@ namespace Tbot
                         List<int> harvestablePos = new();
                         foreach (var planet in galaxyInfo.Planets)
                         {
-                            if (planet.Debris.Resources.TotalResources > 0)
+                            if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0)
                                 possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Debris));
                         }
                     }
@@ -1185,17 +1190,25 @@ namespace Tbot
 
                 DateTime time = GetDateTime();
 
-                if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
+                if (!(bool)settings.SleepMode.Active)
+                {
+                    Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Sleep mode is disabled");
+                    WakeUp(null);
+                }
+                else if (!DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep))
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
+                    WakeUp(null);
                 }
                 else if (!DateTime.TryParse((string)settings.SleepMode.WakeUp, out DateTime wakeUp))
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
+                    WakeUp(null);
                 }
                 else if (goToSleep == wakeUp)
                 {
                     Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "GoToSleep time and WakeUp time must be different. Sleep mode will be disabled");
+                    WakeUp(null);
                 }
                 else
                 {
@@ -1604,6 +1617,7 @@ namespace Tbot
                 if (parseSucceded)
                 {
                     celestial = celestials
+                        .Unique()
                         .Single(c => c.HasCoords(new(
                             (int)settings.Brain.AutoResearch.Target.Galaxy,
                             (int)settings.Brain.AutoResearch.Target.System,
@@ -1664,6 +1678,7 @@ namespace Tbot
                             if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
                             {
                                 Celestial origin = celestials
+                                    .Unique()
                                     .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoResearch.Trasports.Origin.Galaxy)
                                     .Where(c => c.Coordinate.System == (int)settings.Brain.AutoResearch.Trasports.Origin.System)
                                     .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoResearch.Trasports.Origin.Position)
@@ -1701,6 +1716,7 @@ namespace Tbot
                 {
                     long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
                     Planet celestial = celestials
+                        .Unique()
                         .SingleOrDefault(c => c.HasCoords(new(
                             (int)settings.Brain.AutoResearch.Target.Galaxy,
                             (int)settings.Brain.AutoResearch.Target.System,
@@ -1711,19 +1727,29 @@ namespace Tbot
                     var time = GetDateTime();
                     if (celestial.ID != 0)
                     {
+                        fleets = UpdateFleets();
                         celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
+                        var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
                         if (celestial.Constructions.ResearchCountdown != 0)
                             interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                         else if (fleetId != 0)
                         {
-                            fleets = UpdateFleets();
                             var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
                             interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                         }
                         else if (celestial.Constructions.BuildingID == (int)Buildables.ResearchLab)
                             interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        else if(incomingFleets.Count > 0)
+                        {
+                            var fleet = incomingFleets
+                                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                                .First();
+                            interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                        }
                         else
+                        {
                             interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoResearch.CheckIntervalMin, (int)settings.Brain.AutoResearch.CheckIntervalMax);
+                        }                        
                     }                  
                     if (interval <= 0)
                         interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -2046,30 +2072,37 @@ namespace Tbot
                                 {
                                     interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
                                 }
+                                fleets = UpdateFleets();
+                                var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
+                                if (incomingFleets.Count > 0)
+                                {
+                                    var fleet = incomingFleets
+                                        .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                                        .First();
+                                    interval = Math.Min(interval, (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds));
+                                }
                             }
                         }
                         else
                         {
                             celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                            fleets = UpdateFleets();
+                            
                             if (celestial.HasConstruction())
                             {
                                 interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
                             }
-                            else if (Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                            else
                             {
-                                var fleet = fleets
-                                    .Where(f => f.Mission == Missions.Transport)
-                                    .Where(f => f.Resources.TotalResources > 0)
-                                    .Where(f => f.ReturnFlight == false)
-                                    .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-                                    .Where(f => f.Destination.System == celestial.Coordinate.System)
-                                    .Where(f => f.Destination.Position == celestial.Coordinate.Position)
-                                    .Where(f => f.Destination.Type == celestial.Coordinate.Type)
-                                    .OrderBy(f => f.ArriveIn)
-                                    .First();
-                                interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                            }
+                                fleets = UpdateFleets();
+                                var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
+                                if (incomingFleets.Count > 0)
+                                {
+                                    var fleet = incomingFleets
+                                        .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                                        .First();
+                                    interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                }
+                            }                            
                         }
                     }
                 }
@@ -2541,8 +2574,13 @@ namespace Tbot
             {
                 Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
                 return 0;
-            }                
-            
+            }
+            if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel)
+            {
+                Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
+                return 0;
+            }
+
             if (
                 (bool)settings.SleepMode.Active &&
                 DateTime.TryParse((string)settings.SleepMode.GoToSleep, out DateTime goToSleep) &&
@@ -2658,7 +2696,7 @@ namespace Tbot
                 return;
             }
 
-            Celestial attackedCelestial = celestials.SingleOrDefault(planet => planet.HasCoords(attack.Destination));
+            Celestial attackedCelestial = celestials.Unique().SingleOrDefault(planet => planet.HasCoords(attack.Destination));
             attackedCelestial = UpdatePlanet(attackedCelestial, UpdateType.Ships);
 
             try
@@ -2819,6 +2857,7 @@ namespace Tbot
                                                 Enum.Parse<Celestials>(origin.Type.ToString())
                                             );
                                             Celestial customOrigin = celestials
+                                                .Unique()
                                                 .Single(planet => planet.HasCoords(customOriginCoords));
                                             customOrigin = UpdatePlanet(customOrigin, UpdateType.Ships);
                                             origins.Add(customOrigin);
@@ -3110,7 +3149,7 @@ namespace Tbot
                         bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) == 1;
                         if (hasMoon)
                         {
-                            moon = celestials.Single(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) as Moon;
+                            moon = celestials.Unique().Single(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) as Moon;
                             moon = UpdatePlanet(moon, UpdateType.Ships) as Moon;
                         }
 

@@ -172,6 +172,62 @@ namespace Tbot.Includes
             return baseCargo * (bonus + 100) / 100;
         }
 
+        public static int CalcShipFuelCapacity(Buildables buildable, int probeCargo = 0)
+        {
+            int baseCargo;
+            switch (buildable)
+            {
+                case Buildables.SmallCargo:
+                    baseCargo = 5000;
+                    break;
+                case Buildables.LargeCargo:
+                    baseCargo = 25000;
+                    break;
+                case Buildables.LightFighter:
+                    baseCargo = 50;
+                    break;
+                case Buildables.HeavyFighter:
+                    baseCargo = 100;
+                    break;
+                case Buildables.Cruiser:
+                    baseCargo = 800;
+                    break;
+                case Buildables.Battleship:
+                    baseCargo = 1500;
+                    break;
+                case Buildables.ColonyShip:
+                    baseCargo = 7500;
+                    break;
+                case Buildables.Recycler:
+                    baseCargo = 20000;
+                    break;
+                case Buildables.EspionageProbe:
+                    baseCargo = probeCargo;
+                    break;
+                case Buildables.Bomber:
+                    baseCargo = 750;
+                    break;
+                case Buildables.Destroyer:
+                    baseCargo = 2000;
+                    break;
+                case Buildables.Deathstar:
+                    baseCargo = 1000000;
+                    break;
+                case Buildables.Battlecruiser:
+                    baseCargo = 750;
+                    break;
+                case Buildables.Reaper:
+                    baseCargo = 7000;
+                    break;
+                case Buildables.Pathfinder:
+                    baseCargo = 10000;
+                    break;
+                default:
+                    return 0;
+            }
+            return baseCargo;
+        }
+
         public static long CalcFleetCapacity(Ships fleet, int hyperspaceTech, Classes playerClass, int probeCargo = 0)
         {
             long total = 0;
@@ -182,6 +238,22 @@ namespace Tbot.Includes
                 if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
                 {
                     int oneCargo = CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
+                    total += oneCargo * qty;
+                }
+            }
+            return total;
+        }
+
+        public static long CalcFleetFuelCapacity(Ships fleet, int probeCargo = 0)
+        {
+            long total = 0;
+            foreach (PropertyInfo prop in fleet.GetType().GetProperties())
+            {
+                long qty = (long)prop.GetValue(fleet, null);
+                if (qty == 0) continue;
+                if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable))
+                {
+                    int oneCargo = CalcShipFuelCapacity(buildable, probeCargo);
                     total += oneCargo * qty;
                 }
             }
@@ -2006,6 +2078,52 @@ namespace Tbot.Includes
                 return false;
         }
 
+        public static bool AreThereIncomingResources(Celestial celestial, List<Fleet> fleets)
+        {
+            var transports = fleets
+                .Where(f => f.Mission == Missions.Transport)
+                .Where(f => f.Resources.TotalResources > 0)
+                .Where(f => f.ReturnFlight == false)
+                .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+                .Where(f => f.Destination.System == celestial.Coordinate.System)
+                .Where(f => f.Destination.Position == celestial.Coordinate.Position)
+                .Where(f => f.Destination.Type == celestial.Coordinate.Type)
+                .Count();
+            if (transports > 0)
+                return true;
+            else
+                return false;
+        }
+
+        public static List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets)
+        {
+            List<Fleet> incomingFleets = new();
+            incomingFleets.AddRange(fleets
+                .Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+                .Where(f => f.Destination.System == celestial.Coordinate.System)
+                .Where(f => f.Destination.Position == celestial.Coordinate.Position)
+                .Where(f => f.Destination.Type == celestial.Coordinate.Type)
+                .Where(f =>(f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && f.ReturnFlight == false)
+                .ToList());
+            incomingFleets.AddRange(fleets
+                .Where(f => f.Origin.Galaxy == celestial.Coordinate.Galaxy)
+                .Where(f => f.Origin.System == celestial.Coordinate.System)
+                .Where(f => f.Origin.Position == celestial.Coordinate.Position)
+                .Where(f => f.Origin.Type == celestial.Coordinate.Type)
+                .Where(f => f.Mission != Missions.Transport && f.Mission != Missions.Deploy && f.ReturnFlight == true)
+                .ToList());
+            return incomingFleets;
+        }
+
+        public static List<Fleet> GetIncomingFleetsWithResources(Celestial celestial, List<Fleet> fleets)
+        {
+            List<Fleet> incomingFleets = GetIncomingFleets(celestial, fleets);
+            incomingFleets = incomingFleets
+                .Where(f => f.Resources.TotalResources > 0)
+                .ToList();
+            return incomingFleets;
+        }
+
         public static List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials)
         {
             List<Celestial> output = new();
@@ -2033,6 +2151,11 @@ namespace Tbot.Includes
             }
 
             return output;
+        }
+
+        public static int CalcMaxPlanets(int astrophysics)
+        {
+            return (int)Math.Round((float)((astrophysics + 3) / 2), 0, MidpointRounding.ToZero);
         }
     }
 }
