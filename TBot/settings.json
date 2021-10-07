@@ -125,7 +125,7 @@
 				}
 			],
 			"OptimizeForStart": true,
-			"PrioritizeRobotsAndNanites": true,
+			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
 			"DepositHours": 6,
 			"MaxDaysOfInvestmentReturn": 365,
