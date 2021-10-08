@@ -1855,6 +1855,7 @@ namespace Tbot
             int fleetId = 0;
             Buildables buildable = Buildables.Null;
             int level = 0;
+            bool started = false;
             try
             {
                 Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running AutoMine for celestial " + celestial.ToString());
@@ -1930,12 +1931,18 @@ namespace Tbot
                             {
                                 celestial = UpdatePlanet(celestial, UpdateType.Productions);
                                 if (celestial.Productions.First().ID == (int)buildable)
+                                {
+                                    started = true;
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, celestial.Productions.First().Nbr.ToString() + "x " + buildable.ToString() + " succesfully started.");
+                                }                                    
                                 else
                                 {
                                     celestial = UpdatePlanet(celestial, UpdateType.Resources);
-                                    if (celestial.Resources.Energy > 0)
+                                    if (celestial.Resources.Energy >= 0)
+                                    {
+                                        started = true;
                                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, level.ToString() + "x " + buildable.ToString() + " succesfully built");
+                                    }                                        
                                     else
                                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start " + level.ToString() + "x " + buildable.ToString() + " construction: an unknow error has occurred");
                                 }
@@ -1944,7 +1951,10 @@ namespace Tbot
                             {
                                 celestial = UpdatePlanet(celestial, UpdateType.Constructions);
                                 if (celestial.Constructions.BuildingID == (int)buildable)
+                                {
+                                    started = true;
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                                }                                    
                                 else
                                 {
                                     celestial = UpdatePlanet(celestial, UpdateType.Buildings);
@@ -1952,7 +1962,10 @@ namespace Tbot
                                     if (celestial.GetLevel(buildable) != level)
                                         Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknown error has occurred");
                                     else
+                                    {
+                                        started = true;
                                         Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+                                    }                                        
                                 }
                             }
                         }
@@ -1996,132 +2009,110 @@ namespace Tbot
                 var time = GetDateTime();
                 DateTime newTime;
                 long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
-                try
+                interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+                if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer value))
+                    value.Dispose();
+                timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
+                if (interval <= 0)
+                    interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                if (interval != long.MaxValue)
                 {
-                    celestial = UpdatePlanet(celestial, UpdateType.Buildings);
-                    if (celestial.HasMines(maxBuildings))
+                    newTime = time.AddMilliseconds(interval);
+                    timers.Add("AutoMineTimer-" + celestial.ID.ToString(), new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check for " + celestial.ToString() + " at " + newTime.ToString());
+                }                
+            }
+        }
+
+        private static long CalcAutoMineTimer(Celestial celestial, Buildables buildable, int level, bool started, Buildings maxBuildings, Facilities maxFacilities, Facilities maxLunarFacilities, AutoMinerSettings autoMinerSettings)
+        {
+            long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
+            try
+            {
+                celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+                if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings)) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)))
+                {
+                    interval = long.MaxValue;
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": mines are at set level.");
+                }
+                else
+                {
+                    if (started)
                     {
-                        if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer foundTimer))
-                            foundTimer.Dispose();
-                        timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
-                        Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": mines are at set level.");
+                        if (buildable == Buildables.SolarSatellite)
+                            interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+                        else
+                        {
+                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                            if (celestial.HasConstruction())
+                                interval = (celestial.Constructions.BuildingCountdown * 1000);
+                            else
+                                interval = 0;
+                        }
                     }
                     else
                     {
                         if (buildable != Buildables.Null)
                         {
-                            if (fleetId != 0)
+                            var price = Helpers.CalcPrice(buildable, level);
+                            var productionTime = long.MaxValue;
+                            var transportTime = long.MaxValue;
+                            celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+                            if (
+                                celestial.Coordinate.Type == Celestials.Planet &&
+                                price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity &&
+                                price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity &&
+                                price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity
+                            )
                             {
-                                fleets = UpdateFleets();
-                                var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-                                interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                            }
-                            else
-                            {
-                                if (buildable != Buildables.SolarSatellite)
+                                var missingResources = price.Difference(celestial.Resources);
+                                float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
+                                float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
+                                float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
+                                if (
+                                    !(
+                                        (missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
+                                        (missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
+                                        (missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
+                                    )
+                                )
                                 {
-                                    celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                                    if (celestial.HasConstruction())
-                                    {
-                                        interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                    }
-                                    else
-                                    {
-                                        celestial = UpdatePlanet(celestial, UpdateType.Buildings);
-                                        celestial = UpdatePlanet(celestial, UpdateType.Facilities);
-                                        if (celestial.GetLevel(buildable) == level)
-                                        {
-                                            interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                        }
-                                        else
-                                        {
-                                            var price = Helpers.CalcPrice(buildable, level);
-                                            celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
-                                            if (
-                                                celestial.Coordinate.Type == Celestials.Planet &&
-                                                price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity &&
-                                                price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity &&
-                                                price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity
-                                            )
-                                            {
-                                                var missingResources = price.Difference(celestial.Resources);
-                                                float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float)3600;
-                                                float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float)3600;
-                                                float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float)3600;
-                                                if (
-                                                    !(
-                                                        (missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
-                                                        (missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
-                                                        (missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
-                                                    )
-                                                )
-                                                {
-                                                    float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
-                                                    float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
-                                                    float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
-                                                    interval = (long)(Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0.0F) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                                    if (interval <= 0)
-                                                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
-                                }
-                                fleets = UpdateFleets();
-                                var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
-                                if (incomingFleets.Count > 0)
-                                {
-                                    var fleet = incomingFleets
-                                        .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
-                                        .First();
-                                    interval = Math.Min(interval, (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds));
+                                    float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
+                                    float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
+                                    float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
+                                    productionTime = (long)(Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0.0F) * 1000);
                                 }
                             }
+                            fleets = UpdateFleets();
+                            var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
+                            if (incomingFleets.Count > 0)
+                            {
+                                var fleet = incomingFleets.First();
+                                transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                            }
+                            if (!double.IsNaN(productionTime) && !double.IsNaN(transportTime) && productionTime >= 0 && transportTime >= 0)
+                                interval = Math.Min(productionTime, transportTime);
                         }
                         else
                         {
-                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-                            
-                            if (celestial.HasConstruction())
+                            fleets = UpdateFleets();
+                            var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
+                            if (incomingFleets.Count > 0)
                             {
-                                interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+                                var fleet = incomingFleets.First();
+                                interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000);
                             }
-                            else
-                            {
-                                fleets = UpdateFleets();
-                                var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
-                                if (incomingFleets.Count > 0)
-                                {
-                                    var fleet = incomingFleets
-                                        .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
-                                        .First();
-                                    interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                                }
-                            }                            
-                        }
+                        }                        
                     }
                 }
-                catch (Exception e)
-                {
-                    Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoMineCelestial Exception: " + e.Message);
-                    Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
-                }
-                finally
-                {
-                    if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer value))
-                        value.Dispose();
-                    timers.Remove("AutoMineTimer-" + celestial.ID.ToString());
-                    if (interval <= 0)
-                        interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-                    newTime = time.AddMilliseconds(interval);
-                    timers.Add("AutoMineTimer-" + celestial.ID.ToString(), new Timer(AutoMine, celestial, interval, Timeout.Infinite));
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoMine check for " + celestial.ToString() + " at " + newTime.ToString());
-                }
             }
+            catch (Exception e)
+            {
+                Helpers.WriteLog(LogType.Error, LogSender.Brain, "AutoMineCelestial Exception: " + e.Message);
+                Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
+                return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+            }
+            return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
         }
 
         private static int HandleMinerTrasport(Celestial origin, Celestial destination, Resources resources)

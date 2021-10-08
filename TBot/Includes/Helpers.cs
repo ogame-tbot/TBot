@@ -2112,7 +2112,9 @@ namespace Tbot.Includes
                 .Where(f => f.Origin.Type == celestial.Coordinate.Type)
                 .Where(f => f.Mission != Missions.Transport && f.Mission != Missions.Deploy && f.ReturnFlight == true)
                 .ToList());
-            return incomingFleets;
+            return incomingFleets
+                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                .ToList();
         }
 
         public static List<Fleet> GetIncomingFleetsWithResources(Celestial celestial, List<Fleet> fleets)
