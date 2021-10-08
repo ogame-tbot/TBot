@@ -180,21 +180,24 @@ namespace Tbot.Model
             }
             return output;
         }
-        public bool HasMines(Buildings buildings)
+    }
+
+    public class Moon : Celestial
+    {  
+        public bool HasLunarFacilities(Facilities facilities)
         {
             if (
-                Buildings.MetalMine >= buildings.MetalMine &&
-                Buildings.CrystalMine >= buildings.CrystalMine &&
-                Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer 
-
+                Facilities.LunarBase >= facilities.LunarBase &&
+                Facilities.SensorPhalanx >= facilities.SensorPhalanx &&
+                Facilities.JumpGate >= facilities.JumpGate &&
+                Facilities.Shipyard >= facilities.Shipyard &&
+                Facilities.RoboticsFactory >= facilities.RoboticsFactory
             )
                 return true;
             else
                 return false;
         }
     }
-
-    public class Moon : Celestial { }
 
     public class Planet : Celestial
     {
@@ -209,6 +212,19 @@ namespace Tbot.Model
         public Alliance Alliance { get; set; }
         public Temperature Temperature { get; set; }
         public Moon Moon { get; set; }
+
+        public bool HasMines(Buildings buildings)
+        {
+            if (
+                Buildings.MetalMine >= buildings.MetalMine &&
+                Buildings.CrystalMine >= buildings.CrystalMine &&
+                Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer
+
+            )
+                return true;
+            else
+                return false;
+        }
     }
 
     public class Settings
