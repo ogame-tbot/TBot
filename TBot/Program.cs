@@ -1934,7 +1934,7 @@ namespace Tbot
                                 {
                                     started = true;
                                     Helpers.WriteLog(LogType.Info, LogSender.Brain, celestial.Productions.First().Nbr.ToString() + "x " + buildable.ToString() + " succesfully started.");
-                                }                                    
+                                }
                                 else
                                 {
                                     celestial = UpdatePlanet(celestial, UpdateType.Resources);
@@ -2084,7 +2084,7 @@ namespace Tbot
                                 }
                             }
                             fleets = UpdateFleets();
-                            var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
+                            var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
                             if (incomingFleets.Count > 0)
                             {
                                 var fleet = incomingFleets.First();
@@ -2095,14 +2095,20 @@ namespace Tbot
                         }
                         else
                         {
-                            fleets = UpdateFleets();
-                            var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
-                            if (incomingFleets.Count > 0)
+                            celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+                            if (celestial.HasConstruction())
+                                interval = (celestial.Constructions.BuildingCountdown * 1000);
+                            else
                             {
-                                var fleet = incomingFleets.First();
-                                interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000);
+                                fleets = UpdateFleets();
+                                var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
+                                if (incomingFleets.Count > 0)
+                                {
+                                    var fleet = incomingFleets.First();
+                                    interval = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                }
                             }
-                        }                        
+                        }
                     }
                 }
             }
