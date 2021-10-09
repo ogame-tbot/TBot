@@ -2110,10 +2110,10 @@ namespace Tbot.Includes
                 .Where(f => f.Origin.System == celestial.Coordinate.System)
                 .Where(f => f.Origin.Position == celestial.Coordinate.Position)
                 .Where(f => f.Origin.Type == celestial.Coordinate.Type)
-                .Where(f => f.Mission != Missions.Transport && f.Mission != Missions.Deploy && f.ReturnFlight == true)
+                .Where(f => f.ReturnFlight == true)
                 .ToList());
             return incomingFleets
-                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && f.ReturnFlight == false ? f.ArriveIn : f.BackIn)
                 .ToList();
         }
 
