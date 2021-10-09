@@ -2126,6 +2126,15 @@ namespace Tbot.Includes
             return incomingFleets;
         }
 
+        public static Fleet GetFirstReturningExpedition(List<Fleet> fleets)
+        {
+            if (fleets.Where(f => f.Mission == Missions.Expedition).Any())
+            {
+                return fleets.Where(f => f.Mission == Missions.Expedition).OrderBy(fleet => fleet.BackIn).First();
+            }
+            else return null;
+        }
+
         public static List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials)
         {
             List<Celestial> output = new();

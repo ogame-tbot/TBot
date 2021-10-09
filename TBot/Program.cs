@@ -2057,6 +2057,12 @@ namespace Tbot
                             var price = Helpers.CalcPrice(buildable, level);
                             var productionTime = long.MaxValue;
                             var transportTime = long.MaxValue;
+                            var returningExpoTime = long.MaxValue;
+
+                            var returningExpo = Helpers.GetFirstReturningExpedition(fleets);
+                            if (returningExpo != null)
+                                returningExpoTime = (long)(returningExpo.BackIn * 1000);
+
                             celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
                             if (
                                 celestial.Coordinate.Type == Celestials.Planet &&
@@ -2080,9 +2086,10 @@ namespace Tbot
                                     float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
                                     float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
                                     float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
-                                    productionTime = (long)(Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0.0F) * 1000);
+                                    productionTime = (long)(Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
                                 }
                             }
+
                             fleets = UpdateFleets();
                             var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
                             if (incomingFleets.Count > 0)
@@ -2090,8 +2097,9 @@ namespace Tbot
                                 var fleet = incomingFleets.First();
                                 transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
                             }
-                            if (!double.IsNaN(productionTime) && !double.IsNaN(transportTime) && productionTime >= 0 && transportTime >= 0)
-                                interval = Math.Min(productionTime, transportTime);
+
+                            if (!double.IsNaN(productionTime) && !double.IsNaN(transportTime) && !double.IsNaN(returningExpoTime) && productionTime >= 0 && transportTime >= 0 && returningExpoTime >= 0)
+                                interval = Math.Min(Math.Min(productionTime, transportTime), returningExpoTime);
                         }
                         else
                         {
@@ -2101,12 +2109,22 @@ namespace Tbot
                             else
                             {
                                 fleets = UpdateFleets();
+                                
+                                var incomingFleetTime = long.MaxValue;
+                                var returningExpoTime = long.MaxValue;
+                                var returningExpo = Helpers.GetFirstReturningExpedition(fleets);
+                                if (returningExpo != null)
+                                    returningExpoTime = (long)(returningExpo.BackIn * 1000);
+
                                 var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
                                 if (incomingFleets.Count > 0)
                                 {
                                     var fleet = incomingFleets.First();
-                                    interval = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                    incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
                                 }
+
+                                if (!double.IsNaN(incomingFleetTime) && !double.IsNaN(returningExpoTime) && incomingFleetTime >= 0 && returningExpoTime >= 0)
+                                    interval = Math.Min(returningExpoTime, incomingFleetTime);
                             }
                         }
                     }
