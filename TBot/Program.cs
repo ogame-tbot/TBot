@@ -2058,10 +2058,8 @@ namespace Tbot
                             var productionTime = long.MaxValue;
                             var transportTime = long.MaxValue;
                             var returningExpoTime = long.MaxValue;
-
-                            var returningExpo = Helpers.GetFirstReturningExpedition(fleets);
-                            if (returningExpo != null)
-                                returningExpoTime = (long)(returningExpo.BackIn * 1000);
+                            var transportOriginTime = long.MaxValue;
+                            var returningExpoOriginTime = long.MaxValue;
 
                             celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
                             if (
@@ -2095,11 +2093,50 @@ namespace Tbot
                             if (incomingFleets.Count > 0)
                             {
                                 var fleet = incomingFleets.First();
-                                transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
                             }
 
-                            if (!double.IsNaN(productionTime) && !double.IsNaN(transportTime) && !double.IsNaN(returningExpoTime) && productionTime >= 0 && transportTime >= 0 && returningExpoTime >= 0)
-                                interval = Math.Min(Math.Min(productionTime, transportTime), returningExpoTime);
+                            var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
+                            if (returningExpo != null)
+                                returningExpoTime = (long)(returningExpo.BackIn * 1000);
+
+                            if ((bool)settings.Brain.AutoMine.Trasports.Active)
+                            {
+                                if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                                {
+                                    Celestial origin = celestials
+                                            .Unique()
+                                            .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
+                                            .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
+                                            .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
+                                            .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
+                                            .SingleOrDefault() ?? new() { ID = 0 };
+                                    var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
+                                    if (returningExpoOrigin != null)
+                                        returningExpoOriginTime = (long)(returningExpoOrigin.BackIn * 1000);
+
+                                    var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
+                                    if (incomingOriginFleets.Count > 0)
+                                    {
+                                        var fleet = incomingFleets.First();
+                                        transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                    }
+                                }
+                            }
+
+                            if (
+                                !double.IsNaN(productionTime) &&
+                                !double.IsNaN(transportTime) &&
+                                !double.IsNaN(returningExpoTime) &&
+                                !double.IsNaN(returningExpoOriginTime) &&
+                                !double.IsNaN(transportOriginTime) &&
+                                productionTime >= 0 &&
+                                transportTime >= 0 &&
+                                returningExpoTime >= 0 &&
+                                returningExpoOriginTime >= 0 &&
+                                transportOriginTime >= 0
+                            )
+                                interval = Math.Min(Math.Min(Math.Min(Math.Min(productionTime, transportTime), returningExpoTime), returningExpoOriginTime), transportOriginTime);
                         }
                         else
                         {
@@ -2112,7 +2149,10 @@ namespace Tbot
                                 
                                 var incomingFleetTime = long.MaxValue;
                                 var returningExpoTime = long.MaxValue;
-                                var returningExpo = Helpers.GetFirstReturningExpedition(fleets);
+                                var transportOriginTime = long.MaxValue;
+                                var returningExpoOriginTime = long.MaxValue;
+
+                                var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
                                 if (returningExpo != null)
                                     returningExpoTime = (long)(returningExpo.BackIn * 1000);
 
@@ -2120,11 +2160,40 @@ namespace Tbot
                                 if (incomingFleets.Count > 0)
                                 {
                                     var fleet = incomingFleets.First();
-                                    incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                    incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
                                 }
 
-                                if (!double.IsNaN(incomingFleetTime) && !double.IsNaN(returningExpoTime) && incomingFleetTime >= 0 && returningExpoTime >= 0)
-                                    interval = Math.Min(returningExpoTime, incomingFleetTime);
+                                if ((bool)settings.Brain.AutoMine.Trasports.Active)
+                                {
+                                    if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets))
+                                    {
+                                        Celestial origin = celestials
+                                                .Unique()
+                                                .Where(c => c.Coordinate.Galaxy == (int)settings.Brain.AutoMine.Trasports.Origin.Galaxy)
+                                                .Where(c => c.Coordinate.System == (int)settings.Brain.AutoMine.Trasports.Origin.System)
+                                                .Where(c => c.Coordinate.Position == (int)settings.Brain.AutoMine.Trasports.Origin.Position)
+                                                .Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string)settings.Brain.AutoMine.Trasports.Origin.Type))
+                                                .SingleOrDefault() ?? new() { ID = 0 };
+                                        var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
+                                        if (returningExpoOrigin != null)
+                                            returningExpoOriginTime = (long)(returningExpoOrigin.BackIn * 1000);
+
+                                        var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
+                                        if (incomingOriginFleets.Count > 0)
+                                        {
+                                            var fleet = incomingFleets.First();
+                                            transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
+                                        }
+                                    }
+                                }
+
+                                if (
+                                    !double.IsNaN(incomingFleetTime) &&
+                                    !double.IsNaN(returningExpoTime) &&
+                                    incomingFleetTime >= 0 &&
+                                    returningExpoTime >= 0
+                                )
+                                    interval = Math.Min(Math.Min(Math.Min(returningExpoTime, incomingFleetTime), transportOriginTime), returningExpoOriginTime);
                             }
                         }
                     }
