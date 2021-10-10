@@ -2128,11 +2128,10 @@ namespace Tbot.Includes
 
         public static Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets)
         {
-            if (fleets.Where(f => f.Mission == Missions.Expedition).Any())
+            var celestialExpos = fleets.Where(f => f.Origin.IsSame(coord)).Where(f => f.Mission == Missions.Expedition);
+            if (celestialExpos.Any())
             {
-                return fleets
-                    .Where(f => f.Origin.IsSame(coord))
-                    .Where(f => f.Mission == Missions.Expedition)
+                return celestialExpos
                     .OrderBy(fleet => fleet.BackIn).First();
             }
             else return null;
