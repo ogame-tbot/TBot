@@ -2103,17 +2103,17 @@ namespace Tbot.Includes
                 .Where(f => f.Destination.System == celestial.Coordinate.System)
                 .Where(f => f.Destination.Position == celestial.Coordinate.Position)
                 .Where(f => f.Destination.Type == celestial.Coordinate.Type)
-                .Where(f =>(f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && f.ReturnFlight == false)
+                .Where(f =>(f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && !f.ReturnFlight)
                 .ToList());
             incomingFleets.AddRange(fleets
                 .Where(f => f.Origin.Galaxy == celestial.Coordinate.Galaxy)
                 .Where(f => f.Origin.System == celestial.Coordinate.System)
                 .Where(f => f.Origin.Position == celestial.Coordinate.Position)
                 .Where(f => f.Origin.Type == celestial.Coordinate.Type)
-                .Where(f => f.Mission != Missions.Transport && f.Mission != Missions.Deploy && f.ReturnFlight == true)
+                .Where(f => f.ReturnFlight == true)
                 .ToList());
             return incomingFleets
-                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
+                .OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && !f.ReturnFlight ? f.ArriveIn : f.BackIn)
                 .ToList();
         }
 
@@ -2124,6 +2124,18 @@ namespace Tbot.Includes
                 .Where(f => f.Resources.TotalResources > 0)
                 .ToList();
             return incomingFleets;
+        }
+
+        public static Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets)
+        {
+            if (fleets.Where(f => f.Mission == Missions.Expedition).Any())
+            {
+                return fleets
+                    .Where(f => f.Origin.IsSame(coord))
+                    .Where(f => f.Mission == Missions.Expedition)
+                    .OrderBy(fleet => fleet.BackIn).First();
+            }
+            else return null;
         }
 
         public static List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials)
