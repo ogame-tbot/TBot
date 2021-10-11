@@ -119,7 +119,6 @@ namespace Tbot
             if (!isLoggedIn)
             {
                 Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login.");
-                ogamedService.KillOgamedExecultable();
                 Console.ReadLine();
             }
             else
@@ -195,7 +194,6 @@ namespace Tbot
                 }
 
                 Console.ReadLine();
-                ogamedService.KillOgamedExecultable();
             }
 
         }
@@ -2038,6 +2036,7 @@ namespace Tbot
             try
             {
                 celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+                celestial = UpdatePlanet(celestial, UpdateType.Facilities);
                 if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings)) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)))
                 {
                     interval = long.MaxValue;
