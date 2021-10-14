@@ -2005,6 +2005,8 @@ namespace Tbot
             }
             finally
             {
+                celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+                celestial = UpdatePlanet(celestial, UpdateType.Facilities);
                 var time = GetDateTime();
                 DateTime newTime;
                 if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings) && celestial.Resources.Energy >= 0) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)))
@@ -2036,12 +2038,17 @@ namespace Tbot
             long interval = Helpers.CalcRandomInterval((int)settings.Brain.AutoMine.CheckIntervalMin, (int)settings.Brain.AutoMine.CheckIntervalMax);
             try
             {
+                if (celestial.Fields.Free == 0)
+                {
+                    interval = long.MaxValue;
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": not enough fields available.");
+                }
                 celestial = UpdatePlanet(celestial, UpdateType.Buildings);
                 celestial = UpdatePlanet(celestial, UpdateType.Facilities);
                 if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings)) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)))
                 {
                     interval = long.MaxValue;
-                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": mines are at set level.");
+                    Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": " + (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities") + " are at set level.");
                 }
                 else
                 {
