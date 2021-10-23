@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tbot.Includes
 {
-    class FleetScheduler
-    {
-    }
+	class FleetScheduler
+	{
+	}
 }
