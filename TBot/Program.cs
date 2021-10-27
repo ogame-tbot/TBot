@@ -3039,8 +3039,8 @@ namespace Tbot
                                                 (long)settings.Expeditions.ManualShips.Ships.ColonyShip,
                                                 (long)settings.Expeditions.ManualShips.Ships.Recycler,
                                                 (long)settings.Expeditions.ManualShips.Ships.EspionageProbe,
-                                                (long)settings.Expeditions.ManualShips.Ships.SolarSatellite,
-                                                (long)settings.Expeditions.ManualShips.Ships.Crawler,
+                                                0,
+                                                0,
                                                 (long)settings.Expeditions.ManualShips.Ships.Reaper,
                                                 (long)settings.Expeditions.ManualShips.Ships.Pathfinder
                                             );
@@ -3056,7 +3056,7 @@ namespace Tbot
                                             if (!Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), true, out primaryShip))
                                             {
                                                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse PrimaryShip. Falling back to default LargeCargo");
-                                                primaryShip = Buildables.SmallCargo;
+                                                primaryShip = Buildables.LargeCargo;
                                             }
                                             if (primaryShip == Buildables.Null)
                                             {
