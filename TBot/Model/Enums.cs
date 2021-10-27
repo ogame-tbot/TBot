@@ -130,7 +130,7 @@ namespace Tbot.Model
 		public const decimal HundredPercent = 10;
 
 		public static List<decimal> GetGeneralSpeedsList()
-        {
+		{
 			return new()
 			{
 				10,
@@ -154,7 +154,7 @@ namespace Tbot.Model
 				1,
 				0.5M
 			};
-        }
+		}
 
 		public static List<decimal> GetNonGeneralSpeedsList()
 		{
