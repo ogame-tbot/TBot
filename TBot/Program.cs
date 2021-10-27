@@ -2250,7 +2250,11 @@ namespace Tbot
                     {
                         origin = UpdatePlanet(origin, UpdateType.Ships);
                         Buildables preferredShip = Buildables.SmallCargo;
-                        Enum.TryParse<Buildables>((string)settings.Brain.AutoMine.Trasports.CargoType, true, out preferredShip);
+                        if (!Enum.TryParse<Buildables>((string)settings.Brain.AutoMine.Trasports.CargoType, true, out preferredShip))
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
+                            preferredShip = Buildables.Null;
+                        }
                         long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
                         Ships ships = new();
                         if (idealShips <= origin.Ships.GetAmount(preferredShip))
@@ -2388,7 +2392,11 @@ namespace Tbot
                     }
                     long neededCargos;
                     Buildables preferredCargoShip = Buildables.SmallCargo;
-                    Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip);
+                    if (!Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredCargoShip))
+                    {
+                        Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
+                        preferredCargoShip = Buildables.SmallCargo;
+                    }
                     if (capacity <= tempCelestial.Resources.TotalResources && (bool)settings.Brain.AutoCargo.LimitToCapacity)
                     {
                         long difference = tempCelestial.Resources.TotalResources - capacity;                        
@@ -2545,7 +2553,11 @@ namespace Tbot
                         tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
                         Buildables preferredShip = Buildables.SmallCargo;
-                        Enum.TryParse<Buildables>((string)settings.Brain.AutoCargo.CargoType, true, out preferredShip);
+                        if (!Enum.TryParse<Buildables>((string)settings.Brain.AutoRepatriate.CargoType, true, out preferredShip))
+                        {
+                            Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
+                            preferredShip = Buildables.SmallCargo;
+                        }
                         Resources payload = tempCelestial.Resources;
 
                         if ((long)settings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0)
@@ -3041,7 +3053,11 @@ namespace Tbot
                                         else
                                         {
                                             Buildables primaryShip = Buildables.LargeCargo;
-                                            Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), out primaryShip);
+                                            if (!Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), true, out primaryShip))
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse PrimaryShip. Falling back to default LargeCargo");
+                                                primaryShip = Buildables.SmallCargo;
+                                            }
                                             if (primaryShip == Buildables.Null)
                                             {
                                                 Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
@@ -3059,7 +3075,11 @@ namespace Tbot
                                                 }                                                
                                             }
                                             Buildables secondaryShip = Buildables.Null;
-                                            Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, out secondaryShip);
+                                            if (!Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, true, out secondaryShip))
+                                            {
+                                                Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse SecondaryShip. Falling back to default Null");
+                                                secondaryShip = Buildables.Null;
+                                            }
                                             if (secondaryShip != Buildables.Null)
                                             {
                                                 long secondaryToSend = Math.Min(
