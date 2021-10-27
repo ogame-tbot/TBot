@@ -1,27 +1,23 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Tbot.Model
-{
-	public enum Classes
-	{
+namespace Tbot.Model {
+	public enum Classes {
 		NoClass = 0,
 		Collector = 1,
 		General = 2,
 		Discoverer = 3
 	}
 
-	public enum Celestials
-	{
+	public enum Celestials {
 		Planet = 1,
 		Debris = 2,
 		Moon = 3,
 		DeepSpace = 4
 	}
 
-	public enum Buildables
-	{
+	public enum Buildables {
 		Null = 0,
 		MetalMine = 1,
 		CrystalMine = 2,
@@ -90,8 +86,7 @@ namespace Tbot.Model
 		GravitonTechnology = 199
 	}
 
-	public enum Missions
-	{
+	public enum Missions {
 		Attack = 1,
 		FederalAttack = 2,
 		Transport = 3,
@@ -106,8 +101,7 @@ namespace Tbot.Model
 		Trade = 16
 	}
 
-	public static class Speeds
-	{
+	public static class Speeds {
 		public const decimal FivePercent = 0.5M;
 		public const decimal TenPercent = 1;
 		public const decimal FifteenPercent = 1.5M;
@@ -129,8 +123,7 @@ namespace Tbot.Model
 		public const decimal NinetyfivePercent = 9.5M;
 		public const decimal HundredPercent = 10;
 
-		public static List<decimal> GetGeneralSpeedsList()
-		{
+		public static List<decimal> GetGeneralSpeedsList() {
 			return new()
 			{
 				10,
@@ -156,8 +149,7 @@ namespace Tbot.Model
 			};
 		}
 
-		public static List<decimal> GetNonGeneralSpeedsList()
-		{
+		public static List<decimal> GetNonGeneralSpeedsList() {
 			return new()
 			{
 				10,
@@ -174,8 +166,7 @@ namespace Tbot.Model
 		}
 	}
 
-	public enum IntervalType
-	{
+	public enum IntervalType {
 		LessThanASecond,
 		AFewSeconds,
 		SomeSeconds,
@@ -187,8 +178,7 @@ namespace Tbot.Model
 		AboutAnHour
 	}
 
-	public enum UpdateType
-	{
+	public enum UpdateType {
 		Fast,
 		Techs,
 		Full,
@@ -204,16 +194,14 @@ namespace Tbot.Model
 		Debris
 	}
 
-	public enum LogType
-	{
+	public enum LogType {
 		Info,
 		Debug,
 		Warning,
 		Error
 	}
 
-	public enum LogSender
-	{
+	public enum LogSender {
 		Tbot,
 		Defender,
 		Brain,
@@ -223,8 +211,7 @@ namespace Tbot.Model
 		SleepMode
 	}
 
-	public enum Feature
-	{
+	public enum Feature {
 		Defender = 0,
 		Brain = 1,
 		BrainAutobuildCargo = 2,
