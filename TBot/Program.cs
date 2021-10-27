@@ -2044,7 +2044,19 @@ namespace Tbot
                 }
                 celestial = UpdatePlanet(celestial, UpdateType.Buildings);
                 celestial = UpdatePlanet(celestial, UpdateType.Facilities);
-                if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings)) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)))
+
+                if (
+                    (
+                        celestial.Coordinate.Type == Celestials.Planet && (
+                            (celestial as Planet).HasMines(maxBuildings) ||
+                            Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull) > autoMinerSettings.MaxDaysOfInvestmentReturn
+                        )
+                    ) ||
+                    (
+                        celestial.Coordinate.Type == Celestials.Moon &&
+                        (celestial as Moon).HasLunarFacilities(maxLunarFacilities)
+                    )
+                )
                 {
                     interval = long.MaxValue;
                     Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": " + (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities") + " are at set level.");
@@ -2104,7 +2116,7 @@ namespace Tbot
 
                             fleets = UpdateFleets();
                             var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-                            if (incomingFleets.Count > 0)
+                            if (incomingFleets.Any())
                             {
                                 var fleet = incomingFleets.First();
                                 transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
@@ -2128,7 +2140,7 @@ namespace Tbot
                                     returningExpoOriginTime = (long)(returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 
                                 var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
-                                if (incomingOriginFleets.Count > 0)
+                                if (incomingOriginFleets.Any())
                                 {
                                     var fleet = incomingFleets.First();
                                     transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
@@ -2162,7 +2174,7 @@ namespace Tbot
                                     returningExpoTime = (long)(returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 
                                 var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-                                if (incomingFleets.Count > 0)
+                                if (incomingFleets.Any())
                                 {
                                     var fleet = incomingFleets.First();
                                     incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
@@ -2182,7 +2194,7 @@ namespace Tbot
                                         returningExpoOriginTime = (long)(returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 
                                     var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
-                                    if (incomingOriginFleets.Count > 0)
+                                    if (incomingOriginFleets.Any())
                                     {
                                         var fleet = incomingFleets.First();
                                         transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long)fleet.ArriveIn : (long)fleet.BackIn) * 1000;
