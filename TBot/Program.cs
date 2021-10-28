@@ -1397,15 +1397,15 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Research " + research.ToString() + " level " + level.ToString() + " could not be started on " + celestial.ToString());
 					} else {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + research.ToString() + " level " + level.ToString() + " on " + celestial.ToString());
-						if ((bool) settings.Brain.AutoResearch.Trasports.Active) {
+						if ((bool) settings.Brain.AutoResearch.Transports.Active) {
 							fleets = UpdateFleets();
 							if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
 								Celestial origin = celestials
 									.Unique()
-									.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoResearch.Trasports.Origin.Galaxy)
-									.Where(c => c.Coordinate.System == (int) settings.Brain.AutoResearch.Trasports.Origin.System)
-									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoResearch.Trasports.Origin.Position)
-									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoResearch.Trasports.Origin.Type))
+									.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoResearch.Transports.Origin.Galaxy)
+									.Where(c => c.Coordinate.System == (int) settings.Brain.AutoResearch.Transports.Origin.System)
+									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoResearch.Transports.Origin.Position)
+									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoResearch.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
 								fleetId = HandleMinerTrasport(origin, celestial, cost);
 							} else {
@@ -1640,15 +1640,15 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 					} else {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Not enough resources to build: " + buildable.ToString() + " level " + level.ToString() + " on " + celestial.ToString());
-						if ((bool) settings.Brain.AutoMine.Trasports.Active) {
+						if ((bool) settings.Brain.AutoMine.Transports.Active) {
 							fleets = UpdateFleets();
 							if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
 								Celestial origin = celestials
 										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Trasports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Trasports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Trasports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Trasports.Origin.Type))
+										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
 								fleetId = HandleMinerTrasport(origin, celestial, xCostBuildable);
 							} else {
@@ -1767,13 +1767,13 @@ namespace Tbot {
 							if (returningExpo != null)
 								returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 
-							if ((bool) settings.Brain.AutoMine.Trasports.Active) {
+							if ((bool) settings.Brain.AutoMine.Transports.Active) {
 								Celestial origin = celestials
 										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Trasports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Trasports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Trasports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Trasports.Origin.Type))
+										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
 								var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
 								if (returningExpoOrigin != null)
@@ -1815,13 +1815,13 @@ namespace Tbot {
 									incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
 								}
 
-								if ((bool) settings.Brain.AutoMine.Trasports.Active) {
+								if ((bool) settings.Brain.AutoMine.Transports.Active) {
 									Celestial origin = celestials
 											.Unique()
-											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Trasports.Origin.Galaxy)
-											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Trasports.Origin.System)
-											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Trasports.Origin.Position)
-											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Trasports.Origin.Type))
+											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 											.SingleOrDefault() ?? new() { ID = 0 };
 									var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
 									if (returningExpoOrigin != null)
@@ -1866,14 +1866,14 @@ namespace Tbot {
 					var missingResources = resources.Difference(destination.Resources);
 
 					Resources resToLeave = new();
-					if ((long) settings.Brain.AutoMine.Trasports.DeutToLeave > 0)
-						resToLeave.Deuterium = (long) settings.Brain.AutoMine.Trasports.DeutToLeave;
+					if ((long) settings.Brain.AutoMine.Transports.DeutToLeave > 0)
+						resToLeave.Deuterium = (long) settings.Brain.AutoMine.Transports.DeutToLeave;
 
 					origin = UpdatePlanet(origin, UpdateType.Resources);
 					if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
 						origin = UpdatePlanet(origin, UpdateType.Ships);
 						Buildables preferredShip = Buildables.SmallCargo;
-						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Trasports.CargoType, true, out preferredShip)) {
+						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
 							preferredShip = Buildables.Null;
 						}
@@ -1923,7 +1923,7 @@ namespace Tbot {
 							return 0;
 						}
 					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough resources in orgin.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough resources in origin.");
 						return 0;
 					}
 				}
