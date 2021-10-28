@@ -2710,7 +2710,7 @@ namespace Tbot {
 							if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 								continue;
 							tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Debris) as Planet;
-							if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResources) {
+							if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesOwnDF) {
 								if (moon.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
 									dic.Add(dest, moon);
 								else if (moon.Ships.Recycler > 0)
@@ -2731,7 +2731,7 @@ namespace Tbot {
 							if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 								continue;
 							ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(tempCelestial.Coordinate).ExpeditionDebris;
-							if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResources) {
+							if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesDeepSpace) {
 								if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
 									dic.Add(dest, moon);
 								else if (moon.Ships.Pathfinder > 0)

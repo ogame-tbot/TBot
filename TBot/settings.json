@@ -268,7 +268,8 @@
 		"Active": false,
 		"HarvestOwnDF": true,
 		"HarvestDeepSpace": true,
-		"MinimumResources": 300,
+		"MinimumResourcesOwnDF": 300,
+		"MinimumResourcesDeepSpace": 50000,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
