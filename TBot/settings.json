@@ -104,7 +104,7 @@
 			"MaxLunarRoboticsFactory": 8,
 			"MaxSensorPhalanx": 6,
 			"MaxJumpGate": 1,
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -155,7 +155,7 @@
 				"Position": 8,
 				"Type": "Planet"
 			},
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -268,7 +268,8 @@
 		"Active": false,
 		"HarvestOwnDF": true,
 		"HarvestDeepSpace": true,
-		"MinimumResources": 300,
+		"MinimumResourcesOwnDF": 300,
+		"MinimumResourcesDeepSpace": 50000,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
