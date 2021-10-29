@@ -25,42 +25,39 @@ namespace Tbot.Includes {
 				LogType.Debug => ConsoleColor.White,
 				_ => ConsoleColor.Gray
 			};
-			Console.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
+			Console.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
 
 		public static void LogToFile(LogType type, LogSender sender, string message) {
-			string path = Directory.GetCurrentDirectory() + "/log";
+			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
-			string fileName = DateTime.Now.Year.ToString() + DateTime.Now.Month.ToString() + DateTime.Now.Day.ToString() + "_TBot.log";
+			string fileName = $"{DateTime.Now.Year.ToString()}{DateTime.Now.Month.ToString()}{DateTime.Now.Day.ToString()}_TBot.log";
 			try {
-				StreamWriter file = new(path + "/" + fileName, true);
-				file.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
+				StreamWriter file = new($"{path}/{fileName}", true);
+				file.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
 				file.Close();
 			} catch (Exception) { }
 		}
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
-			string path = Directory.GetCurrentDirectory() + "/log";
+			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
 			string fileName = "TBot_log.csv";
 			try {
-				StreamWriter file = new(path + "/" + fileName, true);
-				file.WriteLine(type.ToString().EscapeForCSV() + "," + sender.ToString().EscapeForCSV() + "," + DateTime.Now.ToString().EscapeForCSV() + "," + message.EscapeForCSV());
+				StreamWriter file = new($"{path}/{fileName}", true);
+				file.WriteLine($"{type.ToString().EscapeForCSV()},{sender.ToString().EscapeForCSV()},{DateTime.Now.ToString().EscapeForCSV()},{message.EscapeForCSV()}");
 				file.Close();
 			} catch (Exception) { }
 		}
 
 		public static void SetTitle(string content = "") {
 			AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
-			string info = exeInfo.Name + " v" + exeInfo.Version;
-			if (content != "")
-				Console.Title = content + " - " + info;
-			else
-				Console.Title = info;
+			string info = $"{exeInfo.Name} v{exeInfo.Version}";
+			Console.Title = (content != "") ? $"{content} - {info}" : info;
 			return;
 		}
 

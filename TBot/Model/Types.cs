@@ -102,7 +102,7 @@ namespace Tbot.Model {
 		public ResourcesProduction ResourcesProduction { get; set; }
 		public Debris Debris { get; set; }
 		public override string ToString() {
-			return Name + " " + Coordinate.ToString();
+			return $"{Name} {Coordinate.ToString()}";
 		}
 		public bool HasProduction() {
 			try {
@@ -292,7 +292,7 @@ namespace Tbot.Model {
 			}
 		}
 		public override string ToString() {
-			return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
+			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
 
 		public bool IsEnoughFor(Resources cost, Resources resToLeave = null) {
@@ -353,7 +353,7 @@ namespace Tbot.Model {
 		public int CrystalStorage { get; set; }
 		public int DeuteriumTank { get; set; }
 		public override string ToString() {
-			return "M:" + MetalMine.ToString() + " C:" + CrystalMine.ToString() + " D:" + DeuteriumSynthesizer.ToString() + " S:" + SolarPlant.ToString("") + " F:" + FusionReactor.ToString("");
+			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
 	}
 
@@ -372,7 +372,7 @@ namespace Tbot.Model {
 		public int SensorPhalanx { get; set; }
 		public int JumpGate { get; set; }
 		public override string ToString() {
-			return "R:" + RoboticsFactory.ToString() + " S:" + Shipyard.ToString() + " L:" + ResearchLab.ToString() + " M:" + MissileSilo.ToString("") + " N:" + NaniteFactory.ToString("");
+			return $"R: {RoboticsFactory.ToString()} S: {Shipyard.ToString()} L: {ResearchLab.ToString()} M: {MissileSilo.ToString("")} N: {NaniteFactory.ToString("")}";
 		}
 	}
 

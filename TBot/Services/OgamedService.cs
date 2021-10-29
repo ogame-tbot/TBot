@@ -19,7 +19,7 @@ namespace Tbot.Services {
         */
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
-			Url = "http://" + host + ":" + port;
+			Url = $"http://{host}:{port}";
 			Client = new(Url) {
 				Timeout = 86400000,
 				ReadWriteTimeout = 86400000
@@ -28,24 +28,24 @@ namespace Tbot.Services {
 
 		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
 			try {
-				string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --api-new-hostname=http://" + host + ":" + port + " --cookies-filename=cookies.txt";
+				string args = $"--universe={credentials.Universe} --username={credentials.Username} --password={credentials.Password} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port} --cookies-filename=cookies.txt";
 				if (captchaKey != "")
-					args += " --nja-api-key=" + captchaKey;
+					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
-					args += " --proxy=" + proxySettings.Address;
-					args += " --proxy-type=" + proxySettings.Type;
+					args += $" --proxy={proxySettings.Address}";
+					args += $" --proxy-type={proxySettings.Type}";
 					if (proxySettings.Username != "")
-						args += " --proxy-username=" + proxySettings.Username;
+						args += $" --proxy-username={proxySettings.Username}";
 					if (proxySettings.Password != "")
-						args += " --proxy-password=" + proxySettings.Password;
+						args += $" --proxy-password={proxySettings.Password}";
 					if (proxySettings.LoginOnly)
 						args += " --proxy-login-only=true";
 				}
 				if (credentials.IsLobbyPioneers)
 					args += " --lobby=lobby-pioneers";
 				if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "") {
-					args += " --basic-auth-username=" + credentials.BasicAuthUsername;
-					args += " --basic-auth-password=" + credentials.BasicAuthPassword;
+					args += $" --basic-auth-username={credentials.BasicAuthUsername}";
+					args += $" --basic-auth-password={credentials.BasicAuthPassword}";
 				}
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 					Process.Start("ogamed.exe", args);
@@ -112,7 +112,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Server>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -124,7 +124,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<ServerData>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -136,7 +136,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (string) result.Result;
 		}
@@ -148,7 +148,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (string) result.Result;
 		}
@@ -160,7 +160,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (string) result.Result;
 		}
@@ -172,7 +172,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (int) result.Result;
 		}
@@ -184,7 +184,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (int) result.Result;
 		}
@@ -196,7 +196,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (string) result.Result;
 		}
@@ -208,7 +208,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (DateTime) result.Result;
 		}
@@ -220,7 +220,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (string) result.Result;
 		}
@@ -232,7 +232,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<UserInfo>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -244,7 +244,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Classes>(JsonConvert.SerializeObject(result.Result));
 		}
@@ -256,7 +256,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<List<Planet>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -268,7 +268,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Planet>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -280,7 +280,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<List<Moon>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -292,7 +292,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Moon>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -317,72 +317,72 @@ namespace Tbot.Services {
 
 		public Techs GetTechs(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/celestials/" + celestial.ID + "/techs",
+				Resource = $"/bot/celestials/{celestial.ID}/techs",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Techs>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Model.Resources GetResources(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/resources",
+				Resource = $"/bot/planets/{celestial.ID}/resources",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Buildings GetBuildings(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/resources-buildings",
+				Resource = $"/bot/planets/{celestial.ID}/resources-buildings",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Model.Buildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Facilities GetFacilities(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/facilities",
+				Resource = $"/bot/planets/{celestial.ID}/facilities",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Facilities>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Defences GetDefences(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/defence",
+				Resource = $"/bot/planets/{celestial.ID}/defence",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Defences>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Ships GetShips(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/ships",
+				Resource = $"/bot/planets/{celestial.ID}/ships",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Ships>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -394,7 +394,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -406,7 +406,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -418,7 +418,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -430,7 +430,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -442,7 +442,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -454,7 +454,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -466,7 +466,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return (bool) result.Result;
 		}
@@ -506,7 +506,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<List<AttackerFleet>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -518,7 +518,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<List<Fleet>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -530,7 +530,7 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Slots>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -542,55 +542,55 @@ namespace Tbot.Services {
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Researches>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public List<Production> GetProductions(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/production",
+				Resource = $"/bot/planets/{celestial.ID}/production",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<List<Production>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public ResourceSettings GetResourceSettings(Planet planet) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + planet.ID + "/resource-settings",
+				Resource = $"/bot/planets/{planet.ID}/resource-settings",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<ResourceSettings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public ResourcesProduction GetResourcesProduction(Planet planet) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + planet.ID + "/resources-details",
+				Resource = $"/bot/planets/{planet.ID}/resources-details",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Model.ResourcesProduction>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public Constructions GetConstructions(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + celestial.ID + "/constructions",
+				Resource = $"/bot/planets/{celestial.ID}/constructions",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Constructions>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -598,7 +598,7 @@ namespace Tbot.Services {
 		public bool CancelConstruction(Celestial celestial) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/cancel-building",
+					Resource = $"/bot/planets/{celestial.ID}/cancel-building",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -612,7 +612,7 @@ namespace Tbot.Services {
 		public bool CancelResearch(Celestial celestial) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/cancel-research",
+					Resource = $"/bot/planets/{celestial.ID}/cancel-research",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -625,7 +625,7 @@ namespace Tbot.Services {
 
 		public Fleet SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + origin.ID + "/send-fleet",
+				Resource = $"/bot/planets/{origin.ID}/send-fleet",
 				Method = Method.POST,
 			};
 
@@ -653,14 +653,14 @@ namespace Tbot.Services {
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Fleet>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
 		public FleetPrediction PredictFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + origin.ID + "/flighttime",
+				Resource = $"/bot/planets/{origin.ID}/flighttime",
 				Method = Method.POST,
 			};
 
@@ -684,7 +684,7 @@ namespace Tbot.Services {
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return new() {
 					Time = result.Result.Secs,
@@ -695,7 +695,7 @@ namespace Tbot.Services {
 		public bool CancelFleet(Fleet fleet) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/fleets/" + fleet.ID + "/cancel",
+					Resource = $"/bot/fleets/{fleet.ID}/cancel",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -708,12 +708,12 @@ namespace Tbot.Services {
 
 		public GalaxyInfo GetGalaxyInfo(Coordinate coordinate) {
 			var request = new RestRequest {
-				Resource = "/bot/galaxy-infos/" + coordinate.Galaxy + "/" + coordinate.System,
+				Resource = $"/bot/galaxy-infos/{coordinate.Galaxy}/{coordinate.System}",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<GalaxyInfo>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
@@ -726,7 +726,7 @@ namespace Tbot.Services {
 		public bool BuildCancelable(Celestial celestial, Buildables buildable) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/build/cancelable/" + (int) buildable,
+					Resource = $"/bot/planets/{celestial.ID}/build/cancelable/{(int) buildable}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -740,7 +740,7 @@ namespace Tbot.Services {
 		public bool BuildConstruction(Celestial celestial, Buildables buildable) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/build/building/" + (int) buildable,
+					Resource = $"/bot/planets/{celestial.ID}/build/building/{(int) buildable}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -753,7 +753,7 @@ namespace Tbot.Services {
 
 		public bool BuildTechnology(Celestial celestial, Buildables buildable) {
 			try {
-				var request = new RestRequest { Resource = "/bot/planets/" + celestial.ID + "/build/technology/" + (int) buildable, Method = Method.POST };
+				var request = new RestRequest { Resource = $"/bot/planets/{celestial.ID}/build/technology/{(int) buildable}", Method = Method.POST };
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 				if (result.Status != "ok")
 					return false;
@@ -765,7 +765,7 @@ namespace Tbot.Services {
 		public bool BuildMilitary(Celestial celestial, Buildables buildable, long quantity) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/build/production/" + (int) buildable + "/" + quantity,
+					Resource = $"/bot/planets/{celestial.ID}/build/production/{(int) buildable}/{quantity}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -779,7 +779,7 @@ namespace Tbot.Services {
 		public bool BuildShips(Celestial celestial, Buildables buildable, long quantity) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/build/ships/" + (int) buildable + "/" + quantity,
+					Resource = $"/bot/planets/{celestial.ID}/build/ships/{(int) buildable}/{quantity},
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -793,7 +793,7 @@ namespace Tbot.Services {
 		public bool BuildDefences(Celestial celestial, Buildables buildable, long quantity) {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/planets/" + celestial.ID + "/build/defence/" + (int) buildable + "/" + quantity,
+					Resource = $"/bot/planets/{celestial.ID}/build/defence/{(int) buildable}/{quantity}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -806,12 +806,12 @@ namespace Tbot.Services {
 
 		public Model.Resources GetPrice(Buildables buildable, long levelOrQuantity) {
 			var request = new RestRequest {
-				Resource = "/bot/price/" + (int) buildable + "/" + levelOrQuantity,
+				Resource = $"/bot/price/{(int) buildable}/{levelOrQuantity}",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception("An error has occurred: Status: " + result.Status + " - Message: " + result.Message);
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
