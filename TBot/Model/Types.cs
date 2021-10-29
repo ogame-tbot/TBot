@@ -33,7 +33,7 @@ namespace Tbot.Model {
 		public int Position { get; set; }
 		public Celestials Type { get; set; }
 		public override string ToString() {
-			return "[" + GetCelestialCode() + ":" + Galaxy + ":" + System + ":" + Position + "]";
+			return $"[{GetCelestialCode()}:{Galaxy}:{System}:{Position}]";
 		}
 		private string GetCelestialCode() {
 			return Type switch {
