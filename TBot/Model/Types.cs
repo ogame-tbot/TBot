@@ -48,10 +48,10 @@ namespace Tbot.Model {
 		}
 
 		public bool IsSame(Coordinate otherCoord) {
-			if (Galaxy == otherCoord.Galaxy && System == otherCoord.System && Position == otherCoord.Position && Type == otherCoord.Type)
-				return true;
-			else
-				return false;
+			return Galaxy == otherCoord.Galaxy
+				&& System == otherCoord.System
+				&& Position == otherCoord.Position
+				&& Type == otherCoord.Type;
 		}
 	}
 
@@ -110,10 +110,7 @@ namespace Tbot.Model {
 
 		public bool HasProduction() {
 			try {
-				if (Productions.Count == 0)
-					return false;
-				else
-					return true;
+				return Productions.Count != 0;
 			} catch {
 				return false;
 			}
@@ -121,20 +118,17 @@ namespace Tbot.Model {
 
 		internal bool HasConstruction() {
 			try {
-				if (Constructions.BuildingID != (int) Buildables.Null)
-					return true;
-				else
-					return false;
+				return Constructions.BuildingID != (int) Buildables.Null;
 			} catch {
 				return false;
 			}
 		}
 
 		public bool HasCoords(Coordinate coords) {
-			if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
-				return true;
-			else
-				return false;
+			return coords.Galaxy == Coordinate.Galaxy
+				&& coords.System == Coordinate.System
+				&& coords.Position == Coordinate.Position
+				&& coords.Type == Coordinate.Type;
 		}
 
 		public int GetLevel(Buildables building) {
@@ -157,16 +151,11 @@ namespace Tbot.Model {
 
 	public class Moon : Celestial {
 		public bool HasLunarFacilities(Facilities facilities) {
-			if (
-				Facilities.LunarBase >= facilities.LunarBase &&
-				Facilities.SensorPhalanx >= facilities.SensorPhalanx &&
-				Facilities.JumpGate >= facilities.JumpGate &&
-				Facilities.Shipyard >= facilities.Shipyard &&
-				Facilities.RoboticsFactory >= facilities.RoboticsFactory
-			)
-				return true;
-			else
-				return false;
+			return Facilities.LunarBase >= facilities.LunarBase
+				&& Facilities.SensorPhalanx >= facilities.SensorPhalanx
+				&& Facilities.JumpGate >= facilities.JumpGate
+				&& Facilities.Shipyard >= facilities.Shipyard
+				&& Facilities.RoboticsFactory >= facilities.RoboticsFactory;
 		}
 	}
 
@@ -184,15 +173,9 @@ namespace Tbot.Model {
 		public Moon Moon { get; set; }
 
 		public bool HasMines(Buildings buildings) {
-			if (
-				Buildings.MetalMine >= buildings.MetalMine &&
-				Buildings.CrystalMine >= buildings.CrystalMine &&
-				Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer
-
-			)
-				return true;
-			else
-				return false;
+			return Buildings.MetalMine >= buildings.MetalMine
+				&& Buildings.CrystalMine >= buildings.CrystalMine
+				&& Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer;
 		}
 	}
 
@@ -314,17 +297,11 @@ namespace Tbot.Model {
 				tempCry -= resToLeave.Crystal;
 				tempDeut -= resToLeave.Deuterium;
 			}
-			if (cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut)
-				return true;
-			else
-				return false;
+			return cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut;
 		}
 
 		public bool IsEmpty() {
-			if (Metal == 0 && Crystal == 0 && Deuterium == 0) {
-				return true;
-			} else
-				return false;
+			return Metal == 0 && Crystal == 0 && Deuterium == 0;
 		}
 
 		public Resources Sum(Resources resourcesToSum) {
@@ -471,30 +448,22 @@ namespace Tbot.Model {
 		}
 
 		public bool IsEmpty() {
-			if
-			(
-				LightFighter == 0 &&
-				HeavyFighter == 0 &&
-				Cruiser == 0 &&
-				Battleship == 0 &&
-				Battlecruiser == 0 &&
-				Bomber == 0 &&
-				Destroyer == 0 &&
-				Deathstar == 0 &&
-				SmallCargo == 0 &&
-				LargeCargo == 0 &&
-				ColonyShip == 0 &&
-				Recycler == 0 &&
-				EspionageProbe == 0 &&
-				SolarSatellite == 0 &&
-				Crawler == 0 &&
-				Reaper == 0 &&
-				Pathfinder == 0
-			) {
-				return true;
-			} else {
-				return false;
-			}
+			return LightFighter == 0
+				&& HeavyFighter == 0 && Cruiser == 0
+				&& Battleship == 0
+				&& Battlecruiser == 0
+				&& Bomber == 0
+				&& Destroyer == 0
+				&& Deathstar == 0
+				&& SmallCargo == 0
+				&& LargeCargo == 0
+				&& ColonyShip == 0
+				&& Recycler == 0
+				&& EspionageProbe == 0
+				&& SolarSatellite == 0
+				&& Crawler == 0
+				&& Reaper == 0
+				&& Pathfinder == 0;
 		}
 
 		public long GetFleetPoints() {
@@ -518,28 +487,7 @@ namespace Tbot.Model {
 		}
 
 		public bool HasMovableFleet() {
-			if
-			(
-				LightFighter == 0 &&
-				HeavyFighter == 0 &&
-				Cruiser == 0 &&
-				Battleship == 0 &&
-				Battlecruiser == 0 &&
-				Bomber == 0 &&
-				Destroyer == 0 &&
-				Deathstar == 0 &&
-				SmallCargo == 0 &&
-				LargeCargo == 0 &&
-				ColonyShip == 0 &&
-				Recycler == 0 &&
-				EspionageProbe == 0 &&
-				Reaper == 0 &&
-				Pathfinder == 0
-			) {
-				return false;
-			} else {
-				return true;
-			}
+			return !IsEmpty();
 		}
 
 		public Ships GetMovableShips() {
@@ -648,27 +596,21 @@ namespace Tbot.Model {
 
 		public bool IsOnlyProbes() {
 			if (Ships.EspionageProbe != 0) {
-				if
-				(
-					Ships.Battlecruiser == 0 &&
-					Ships.Battleship == 0 &&
-					Ships.Bomber == 0 &&
-					Ships.ColonyShip == 0 &&
-					Ships.Cruiser == 0 &&
-					Ships.Deathstar == 0 &&
-					Ships.Destroyer == 0 &&
-					Ships.HeavyFighter == 0 &&
-					Ships.LargeCargo == 0 &&
-					Ships.LightFighter == 0 &&
-					Ships.Pathfinder == 0 &&
-					Ships.Reaper == 0 &&
-					Ships.Recycler == 0 &&
-					Ships.SmallCargo == 0 &&
-					Ships.SolarSatellite == 0
-				)
-					return true;
-				else
-					return false;
+				return Ships.Battlecruiser == 0
+					&& Ships.Battleship == 0
+					&& Ships.Bomber == 0
+					&& Ships.ColonyShip == 0
+					&& Ships.Cruiser == 0
+					&& Ships.Deathstar == 0
+					&& Ships.Destroyer == 0
+					&& Ships.HeavyFighter == 0
+					&& Ships.LargeCargo == 0
+					&& Ships.LightFighter == 0
+					&& Ships.Pathfinder == 0
+					&& Ships.Reaper == 0
+					&& Ships.Recycler == 0
+					&& Ships.SmallCargo == 0
+					&& Ships.SolarSatellite == 0;
 			} else
 				return false;
 		}
@@ -846,10 +788,7 @@ namespace Tbot.Model {
 		public bool Technocrat { get; set; }
 		public bool IsFull {
 			get {
-				if (Commander && Admiral && Engineer && Geologist && Technocrat)
-					return true;
-				else
-					return false;
+				return Commander && Admiral && Engineer && Geologist && Technocrat;
 			}
 		}
 	}
