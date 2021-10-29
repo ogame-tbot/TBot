@@ -1302,7 +1302,7 @@ namespace Tbot {
 			int fleetId = 0;
 			try {
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -1447,7 +1447,7 @@ namespace Tbot {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
