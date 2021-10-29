@@ -1171,10 +1171,10 @@ namespace Tbot {
 					}
 				}
 				if (!delayed) {
-                    // if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
-                    //     AutoMine(null);
-                    // if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
-                    //     AutoResearch(null);
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
+					//     AutoMine(null);
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
+					//     AutoResearch(null);
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
@@ -1275,7 +1275,6 @@ namespace Tbot {
 				if (!isSleeping)
 					xaSem[Feature.Defender].Release();
 			}
-
 		}
 
 		private static void BuyOfferOfTheDay(object state) {
@@ -2065,10 +2064,10 @@ namespace Tbot {
 					return;
 				}
 
-                // if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
-                //     AutoMine(null);
-                // if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
-                //     AutoResearch(null);
+				// if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
+				//     AutoMine(null);
+				// if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
+				//     AutoResearch(null);
 
 				if (settings.Brain.AutoRepatriate.Target) {
 					fleets = UpdateFleets();
