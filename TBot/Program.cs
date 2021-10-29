@@ -1405,7 +1405,7 @@ namespace Tbot {
 									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoResearch.Transports.Origin.Position)
 									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoResearch.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, cost);
+								fleetId = HandleMinerTransport(origin, celestial, cost);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
 								fleetId = (fleets
@@ -1647,7 +1647,7 @@ namespace Tbot {
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, xCostBuildable);
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
 							}
@@ -1851,7 +1851,7 @@ namespace Tbot {
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTrasport(Celestial origin, Celestial destination, Resources resources) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -1925,7 +1925,7 @@ namespace Tbot {
 					}
 				}
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTrasport Exception: " + e.Message);
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTransport Exception: " + e.Message);
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
 				return 0;
 			}
