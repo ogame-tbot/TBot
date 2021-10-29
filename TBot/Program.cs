@@ -1236,8 +1236,7 @@ namespace Tbot {
 
 		private static void Defender(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Defender].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
 
@@ -1287,8 +1286,7 @@ namespace Tbot {
 
 		private static void BuyOfferOfTheDay(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 
 				if (isSleeping) {
@@ -1475,8 +1473,7 @@ namespace Tbot {
 
 		private static void AutoMine(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
 
@@ -1936,8 +1933,7 @@ namespace Tbot {
 
 		private static void AutoBuildCargo(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autocargo...");
 
@@ -2063,11 +2059,9 @@ namespace Tbot {
 			}
 		}
 
-
 		private static void AutoRepatriate(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
 
@@ -2420,8 +2414,7 @@ namespace Tbot {
 
 		private static void HandleExpeditions(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
 
 				if (isSleeping) {
@@ -2672,8 +2665,7 @@ namespace Tbot {
 
 		private static void HandleHarvest(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Harvest].WaitOne();
 
 				if (isSleeping) {
@@ -2836,6 +2828,5 @@ namespace Tbot {
 				xaSem[Feature.FleetScheduler].Release();
 			}
 		}
-
 	}
 }
