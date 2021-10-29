@@ -322,7 +322,7 @@ namespace Tbot {
 		}
 
 		private static void InitializeFeatures() {
-			//features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+			// features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -500,7 +500,7 @@ namespace Tbot {
 		}
 
 		private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full) {
-			//Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
+			// Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
 			List<Celestial> localPlanets = GetPlanets();
 			List<Celestial> newPlanets = new();
 			try {
@@ -516,7 +516,7 @@ namespace Tbot {
 		}
 
 		private static Celestial UpdatePlanet(Celestial planet, UpdateType updateType = UpdateType.Full) {
-			//Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
+			// Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
 			try {
 				switch (updateType) {
 					case UpdateType.Fast:
@@ -1016,9 +1016,9 @@ namespace Tbot {
 					if (time >= goToSleep) {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*YES YES YES*/
-								/*ASLEEP*/
-								/*WAKE UP NEXT DAY*/
+								// YES YES YES
+								// ASLEEP
+								// WAKE UP NEXT DAY
 								interval = (long) wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1026,9 +1026,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*YES YES NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP NEXT DAY*/
+								// YES YES NO
+								// AWAKE
+								// GO TO SLEEP NEXT DAY
 								interval = (long) goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1038,8 +1038,8 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*YES NO YES*/
-								/*THIS SHOULDNT HAPPEN*/
+								// YES NO YES
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1047,9 +1047,9 @@ namespace Tbot {
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
 							} else {
-								/*YES NO NO */
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// YES NO NO
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1061,9 +1061,9 @@ namespace Tbot {
 					} else {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*NO YES YES*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO YES YES
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1071,8 +1071,8 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							} else {
-								/*NO YES NO*/
-								/*THIS SHOULDNT HAPPEN*/
+								// NO YES NO
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1082,9 +1082,9 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*NO NO YES*/
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// NO NO YES
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1092,9 +1092,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*NO NO NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO NO NO
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1171,12 +1171,10 @@ namespace Tbot {
 					}
 				}
 				if (!delayed) {
-					/*
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
-                        AutoMine(null);
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
-                        AutoResearch(null);
-                    */
+                    // if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
+                    //     AutoMine(null);
+                    // if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
+                    //     AutoResearch(null);
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
@@ -2067,12 +2065,10 @@ namespace Tbot {
 					return;
 				}
 
-				/*
-                if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
-                    AutoMine(null);
-                if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
-                    AutoResearch(null);
-                */
+                // if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
+                //     AutoMine(null);
+                // if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
+                //     AutoResearch(null);
 
 				if (settings.Brain.AutoRepatriate.Target) {
 					fleets = UpdateFleets();
