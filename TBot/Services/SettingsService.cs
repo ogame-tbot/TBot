@@ -19,13 +19,11 @@ namespace Tbot.Services {
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
 		}
-
 	}
 
 	public static class JsonNetAdapter {
 		public static ExpandoObject Transform(ExpandoObject data) {
 			var newExpando = new ExpandoObject();
-
 			var edict = (IDictionary<string, object>) newExpando;
 
 			foreach (var kvp in data)
@@ -44,7 +42,6 @@ namespace Tbot.Services {
 
 		private static object ConvertList(List<object> list) {
 			var hasSingleType = true;
-
 			var tList = new ArrayList(list.Count);
 
 			Type listType = null;

@@ -32,9 +32,11 @@ namespace Tbot.Model {
 		public int System { get; set; }
 		public int Position { get; set; }
 		public Celestials Type { get; set; }
+
 		public override string ToString() {
 			return "[" + GetCelestialCode() + ":" + Galaxy + ":" + System + ":" + Position + "]";
 		}
+
 		private string GetCelestialCode() {
 			return Type switch {
 				Celestials.Planet => "P",
@@ -101,9 +103,11 @@ namespace Tbot.Model {
 		public ResourceSettings ResourceSettings { get; set; }
 		public ResourcesProduction ResourcesProduction { get; set; }
 		public Debris Debris { get; set; }
+
 		public override string ToString() {
 			return Name + " " + Coordinate.ToString();
 		}
+
 		public bool HasProduction() {
 			try {
 				if (Productions.Count == 0)
@@ -114,6 +118,7 @@ namespace Tbot.Model {
 				return false;
 			}
 		}
+
 		internal bool HasConstruction() {
 			try {
 				if (Constructions.BuildingID != (int) Buildables.Null)
@@ -124,12 +129,14 @@ namespace Tbot.Model {
 				return false;
 			}
 		}
+
 		public bool HasCoords(Coordinate coords) {
 			if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
 				return true;
 			else
 				return false;
 		}
+
 		public int GetLevel(Buildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in Buildings.GetType().GetProperties()) {
@@ -281,16 +288,19 @@ namespace Tbot.Model {
 		public long Deuterium { get; set; }
 		public long Energy { get; set; }
 		public long Darkmatter { get; set; }
+
 		public long ConvertedDeuterium {
 			get {
 				return (long) Math.Round((Metal / 2.5) + (Crystal / 1.5) + Deuterium, 0, MidpointRounding.ToPositiveInfinity);
 			}
 		}
+
 		public long TotalResources {
 			get {
 				return Metal + Crystal + Deuterium;
 			}
 		}
+
 		public override string ToString() {
 			return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
 		}
@@ -352,6 +362,7 @@ namespace Tbot.Model {
 		public int MetalStorage { get; set; }
 		public int CrystalStorage { get; set; }
 		public int DeuteriumTank { get; set; }
+
 		public override string ToString() {
 			return "M:" + MetalMine.ToString() + " C:" + CrystalMine.ToString() + " D:" + DeuteriumSynthesizer.ToString() + " S:" + SolarPlant.ToString("") + " F:" + FusionReactor.ToString("");
 		}
@@ -371,6 +382,7 @@ namespace Tbot.Model {
 		public int LunarBase { get; set; }
 		public int SensorPhalanx { get; set; }
 		public int JumpGate { get; set; }
+
 		public override string ToString() {
 			return "R:" + RoboticsFactory.ToString() + " S:" + Shipyard.ToString() + " L:" + ResearchLab.ToString() + " M:" + MissileSilo.ToString("") + " N:" + NaniteFactory.ToString("");
 		}
@@ -387,6 +399,7 @@ namespace Tbot.Model {
 		public long LargeShieldDome { get; set; }
 		public long AntiBallisticMissiles { get; set; }
 		public long InterplanetaryMissiles { get; set; }
+
 		public int GetAmount(Buildables defence) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -456,6 +469,7 @@ namespace Tbot.Model {
 			Reaper = reaper;
 			Pathfinder = pathfinder;
 		}
+
 		public bool IsEmpty() {
 			if
 			(
@@ -617,6 +631,7 @@ namespace Tbot.Model {
 		public int? UnionID { get; set; }
 		public int TargetPlanetID { get; set; }
 	}
+
 	public class AttackerFleet {
 		public int ID { get; set; }
 		public Missions MissionType { get; set; }
@@ -692,6 +707,7 @@ namespace Tbot.Model {
 		public int WeaponsTechnology { get; set; }
 		public int ShieldingTechnology { get; set; }
 		public int ArmourTechnology { get; set; }
+
 		public int GetLevel(Buildables research) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -870,6 +886,7 @@ namespace Tbot.Model {
 		public int MaxDaysOfInvestmentReturn { get; set; }
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
+
 		public AutoMinerSettings() {
 			OptimizeForStart = true;
 			PrioritizeRobotsAndNanites = false;
@@ -878,5 +895,4 @@ namespace Tbot.Model {
 			BuildDepositIfFull = false;
 		}
 	}
-
 }
