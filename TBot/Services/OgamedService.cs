@@ -12,11 +12,6 @@ namespace Tbot.Services {
 		private string Url { get; set; }
 		private RestClient Client { get; set; }
 
-		/**
-        * Tralla 20/2/21
-        * 
-        * add ability to set custom host 
-        */
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
 			Url = "http://" + host + ":" + port;

@@ -27,11 +27,6 @@ namespace Tbot {
 		static volatile List<FleetSchedule> scheduledFleets;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
-
-		/*Lorenzo 07/02/2021
-         * Added array of semaphore to manage the cuncurrency
-         * for timers.
-         */
 		static Dictionary<Feature, Semaphore> xaSem = new();
 
 		static void Main(string[] args) {
@@ -56,11 +51,6 @@ namespace Tbot {
 			};
 
 			try {
-				/**
-                 * Tralla 20/2/21
-                 * 
-                 * add ability to set custom host 
-                 */
 				string host = (string) settings.General.Host ?? "localhost";
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
@@ -124,24 +114,16 @@ namespace Tbot {
 
 					timers = new Dictionary<string, Timer>();
 
-					/*Lorenzo 07/02/2020 initialize semaphores
-                     * For the same reason in the xaSem declaration
-                     * if you add some timers add the initialization
-                     * of their timer
-                     * 
-                     * Tralla 12/2/20
-                     * change index to enum
-                     */
-					xaSem[Feature.Defender] = new Semaphore(1, 1); //Defender
-					xaSem[Feature.Brain] = new Semaphore(1, 1); //Brain
-					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
-					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
-					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
-					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
-					xaSem[Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
-					xaSem[Feature.Harvest] = new Semaphore(1, 1); //Harvest
-					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1); //FleetScheduler
-					xaSem[Feature.SleepMode] = new Semaphore(1, 1); //SleepMode
+					xaSem[Feature.Defender] = new Semaphore(1, 1);
+					xaSem[Feature.Brain] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1);
+					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
+					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
+					xaSem[Feature.Harvest] = new Semaphore(1, 1);
+					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
+					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -1271,7 +1253,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Defender].Release();
 			}
@@ -1312,7 +1293,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1458,7 +1438,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoResearch check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1531,7 +1510,6 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1993,10 +1971,6 @@ namespace Tbot {
 						neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
 					}
 					if (neededCargos > 0) {
-						/*Tralla 14/2/21
-                         * 
-                         * Add settings to provide a better autocargo configurability
-                         */
 						if (neededCargos > (long) settings.Brain.AutoCargo.MaxCargosToBuild)
 							neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToBuild;
 
@@ -2046,7 +2020,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -2166,7 +2139,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -2647,7 +2619,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Expeditions].Release();
 			}
@@ -2773,7 +2744,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Harvest].Release();
 			}
