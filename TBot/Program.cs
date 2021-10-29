@@ -12,13 +12,9 @@ using Tbot.Services;
 namespace Tbot {
 	class Program {
 		static volatile OgamedService ogamedService;
-
 		static volatile TelegramMessenger telegramMessenger;
-
 		static volatile Dictionary<string, Timer> timers;
-
 		static volatile dynamic settings;
-
 		static volatile Server serverInfo;
 		static volatile ServerData serverData;
 		static volatile UserInfo userInfo;
@@ -174,7 +170,6 @@ namespace Tbot {
 
 				Console.ReadLine();
 			}
-
 		}
 
 		private static bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -757,6 +752,7 @@ namespace Tbot {
 				value.Dispose();
 			timers.Remove("SleepModeTimer");
 		}
+		
 		private static void InitializeFleetScheduler() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing fleet scheduler...");
 			scheduledFleets = new();
