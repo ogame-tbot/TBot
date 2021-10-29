@@ -294,11 +294,11 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
 		}
-    public string TransportableResources {
-      get {
-        return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0");
-      }
-    }
+		public string TransportableResources {
+			get {
+				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")}";
+			}
+		}
 
 		public bool IsEnoughFor(Resources cost, Resources resToLeave = null) {
 			var tempMet = Metal;
