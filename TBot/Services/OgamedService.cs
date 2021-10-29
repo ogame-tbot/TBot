@@ -263,7 +263,7 @@ namespace Tbot.Services {
 
 		public Planet GetPlanet(Planet planet) {
 			var request = new RestRequest {
-				Resource = "/bot/planets/" + planet.ID,
+				Resource = $"/bot/planets/{planet.ID}",
 				Method = Method.GET
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -287,7 +287,7 @@ namespace Tbot.Services {
 
 		public Moon GetMoon(Moon moon) {
 			var request = new RestRequest {
-				Resource = "/bot/moons/" + moon.ID,
+				Resource = $"/bot/moons/{moon.ID}",
 				Method = Method.GET
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -779,7 +779,7 @@ namespace Tbot.Services {
 		public bool BuildShips(Celestial celestial, Buildables buildable, long quantity) {
 			try {
 				var request = new RestRequest {
-					Resource = $"/bot/planets/{celestial.ID}/build/ships/{(int) buildable}/{quantity},
+					Resource = $"/bot/planets/{celestial.ID}/build/ships/{(int) buildable}/{quantity}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);

@@ -589,7 +589,7 @@ namespace Tbot.Model {
 			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
 				if ((long) prop.GetValue(this) == 0)
 					continue;
-				output += prop.Name + ": " + prop.GetValue(this) + "; ";
+				output += $"{prop.Name}: {prop.GetValue(this)}; ";
 			}
 			return output;
 		}
