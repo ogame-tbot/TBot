@@ -11,7 +11,7 @@
 		}
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"NewApiHostname": "http://localhost:8080",
@@ -90,7 +90,6 @@
 			"MaxDeuteriumSynthetizer": 37,
 			"MaxSolarPlant": 20,
 			"MaxFusionReactor": 20,
-			"DepositHours": 6,
 			"MaxMetalStorage": 13,
 			"MaxCrystalStorage": 12,
 			"MaxDeuteriumTank": 11,
@@ -99,12 +98,14 @@
 			"MaxResearchLab": 12,
 			"MaxMissileSilo": 0,
 			"MaxNaniteFactory": 7,
+			"MaxTerraformer": 8,
+			"MaxSpaceDock": 7,
 			"MaxLunarBase": 8,
 			"MaxLunarShipyard": 0,
 			"MaxLunarRoboticsFactory": 8,
 			"MaxSensorPhalanx": 6,
 			"MaxJumpGate": 1,
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -125,8 +126,10 @@
 				}
 			],
 			"OptimizeForStart": true,
-			"PrioritizeRobotsAndNanitesOnNewPlanets": true,
+			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
+			"DepositHours": 6,
+			"MaxDaysOfInvestmentReturn": 365,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -153,7 +156,7 @@
 				"Position": 8,
 				"Type": "Planet"
 			},
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -176,6 +179,7 @@
 			"RandomOrder": true,
 			"MaxCargosToBuild": 50,
 			"MaxCargosToKeep": 50,
+			"LimitToCapacity": true,
 			"SkipIfIncomingTransport": true,
 			"Exclude": [
 				{
@@ -224,38 +228,49 @@
 	},
 	"Expeditions": {
 		"Active": true,
-		"AutoSendExpeditions": {
-			"Active": true,
-			"MainShip": "LargeCargo",
-			"MinCargosToSend": 1000,
-			"WaitForAllExpeditions": false,
-			"SplitExpeditionsBetweenSystems": {
-				"Active": false,
-				"Range": 1
+		"PrimaryShip": "LargeCargo",
+		"MinPrimaryToSend": 1000,
+		"SecondaryShip": "Null",
+		"MinSecondaryToSend": 0,
+		"SecondaryToPrimaryRatio": 2,
+		"ManualShips": {
+			"Active": false,
+			"Ships": {
+				"LargeCargo": 1300,
+				"LightFighter": 26000,
+				"Reaper": 1,
+				"Pathfinder": 1,
+				"EspionageProbe": 1
+			}
+		},
+		"WaitForAllExpeditions": false,
+		"SplitExpeditionsBetweenSystems": {
+			"Active": false,
+			"Range": 1
+		},
+		"RandomizeOrder": true,
+		"FuelToCarry": 20000,
+		"Origin": [
+			{
+				"Galaxy": 5,
+				"System": 63,
+				"Position": 8,
+				"Type": "Moon"
 			},
-			"RandomizeOrder": true,
-			"FuelToCarry": 20000,
-			"Origin": [
-				{
-					"Galaxy": 5,
-					"System": 63,
-					"Position": 8,
-					"Type": "Moon"
-				},
-				{
-					"Galaxy": 5,
-					"System": 64,
-					"Position": 8,
-					"Type": "Moon"
-				}
-			]
-		}
+			{
+				"Galaxy": 5,
+				"System": 64,
+				"Position": 8,
+				"Type": "Moon"
+			}
+		]
 	},
 	"AutoHarvest": {
 		"Active": false,
 		"HarvestOwnDF": true,
 		"HarvestDeepSpace": true,
-		"MinimumResources": 300,
+		"MinimumResourcesOwnDF": 300,
+		"MinimumResourcesDeepSpace": 50000,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
