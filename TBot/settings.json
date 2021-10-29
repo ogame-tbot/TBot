@@ -11,7 +11,7 @@
 		}
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"NewApiHostname": "http://localhost:8080",
@@ -105,7 +105,7 @@
 			"MaxLunarRoboticsFactory": 8,
 			"MaxSensorPhalanx": 6,
 			"MaxJumpGate": 1,
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -156,7 +156,7 @@
 				"Position": 8,
 				"Type": "Planet"
 			},
-			"Trasports": {
+			"Transports": {
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
@@ -269,7 +269,8 @@
 		"Active": false,
 		"HarvestOwnDF": true,
 		"HarvestDeepSpace": true,
-		"MinimumResources": 300,
+		"MinimumResourcesOwnDF": 300,
+		"MinimumResourcesDeepSpace": 50000,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
