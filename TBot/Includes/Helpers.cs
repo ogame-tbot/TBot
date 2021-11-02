@@ -1955,10 +1955,7 @@ namespace Tbot.Includes {
 				.Where(f => f.Mission == Missions.Transport)
 				.Where(f => f.Resources.TotalResources > 0)
 				.Where(f => f.ReturnFlight == false)
-				.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Destination.System == celestial.Coordinate.System)
-				.Where(f => f.Destination.Position == celestial.Coordinate.Position)
-				.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+				.Where(f => f.Destination.IsSame(celestial.Coordinate))
 				.Count();
 			if (transports > 0)
 				return true;
@@ -1969,17 +1966,11 @@ namespace Tbot.Includes {
 		public static List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets) {
 			List<Fleet> incomingFleets = new();
 			incomingFleets.AddRange(fleets
-				.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Destination.System == celestial.Coordinate.System)
-				.Where(f => f.Destination.Position == celestial.Coordinate.Position)
-				.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+				.Where(f => f.Destination.IsSame(celestial.Coordinate))
 				.Where(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && !f.ReturnFlight)
 				.ToList());
 			incomingFleets.AddRange(fleets
-				.Where(f => f.Origin.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Origin.System == celestial.Coordinate.System)
-				.Where(f => f.Origin.Position == celestial.Coordinate.Position)
-				.Where(f => f.Origin.Type == celestial.Coordinate.Type)
+				.Where(f => f.Origin.IsSame(celestial.Coordinate))
 				.Where(f => f.ReturnFlight == true)
 				.ToList());
 			return incomingFleets
@@ -1996,7 +1987,9 @@ namespace Tbot.Includes {
 		}
 
 		public static Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets) {
-			var celestialExpos = fleets.Where(f => f.Origin.IsSame(coord)).Where(f => f.Mission == Missions.Expedition);
+			var celestialExpos = fleets
+				.Where(f => f.Origin.IsSame(coord))
+				.Where(f => f.Mission == Missions.Expedition);
 			if (celestialExpos.Any()) {
 				return celestialExpos
 					.OrderBy(fleet => fleet.BackIn).First();
