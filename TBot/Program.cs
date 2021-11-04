@@ -12,13 +12,9 @@ using Tbot.Services;
 namespace Tbot {
 	class Program {
 		static volatile OgamedService ogamedService;
-
 		static volatile TelegramMessenger telegramMessenger;
-
 		static volatile Dictionary<string, Timer> timers;
-
 		static volatile dynamic settings;
-
 		static volatile Server serverInfo;
 		static volatile ServerData serverData;
 		static volatile UserInfo userInfo;
@@ -31,11 +27,6 @@ namespace Tbot {
 		static volatile List<FleetSchedule> scheduledFleets;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
-
-		/*Lorenzo 07/02/2021
-         * Added array of semaphore to manage the cuncurrency
-         * for timers.
-         */
 		static Dictionary<Feature, Semaphore> xaSem = new();
 
 		static void Main(string[] args) {
@@ -60,11 +51,6 @@ namespace Tbot {
 			};
 
 			try {
-				/**
-                 * Tralla 20/2/21
-                 * 
-                 * add ability to set custom host 
-                 */
 				string host = (string) settings.General.Host ?? "localhost";
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
@@ -128,24 +114,16 @@ namespace Tbot {
 
 					timers = new Dictionary<string, Timer>();
 
-					/*Lorenzo 07/02/2020 initialize semaphores
-                     * For the same reason in the xaSem declaration
-                     * if you add some timers add the initialization
-                     * of their timer
-                     * 
-                     * Tralla 12/2/20
-                     * change index to enum
-                     */
-					xaSem[Feature.Defender] = new Semaphore(1, 1); //Defender
-					xaSem[Feature.Brain] = new Semaphore(1, 1); //Brain
-					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
-					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
-					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
-					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
-					xaSem[Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
-					xaSem[Feature.Harvest] = new Semaphore(1, 1); //Harvest
-					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1); //FleetScheduler
-					xaSem[Feature.SleepMode] = new Semaphore(1, 1); //SleepMode
+					xaSem[Feature.Defender] = new Semaphore(1, 1);
+					xaSem[Feature.Brain] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1);
+					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
+					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
+					xaSem[Feature.Harvest] = new Semaphore(1, 1);
+					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
+					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -174,7 +152,6 @@ namespace Tbot {
 
 				Console.ReadLine();
 			}
-
 		}
 
 		private static bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -327,7 +304,7 @@ namespace Tbot {
 		}
 
 		private static void InitializeFeatures() {
-			//features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+			// features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -505,7 +482,7 @@ namespace Tbot {
 		}
 
 		private static List<Celestial> UpdatePlanets(UpdateType updateType = UpdateType.Full) {
-			//Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
+			// Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestials... Mode: " + updateType.ToString());
 			List<Celestial> localPlanets = GetPlanets();
 			List<Celestial> newPlanets = new();
 			try {
@@ -521,7 +498,7 @@ namespace Tbot {
 		}
 
 		private static Celestial UpdatePlanet(Celestial planet, UpdateType updateType = UpdateType.Full) {
-			//Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
+			// Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Updating celestial " + planet.ToString() + ". Mode: " + updateType.ToString());
 			try {
 				switch (updateType) {
 					case UpdateType.Fast:
@@ -757,6 +734,7 @@ namespace Tbot {
 				value.Dispose();
 			timers.Remove("SleepModeTimer");
 		}
+		
 		private static void InitializeFleetScheduler() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing fleet scheduler...");
 			scheduledFleets = new();
@@ -1020,9 +998,9 @@ namespace Tbot {
 					if (time >= goToSleep) {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*YES YES YES*/
-								/*ASLEEP*/
-								/*WAKE UP NEXT DAY*/
+								// YES YES YES
+								// ASLEEP
+								// WAKE UP NEXT DAY
 								interval = (long) wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1030,9 +1008,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*YES YES NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP NEXT DAY*/
+								// YES YES NO
+								// AWAKE
+								// GO TO SLEEP NEXT DAY
 								interval = (long) goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1042,8 +1020,8 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*YES NO YES*/
-								/*THIS SHOULDNT HAPPEN*/
+								// YES NO YES
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1051,9 +1029,9 @@ namespace Tbot {
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Next check at " + newTime.ToString());
 							} else {
-								/*YES NO NO */
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// YES NO NO
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1065,9 +1043,9 @@ namespace Tbot {
 					} else {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*NO YES YES*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO YES YES
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1075,8 +1053,8 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							} else {
-								/*NO YES NO*/
-								/*THIS SHOULDNT HAPPEN*/
+								// NO YES NO
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1086,9 +1064,9 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*NO NO YES*/
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// NO NO YES
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1096,9 +1074,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*NO NO NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO NO NO
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1175,12 +1153,10 @@ namespace Tbot {
 					}
 				}
 				if (!delayed) {
-					/*
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
-                        AutoMine(null);
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
-                        AutoResearch(null);
-                    */
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
+					//     AutoMine(null);
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
+					//     AutoResearch(null);
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up at " + state.ToString());
@@ -1236,8 +1212,7 @@ namespace Tbot {
 
 		private static void Defender(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Defender].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
 
@@ -1278,17 +1253,14 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Defender].Release();
 			}
-
 		}
 
 		private static void BuyOfferOfTheDay(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 
 				if (isSleeping) {
@@ -1321,7 +1293,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next BuyOfferOfTheDay check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1331,7 +1302,7 @@ namespace Tbot {
 			int fleetId = 0;
 			try {
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -1407,7 +1378,7 @@ namespace Tbot {
 									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoResearch.Transports.Origin.Position)
 									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoResearch.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, cost);
+								fleetId = HandleMinerTransport(origin, celestial, cost);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
 								fleetId = (fleets
@@ -1467,7 +1438,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next AutoResearch check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1475,10 +1445,9 @@ namespace Tbot {
 
 		private static void AutoMine(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -1541,7 +1510,6 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1648,7 +1616,7 @@ namespace Tbot {
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, xCostBuildable);
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: there is already a transport incoming in " + celestial.ToString());
 							}
@@ -1861,7 +1829,7 @@ namespace Tbot {
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTrasport(Celestial origin, Celestial destination, Resources resources) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -1935,7 +1903,7 @@ namespace Tbot {
 					}
 				}
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTrasport Exception: " + e.Message);
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, "HandleMinerTransport Exception: " + e.Message);
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Stacktrace: " + e.StackTrace);
 				return 0;
 			}
@@ -1943,8 +1911,7 @@ namespace Tbot {
 
 		private static void AutoBuildCargo(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autocargo...");
 
@@ -2011,10 +1978,6 @@ namespace Tbot {
 						neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
 					}
 					if (neededCargos > 0) {
-						/*Tralla 14/2/21
-                         * 
-                         * Add settings to provide a better autocargo configurability
-                         */
 						if (neededCargos > (long) settings.Brain.AutoCargo.MaxCargosToBuild)
 							neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToBuild;
 
@@ -2064,17 +2027,14 @@ namespace Tbot {
 					timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next capacity check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
 		}
 
-
 		private static void AutoRepatriate(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
 
@@ -2084,12 +2044,10 @@ namespace Tbot {
 					return;
 				}
 
-				/*
-                if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
-                    AutoMine(null);
-                if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
-                    AutoResearch(null);
-                */
+				// if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
+				//     AutoMine(null);
+				// if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
+				//     AutoResearch(null);
 
 				if (settings.Brain.AutoRepatriate.Target) {
 					fleets = UpdateFleets();
@@ -2188,7 +2146,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Next repatriate check at " + newTime.ToString());
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -2427,8 +2384,7 @@ namespace Tbot {
 
 		private static void HandleExpeditions(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
 
 				if (isSleeping) {
@@ -2670,7 +2626,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Expeditions].Release();
 			}
@@ -2679,8 +2634,7 @@ namespace Tbot {
 
 		private static void HandleHarvest(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Harvest].WaitOne();
 
 				if (isSleeping) {
@@ -2797,7 +2751,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Next check at " + newTime.ToString());
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Harvest].Release();
 			}
@@ -2843,6 +2796,5 @@ namespace Tbot {
 				xaSem[Feature.FleetScheduler].Release();
 			}
 		}
-
 	}
 }
