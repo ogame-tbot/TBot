@@ -804,34 +804,22 @@ namespace Tbot.Includes {
 				case Buildables.MetalMine:
 					output.Metal = (long) Math.Round(60 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(15 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 10 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.CrystalMine:
 					output.Metal = (long) Math.Round(48 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(24 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 10 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.DeuteriumSynthesizer:
 					output.Metal = (long) Math.Round(225 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 20 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 20 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((20 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.SolarPlant:
@@ -1240,11 +1228,6 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		/*Tralla 12/2/2020
-         * 
-         * Added helper to calc delta
-         * Hotfix to autominer energy builder
-         */
 		public static long GetRequiredEnergyDelta(Buildables buildable, int level) {
 			if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
 				if (level > 1) {
@@ -1952,10 +1935,7 @@ namespace Tbot.Includes {
 				.Where(f => f.Mission == Missions.Transport)
 				.Where(f => f.Resources.TotalResources > 0)
 				.Where(f => f.ReturnFlight == false)
-				.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Destination.System == celestial.Coordinate.System)
-				.Where(f => f.Destination.Position == celestial.Coordinate.Position)
-				.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+				.Where(f => f.Destination.IsSame(celestial.Coordinate))
 				.Count();
 			if (transports > 0)
 				return true;
@@ -1966,17 +1946,11 @@ namespace Tbot.Includes {
 		public static List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets) {
 			List<Fleet> incomingFleets = new();
 			incomingFleets.AddRange(fleets
-				.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Destination.System == celestial.Coordinate.System)
-				.Where(f => f.Destination.Position == celestial.Coordinate.Position)
-				.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+				.Where(f => f.Destination.IsSame(celestial.Coordinate))
 				.Where(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) && !f.ReturnFlight)
 				.ToList());
 			incomingFleets.AddRange(fleets
-				.Where(f => f.Origin.Galaxy == celestial.Coordinate.Galaxy)
-				.Where(f => f.Origin.System == celestial.Coordinate.System)
-				.Where(f => f.Origin.Position == celestial.Coordinate.Position)
-				.Where(f => f.Origin.Type == celestial.Coordinate.Type)
+				.Where(f => f.Origin.IsSame(celestial.Coordinate))
 				.Where(f => f.ReturnFlight == true)
 				.ToList());
 			return incomingFleets
@@ -1993,7 +1967,9 @@ namespace Tbot.Includes {
 		}
 
 		public static Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets) {
-			var celestialExpos = fleets.Where(f => f.Origin.IsSame(coord)).Where(f => f.Mission == Missions.Expedition);
+			var celestialExpos = fleets
+				.Where(f => f.Origin.IsSame(coord))
+				.Where(f => f.Mission == Missions.Expedition);
 			if (celestialExpos.Any()) {
 				return celestialExpos
 					.OrderBy(fleet => fleet.BackIn).First();

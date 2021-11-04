@@ -12,13 +12,9 @@ using Tbot.Services;
 namespace Tbot {
 	class Program {
 		static volatile OgamedService ogamedService;
-
 		static volatile TelegramMessenger telegramMessenger;
-
 		static volatile Dictionary<string, Timer> timers;
-
 		static volatile dynamic settings;
-
 		static volatile Server serverInfo;
 		static volatile ServerData serverData;
 		static volatile UserInfo userInfo;
@@ -31,11 +27,6 @@ namespace Tbot {
 		static volatile List<FleetSchedule> scheduledFleets;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
-
-		/*Lorenzo 07/02/2021
-         * Added array of semaphore to manage the cuncurrency
-         * for timers.
-         */
 		static Dictionary<Feature, Semaphore> xaSem = new();
 
 		static void Main(string[] args) {
@@ -60,11 +51,6 @@ namespace Tbot {
 			};
 
 			try {
-				/**
-                 * Tralla 20/2/21
-                 * 
-                 * add ability to set custom host 
-                 */
 				string host = (string) settings.General.Host ?? "localhost";
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
@@ -128,24 +114,16 @@ namespace Tbot {
 
 					timers = new Dictionary<string, Timer>();
 
-					/*Lorenzo 07/02/2020 initialize semaphores
-                     * For the same reason in the xaSem declaration
-                     * if you add some timers add the initialization
-                     * of their timer
-                     * 
-                     * Tralla 12/2/20
-                     * change index to enum
-                     */
-					xaSem[Feature.Defender] = new Semaphore(1, 1); //Defender
-					xaSem[Feature.Brain] = new Semaphore(1, 1); //Brain
-					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1); //Brain - Autobuild cargo
-					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1); //Brain - AutoRepatriate
-					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1); //Brain - Auto mine
-					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1); //Brain - Offer of the day
-					xaSem[Feature.Expeditions] = new Semaphore(1, 1); //Expeditions
-					xaSem[Feature.Harvest] = new Semaphore(1, 1); //Harvest
-					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1); //FleetScheduler
-					xaSem[Feature.SleepMode] = new Semaphore(1, 1); //SleepMode
+					xaSem[Feature.Defender] = new Semaphore(1, 1);
+					xaSem[Feature.Brain] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1);
+					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
+					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
+					xaSem[Feature.Harvest] = new Semaphore(1, 1);
+					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
+					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -174,7 +152,6 @@ namespace Tbot {
 
 				Console.ReadLine();
 			}
-
 		}
 
 		private static bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -327,7 +304,7 @@ namespace Tbot {
 		}
 
 		private static void InitializeFeatures() {
-			//features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+			// features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
@@ -757,6 +734,7 @@ namespace Tbot {
 				value.Dispose();
 			timers.Remove("SleepModeTimer");
 		}
+		
 		private static void InitializeFleetScheduler() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing fleet scheduler...");
 			scheduledFleets = new();
@@ -1020,9 +998,9 @@ namespace Tbot {
 					if (time >= goToSleep) {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*YES YES YES*/
-								/*ASLEEP*/
-								/*WAKE UP NEXT DAY*/
+								// YES YES YES
+								// ASLEEP
+								// WAKE UP NEXT DAY
 								interval = (long) wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1030,9 +1008,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*YES YES NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP NEXT DAY*/
+								// YES YES NO
+								// AWAKE
+								// GO TO SLEEP NEXT DAY
 								interval = (long) goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1042,8 +1020,8 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*YES NO YES*/
-								/*THIS SHOULDNT HAPPEN*/
+								// YES NO YES
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1051,9 +1029,9 @@ namespace Tbot {
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
 							} else {
-								/*YES NO NO */
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// YES NO NO
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1065,9 +1043,9 @@ namespace Tbot {
 					} else {
 						if (time >= wakeUp) {
 							if (goToSleep >= wakeUp) {
-								/*NO YES YES*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO YES YES
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1075,8 +1053,8 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							} else {
-								/*NO YES NO*/
-								/*THIS SHOULDNT HAPPEN*/
+								// NO YES NO
+								// THIS SHOULDNT HAPPEN
 								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
 									interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -1086,9 +1064,9 @@ namespace Tbot {
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
-								/*NO NO YES*/
-								/*ASLEEP*/
-								/*WAKE UP SAME DAY*/
+								// NO NO YES
+								// ASLEEP
+								// WAKE UP SAME DAY
 								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1096,9 +1074,9 @@ namespace Tbot {
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
-								/*NO NO NO*/
-								/*AWAKE*/
-								/*GO TO SLEEP SAME DAY*/
+								// NO NO NO
+								// AWAKE
+								// GO TO SLEEP SAME DAY
 								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
@@ -1175,12 +1153,10 @@ namespace Tbot {
 					}
 				}
 				if (!delayed) {
-					/*
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
-                        AutoMine(null);
-                    if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
-                        AutoResearch(null);
-                    */
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
+					//     AutoMine(null);
+					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
+					//     AutoResearch(null);
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
@@ -1236,8 +1212,7 @@ namespace Tbot {
 
 		private static void Defender(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Defender].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, "Checking attacks...");
 
@@ -1278,17 +1253,14 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Next check at {newTime.ToString()}");
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Defender].Release();
 			}
-
 		}
 
 		private static void BuyOfferOfTheDay(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 
 				if (isSleeping) {
@@ -1321,7 +1293,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1331,7 +1302,7 @@ namespace Tbot {
 			int fleetId = 0;
 			try {
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -1407,7 +1378,7 @@ namespace Tbot {
 									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoResearch.Transports.Origin.Position)
 									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoResearch.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, cost);
+								fleetId = HandleMinerTransport(origin, celestial, cost);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 								fleetId = (fleets
@@ -1467,7 +1438,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1475,10 +1445,9 @@ namespace Tbot {
 
 		private static void AutoMine(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
-				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine");
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running automine...");
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -1541,7 +1510,6 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -1552,6 +1520,7 @@ namespace Tbot {
 			Buildables buildable = Buildables.Null;
 			int level = 0;
 			bool started = false;
+			bool stop = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
 				celestial = UpdatePlanet(celestial, UpdateType.Fast);
@@ -1566,20 +1535,17 @@ namespace Tbot {
 					return;
 				}
 
+				celestial = UpdatePlanet(celestial, UpdateType.Resources);
+				celestial = UpdatePlanet(celestial, UpdateType.Facilities);
+				celestial = UpdatePlanet(celestial, UpdateType.Productions);
+
 				if (celestial is Planet) {
-					celestial = UpdatePlanet(celestial, UpdateType.Resources);
 					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
-					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
-					celestial = UpdatePlanet(celestial, UpdateType.Productions);
 					celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
 
 					buildable = Helpers.GetNextBuildingToBuild(celestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings);
 					level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
 				} else {
-					celestial = UpdatePlanet(celestial, UpdateType.Resources);
-					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
-					celestial = UpdatePlanet(celestial, UpdateType.Productions);
-
 					buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
 					level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
 				}
@@ -1650,33 +1616,44 @@ namespace Tbot {
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTrasport(origin, celestial, xCostBuildable);
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 							}
 						}
 					}
-				} else
+				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build.");
+					if (
+						(
+							celestial.Coordinate.Type == Celestials.Planet && (
+								(celestial as Planet).HasMines(maxBuildings) ||
+								Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull) > autoMinerSettings.MaxDaysOfInvestmentReturn
+							)
+						) ||
+						(
+							celestial.Coordinate.Type == Celestials.Moon &&
+							(celestial as Moon).HasLunarFacilities(maxLunarFacilities)
+						)
+					) {
+						stop = true;
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": " + (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities") + " are at set level.");
+					}
+				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
-				celestial = UpdatePlanet(celestial, UpdateType.Buildings);
-				celestial = UpdatePlanet(celestial, UpdateType.Facilities);
 				var time = GetDateTime();
 				string autoMineTimer = $"AutoMineTimer-{celestial.ID.ToString()}";
 				DateTime newTime;
-				if ((celestial.Coordinate.Type == Celestials.Planet && (celestial as Planet).HasMines(maxBuildings) && celestial.Resources.Energy >= 0) || (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities))) {
-					string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities");
-
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: {buildings} are at set level.");
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
+				if (stop) {
+					if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
-					if (interval == long.MaxValue)
+					if (interval == long.MaxValue || interval == long.MinValue)
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
@@ -1697,79 +1674,120 @@ namespace Tbot {
 					interval = long.MaxValue;
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: not enough fields available.");
 				}
-				celestial = UpdatePlanet(celestial, UpdateType.Buildings);
-				celestial = UpdatePlanet(celestial, UpdateType.Facilities);
 
-				if (
-					(
-						celestial.Coordinate.Type == Celestials.Planet && (
-							(celestial as Planet).HasMines(maxBuildings) ||
-							Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull) > autoMinerSettings.MaxDaysOfInvestmentReturn
-						)
-					) ||
-					(
-						celestial.Coordinate.Type == Celestials.Moon &&
-						(celestial as Moon).HasLunarFacilities(maxLunarFacilities)
-					)
-				) {
-					interval = long.MaxValue;
-					string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities");
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: {buildings} are at set level.");
+				if (started) {
+					if (buildable == Buildables.SolarSatellite)
+						interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+					else {
+						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+						if (celestial.HasConstruction())
+							interval = (celestial.Constructions.BuildingCountdown * 1000);
+						else
+							interval = 0;
+					}
 				} else {
-					if (started) {
-						if (buildable == Buildables.SolarSatellite)
-							interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
-						else {
-							celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-							if (celestial.HasConstruction())
-								interval = (celestial.Constructions.BuildingCountdown * 1000);
-							else
-								interval = 0;
+					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
+
+					if (buildable != Buildables.Null) {
+						var price = Helpers.CalcPrice(buildable, level);
+						var productionTime = long.MaxValue;
+						var transportTime = long.MaxValue;
+						var returningExpoTime = long.MaxValue;
+						var transportOriginTime = long.MaxValue;
+						var returningExpoOriginTime = long.MaxValue;
+
+						celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+						DateTime now = GetDateTime();
+						if (
+							celestial.Coordinate.Type == Celestials.Planet &&
+							(price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity || price.Metal <= celestial.Resources.Metal) &&
+							(price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity || price.Crystal <= celestial.Resources.Crystal) &&
+							(price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity || price.Deuterium <= celestial.Resources.Deuterium)
+						) {
+							var missingResources = price.Difference(celestial.Resources);
+							float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
+							float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
+							float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float) 3600;
+							if (
+								!(
+									(missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
+									(missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
+									(missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
+								)
+							) {
+								float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
+								float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
+								float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
+								productionTime = (long) (Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "The required resources will be produced by " + now.AddMilliseconds(productionTime).ToString());
+							}
 						}
-					} else {
-						if (buildable != Buildables.Null) {
-							var price = Helpers.CalcPrice(buildable, level);
-							var productionTime = long.MaxValue;
-							var transportTime = long.MaxValue;
+
+						fleets = UpdateFleets();						
+						var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
+						if (incomingFleets.Any()) {
+							var fleet = incomingFleets.First();
+							transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving by " + now.AddMilliseconds(transportTime).ToString());
+						}
+
+						var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
+						if (returningExpo != null) {
+							returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning by " + now.AddMilliseconds(returningExpoTime).ToString());
+						}
+
+						if ((bool) settings.Brain.AutoMine.Transports.Active) {
+							Celestial origin = celestials
+									.Unique()
+									.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+									.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+									.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+									.SingleOrDefault() ?? new() { ID = 0 };
+							var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
+							if (returningExpoOrigin != null) {
+								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning in trasport origin celestial by " + now.AddMilliseconds(returningExpoOriginTime).ToString());
+							}
+
+							var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
+							if (incomingOriginFleets.Any()) {
+								var fleet = incomingOriginFleets.First();
+								transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving in trasport origin celestial by " + DateTime.Now.AddMilliseconds(transportOriginTime).ToString());
+							}
+						}
+
+						productionTime = productionTime < 0 || double.IsNaN(productionTime) ? long.MaxValue : productionTime;
+						transportTime = transportTime < 0 || double.IsNaN(transportTime) ? long.MaxValue : transportTime;
+						returningExpoTime = returningExpoTime < 0 || double.IsNaN(returningExpoTime) ? long.MaxValue : returningExpoTime;
+						returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
+						transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
+
+						interval = Math.Min(Math.Min(Math.Min(Math.Min(productionTime, transportTime), returningExpoTime), returningExpoOriginTime), transportOriginTime);
+					}/* else {
+						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
+						if (celestial.HasConstruction())
+							interval = (celestial.Constructions.BuildingCountdown * 1000);
+						else {
+							fleets = UpdateFleets();
+
+							var incomingFleetTime = long.MaxValue;
 							var returningExpoTime = long.MaxValue;
 							var transportOriginTime = long.MaxValue;
 							var returningExpoOriginTime = long.MaxValue;
 
-							celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
-							if (
-								celestial.Coordinate.Type == Celestials.Planet &&
-								(price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity || price.Metal <= celestial.Resources.Metal) &&
-								(price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity || price.Crystal <= celestial.Resources.Crystal) &&
-								(price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity || price.Deuterium <= celestial.Resources.Deuterium)
-							) {
-								var missingResources = price.Difference(celestial.Resources);
-								float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
-								float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
-								float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float) 3600;
-								if (
-									!(
-										(missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
-										(missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
-										(missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
-									)
-								) {
-									float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
-									float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
-									float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
-									productionTime = (long) (Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
-								}
-							}
-
-							fleets = UpdateFleets();
-							var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-							if (incomingFleets.Any()) {
-								var fleet = incomingFleets.First();
-								transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-							}
-
 							var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
 							if (returningExpo != null)
 								returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+
+							var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
+							if (incomingFleets.Any()) {
+								var fleet = incomingFleets.First();
+								incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
+							}
 
 							if ((bool) settings.Brain.AutoMine.Transports.Active) {
 								Celestial origin = celestials
@@ -1790,63 +1808,14 @@ namespace Tbot {
 								}
 							}
 
-							productionTime = productionTime < 0 || double.IsNaN(productionTime) ? long.MaxValue : productionTime;
-							transportTime = transportTime < 0 || double.IsNaN(transportTime) ? long.MaxValue : transportTime;
+							incomingFleetTime = incomingFleetTime < 0 || double.IsNaN(incomingFleetTime) ? long.MaxValue : incomingFleetTime;
 							returningExpoTime = returningExpoTime < 0 || double.IsNaN(returningExpoTime) ? long.MaxValue : returningExpoTime;
-							returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
 							transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
+							returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
 
-							interval = Math.Min(Math.Min(Math.Min(Math.Min(productionTime, transportTime), returningExpoTime), returningExpoOriginTime), transportOriginTime);
-						} else {
-							celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-							if (celestial.HasConstruction())
-								interval = (celestial.Constructions.BuildingCountdown * 1000);
-							else {
-								fleets = UpdateFleets();
-
-								var incomingFleetTime = long.MaxValue;
-								var returningExpoTime = long.MaxValue;
-								var transportOriginTime = long.MaxValue;
-								var returningExpoOriginTime = long.MaxValue;
-
-								var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
-								if (returningExpo != null)
-									returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-								var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-								if (incomingFleets.Any()) {
-									var fleet = incomingFleets.First();
-									incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								}
-
-								if ((bool) settings.Brain.AutoMine.Transports.Active) {
-									Celestial origin = celestials
-											.Unique()
-											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-											.SingleOrDefault() ?? new() { ID = 0 };
-									var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
-									if (returningExpoOrigin != null)
-										returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-									var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
-									if (incomingOriginFleets.Any()) {
-										var fleet = incomingFleets.First();
-										transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-									}
-								}
-
-								incomingFleetTime = incomingFleetTime < 0 || double.IsNaN(incomingFleetTime) ? long.MaxValue : incomingFleetTime;
-								returningExpoTime = returningExpoTime < 0 || double.IsNaN(returningExpoTime) ? long.MaxValue : returningExpoTime;
-								transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
-								returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
-
-								interval = Math.Min(Math.Min(Math.Min(returningExpoTime, incomingFleetTime), transportOriginTime), returningExpoOriginTime);
-							}
+							interval = Math.Min(Math.Min(Math.Min(returningExpoTime, incomingFleetTime), transportOriginTime), returningExpoOriginTime);
 						}
-					}
+					}*/
 				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
@@ -1855,10 +1824,12 @@ namespace Tbot {
 			}
 			if (interval < 0)
 				interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+			if (interval == long.MaxValue)
+				return interval;
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTrasport(Celestial origin, Celestial destination, Resources resources) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -1912,14 +1883,14 @@ namespace Tbot {
 									resources.Crystal > destination.ResourcesProduction.Crystal.StorageCapacity ||
 									resources.Deuterium > destination.ResourcesProduction.Deuterium.StorageCapacity
 								) {
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.ToString()} from {origin.ToString()} to {destination.ToString()}");
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
 									return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
 									return 0;
 								}
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.ToString()} from {origin.ToString()} to {destination.ToString()}");
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
 								return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 							}
 						} else {
@@ -1940,8 +1911,7 @@ namespace Tbot {
 
 		private static void AutoBuildCargo(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autocargo...");
 
@@ -2008,10 +1978,6 @@ namespace Tbot {
 						neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
 					}
 					if (neededCargos > 0) {
-						/*Tralla 14/2/21
-                         * 
-                         * Add settings to provide a better autocargo configurability
-                         */
 						if (neededCargos > (long) settings.Brain.AutoCargo.MaxCargosToBuild)
 							neededCargos = (long) settings.Brain.AutoCargo.MaxCargosToBuild;
 
@@ -2061,17 +2027,14 @@ namespace Tbot {
 					timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next capacity check at {newTime.ToString()}");
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
 		}
 
-
 		private static void AutoRepatriate(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Repatriating resources...");
 
@@ -2081,12 +2044,10 @@ namespace Tbot {
 					return;
 				}
 
-				/*
-                if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
-                    AutoMine(null);
-                if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
-                    AutoResearch(null);
-                */
+				// if ((bool)settings.AutoRepatriate.RunAutoMineFirst)
+				//     AutoMine(null);
+				// if ((bool)settings.AutoRepatriate.RunAutoResearchFirst)
+				//     AutoResearch(null);
 
 				if (settings.Brain.AutoRepatriate.Target) {
 					fleets = UpdateFleets();
@@ -2185,7 +2146,6 @@ namespace Tbot {
 					timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
 					UpdateTitle();
-					//Release its semaphore
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -2424,8 +2384,7 @@ namespace Tbot {
 
 		private static void HandleExpeditions(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
 
 				if (isSleeping) {
@@ -2667,7 +2626,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Expeditions].Release();
 			}
@@ -2676,8 +2634,7 @@ namespace Tbot {
 
 		private static void HandleHarvest(object state) {
 			try {
-				// Wait for the thread semaphore
-				// to avoid the concurrency with itself
+				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Harvest].WaitOne();
 
 				if (isSleeping) {
@@ -2794,7 +2751,6 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 				UpdateTitle();
 			} finally {
-				//Release its semaphore
 				if (!isSleeping)
 					xaSem[Feature.Harvest].Release();
 			}
@@ -2840,6 +2796,5 @@ namespace Tbot {
 				xaSem[Feature.FleetScheduler].Release();
 			}
 		}
-
 	}
 }
