@@ -34,7 +34,7 @@ namespace Tbot.Model {
 		public Celestials Type { get; set; }
 
 		public override string ToString() {
-			return "[" + GetCelestialCode() + ":" + Galaxy + ":" + System + ":" + Position + "]";
+			return $"[{GetCelestialCode()}:{Galaxy}:{System}:{Position}]";
 		}
 
 		private string GetCelestialCode() {
@@ -105,7 +105,7 @@ namespace Tbot.Model {
 		public Debris Debris { get; set; }
 
 		public override string ToString() {
-			return Name + " " + Coordinate.ToString();
+			return $"{Name} {Coordinate.ToString()}";
 		}
 
 		public bool HasProduction() {
@@ -285,7 +285,7 @@ namespace Tbot.Model {
 		}
 
 		public override string ToString() {
-			return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
+			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
 		
 		public string TransportableResources {
@@ -347,7 +347,7 @@ namespace Tbot.Model {
 		public int DeuteriumTank { get; set; }
 
 		public override string ToString() {
-			return "M:" + MetalMine.ToString() + " C:" + CrystalMine.ToString() + " D:" + DeuteriumSynthesizer.ToString() + " S:" + SolarPlant.ToString("") + " F:" + FusionReactor.ToString("");
+			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
 	}
 
@@ -367,7 +367,7 @@ namespace Tbot.Model {
 		public int JumpGate { get; set; }
 
 		public override string ToString() {
-			return "R:" + RoboticsFactory.ToString() + " S:" + Shipyard.ToString() + " L:" + ResearchLab.ToString() + " M:" + MissileSilo.ToString("") + " N:" + NaniteFactory.ToString("");
+			return $"R: {RoboticsFactory.ToString()} S: {Shipyard.ToString()} L: {ResearchLab.ToString()} M: {MissileSilo.ToString("")} N: {NaniteFactory.ToString("")}";
 		}
 	}
 
@@ -557,7 +557,7 @@ namespace Tbot.Model {
 			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
 				if ((long) prop.GetValue(this) == 0)
 					continue;
-				output += prop.Name + ": " + prop.GetValue(this) + "; ";
+				output += $"{prop.Name}: {prop.GetValue(this)}; ";
 			}
 			return output;
 		}
