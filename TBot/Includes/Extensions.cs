@@ -59,6 +59,5 @@ namespace Tbot.Includes {
 
 			return str;
 		}
-
 	}
 }

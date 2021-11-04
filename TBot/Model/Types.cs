@@ -32,9 +32,11 @@ namespace Tbot.Model {
 		public int System { get; set; }
 		public int Position { get; set; }
 		public Celestials Type { get; set; }
+
 		public override string ToString() {
-			return "[" + GetCelestialCode() + ":" + Galaxy + ":" + System + ":" + Position + "]";
+			return $"[{GetCelestialCode()}:{Galaxy}:{System}:{Position}]";
 		}
+
 		private string GetCelestialCode() {
 			return Type switch {
 				Celestials.Planet => "P",
@@ -46,10 +48,10 @@ namespace Tbot.Model {
 		}
 
 		public bool IsSame(Coordinate otherCoord) {
-			if (Galaxy == otherCoord.Galaxy && System == otherCoord.System && Position == otherCoord.Position && Type == otherCoord.Type)
-				return true;
-			else
-				return false;
+			return Galaxy == otherCoord.Galaxy
+				&& System == otherCoord.System
+				&& Position == otherCoord.Position
+				&& Type == otherCoord.Type;
 		}
 	}
 
@@ -101,35 +103,34 @@ namespace Tbot.Model {
 		public ResourceSettings ResourceSettings { get; set; }
 		public ResourcesProduction ResourcesProduction { get; set; }
 		public Debris Debris { get; set; }
+
 		public override string ToString() {
-			return Name + " " + Coordinate.ToString();
+			return $"{Name} {Coordinate.ToString()}";
 		}
+
 		public bool HasProduction() {
 			try {
-				if (Productions.Count == 0)
-					return false;
-				else
-					return true;
+				return Productions.Count != 0;
 			} catch {
 				return false;
 			}
 		}
+
 		internal bool HasConstruction() {
 			try {
-				if (Constructions.BuildingID != (int) Buildables.Null)
-					return true;
-				else
-					return false;
+				return Constructions.BuildingID != (int) Buildables.Null;
 			} catch {
 				return false;
 			}
 		}
+
 		public bool HasCoords(Coordinate coords) {
-			if (coords.Galaxy == Coordinate.Galaxy && coords.System == Coordinate.System && coords.Position == Coordinate.Position && coords.Type == Coordinate.Type)
-				return true;
-			else
-				return false;
+			return coords.Galaxy == Coordinate.Galaxy
+				&& coords.System == Coordinate.System
+				&& coords.Position == Coordinate.Position
+				&& coords.Type == Coordinate.Type;
 		}
+
 		public int GetLevel(Buildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in Buildings.GetType().GetProperties()) {
@@ -150,16 +151,11 @@ namespace Tbot.Model {
 
 	public class Moon : Celestial {
 		public bool HasLunarFacilities(Facilities facilities) {
-			if (
-				Facilities.LunarBase >= facilities.LunarBase &&
-				Facilities.SensorPhalanx >= facilities.SensorPhalanx &&
-				Facilities.JumpGate >= facilities.JumpGate &&
-				Facilities.Shipyard >= facilities.Shipyard &&
-				Facilities.RoboticsFactory >= facilities.RoboticsFactory
-			)
-				return true;
-			else
-				return false;
+			return Facilities.LunarBase >= facilities.LunarBase
+				&& Facilities.SensorPhalanx >= facilities.SensorPhalanx
+				&& Facilities.JumpGate >= facilities.JumpGate
+				&& Facilities.Shipyard >= facilities.Shipyard
+				&& Facilities.RoboticsFactory >= facilities.RoboticsFactory;
 		}
 	}
 
@@ -177,15 +173,9 @@ namespace Tbot.Model {
 		public Moon Moon { get; set; }
 
 		public bool HasMines(Buildings buildings) {
-			if (
-				Buildings.MetalMine >= buildings.MetalMine &&
-				Buildings.CrystalMine >= buildings.CrystalMine &&
-				Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer
-
-			)
-				return true;
-			else
-				return false;
+			return Buildings.MetalMine >= buildings.MetalMine
+				&& Buildings.CrystalMine >= buildings.CrystalMine
+				&& Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer;
 		}
 	}
 
@@ -281,18 +271,21 @@ namespace Tbot.Model {
 		public long Deuterium { get; set; }
 		public long Energy { get; set; }
 		public long Darkmatter { get; set; }
+
 		public long ConvertedDeuterium {
 			get {
 				return (long) Math.Round((Metal / 2.5) + (Crystal / 1.5) + Deuterium, 0, MidpointRounding.ToPositiveInfinity);
 			}
 		}
+
 		public long TotalResources {
 			get {
 				return Metal + Crystal + Deuterium;
 			}
 		}
+
 		public override string ToString() {
-			return "M:" + Metal.ToString("N0") + " C:" + Crystal.ToString("N0") + " D:" + Deuterium.ToString("N0") + " E:" + Energy.ToString("N0") + " DM:" + Darkmatter.ToString("N0");
+			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
 		
 		public string TransportableResources {
@@ -310,17 +303,11 @@ namespace Tbot.Model {
 				tempCry -= resToLeave.Crystal;
 				tempDeut -= resToLeave.Deuterium;
 			}
-			if (cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut)
-				return true;
-			else
-				return false;
+			return cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut;
 		}
 
 		public bool IsEmpty() {
-			if (Metal == 0 && Crystal == 0 && Deuterium == 0) {
-				return true;
-			} else
-				return false;
+			return Metal == 0 && Crystal == 0 && Deuterium == 0;
 		}
 
 		public Resources Sum(Resources resourcesToSum) {
@@ -358,8 +345,9 @@ namespace Tbot.Model {
 		public int MetalStorage { get; set; }
 		public int CrystalStorage { get; set; }
 		public int DeuteriumTank { get; set; }
+
 		public override string ToString() {
-			return "M:" + MetalMine.ToString() + " C:" + CrystalMine.ToString() + " D:" + DeuteriumSynthesizer.ToString() + " S:" + SolarPlant.ToString("") + " F:" + FusionReactor.ToString("");
+			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
 	}
 
@@ -377,8 +365,9 @@ namespace Tbot.Model {
 		public int LunarBase { get; set; }
 		public int SensorPhalanx { get; set; }
 		public int JumpGate { get; set; }
+
 		public override string ToString() {
-			return "R:" + RoboticsFactory.ToString() + " S:" + Shipyard.ToString() + " L:" + ResearchLab.ToString() + " M:" + MissileSilo.ToString("") + " N:" + NaniteFactory.ToString("");
+			return $"R: {RoboticsFactory.ToString()} S: {Shipyard.ToString()} L: {ResearchLab.ToString()} M: {MissileSilo.ToString("")} N: {NaniteFactory.ToString("")}";
 		}
 	}
 
@@ -393,6 +382,7 @@ namespace Tbot.Model {
 		public long LargeShieldDome { get; set; }
 		public long AntiBallisticMissiles { get; set; }
 		public long InterplanetaryMissiles { get; set; }
+
 		public int GetAmount(Buildables defence) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -462,31 +452,24 @@ namespace Tbot.Model {
 			Reaper = reaper;
 			Pathfinder = pathfinder;
 		}
+
 		public bool IsEmpty() {
-			if
-			(
-				LightFighter == 0 &&
-				HeavyFighter == 0 &&
-				Cruiser == 0 &&
-				Battleship == 0 &&
-				Battlecruiser == 0 &&
-				Bomber == 0 &&
-				Destroyer == 0 &&
-				Deathstar == 0 &&
-				SmallCargo == 0 &&
-				LargeCargo == 0 &&
-				ColonyShip == 0 &&
-				Recycler == 0 &&
-				EspionageProbe == 0 &&
-				SolarSatellite == 0 &&
-				Crawler == 0 &&
-				Reaper == 0 &&
-				Pathfinder == 0
-			) {
-				return true;
-			} else {
-				return false;
-			}
+			return LightFighter == 0
+				&& HeavyFighter == 0 && Cruiser == 0
+				&& Battleship == 0
+				&& Battlecruiser == 0
+				&& Bomber == 0
+				&& Destroyer == 0
+				&& Deathstar == 0
+				&& SmallCargo == 0
+				&& LargeCargo == 0
+				&& ColonyShip == 0
+				&& Recycler == 0
+				&& EspionageProbe == 0
+				&& SolarSatellite == 0
+				&& Crawler == 0
+				&& Reaper == 0
+				&& Pathfinder == 0;
 		}
 
 		public long GetFleetPoints() {
@@ -510,28 +493,7 @@ namespace Tbot.Model {
 		}
 
 		public bool HasMovableFleet() {
-			if
-			(
-				LightFighter == 0 &&
-				HeavyFighter == 0 &&
-				Cruiser == 0 &&
-				Battleship == 0 &&
-				Battlecruiser == 0 &&
-				Bomber == 0 &&
-				Destroyer == 0 &&
-				Deathstar == 0 &&
-				SmallCargo == 0 &&
-				LargeCargo == 0 &&
-				ColonyShip == 0 &&
-				Recycler == 0 &&
-				EspionageProbe == 0 &&
-				Reaper == 0 &&
-				Pathfinder == 0
-			) {
-				return false;
-			} else {
-				return true;
-			}
+			return !IsEmpty();
 		}
 
 		public Ships GetMovableShips() {
@@ -595,7 +557,7 @@ namespace Tbot.Model {
 			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
 				if ((long) prop.GetValue(this) == 0)
 					continue;
-				output += prop.Name + ": " + prop.GetValue(this) + "; ";
+				output += $"{prop.Name}: {prop.GetValue(this)}; ";
 			}
 			return output;
 		}
@@ -623,6 +585,7 @@ namespace Tbot.Model {
 		public int? UnionID { get; set; }
 		public int TargetPlanetID { get; set; }
 	}
+
 	public class AttackerFleet {
 		public int ID { get; set; }
 		public Missions MissionType { get; set; }
@@ -639,27 +602,21 @@ namespace Tbot.Model {
 
 		public bool IsOnlyProbes() {
 			if (Ships.EspionageProbe != 0) {
-				if
-				(
-					Ships.Battlecruiser == 0 &&
-					Ships.Battleship == 0 &&
-					Ships.Bomber == 0 &&
-					Ships.ColonyShip == 0 &&
-					Ships.Cruiser == 0 &&
-					Ships.Deathstar == 0 &&
-					Ships.Destroyer == 0 &&
-					Ships.HeavyFighter == 0 &&
-					Ships.LargeCargo == 0 &&
-					Ships.LightFighter == 0 &&
-					Ships.Pathfinder == 0 &&
-					Ships.Reaper == 0 &&
-					Ships.Recycler == 0 &&
-					Ships.SmallCargo == 0 &&
-					Ships.SolarSatellite == 0
-				)
-					return true;
-				else
-					return false;
+				return Ships.Battlecruiser == 0
+					&& Ships.Battleship == 0
+					&& Ships.Bomber == 0
+					&& Ships.ColonyShip == 0
+					&& Ships.Cruiser == 0
+					&& Ships.Deathstar == 0
+					&& Ships.Destroyer == 0
+					&& Ships.HeavyFighter == 0
+					&& Ships.LargeCargo == 0
+					&& Ships.LightFighter == 0
+					&& Ships.Pathfinder == 0
+					&& Ships.Reaper == 0
+					&& Ships.Recycler == 0
+					&& Ships.SmallCargo == 0
+					&& Ships.SolarSatellite == 0;
 			} else
 				return false;
 		}
@@ -698,6 +655,7 @@ namespace Tbot.Model {
 		public int WeaponsTechnology { get; set; }
 		public int ShieldingTechnology { get; set; }
 		public int ArmourTechnology { get; set; }
+
 		public int GetLevel(Buildables research) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -836,10 +794,7 @@ namespace Tbot.Model {
 		public bool Technocrat { get; set; }
 		public bool IsFull {
 			get {
-				if (Commander && Admiral && Engineer && Geologist && Technocrat)
-					return true;
-				else
-					return false;
+				return Commander && Admiral && Engineer && Geologist && Technocrat;
 			}
 		}
 	}
@@ -876,6 +831,7 @@ namespace Tbot.Model {
 		public int MaxDaysOfInvestmentReturn { get; set; }
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
+
 		public AutoMinerSettings() {
 			OptimizeForStart = true;
 			PrioritizeRobotsAndNanites = false;
@@ -884,5 +840,4 @@ namespace Tbot.Model {
 			BuildDepositIfFull = false;
 		}
 	}
-
 }

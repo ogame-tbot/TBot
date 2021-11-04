@@ -25,42 +25,39 @@ namespace Tbot.Includes {
 				LogType.Debug => ConsoleColor.White,
 				_ => ConsoleColor.Gray
 			};
-			Console.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
+			Console.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
 
 		public static void LogToFile(LogType type, LogSender sender, string message) {
-			string path = Directory.GetCurrentDirectory() + "/log";
+			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
-			string fileName = DateTime.Now.Year.ToString() + DateTime.Now.Month.ToString() + DateTime.Now.Day.ToString() + "_TBot.log";
+			string fileName = $"{DateTime.Now.Year.ToString()}{DateTime.Now.Month.ToString()}{DateTime.Now.Day.ToString()}_TBot.log";
 			try {
-				StreamWriter file = new(path + "/" + fileName, true);
-				file.WriteLine("[" + type.ToString() + "] " + "[" + sender.ToString() + "] " + "[" + DateTime.Now.ToString() + "] - " + message);
+				StreamWriter file = new($"{path}/{fileName}", true);
+				file.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
 				file.Close();
 			} catch (Exception) { }
 		}
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
-			string path = Directory.GetCurrentDirectory() + "/log";
+			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
 			string fileName = "TBot_log.csv";
 			try {
-				StreamWriter file = new(path + "/" + fileName, true);
-				file.WriteLine(type.ToString().EscapeForCSV() + "," + sender.ToString().EscapeForCSV() + "," + DateTime.Now.ToString().EscapeForCSV() + "," + message.EscapeForCSV());
+				StreamWriter file = new($"{path}/{fileName}", true);
+				file.WriteLine($"{type.ToString().EscapeForCSV()},{sender.ToString().EscapeForCSV()},{DateTime.Now.ToString().EscapeForCSV()},{message.EscapeForCSV()}");
 				file.Close();
 			} catch (Exception) { }
 		}
 
 		public static void SetTitle(string content = "") {
 			AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
-			string info = exeInfo.Name + " v" + exeInfo.Version;
-			if (content != "")
-				Console.Title = content + " - " + info;
-			else
-				Console.Title = info;
+			string info = $"{exeInfo.Name} v{exeInfo.Version}";
+			Console.Title = (content != "") ? $"{content} - {info}" : info;
 			return;
 		}
 
@@ -807,34 +804,22 @@ namespace Tbot.Includes {
 				case Buildables.MetalMine:
 					output.Metal = (long) Math.Round(60 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(15 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 10 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.CrystalMine:
 					output.Metal = (long) Math.Round(48 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(24 * Math.Pow(1.6, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 10 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 10 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((10 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.DeuteriumSynthesizer:
 					output.Metal = (long) Math.Round(225 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
 					output.Crystal = (long) Math.Round(75 * Math.Pow(1.5, (level - 1)), 0, MidpointRounding.ToPositiveInfinity);
-					/*Lorenzo 06/02/2021
-                     * Added the calc for the energy needed
-                     */
-					//MidpointRounding set to "ToNegativeInfinity" because
-					//in all cases that i try (metal 51 crystal 44) the result is always the lower integer
-					//Formula: 20 * Mine Level * (1.1 ^ Mine Level)
+					// MidpointRounding set to "ToNegativeInfinity" because in all cases that i try (metal 51 crystal 44) the result is always the lower integer
+					// Formula: 20 * Mine Level * (1.1 ^ Mine Level)
 					output.Energy = (long) Math.Round((20 * level * (Math.Pow(1.1, level))), 0, MidpointRounding.ToPositiveInfinity);
 					break;
 				case Buildables.SolarPlant:
@@ -1243,11 +1228,6 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		/*Tralla 12/2/2020
-         * 
-         * Added helper to calc delta
-         * Hotfix to autominer energy builder
-         */
 		public static long GetRequiredEnergyDelta(Buildables buildable, int level) {
 			if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
 				if (level > 1) {
