@@ -1749,14 +1749,14 @@ namespace Tbot {
 							var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
 							if (returningExpoOrigin != null) {
 								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning in trasport origin celestial by " + now.AddMilliseconds(returningExpoOriginTime).ToString());
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning in transport origin celestial by " + now.AddMilliseconds(returningExpoOriginTime).ToString());
 							}
 
 							var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
 							if (incomingOriginFleets.Any()) {
 								var fleet = incomingOriginFleets.First();
 								transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving in trasport origin celestial by " + DateTime.Now.AddMilliseconds(transportOriginTime).ToString());
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving in transport origin celestial by " + DateTime.Now.AddMilliseconds(transportOriginTime).ToString());
 							}
 						}
 
