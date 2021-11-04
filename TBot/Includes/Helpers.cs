@@ -18,13 +18,25 @@ namespace Tbot.Includes {
 		}
 
 		public static void LogToConsole(LogType type, LogSender sender, string message) {
-			Console.ForegroundColor = type switch {
-				LogType.Error => ConsoleColor.Red,
-				LogType.Warning => ConsoleColor.Yellow,
-				LogType.Info => ConsoleColor.Gray,
-				LogType.Debug => ConsoleColor.White,
-				_ => ConsoleColor.Gray
-			};
+			if (type == LogType.Info) {
+				Console.ForegroundColor = sender switch {
+					LogSender.Brain => ConsoleColor.Blue,
+					LogSender.Defender => ConsoleColor.DarkGreen,
+					LogSender.Expeditions => ConsoleColor.Cyan,
+					LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
+					LogSender.Harvest => ConsoleColor.Green,
+					LogSender.SleepMode => ConsoleColor.DarkBlue,
+					LogSender.Tbot => ConsoleColor.DarkYellow,
+					_ => ConsoleColor.Gray
+				};
+			} else {
+				Console.ForegroundColor = type switch {
+					LogType.Error => ConsoleColor.Red,
+					LogType.Warning => ConsoleColor.Yellow,
+					LogType.Debug => ConsoleColor.White,
+					_ => ConsoleColor.Gray
+				};
+			}
 			
 			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
@@ -42,6 +54,7 @@ namespace Tbot.Includes {
 				file.Close();
 			} catch (Exception) { }
 		}
+    
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
 			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
