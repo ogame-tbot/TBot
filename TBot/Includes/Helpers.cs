@@ -25,7 +25,8 @@ namespace Tbot.Includes {
 				LogType.Debug => ConsoleColor.White,
 				_ => ConsoleColor.Gray
 			};
-			Console.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
+			
+			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
 
