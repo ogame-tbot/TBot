@@ -1637,7 +1637,8 @@ namespace Tbot {
 						)
 					) {
 						stop = true;
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Stopping AutoMine check for " + celestial.ToString() + ": " + (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities") + " are at set level.");
+						string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities"); 
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: {buildings} are at set level.");
 					}
 				}
 			} catch (Exception e) {
@@ -1648,7 +1649,7 @@ namespace Tbot {
 				string autoMineTimer = $"AutoMineTimer-{celestial.ID.ToString()}";
 				DateTime newTime;
 				if (stop) {
-					if (timers.TryGetValue("AutoMineTimer-" + celestial.ID.ToString(), out Timer value))
+					if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 				} else {
@@ -1720,7 +1721,7 @@ namespace Tbot {
 								float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
 								float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
 								productionTime = (long) (Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "The required resources will be produced by " + now.AddMilliseconds(productionTime).ToString());
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"The required resources will be produced by {now.AddMilliseconds(productionTime).ToString()}");
 							}
 						}
 
@@ -1729,13 +1730,13 @@ namespace Tbot {
 						if (incomingFleets.Any()) {
 							var fleet = incomingFleets.First();
 							transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving by " + now.AddMilliseconds(transportTime).ToString());
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving by {now.AddMilliseconds(transportTime).ToString()}");
 						}
 
 						var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
 						if (returningExpo != null) {
 							returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning by " + now.AddMilliseconds(returningExpoTime).ToString());
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
 						}
 
 						if ((bool) settings.Brain.AutoMine.Transports.Active) {
@@ -1749,14 +1750,14 @@ namespace Tbot {
 							var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
 							if (returningExpoOrigin != null) {
 								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next expedition returning in transport origin celestial by " + now.AddMilliseconds(returningExpoOriginTime).ToString());
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning in transport origin celestial by {now.AddMilliseconds(returningExpoOriginTime).ToString()}");
 							}
 
 							var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
 							if (incomingOriginFleets.Any()) {
 								var fleet = incomingOriginFleets.First();
 								transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, "Next fleet with resources arriving in transport origin celestial by " + DateTime.Now.AddMilliseconds(transportOriginTime).ToString());
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving in transport origin celestial by {DateTime.Now.AddMilliseconds(transportOriginTime).ToString()}");
 							}
 						}
 
