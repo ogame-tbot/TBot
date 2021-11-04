@@ -140,7 +140,7 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ### Captcha solving
-TBot, being based on ogamed,  manual captcha solving as wella as Ninja Captcha Autoresolve service.
+TBot, being based on ogamed,  manual captcha solving as well as Ninja Captcha Autoresolve service.
 
 To manually solve captcha navigate to host:port/bot/captcha
 
