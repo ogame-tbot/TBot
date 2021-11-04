@@ -38,7 +38,7 @@ namespace Tbot.Includes {
 				};
 			}
 			
-			Console.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
+			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
 
@@ -54,6 +54,7 @@ namespace Tbot.Includes {
 				file.Close();
 			} catch (Exception) { }
 		}
+    
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
 			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);
