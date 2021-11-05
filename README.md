@@ -7,7 +7,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.1!
+TBot supports Ogame v8.4!
 
 Feel free to publish issues or pull requests
 
@@ -21,6 +21,14 @@ Use this bot at your own risk!!
 
 Testing and PR are very much appreciated!
 
+## Support TBot
+
+Do you like the project? Buy me a beer!
+
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=2QXP4KAKZRGL4)
+[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)](https://en.cryptobadges.io/donate/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x129a661940E4eE0Aff581D0D778d6233722b6557)](https://en.cryptobadges.io/donate/0x129a661940E4eE0Aff581D0D778d6233722b6557)
+
 ## Features
 TBot has a wide variety of useful features. They all can be configured and customized editing settings.json. Here follows a shot explaination of each of them:
 
@@ -31,22 +39,22 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
-  * AutoSendExpeditions: TBot automatically optimizes expeditions for your account, sending them from the origin(s) setted in settings.json
+  * TBot can automatically optimize expeditions for your account, sending them from the one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
-  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! An origin can be set in settings.json to send the necessary resources from.
+  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
-  * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time
+  * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time (deploy with recall is supported!)
 * Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a proxy
-  * Fill the settings in settings.json. The settings are quite self-explainatory. If you need assistance ping me on Discord
+  * Fill the settings in settings.json. The settings are quite self-explainatory.
 * LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
 ## Settings Hot Reload
@@ -84,6 +92,41 @@ TBot supports the editing of the settings even while it is running. It will take
 * Run TBot
   * `./TBot`
 
+## Running on Amazon Web Services
+Some successful tests have been done to run TBot on the smallest instance of LightSail (1 vCPU, 20 GB SSD, 500 MB RAM and 1 TB outbound traffic) on Amazon Linux 2, which is free for a three month trial. In order to run it, steps should be as follow:
+* Create your account on Amazon Web Services (Credit Card required), and create a LightSail Instance running Amazon Linux 2. The smallest one fits into the "Free Tier" Program, which allows a 3 month free trial.
+* Select the ports where you want to connect, and open them in the Networking Settings on the instance's AWS Console (ex. ports 8000 - 8020 open for TCP and from any ip address if you don't know where you will be connecting from). This should make it accessible to the public internet.
+* Connecto to AWS instance using SSH and the .pem key you get during the instance setup:
+```
+$ ssh -i ~/pem/<my>.pem ec2-user@<instance's public ip-address>
+```
+
+* Update the system with  
+```
+sudo yum update
+```
+
+* Install the .NET 5 tuntime, which can be done using [these instructions for CentOs](https://docs.servicestack.net/deploy-netcore-to-amazon-linux-2-ami), and which is something like
+```
+$ sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+$ sudo yum install aspnetcore-runtime-5.0
+$ sudo yum install dotnet-sdk-5.0
+```
+
+* Upload your TBot files, which were previously downloaded and setup correctly. You can do this by using something like FileZilla using sftp and the same credentials as the ssh connection and then copy your TBot folder into the user's home directory in the server. Make sure your settings file has the public ip of the aws instance and the port where you want to connect.
+* Follow the instructions as written above for Linux by changing permissions.
+
+***Very important***: if you run TBot by using the command ```./TBot``` and then disconnect from the ssh connection, it'll kill TBot. In order to prevent this, you have to use a service called screen, and run the TBot instance like this:
+```
+$ screen ./TBot
+```
+then press <Ctrl + a + d>  in order to detach the console.
+
+Once it is detached you may close the ssh instance and TBot will run fine. You can repeat the process in order to run another instance of TBot on the server, as long as you detach it every time after you run the command.
+
+The testing was done on the smallest LightSail instance has been running up to 4 instances of TBot (different accounts each), with no problems so far, however if you run a 5th instance, it can cause the server to run out of RAM and it'll crash.
+
+
 ### Telegram
 TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
 * Create a new Telegram bot
@@ -97,20 +140,23 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ### Captcha solving
-TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Just follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
+TBot, being based on ogamed,  manual captcha solving as well as Ninja Captcha Autoresolve service.
+
+To manually solve captcha navigate to host:port/bot/captcha
+
+To configure Ninja Capthca Service follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
+
   
 ## Development Plans
 A web config interface should be written soon or later, as well as a database persistence.
 
-Also, a proper documentation about how to deal with settings.json should be written sooner or later.
-
-As for translations, at the moment the bot is not really suitable for "production" and should be used only for testing and hacking purposes. If you are a dev, you can probably cope with my brokenish English. If and when this project becomes something bigger than what it currently is, I may reconsider this.
+Also, a proper documentation about how to deal with settings.json would no doubt be helpful, especially for new users.
 
 Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
 
 ## Building
 
-I write and build TBot with Visual Studio 2019 Community Edition, thus .NET 5 SDK is enough for command line compilation.
+I write and build TBot with Visual Studio 2021 Community Edition, thus .NET 5 SDK is enough for command line compilation.
 
 Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the build process.
   
