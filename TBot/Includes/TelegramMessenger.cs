@@ -20,7 +20,7 @@ namespace Tbot.Includes {
 			try {
 				await Client.SendTextMessageAsync(Channel, message);
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Could not send Telegram message: an exception has occurred: " + e.Message);
+				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
 		}
 	}

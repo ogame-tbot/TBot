@@ -14,18 +14,16 @@ namespace Tbot.Services {
 	public static class SettingsService {
 		public static dynamic GetSettings() {
 			System.Threading.Thread.Sleep(500);
-			string file = File.ReadAllText(Path.GetFullPath(AppContext.BaseDirectory) + "/settings.json");
+			string file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
 		}
-
 	}
 
 	public static class JsonNetAdapter {
 		public static ExpandoObject Transform(ExpandoObject data) {
 			var newExpando = new ExpandoObject();
-
 			var edict = (IDictionary<string, object>) newExpando;
 
 			foreach (var kvp in data)
@@ -44,7 +42,6 @@ namespace Tbot.Services {
 
 		private static object ConvertList(List<object> list) {
 			var hasSingleType = true;
-
 			var tList = new ArrayList(list.Count);
 
 			Type listType = null;
@@ -85,9 +82,8 @@ namespace Tbot.Services {
 			var c = new ConfigObject();
 			var cdict = (IDictionary<string, object>) c;
 
-			// this is not complete. It will, however work for JsonFX ExpandoObjects
-			// which consists only of primitive types, ExpandoObject or ExpandoObject [] 
-			// but won't work for generic ExpandoObjects which might include collections etc.
+			// this is not complete. It will, however work for JsonFX ExpandoObjects which consists only of primitive types,
+			// ExpandoObject or ExpandoObject [] but won't work for generic ExpandoObjects which might include collections etc.
 			foreach (var kvp in edict) // recursively convert and add ExpandoObjects
 				switch (kvp.Value) {
 					case ExpandoObject o:
@@ -214,8 +210,7 @@ namespace Tbot.Services {
 			return true;
 		}
 
-		// Add all kinds of datatypes we can cast it to, and return default values
-		// cast to string will be null
+		// Add all kinds of datatypes we can cast it to, and return default values cast to string will be null
 		public static implicit operator string(NullExceptionPreventer nep) {
 			return null;
 		}

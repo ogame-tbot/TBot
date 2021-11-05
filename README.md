@@ -7,7 +7,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.3!
+TBot supports Ogame v8.4!
 
 Feel free to publish issues or pull requests
 
@@ -26,9 +26,8 @@ Testing and PR are very much appreciated!
 Do you like the project? Buy me a beer!
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=2QXP4KAKZRGL4)
-[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/3M7b6H9yyQVxW6JLgcW9rzbnCNQ2NGNxih)](https://en.cryptobadges.io/donate/3M7b6H9yyQVxW6JLgcW9rzbnCNQ2NGNxih)
-[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/601D752873C215aa34E03DfdE0A0166D440De3B7)](https://en.cryptobadges.io/donate/601D752873C215aa34E03DfdE0A0166D440De3B7)
-[![Donate with Dogecoin](https://en.cryptobadges.io/badge/micro/DQvT7TsYENs4ekRGyZLGGjwN9gthL52vNf)](https://en.cryptobadges.io/donate/DQvT7TsYENs4ekRGyZLGGjwN9gthL52vNf)
+[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)](https://en.cryptobadges.io/donate/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x129a661940E4eE0Aff581D0D778d6233722b6557)](https://en.cryptobadges.io/donate/0x129a661940E4eE0Aff581D0D778d6233722b6557)
 
 ## Features
 TBot has a wide variety of useful features. They all can be configured and customized editing settings.json. Here follows a shot explaination of each of them:
@@ -141,20 +140,23 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ### Captcha solving
-TBot, being based on ogamed, supports the Ninja Captcha Autoresolve service. Just follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
+TBot, being based on ogamed,  manual captcha solving as well as Ninja Captcha Autoresolve service.
+
+To manually solve captcha navigate to host:port/bot/captcha
+
+To configure Ninja Capthca Service follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
+
   
 ## Development Plans
 A web config interface should be written soon or later, as well as a database persistence.
 
 Also, a proper documentation about how to deal with settings.json would no doubt be helpful, especially for new users.
 
-As for translations, at the moment the bot is not really suitable for "production" and should be used only for testing and hacking purposes. If you are a dev, you can probably cope with my brokenish English. If and when this project becomes something bigger than what it currently is, I may reconsider this.
-
 Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
 
 ## Building
 
-I write and build TBot with Visual Studio 2019 Community Edition, thus .NET 5 SDK is enough for command line compilation.
+I write and build TBot with Visual Studio 2021 Community Edition, thus .NET 5 SDK is enough for command line compilation.
 
 Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the build process.
   
