@@ -1559,15 +1559,9 @@ namespace Tbot {
 					}
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
+					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
 					
-					Resources deutToLeaveOnMoons = new Resources();
-					deutToLeaveOnMoons.Deuterium = (long) autoMinerSettings.DeutToLeaveOnMoons;
-					
-					bool enoughResourcesOnCelestial = (celestial is Planet)
-						? celestial.Resources.IsEnoughFor(xCostBuildable)
-						: celestial.Resources.IsEnoughFor(xCostBuildable, deutToLeaveOnMoons);
-					
-					if (enoughResourcesOnCelestial) {
+					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
 						if (buildable == Buildables.SolarSatellite) {
 							if (celestial.Productions.Count == 0) {
