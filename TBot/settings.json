@@ -129,6 +129,7 @@
 			"BuildDepositIfFull": false,
 			"DepositHours": 6,
 			"MaxDaysOfInvestmentReturn": 365,
+			"DeutToLeaveOnMoons": 1000000,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
