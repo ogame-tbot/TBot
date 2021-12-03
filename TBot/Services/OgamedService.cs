@@ -30,7 +30,7 @@ namespace Tbot.Services {
         {
             try
             {
-                string args = "--universe=" + credentials.Universe + " --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --cookies-filename=cookies.txt";
+                string args = "--universe=\"" + credentials.Universe + "\" --username=" + credentials.Username + " --password=" + credentials.Password + " --language=" + credentials.Language + " --auto-login=false --port=" + port + " --host=0.0.0.0 --cookies-filename=cookies.txt";
                 if (newApiHostname != "")
                 {
                     args += " --api-new-hostname=" + newApiHostname;
