@@ -1486,7 +1486,8 @@ namespace Tbot {
 					PrioritizeRobotsAndNanites = (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanites,
 					MaxDaysOfInvestmentReturn = (int) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
 					DepositHours = (int) settings.Brain.AutoMine.DepositHours,
-					BuildDepositIfFull = (bool) settings.Brain.AutoMine.BuildDepositIfFull
+					BuildDepositIfFull = (bool) settings.Brain.AutoMine.BuildDepositIfFull,
+					DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 				};
 
 				List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
@@ -1558,6 +1559,8 @@ namespace Tbot {
 					}
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
+					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
+					
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
 						if (buildable == Buildables.SolarSatellite) {
