@@ -54,7 +54,7 @@ namespace Tbot.Includes {
 				file.Close();
 			} catch (Exception) { }
 		}
-    
+
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
 			string path = $"{Directory.GetCurrentDirectory()}/log";
 			DirectoryInfo dir = new(path);

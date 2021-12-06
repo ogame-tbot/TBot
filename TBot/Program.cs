@@ -2333,7 +2333,7 @@ namespace Tbot {
 			}
 
 			if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] Player {attack.AttackerName}  ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
+				telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					telegramMessenger.SendMessage($"The attack is composed by: {attack.Ships.ToString()}");
 			}
