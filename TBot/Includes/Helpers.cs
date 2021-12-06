@@ -18,8 +18,8 @@ namespace Tbot.Includes {
 		}
 
 		public static void LogToConsole(LogType type, LogSender sender, string message) {
-			if (type == LogType.Info) {
-				Console.ForegroundColor = sender switch {
+			Console.ForegroundColor = type == LogType.Info
+				? sender switch {
 					LogSender.Brain => ConsoleColor.Blue,
 					LogSender.Defender => ConsoleColor.DarkGreen,
 					LogSender.Expeditions => ConsoleColor.Cyan,
@@ -28,16 +28,14 @@ namespace Tbot.Includes {
 					LogSender.SleepMode => ConsoleColor.DarkBlue,
 					LogSender.Tbot => ConsoleColor.DarkYellow,
 					_ => ConsoleColor.Gray
-				};
-			} else {
-				Console.ForegroundColor = type switch {
+				}
+				: type switch {
 					LogType.Error => ConsoleColor.Red,
 					LogType.Warning => ConsoleColor.Yellow,
 					LogType.Debug => ConsoleColor.White,
 					_ => ConsoleColor.Gray
 				};
-			}
-			
+
 			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
