@@ -1493,7 +1493,8 @@ namespace Tbot {
 					PrioritizeRobotsAndNanites = (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanites,
 					MaxDaysOfInvestmentReturn = (int) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
 					DepositHours = (int) settings.Brain.AutoMine.DepositHours,
-					BuildDepositIfFull = (bool) settings.Brain.AutoMine.BuildDepositIfFull
+					BuildDepositIfFull = (bool) settings.Brain.AutoMine.BuildDepositIfFull,
+					DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 				};
 
 				List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
@@ -1565,6 +1566,8 @@ namespace Tbot {
 					}
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
+					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
+					
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
 						if (buildable == Buildables.SolarSatellite) {
@@ -2340,7 +2343,7 @@ namespace Tbot {
 			}
 
 			if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] Player {attack.AttackerName}  ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
+				telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					telegramMessenger.SendMessage($"The attack is composed by: {attack.Ships.ToString()}");
 			}

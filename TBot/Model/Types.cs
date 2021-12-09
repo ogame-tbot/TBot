@@ -831,6 +831,7 @@ namespace Tbot.Model {
 		public int MaxDaysOfInvestmentReturn { get; set; }
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
+		public int DeutToLeaveOnMoons { get; set; }
 
 		public AutoMinerSettings() {
 			OptimizeForStart = true;
@@ -838,6 +839,7 @@ namespace Tbot.Model {
 			MaxDaysOfInvestmentReturn = 36500;
 			DepositHours = 6;
 			BuildDepositIfFull = false;
+			DeutToLeaveOnMoons = 1000000;
 		}
 	}
 }
