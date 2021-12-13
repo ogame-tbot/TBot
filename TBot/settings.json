@@ -1,4 +1,4 @@
-﻿{
+{
 	"Credentials": {
 		"Universe": "",
 		"Email": "",
@@ -82,6 +82,29 @@
 	},
 	"Brain": {
 		"Active": true,
+		"AutoFarm": {
+			"Active": false,
+			"StartGalaxy": 1,
+			"EndGalaxy": 1,
+			"StartSystem": 1,
+			"EndSystem": 499,
+			"CargoType": "LargeCargo",
+			"MinCargosToKeep": 10,
+			"MinFleetSlots": 3,
+			"ExcludeMoons": true,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Moon"
+				}
+			],
+			"MinimumResources": 100000,
+			"PreferedResource": "Crystal",
+			"CheckIntervalMin": 60,
+			"CheckIntervalMax": 240
+		},
 		"AutoMine": {
 			"Active": true,
 			"MaxMetalMine": 40,
