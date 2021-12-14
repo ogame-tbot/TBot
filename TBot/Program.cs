@@ -120,6 +120,7 @@ namespace Tbot {
 					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1);
 					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1);
 					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
+					xaSem[Feature.BrainAutoFarm] = new Semaphore(1, 1);
 					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
 					xaSem[Feature.Harvest] = new Semaphore(1, 1);
 					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
@@ -133,6 +134,7 @@ namespace Tbot {
 					features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
+					features.AddOrUpdate(Feature.BrainAutoFarm, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
@@ -182,6 +184,10 @@ namespace Tbot {
 					case Feature.BrainAutoResearch:
 						if (currentValue)
 							StopBrainAutoResearch();
+						return false;
+					case Feature.BrainAutoFarm:
+						if (currentValue)
+							StopBrainAutoFarm();
 						return false;
 					case Feature.Expeditions:
 						if (currentValue)
@@ -263,6 +269,15 @@ namespace Tbot {
 							StopBrainAutoResearch();
 						return false;
 					}
+				case Feature.BrainAutoFarm:
+					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoFarm.Active) {
+						InitializeBrainAutoFarm();
+						return true;
+					} else {
+						if (currentValue)
+							StopBrainAutoFarm();
+						return false;
+					}
 				case Feature.Expeditions:
 					if ((bool) settings.Expeditions.Active) {
 						InitializeExpeditions();
@@ -312,6 +327,7 @@ namespace Tbot {
 			features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
+			features.AddOrUpdate(Feature.BrainAutoFarm, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 		}
@@ -691,6 +707,20 @@ namespace Tbot {
 			if (timers.TryGetValue("AutoResearchTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("AutoResearchTimer");
+		}
+
+		private static void InitializeBrainAutoFarm() {
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
+			StopBrainAutoFarm(false);
+			timers.Add("AutoFarmTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+		}
+
+		private static void StopBrainAutoFarm(bool echo = true) {
+			if (echo)
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autofarm...");
+			if (timers.TryGetValue("AutoFarmTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("AutoFarmTimer");
 		}
 
 		private static void InitializeExpeditions() {

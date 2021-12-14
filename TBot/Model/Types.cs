@@ -382,7 +382,18 @@ namespace Tbot.Model {
 		public long LargeShieldDome { get; set; }
 		public long AntiBallisticMissiles { get; set; }
 		public long InterplanetaryMissiles { get; set; }
-
+		public bool IsEmpty() {
+			return RocketLauncher == 0
+				&& LightLaser == 0
+				&& HeavyLaser == 0
+				&& GaussCannon == 0
+				&& IonCannon == 0
+				&& PlasmaTurret == 0
+				&& SmallShieldDome == 0
+				&& LargeShieldDome == 0
+				&& AntiBallisticMissiles == 0
+				&& InterplanetaryMissiles == 0;
+		}
 		public int GetAmount(Buildables defence) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -840,6 +851,70 @@ namespace Tbot.Model {
 			DepositHours = 6;
 			BuildDepositIfFull = false;
 			DeutToLeaveOnMoons = 1000000;
+		}
+	}
+
+	public class EspionageReport {
+		public int ID { get; set; }
+		public string Name { get; set; }
+		public Coordinate Coordinate { get; set; }
+		public Player Player { get; set; }
+		public int Activity { get; set; }
+		public bool Inactive { get; set; }
+		public bool LongInactive { get; set; }
+		public bool HasFleetInformation { get; set; }
+		public bool HasDefenceInformation { get; set; }
+		public bool HasBuildingsInformation { get; set; }
+		public bool HasResearchesInformation { get; set; }
+		public Resources Resources { get; set; }
+		public Ships Ships { get; set; }
+		public Defences Defences { get; set; }
+		public Buildings Buildings { get; set; }
+		public Facilities Facilities { get; set; }
+		public Researches Researches { get; set; }
+		public Debris Debris { get; set; }
+
+		public override string ToString() {
+			return $"{Name} {Coordinate.ToString()}";
+		}
+
+		/// <summary>
+		/// Get whether or not the scanned planet has any defence (either ships ore defence) against an attack.
+		/// </summary>
+		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
+		public bool IsDefenceless() {
+			return Ships.IsEmpty() && Defences.IsEmpty() && HasDefenceInformation && HasFleetInformation;
+		}
+
+		/// <summary>
+		/// Get the plunder ratio of the target.
+		/// </summary>
+		/// <param name="playerClass"></param>
+		/// <returns>Returns the plunder ratio.</returns>
+		public float PlunderRatio(Classes playerClass) {
+			if (Inactive && playerClass == Classes.Discoverer)
+				return 0.75F;
+			if (Player.IsBandit)
+				return 1F;
+			if (!Inactive && Player.IsStarlord)
+				return 0.75F;
+			return 0.5F;
+		}
+
+		/// <summary>
+		/// Get the maximum possible loot that can be collected from this target.
+		/// </summary>
+		/// <returns>Returns the possible loot.</returns>
+		public Resources Loot(Classes playerClass) {
+			float ratio = PlunderRatio(playerClass);
+			return new Resources { Deuterium = (long) (Resources.Deuterium * ratio), Crystal = (long) (Resources.Crystal * ratio), Metal = (long) (Resources.Metal * ratio) };
+		}
+
+		public bool HasCoords(Coordinate coords) {
+			return coords.Galaxy == Coordinate.Galaxy
+				&& coords.System == Coordinate.System
+				&& coords.Position == Coordinate.Position
+				&& coords.Type == Coordinate.Type;
 		}
 	}
 }

@@ -223,5 +223,6 @@ namespace Tbot.Model {
 		FleetScheduler = 8,
 		SleepMode = 9,
 		BrainAutoResearch = 10,
+		BrainAutoFarm = 11,
 	}
 }
