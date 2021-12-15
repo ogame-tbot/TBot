@@ -232,7 +232,7 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<UserInfo>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
-		public Classes GetUserClass() {
+		public CharacterClass GetUserClass() {
 			var request = new RestRequest {
 				Resource = "/bot/character-class",
 				Method = Method.GET
@@ -241,7 +241,7 @@ namespace Tbot.Services {
 			if (result.Status != "ok") {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
-				return JsonConvert.DeserializeObject<Classes>(JsonConvert.SerializeObject(result.Result));
+				return JsonConvert.DeserializeObject<CharacterClass>(JsonConvert.SerializeObject(result.Result));
 		}
 
 		public List<Planet> GetPlanets() {

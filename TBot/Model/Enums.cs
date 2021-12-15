@@ -3,11 +3,18 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Tbot.Model {
-	public enum Classes {
+	public enum CharacterClass {
 		NoClass = 0,
 		Collector = 1,
 		General = 2,
 		Discoverer = 3
+	}
+
+	public enum AllianceClass {
+		NoClass = 0,
+		Warrior = 1,
+		Trader = 2,
+		Researcher = 3
 	}
 
 	public enum Celestials {
@@ -192,6 +199,11 @@ namespace Tbot.Model {
 		ResourceSettings,
 		ResourcesProduction,
 		Debris
+	}
+
+	public enum EspionageReportType {
+		Action = 0,
+		Report = 1
 	}
 
 	public enum LogType {

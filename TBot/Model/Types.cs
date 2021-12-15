@@ -255,7 +255,7 @@ namespace Tbot.Model {
 		public long Rank { get; set; }
 		public long Total { get; set; }
 		public long HonourPoints { get; set; }
-		public Classes Class { get; set; }
+		public CharacterClass Class { get; set; }
 	}
 
 	public class Resources {
@@ -855,27 +855,101 @@ namespace Tbot.Model {
 	}
 
 	public class EspionageReport {
-		public int ID { get; set; }
-		public string Name { get; set; }
-		public Coordinate Coordinate { get; set; }
-		public Player Player { get; set; }
-		public int Activity { get; set; }
-		public bool Inactive { get; set; }
-		public bool LongInactive { get; set; }
-		public bool HasFleetInformation { get; set; }
-		public bool HasDefenceInformation { get; set; }
-		public bool HasBuildingsInformation { get; set; }
-		public bool HasResearchesInformation { get; set; }
 		public Resources Resources { get; set; }
-		public Ships Ships { get; set; }
-		public Defences Defences { get; set; }
-		public Buildings Buildings { get; set; }
-		public Facilities Facilities { get; set; }
-		public Researches Researches { get; set; }
-		public Debris Debris { get; set; }
+		public int ID { get; set; }
+		public string Username { get; set; }
+		public CharacterClass CharacterClass { get; set; }
+		public AllianceClass AllianceClass { get; set; }
+		public int LastActivity { get; set; }
+		public int CounterEspionage { get; set; }
+		public string APIKey { get; set; }
+		public bool HasFleetInformation { get; set; } // Either or not we sent enough probes to get the fleet information
+		public bool HasDefensesInformation { get; set; } // Either or not we sent enough probes to get the defenses information
+		public bool HasBuildingsInformation { get; set; } // Either or not we sent enough probes to get the buildings information
+		public bool HasResearchesInformation { get; set; } // Either or not we sent enough probes to get the researches information
+		public bool HonorableTarget { get; set; }
+		public bool IsBandit { get; set; }
+		public bool IsStarlord { get; set; }
+		public bool IsInactive { get; set; }
+		public bool IsLongInactive { get; set; }
+
+		// ResourcesBuildings
+		public int MetalMine { get; set; }
+		public int CrystalMine { get; set; }
+		public int DeuteriumSynthesizer { get; set; }
+		public int SolarPlant { get; set; }
+		public int FusionReactor { get; set; }
+		public int SolarSatellite{ get; set; }
+		public int MetalStorage{ get; set; }
+		public int CrystalStorage { get; set; }
+		public int DeuteriumTank { get; set; }
+
+		// Facilities
+		public int RoboticsFactory { get; set; }
+		public int Shipyard { get; set; }
+		public int ResearchLab { get; set; }
+		public int AllianceDepot { get; set; }
+		public int MissileSilo { get; set; }
+		public int NaniteFactory { get; set; }
+		public int Terraformer { get; set; }
+		public int SpaceDock { get; set; }
+		public int LunarBase { get; set; }
+		public int SensorPhalanx { get; set; }
+		public int JumpGate { get; set; }
+
+		// Researches
+		public int EnergyTechnology { get; set; }
+		public int LaserTechnology { get; set; }
+		public int IonTechnology { get; set; }
+		public int HyperspaceTechnology { get; set; }
+		public int PlasmaTechnology { get; set; }
+		public int CombustionDrive { get; set; }
+		public int ImpulseDrive { get; set; }
+		public int HyperspaceDrive { get; set; }
+		public int EspionageTechnology { get; set; }
+		public int ComputerTechnology { get; set; }
+		public int Astrophysics { get; set; }
+		public int IntergalacticResearchNetwork { get; set; }
+		public int GravitonTechnology { get; set; }
+		public int WeaponsTechnology { get; set; }
+		public int ShieldingTechnology { get; set; }
+		public int ArmourTechnology { get; set; }
+
+		// Defenses
+		public int RocketLauncher { get; set; }
+		public int LightLaser { get; set; }
+		public int HeavyLaser { get; set; }
+		public int GaussCannon { get; set; }
+		public int IonCannon { get; set; }
+		public int PlasmaTurret { get; set; }
+		public int SmallShieldDome { get; set; }
+		public int LargeShieldDome { get; set; }
+		public int AntiBallisticMissiles { get; set; }
+		public int InterplanetaryMissiles { get; set; }
+
+		// Fleets
+		public int LightFighter { get; set; }
+		public int HeavyFighter { get; set; }
+		public int Cruiser { get; set; }
+		public int Battleship { get; set; }
+		public int Battlecruiser { get; set; }
+		public int Bomber { get; set; }
+		public int Destroyer { get; set; }
+		public int Deathstar { get; set; }
+		public int SmallCargo { get; set; }
+		public int LargeCargo { get; set; }
+		public int ColonyShip { get; set; }
+		public int Recycler { get; set; }
+		public int EspionageProbe { get; set; }
+		public int Crawler { get; set; }
+		public int Reaper { get; set; }
+		public int Pathfinder { get; set; }
+		public Coordinate Coordinate { get; set; }
+		public EspionageReportType Type { get; set; }
+		public DateTime Date { get; set; }
 
 		public override string ToString() {
-			return $"{Name} {Coordinate.ToString()}";
+			return $"{Username} {Coordinate.ToString()}";
 		}
 
 		/// <summary>
@@ -883,7 +957,9 @@ namespace Tbot.Model {
 		/// </summary>
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
 		public bool IsDefenceless() {
-			return Ships.IsEmpty() && Defences.IsEmpty() && HasDefenceInformation && HasFleetInformation;
+			return true;
+			// TODO pepperNG: Fix.
+			// Ships.IsEmpty() && Defences.IsEmpty() && HasDefenceInformation && HasFleetInformation;
 		}
 
 		/// <summary>
@@ -891,12 +967,12 @@ namespace Tbot.Model {
 		/// </summary>
 		/// <param name="playerClass"></param>
 		/// <returns>Returns the plunder ratio.</returns>
-		public float PlunderRatio(Classes playerClass) {
-			if (Inactive && playerClass == Classes.Discoverer)
+		public float PlunderRatio(CharacterClass playerClass) {
+			if (IsInactive && playerClass == CharacterClass.Discoverer)
 				return 0.75F;
-			if (Player.IsBandit)
+			if (IsBandit)
 				return 1F;
-			if (!Inactive && Player.IsStarlord)
+			if (!IsInactive && IsStarlord)
 				return 0.75F;
 			return 0.5F;
 		}
@@ -905,7 +981,7 @@ namespace Tbot.Model {
 		/// Get the maximum possible loot that can be collected from this target.
 		/// </summary>
 		/// <returns>Returns the possible loot.</returns>
-		public Resources Loot(Classes playerClass) {
+		public Resources Loot(CharacterClass playerClass) {
 			float ratio = PlunderRatio(playerClass);
 			return new Resources { Deuterium = (long) (Resources.Deuterium * ratio), Crystal = (long) (Resources.Crystal * ratio), Metal = (long) (Resources.Metal * ratio) };
 		}

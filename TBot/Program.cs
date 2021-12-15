@@ -443,7 +443,7 @@ namespace Tbot {
 				return new() {
 					PlayerID = 0,
 					PlayerName = "Uninitialized",
-					Class = Classes.NoClass,
+					Class = CharacterClass.NoClass,
 					Points = 0,
 					HonourPoints = 0,
 					Rank = 0,
@@ -859,7 +859,7 @@ namespace Tbot {
 		}
 
 		private static FleetHypotesis GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
-			var validSpeeds = userInfo.Class == Classes.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+			var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 			List<FleetHypotesis> possibleFleets = new();
 			List<Coordinate> possibleDestinations = new();
 
@@ -1575,10 +1575,10 @@ namespace Tbot {
 					celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
 
 					buildable = Helpers.GetNextBuildingToBuild(celestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings);
-					level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
+					level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
 				} else {
 					buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
-					level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == Classes.Collector, staff.Engineer, staff.IsFull);
+					level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
 				}
 
 				if (buildable != Buildables.Null && level > 0) {
@@ -2185,10 +2185,10 @@ namespace Tbot {
 			}
 		}
 
-		private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, Classes playerClass = Classes.NoClass, bool force = false) {
+		private static int SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Model.Resources payload = null, CharacterClass playerClass = CharacterClass.NoClass, bool force = false) {
 			Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Sending fleet from {origin.Coordinate.ToString()} to {destination.ToString()}. Mission: {mission.ToString()}. Speed: {(speed * 10).ToString()}% Ships: {ships.ToString()}");
 
-			if (playerClass == Classes.NoClass)
+			if (playerClass == CharacterClass.NoClass)
 				playerClass = userInfo.Class;
 
 			if (!ships.HasMovableFleet()) {
@@ -2205,7 +2205,7 @@ namespace Tbot {
 			}
 
 			if (
-				playerClass != Classes.General && (
+				playerClass != CharacterClass.General && (
 					speed == Speeds.FivePercent ||
 					speed == Speeds.FifteenPercent ||
 					speed == Speeds.TwentyfivePercent ||
