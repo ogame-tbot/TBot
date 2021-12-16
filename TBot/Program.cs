@@ -712,7 +712,7 @@ namespace Tbot {
 		private static void InitializeBrainAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopBrainAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		private static void StopBrainAutoFarm(bool echo = true) {
@@ -1469,6 +1469,44 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
 					UpdateTitle();
 					xaSem[Feature.Brain].Release();
+				}
+			}
+		}
+
+		private static void AutoFarm(object state) {
+			try {
+				// Wait for the thread semaphore to avoid the concurrency with itself
+				xaSem[Feature.BrainAutoFarm].WaitOne();
+
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autofarm...");
+
+				if (isSleeping) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+					xaSem[Feature.Brain].Release();
+					return;
+				}
+
+				// If not enough slots are free, the farmer cannot run.
+				slots = UpdateSlots();
+				int slotsToLeaveFree = (int) settings.Brain.AutoFarm.SlotsToLeaveFree;
+				if (slots.Free > slotsToLeaveFree) {
+					// Galaxy Scanning.
+
+					// Probing.
+
+					// Attacking.
+
+				} else {
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
+					return;
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoFarm Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			} finally {
+				if (!isSleeping) {
+					UpdateTitle();
+					xaSem[Feature.BrainAutoFarm].Release();
 				}
 			}
 		}

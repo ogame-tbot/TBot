@@ -827,10 +827,17 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		// TODO pepperNG: Finish.
-		//public List<Model.EspionageReport> GetEspionageReports() {
-
-		//}
+		public List<Model.EspionageReportSummary> GetEspionageReports() {
+			var request = new RestRequest {
+				Resource = "/bot/espionage-report",
+				Method = Method.GET
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<List<EspionageReportSummary>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
 
 		public Model.EspionageReport GetEspionageReport(Coordinate coordinate) {
 			var request = new RestRequest {
@@ -840,12 +847,20 @@ namespace Tbot.Services {
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
-			} else // TODO pepperNG check if deserialized properly.
+			} else
 				return JsonConvert.DeserializeObject<EspionageReport>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
-		//public Model.EspionageReport GetEspionageReport(int msgID) {
-
-		//}
+		public Model.EspionageReport GetEspionageReport(int msgId) {
+			var request = new RestRequest {
+				Resource = $"/bot/espionage-report/{msgId}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<EspionageReport>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
 	}
 }

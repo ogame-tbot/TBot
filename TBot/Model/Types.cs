@@ -993,4 +993,12 @@ namespace Tbot.Model {
 				&& coords.Type == Coordinate.Type;
 		}
 	}
+
+	public class EspionageReportSummary {
+		public int ID { get; set; }
+		public EspionageReportType Type { get; set; }
+		public string From { get; set; }
+		public Coordinate Target { get; set; }
+		public float LootPercentage { get; set; }
+	}
 }
