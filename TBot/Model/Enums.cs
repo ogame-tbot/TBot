@@ -206,6 +206,23 @@ namespace Tbot.Model {
 		Report = 1
 	}
 
+	public enum FarmState {
+		/// No espionage probes sent yet, pending.
+		ProbesPending,
+		/// Espionage probes are sent, no report received yet.
+		ProbesSent,
+		/// Additional espionage probes are required for more info.
+		ProbesRequired,
+		/// Additional espionage probes are required for more info, but exceeds limit.
+		FailedProbesRequired,
+		/// Suitable target detected, attack is pending.
+		AttackPending,
+		/// Suitable target detected, attack is ongoing.
+		AttackSent,
+		/// Target not suitable (not enough resources / too much defence).
+		NotSuitable
+	}
+
 	public enum LogType {
 		Info,
 		Debug,

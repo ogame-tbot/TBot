@@ -1001,4 +1001,20 @@ namespace Tbot.Model {
 		public Coordinate Target { get; set; }
 		public float LootPercentage { get; set; }
 	}
+
+	/// <summary>
+	/// Farming target found during a galaxy scan.
+	/// </summary>
+	public class FarmTarget {
+		public FarmTarget(Coordinate coordinate, Planet planet, FarmState farmState = FarmState.NotSuitable, EspionageReport report = null) {
+			Coordinate = coordinate;
+			Planet = planet;
+			State = farmState;
+			Report = report;
+		}
+		public Coordinate Coordinate { get; set; }
+		public Planet Planet { get; set; }
+		public FarmState State { get; set; }
+		public EspionageReport Report { get; set; }
+	}
 }

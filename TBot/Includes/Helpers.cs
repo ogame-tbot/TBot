@@ -1989,6 +1989,26 @@ namespace Tbot.Includes {
 				return null;
 		}
 
+		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
+			var celestialEspionages = fleets.Where(f => f.Mission == Missions.Spy);
+			if (celestialEspionages.Any()) {
+				return celestialEspionages
+					.OrderBy(fleet => fleet.BackIn).First();
+			} else
+				return null;
+		}
+
+		public static Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets) {
+			var celestialEspionages = fleets
+				.Where(f => f.Origin.IsSame(origin))
+				.Where(f => f.Mission == Missions.Spy);
+			if (celestialEspionages.Any()) {
+				return celestialEspionages
+					.OrderBy(fleet => fleet.BackIn).First();
+			} else
+				return null;
+		}
+
 		public static List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials) {
 			List<Celestial> output = new();
 			try {
