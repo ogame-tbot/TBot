@@ -83,21 +83,31 @@
 	"Brain": {
 		"Active": true,
 		"AutoFarm": {
-			"Active": false,
-			"StartGalaxy": 1,
-			"EndGalaxy": 1,
-			"StartSystem": 1,
-			"EndSystem": 499,
-			"CargoType": "LargeCargo",
-			"MinCargosToKeep": 10,
-			"MinFleetSlots": 3,
+			"Active": true,
 			"ExcludeMoons": true,
+			"ScanRange": [
+				{
+					"Galaxy": 2,
+					"StartSystem": 360,
+					"EndSystem": 420
+				}
+			],
 			"Exclude": [
 				{
-					"Galaxy": 3,
-					"System": 333,
-					"Position": 15,
-					"Type": "Moon"
+					"Galaxy": 2,
+					"System": 397
+				}
+			],
+			"CargoType": "LargeCargo",
+			"MinCargosToKeep": 10,
+			"SlotsToLeaveFree": 3,
+			"NumProbes": 1,
+			"Origin": [
+				{
+					"Galaxy": 2,
+					"System": 397,
+					"Position": 4,
+					"Type": "Planet"
 				}
 			],
 			"MinimumResources": 100000,
