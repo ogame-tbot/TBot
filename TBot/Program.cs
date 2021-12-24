@@ -25,6 +25,7 @@ namespace Tbot {
 		static volatile Researches researches;
 		static volatile ConcurrentDictionary<Feature, bool> features;
 		static volatile List<FleetSchedule> scheduledFleets;
+		static volatile List<FarmTarget> farmTargets;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
 		static Dictionary<Feature, Semaphore> xaSem = new();
@@ -144,6 +145,7 @@ namespace Tbot {
 					celestials = GetPlanets();
 					researches = UpdateResearches();
 					scheduledFleets = new();
+					farmTargets = new();
 					UpdateTitle(false);
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
@@ -1486,19 +1488,175 @@ namespace Tbot {
 					return;
 				}
 
-				// If not enough slots are free, the farmer cannot run.
-				slots = UpdateSlots();
-				int slotsToLeaveFree = (int) settings.Brain.AutoFarm.SlotsToLeaveFree;
-				if (slots.Free > slotsToLeaveFree) {
-					// Galaxy Scanning.
+				if ((bool) settings.Brain.AutoFarm.Active) {
+					// If not enough slots are free, the farmer cannot run.
+					slots = UpdateSlots();
+					int slotsToLeaveFree = (int) settings.Brain.AutoFarm.SlotsToLeaveFree;
+					if (slots.Free > slotsToLeaveFree) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets");
 
-					// Probing.
+						List<Celestial> newCelestials = celestials.ToList();
+						var dic = new Dictionary<Coordinate, Celestial>();
 
-					// Attacking.
+						// Galaxy Scanning.
+						try {
+							// Loop through galaxy systems within configured ranges.
+							foreach (var origin in settings.Brain.AutoFarm.ScanRange) {
+								int galaxy		= (int) origin.Galaxy;
+								int startSystem = (int) origin.StartSystem;
+								int endSystem	= (int) origin.EndSystem;
 
-				} else {
-					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
-					return;
+								// Loop from start to end system.
+								for (var system = startSystem; system <= endSystem; system++) {
+									// TODO: Remove this log line - Spams console.
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Scanning {galaxy.ToString()}:{system.ToString()}...");
+									// Check excluded system.
+									bool excludeSystem = false;
+									foreach (var exclude in settings.Brain.AutoFarm.Exclude) {
+										if ((int) exclude.Galaxy == galaxy && (int) exclude.System == system && !exclude.Position) {
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping system {system.ToString()}: system in exclude list.");
+											excludeSystem = true;
+											break;
+										}
+									}
+									if (excludeSystem == true)
+										continue;
+
+									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
+
+									// Add each planet that has inactive status to farmTargets.
+									foreach (Planet planet in galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation)) {
+										// Check excluded planet.
+										bool excludePlanet = false;
+										foreach (var exclude in settings.Brain.AutoFarm.Exclude) {
+											if ((int) exclude.Galaxy == galaxy && (int) exclude.System == system && exclude.Position && (int) exclude.Position == (int) planet.Coordinate.Position) {
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {planet.ToString()}: celestial in exclude list.");
+												excludePlanet = true;
+												break;
+											}
+										}
+										if (excludePlanet == true)
+											continue;
+
+										// Check if planet with coordinates exists already in farmTargets list.
+										var exists = farmTargets.Where(t => t != null && t.Planet.HasCoords(planet.Coordinate));
+										if (exists.Count() > 1) {
+											// BUG: Same coordinates should never appear multiple times in farmTargets. The list should only contain unique coordinates.
+											Helpers.WriteLog(LogType.Warning, LogSender.Brain, "BUG: Same coordinates appeared multiple times within farmTargets!");
+											return;
+										}
+
+										if (!exists.Any()) {
+											// Does not exist, add to farmTargets list, set state to probes pending.
+											farmTargets.Add(new(planet.Coordinate, planet, FarmState.ProbesPending));
+										} else {
+											// Already exists, update farmTargets list with updated planet, set state to probes pending.
+											var farmTarget = exists.First();
+											var newFarmTarget = farmTarget;
+
+											newFarmTarget.Planet = planet;
+											newFarmTarget.State = FarmState.ProbesPending;
+
+											farmTargets.Remove(farmTarget);
+											farmTargets.Add(newFarmTarget);
+										}
+
+										FarmTarget target = farmTargets.Last();
+										// Check if slots available to send probes.
+										// TODO Improve: First check if probes available on nearest celestial
+										//		 - If NOT: Wait for probes if incoming, no need to check slots after. Otherwise proceed to next celestial.
+										//		 - If so: Check if slot free, otherwise wait for probes if incoming.
+										slots = UpdateSlots();
+										if (slots.Free <= slotsToLeaveFree) {
+											// Check if incoming probes, wait for first probes to come back.
+											fleets = UpdateFleets();
+											Fleet firstReturning = Helpers.GetFirstReturningEspionage(fleets);
+
+											if (firstReturning != null) {
+												int interval = (int) ((1000 * firstReturning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
+												Thread.Sleep(interval);
+											} else {
+												// If no incoming probes, we shouldn't have started scanning galaxy. Abort.
+												Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available and no probes returning!");
+												return;
+											}
+										}
+
+										slots = UpdateSlots();
+										if (slots.Free <= slotsToLeaveFree) {
+											Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available!");
+											return;
+										}
+
+										// Send spy probe from closest celestial with available probes to last added target.
+										List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
+										bool probesSent = false;
+										foreach (var closest in closestCelestials) {
+											Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
+											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+
+											// Check if probes available.
+											if ((int) tempCelestial.Ships.EspionageProbe >= (int) settings.Brain.AutoFarm.NumProbes) {
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending probes {settings.Brain.AutoFarm.NumProbes} to {target.Coordinate.ToString()}.");
+
+												Ships ships = new();
+												ships.Add(Buildables.EspionageProbe, (int) settings.Brain.AutoFarm.NumProbes);
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} from {closest.ToString()} to {target.ToString()}");
+												SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
+												probesSent = true;
+											} else {
+												// No probes available, check if probes are incoming and wait for them.
+												fleets = UpdateFleets();
+												Fleet firstReturning = Helpers.GetFirstReturningEspionage(tempCelestial.Coordinate, fleets);
+												if (firstReturning != null) {
+													int interval = (int) ((1000 * firstReturning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
+													Thread.Sleep(interval);
+
+													Ships ships = new();
+													ships.Add(Buildables.EspionageProbe, (int) settings.Brain.AutoFarm.NumProbes);
+													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} from {closest.ToString()} to {target.ToString()}");
+													SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
+													probesSent = true;
+
+												} else {
+													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{tempCelestial.Coordinate.ToString()}, closest to {target.Coordinate.ToString()}, has not enough probes available!");
+												}
+											}
+										}
+										if (!probesSent) {
+											Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to send probes to {target.Coordinate.ToString()}, not enough probes available!");
+											return;
+										} else {
+											var newFarmTarget = target;
+
+											newFarmTarget.Planet = planet;
+											newFarmTarget.State = FarmState.ProbesSent;
+
+											farmTargets.Remove(target);
+											farmTargets.Add(newFarmTarget);
+										}
+									}
+									Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
+								}
+							}
+						} catch (Exception e) {
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Exception: {e.Message}");
+							Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse scan range");
+						}
+
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Farmer: Start attacking of found inactives.");
+
+						// Attacking.
+
+						fleets = UpdateFleets();
+
+					} else {
+						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
+						return;
+					}
 				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoFarm Exception: {e.Message}");
@@ -2272,7 +2430,9 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
 				return 0;
 			}
-			if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel) {
+
+			// TODO: Fix ugly workaround.
+			if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
 				return 0;
 			}
