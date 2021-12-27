@@ -855,7 +855,11 @@ namespace Tbot.Model {
 	}
 
 	public class EspionageReport {
-		public Resources Resources { get; set; }
+		public int Metal { get; set; }
+		public int Crystal { get; set; }
+		public int Deuterium { get; set; }
+		public int Energy { get; set; }
+		public int Darkmatter { get; set; }
 		public int ID { get; set; }
 		public string Username { get; set; }
 		public CharacterClass CharacterClass { get; set; }
@@ -874,76 +878,76 @@ namespace Tbot.Model {
 		public bool IsLongInactive { get; set; }
 
 		// ResourcesBuildings
-		public int MetalMine { get; set; }
-		public int CrystalMine { get; set; }
-		public int DeuteriumSynthesizer { get; set; }
-		public int SolarPlant { get; set; }
-		public int FusionReactor { get; set; }
-		public int SolarSatellite{ get; set; }
-		public int MetalStorage{ get; set; }
-		public int CrystalStorage { get; set; }
-		public int DeuteriumTank { get; set; }
+		public int? MetalMine { get; set; }
+		public int? CrystalMine { get; set; }
+		public int? DeuteriumSynthesizer { get; set; }
+		public int? SolarPlant { get; set; }
+		public int? FusionReactor { get; set; }
+		public int? SolarSatellite{ get; set; }
+		public int? MetalStorage{ get; set; }
+		public int? CrystalStorage { get; set; }
+		public int? DeuteriumTank { get; set; }
 
 		// Facilities
-		public int RoboticsFactory { get; set; }
-		public int Shipyard { get; set; }
-		public int ResearchLab { get; set; }
-		public int AllianceDepot { get; set; }
-		public int MissileSilo { get; set; }
-		public int NaniteFactory { get; set; }
-		public int Terraformer { get; set; }
-		public int SpaceDock { get; set; }
-		public int LunarBase { get; set; }
-		public int SensorPhalanx { get; set; }
-		public int JumpGate { get; set; }
+		public int? RoboticsFactory { get; set; }
+		public int? Shipyard { get; set; }
+		public int? ResearchLab { get; set; }
+		public int? AllianceDepot { get; set; }
+		public int? MissileSilo { get; set; }
+		public int? NaniteFactory { get; set; }
+		public int? Terraformer { get; set; }
+		public int? SpaceDock { get; set; }
+		public int? LunarBase { get; set; }
+		public int? SensorPhalanx { get; set; }
+		public int? JumpGate { get; set; }
 
 		// Researches
-		public int EnergyTechnology { get; set; }
-		public int LaserTechnology { get; set; }
-		public int IonTechnology { get; set; }
-		public int HyperspaceTechnology { get; set; }
-		public int PlasmaTechnology { get; set; }
-		public int CombustionDrive { get; set; }
-		public int ImpulseDrive { get; set; }
-		public int HyperspaceDrive { get; set; }
-		public int EspionageTechnology { get; set; }
-		public int ComputerTechnology { get; set; }
-		public int Astrophysics { get; set; }
-		public int IntergalacticResearchNetwork { get; set; }
-		public int GravitonTechnology { get; set; }
-		public int WeaponsTechnology { get; set; }
-		public int ShieldingTechnology { get; set; }
-		public int ArmourTechnology { get; set; }
+		public int? EnergyTechnology { get; set; }
+		public int? LaserTechnology { get; set; }
+		public int? IonTechnology { get; set; }
+		public int? HyperspaceTechnology { get; set; }
+		public int? PlasmaTechnology { get; set; }
+		public int? CombustionDrive { get; set; }
+		public int? ImpulseDrive { get; set; }
+		public int? HyperspaceDrive { get; set; }
+		public int? EspionageTechnology { get; set; }
+		public int? ComputerTechnology { get; set; }
+		public int? Astrophysics { get; set; }
+		public int? IntergalacticResearchNetwork { get; set; }
+		public int? GravitonTechnology { get; set; }
+		public int? WeaponsTechnology { get; set; }
+		public int? ShieldingTechnology { get; set; }
+		public int? ArmourTechnology { get; set; }
 
 		// Defenses
-		public int RocketLauncher { get; set; }
-		public int LightLaser { get; set; }
-		public int HeavyLaser { get; set; }
-		public int GaussCannon { get; set; }
-		public int IonCannon { get; set; }
-		public int PlasmaTurret { get; set; }
-		public int SmallShieldDome { get; set; }
-		public int LargeShieldDome { get; set; }
-		public int AntiBallisticMissiles { get; set; }
-		public int InterplanetaryMissiles { get; set; }
+		public int? RocketLauncher { get; set; }
+		public int? LightLaser { get; set; }
+		public int? HeavyLaser { get; set; }
+		public int? GaussCannon { get; set; }
+		public int? IonCannon { get; set; }
+		public int? PlasmaTurret { get; set; }
+		public int? SmallShieldDome { get; set; }
+		public int? LargeShieldDome { get; set; }
+		public int? AntiBallisticMissiles { get; set; }
+		public int? InterplanetaryMissiles { get; set; }
 
 		// Fleets
-		public int LightFighter { get; set; }
-		public int HeavyFighter { get; set; }
-		public int Cruiser { get; set; }
-		public int Battleship { get; set; }
-		public int Battlecruiser { get; set; }
-		public int Bomber { get; set; }
-		public int Destroyer { get; set; }
-		public int Deathstar { get; set; }
-		public int SmallCargo { get; set; }
-		public int LargeCargo { get; set; }
-		public int ColonyShip { get; set; }
-		public int Recycler { get; set; }
-		public int EspionageProbe { get; set; }
-		public int Crawler { get; set; }
-		public int Reaper { get; set; }
-		public int Pathfinder { get; set; }
+		public int? LightFighter { get; set; }
+		public int? HeavyFighter { get; set; }
+		public int? Cruiser { get; set; }
+		public int? Battleship { get; set; }
+		public int? Battlecruiser { get; set; }
+		public int? Bomber { get; set; }
+		public int? Destroyer { get; set; }
+		public int? Deathstar { get; set; }
+		public int? SmallCargo { get; set; }
+		public int? LargeCargo { get; set; }
+		public int? ColonyShip { get; set; }
+		public int? Recycler { get; set; }
+		public int? EspionageProbe { get; set; }
+		public int? Crawler { get; set; }
+		public int? Reaper { get; set; }
+		public int? Pathfinder { get; set; }
 		public Coordinate Coordinate { get; set; }
 		public EspionageReportType Type { get; set; }
 		public DateTime Date { get; set; }
@@ -957,9 +961,32 @@ namespace Tbot.Model {
 		/// </summary>
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
 		public bool IsDefenceless() {
-			return true;
-			// TODO pepperNG: Fix.
-			// Ships.IsEmpty() && Defences.IsEmpty() && HasDefenceInformation && HasFleetInformation;
+			if (HasDefensesInformation && HasFleetInformation) {
+				return LightFighter == 0
+					&& HeavyFighter == 0
+					&& Cruiser == 0
+					&& Battleship == 0
+					&& Battlecruiser == 0
+					&& Bomber == 0
+					&& Destroyer == 0
+					&& Deathstar == 0
+					&& SmallCargo == 0
+					&& LargeCargo == 0
+					&& ColonyShip == 0
+					&& Recycler == 0
+					&& Crawler == 0
+					&& Reaper == 0
+					&& Pathfinder == 0
+					&& RocketLauncher == 0
+					&& LightLaser == 0
+					&& HeavyLaser == 0
+					&& GaussCannon == 0
+					&& IonCannon == 0
+					&& PlasmaTurret == 0
+					&& SmallShieldDome == 0
+					&& LargeShieldDome == 0;
+			}
+			return false;
 		}
 
 		/// <summary>
@@ -983,7 +1010,7 @@ namespace Tbot.Model {
 		/// <returns>Returns the possible loot.</returns>
 		public Resources Loot(CharacterClass playerClass) {
 			float ratio = PlunderRatio(playerClass);
-			return new Resources { Deuterium = (long) (Resources.Deuterium * ratio), Crystal = (long) (Resources.Crystal * ratio), Metal = (long) (Resources.Metal * ratio) };
+			return new Resources { Deuterium = (long) (Deuterium * ratio), Crystal = (long) (Crystal * ratio), Metal = (long) (Metal * ratio) };
 		}
 
 		public bool HasCoords(Coordinate coords) {
