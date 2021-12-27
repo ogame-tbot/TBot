@@ -1492,6 +1492,8 @@ namespace Tbot {
 					// If not enough slots are free, the farmer cannot run.
 					slots = UpdateSlots();
 					int slotsToLeaveFree = (int) settings.Brain.AutoFarm.SlotsToLeaveFree;
+					int numProbes = (int) settings.Brain.AutoFarm.NumProbes;
+
 					if (slots.Free > slotsToLeaveFree) {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets");
 
@@ -1562,32 +1564,6 @@ namespace Tbot {
 										}
 
 										FarmTarget target = farmTargets.Last();
-										// Check if slots available to send probes.
-										// TODO Improve: First check if probes available on nearest celestial
-										//		 - If NOT: Wait for probes if incoming, no need to check slots after. Otherwise proceed to next celestial.
-										//		 - If so: Check if slot free, otherwise wait for probes if incoming.
-										slots = UpdateSlots();
-										if (slots.Free <= slotsToLeaveFree) {
-											// Check if incoming probes, wait for first probes to come back.
-											fleets = UpdateFleets();
-											Fleet firstReturning = Helpers.GetFirstReturningEspionage(fleets);
-
-											if (firstReturning != null) {
-												int interval = (int) ((1000 * firstReturning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
-												Thread.Sleep(interval);
-											} else {
-												// If no incoming probes, we shouldn't have started scanning galaxy. Abort.
-												Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available and no probes returning!");
-												return;
-											}
-										}
-
-										slots = UpdateSlots();
-										if (slots.Free <= slotsToLeaveFree) {
-											Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available!");
-											return;
-										}
 
 										// Send spy probe from closest celestial with available probes to last added target.
 										List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
@@ -1596,35 +1572,44 @@ namespace Tbot {
 											Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
 
-											// Check if probes available.
-											if ((int) tempCelestial.Ships.EspionageProbe >= (int) settings.Brain.AutoFarm.NumProbes) {
-												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending probes {settings.Brain.AutoFarm.NumProbes} to {target.Coordinate.ToString()}.");
+											slots = UpdateSlots();
+											fleets = UpdateFleets();
 
-												Ships ships = new();
-												ships.Add(Buildables.EspionageProbe, (int) settings.Brain.AutoFarm.NumProbes);
-												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} from {closest.ToString()} to {target.ToString()}");
-												SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
-												probesSent = true;
-											} else {
-												// No probes available, check if probes are incoming and wait for them.
-												fleets = UpdateFleets();
+											// Check if probes and slots are available: If not, wait for them.
+											if ((int) tempCelestial.Ships.EspionageProbe < numProbes) {
+												// Wait for probes to come back to current celestial. If no on-route, continue to next iteration.
 												Fleet firstReturning = Helpers.GetFirstReturningEspionage(tempCelestial.Coordinate, fleets);
 												if (firstReturning != null) {
 													int interval = (int) ((1000 * firstReturning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
 													Thread.Sleep(interval);
-
-													Ships ships = new();
-													ships.Add(Buildables.EspionageProbe, (int) settings.Brain.AutoFarm.NumProbes);
-													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} from {closest.ToString()} to {target.ToString()}");
-													SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
-													probesSent = true;
-
 												} else {
 													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{tempCelestial.Coordinate.ToString()}, closest to {target.Coordinate.ToString()}, has not enough probes available!");
+													continue;
+												}
+												// TODO future: Check if fleet slots available, if so, build additional probes.
+											}
+											if (slots.Free <= slotsToLeaveFree) {
+												// No slots available, wait for first fleet of any mission type to return.
+												if (fleets.Any()) {
+													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Out of fleet slots. Waiting for fleet to return...");
+													Thread.Sleep(interval);
+												} else {
+													Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available and no fleets returning!");
+													return;
 												}
 											}
+
+											// Send probes.
+											Ships ships = new();
+											ships.Add(Buildables.EspionageProbe, (int) settings.Brain.AutoFarm.NumProbes);
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} from {closest.ToString()} to {target.ToString()}");
+											SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
+											probesSent = true;
+											break;
 										}
+
 										if (!probesSent) {
 											Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to send probes to {target.Coordinate.ToString()}, not enough probes available!");
 											return;
@@ -1647,10 +1632,13 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse scan range");
 						}
 
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Farmer: Start attacking of found inactives.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Farmer: Start processing espionage reports of found inactives.");
 
-						// Attacking.
+						// TODO future: Concurrently read espionage reports. Whenever minimum target resources is exceeded, attack. Proceed with scanning after fleet slots open up.
 
+						// Process reports.
+
+						// Send attacks.
 						fleets = UpdateFleets();
 
 					} else {
