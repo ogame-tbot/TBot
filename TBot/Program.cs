@@ -191,6 +191,10 @@ namespace Tbot {
 						if (currentValue)
 							StopHarvest();
 						return false;
+					case Feature.Colonize:
+						if (currentValue)
+							StopColonize();
+						return false;
 					case Feature.FleetScheduler:
 						if (currentValue)
 							StopFleetScheduler();
@@ -275,6 +279,15 @@ namespace Tbot {
 				case Feature.Harvest:
 					if ((bool) settings.AutoHarvest.Active) {
 						InitializeHarvest();
+						return true;
+					} else {
+						if (currentValue)
+							StopHarvest();
+						return false;
+					}
+				case Feature.Colonize:
+					if ((bool) settings.AutoColonize.Active) {
+						InitializeColonize();
 						return true;
 					} else {
 						if (currentValue)
@@ -719,6 +732,20 @@ namespace Tbot {
 			if (timers.TryGetValue("HarvestTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("HarvestTimer");
+		}
+
+		private static void InitializeColonize() {
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing colonize...");
+			StopColonize(false);
+			timers.Add("HarvestTimer", new Timer(HandleColonize, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+		}
+
+		private static void StopColonize(bool echo = true) {
+			if (echo)
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping colonize...");
+			if (timers.TryGetValue("ColonizeTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("ColonizeTimer");
 		}
 
 		private static void InitializeSleepMode() {
@@ -2759,6 +2786,102 @@ namespace Tbot {
 					xaSem[Feature.Harvest].Release();
 			}
 
+		}
+		private static void HandleColonize(object state) {
+			try {
+				// Wait for the thread semaphore to avoid the concurrency with itself
+				xaSem[Feature.Colonize].WaitOne();
+
+				if (isSleeping) {
+					Helpers.WriteLog(LogType.Info, LogSender.Colonize, "Skipping: Sleep Mode Active!");
+					xaSem[Feature.Colonize].Release();
+					return;
+				}
+
+				if ((bool) settings.AutoColonize.Active) {
+					int interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+					Helpers.WriteLog(LogType.Info, LogSender.Colonize, "Checking if a new planet is needed...");
+
+					researches = UpdateResearches();
+					var maxPlanets = Helpers.CalcMaxPlanets(researches);
+					var currentPlanets = celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Count();
+					var slotsToLeaveFree = (int) (settings.AutoColonize.SlotsToLeaveFree ?? 0);
+					if (currentPlanets + slotsToLeaveFree < maxPlanets) {
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, "A new planet is needed.");
+						Coordinate originCoords = new(
+							(int) settings.Brain.AutoColonize.Origin.Galaxy,
+							(int) settings.Brain.AutoColonize.Origin.System,
+							(int) settings.Brain.AutoColonize.Origin.Position,
+							Enum.Parse<Celestials>((string) settings.Brain.AutoColonize.Origin.Type)
+						);
+						Celestial origin = celestials.Single(c => c.HasCoords(originCoords));
+						UpdatePlanet(origin, UpdateType.Ships);
+						UpdatePlanet(origin, UpdateType.Productions);
+
+						if (origin.Ships.ColonyShip > 0) {
+							List<Coordinate> targets = new();
+							foreach (var t in settings.AutoColonize.Targets) {
+								Coordinate targetCoords = new(
+									(int) t.Galaxy,
+									(int) t.System,
+									(int) t.Position,
+									Celestials.Planet
+								);
+								targets.Add(targetCoords);
+							}
+							List<Coordinate> filteredTargets = targets;
+							foreach (Coordinate t in targets) {
+								if (celestials.Any(c => c.HasCoords(t))) {
+									filteredTargets.Remove(t);
+								}
+
+								GalaxyInfo galaxy = ogamedService.GetGalaxyInfo(t);
+								if (galaxy.Planets.Any(p => p.HasCoords(t))) {
+									filteredTargets.Remove(t);
+								}
+							}
+							if (filteredTargets.Count > 0) {
+								Coordinate target = filteredTargets.First();
+								Ships ships = new() { ColonyShip = 1 };
+								SendFleet(origin, ships, target, Missions.Colonize, Speeds.HundredPercent);
+							} else {
+								Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No valid coord in target list.");
+							}
+						} else if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
+							interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+						} else {
+							ogamedService.BuildShips(origin, Buildables.ColonyShip, 1);
+							interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+						}
+					} else {
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No new planet is needed.");
+					}
+
+					DateTime time = GetDateTime();
+					if (interval <= 0) {
+						interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+					}
+
+					DateTime newTime = time.AddMilliseconds(interval);
+					timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+					Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime}");
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Warning, LogSender.Harvest, $"HandleColonize exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Harvest, $"Stacktrace: {e.StackTrace}");
+				int interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+				DateTime time = GetDateTime();
+				if (interval <= 0)
+					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+				DateTime newTime = time.AddMilliseconds(interval);
+				timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+				Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime}");
+				UpdateTitle();
+			} finally {
+				if (!isSleeping) {
+					xaSem[Feature.Colonize].Release();
+				}
+			}
 		}
 
 		private static void ScheduleFleet(object scheduledFleet) {

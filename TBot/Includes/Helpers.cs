@@ -25,6 +25,7 @@ namespace Tbot.Includes {
 					LogSender.Expeditions => ConsoleColor.Cyan,
 					LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
 					LogSender.Harvest => ConsoleColor.Green,
+					LogSender.Colonize => ConsoleColor.DarkRed,
 					LogSender.SleepMode => ConsoleColor.DarkBlue,
 					LogSender.Tbot => ConsoleColor.DarkYellow,
 					_ => ConsoleColor.Gray
@@ -2017,6 +2018,9 @@ namespace Tbot.Includes {
 
 		public static int CalcMaxPlanets(int astrophysics) {
 			return (int) Math.Round((float) ((astrophysics + 3) / 2), 0, MidpointRounding.ToZero);
+		}
+		public static int CalcMaxPlanets(Researches researches) {
+			return researches == null ? 1 : CalcMaxPlanets(researches.Astrophysics);
 		}
 	}
 }
