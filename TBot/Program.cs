@@ -329,6 +329,7 @@ namespace Tbot {
 			features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
+			features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
 		}
 
 		private static void ReadSettings() {
