@@ -122,6 +122,7 @@ namespace Tbot {
 					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
 					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
 					xaSem[Feature.Harvest] = new Semaphore(1, 1);
+					xaSem[Feature.Colonize] = new Semaphore(1, 1);
 					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
 					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
 
@@ -134,6 +135,7 @@ namespace Tbot {
 					features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
+					features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
