@@ -665,12 +665,12 @@ namespace Tbot.Includes {
 
 		private static int CalcGalaxyDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, bool donutGalaxy = true) {
 			if (!donutGalaxy)
-				return 2000 * Math.Abs(origin.Galaxy - destination.Galaxy);
+				return 20000 * Math.Abs(origin.Galaxy - destination.Galaxy);
 
 			if (origin.Galaxy > destination.Galaxy)
-				return 2000 * Math.Min((origin.Galaxy - destination.Galaxy), ((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
+				return 20000 * Math.Min((origin.Galaxy - destination.Galaxy), ((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
 
-			return 2000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
+			return 20000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
 		}
 
 		private static int CalcSystemDistance(Coordinate origin, Coordinate destination, int systemsNumber, bool donutSystem = true) {
