@@ -946,7 +946,7 @@ namespace Tbot.Model {
 		}
 
 		/// <summary>
-		/// Get whether or not the scanned planet has any defence (either ships ore defence) against an attack.
+		/// Get whether or not the scanned planet has any defence (either ships or defence) against an attack.
 		/// </summary>
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
 		public bool IsDefenceless() {
@@ -1017,7 +1017,7 @@ namespace Tbot.Model {
 	}
 
 	/// <summary>
-	/// Farming target found during a galaxy scan.
+	/// Planet that is under consideration to be targetted for farming.
 	/// </summary>
 	public class FarmTarget {
 		public FarmTarget(Coordinate coordinate, Planet planet, FarmState farmState = FarmState.Idle, EspionageReport report = null) {
