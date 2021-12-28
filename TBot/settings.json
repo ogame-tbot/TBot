@@ -310,6 +310,30 @@
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
+	"AutoColonize": {
+		"Active": true,
+		"Origin": {
+			"Galaxy": 5,
+			"System": 64,
+			"Position": 8,
+			"Type": "Planet"
+		},
+		"SlotsToLeaveFree": 0,
+		"Targets": [
+			{
+				"Galaxy": 6,
+				"System": 1,
+				"Position": 8
+			},
+			{
+				"Galaxy": 6,
+				"System": 1,
+				"Position": 9
+			}
+		],
+		"CheckIntervalMin": 30,
+		"CheckIntervalMax": 60
+	},
 	"TelegramMessenger": {
 		"Active": false,
 		"API": "",
