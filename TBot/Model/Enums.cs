@@ -207,6 +207,7 @@ namespace Tbot.Model {
 	}
 
 	public enum FarmState {
+		Idle,
 		/// No espionage probes sent yet, pending.
 		ProbesPending,
 		/// Espionage probes are sent, no report received yet.

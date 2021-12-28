@@ -1033,7 +1033,7 @@ namespace Tbot.Model {
 	/// Farming target found during a galaxy scan.
 	/// </summary>
 	public class FarmTarget {
-		public FarmTarget(Coordinate coordinate, Planet planet, FarmState farmState = FarmState.NotSuitable, EspionageReport report = null) {
+		public FarmTarget(Coordinate coordinate, Planet planet, FarmState farmState = FarmState.Idle, EspionageReport report = null) {
 			Coordinate = coordinate;
 			Planet = planet;
 			State = farmState;

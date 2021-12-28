@@ -1524,15 +1524,18 @@ namespace Tbot {
 					int slotsToLeaveFree = (int) settings.Brain.AutoFarm.SlotsToLeaveFree;
 					int numProbes = (int) settings.Brain.AutoFarm.NumProbes;
 
-					// TODO: Check farmTargets - prune all reports older than 3h: set state to ProbesPending.
-					// TODO: Check farmTargets - prune all reports of state AttackSent: no longer valid.
-
 					if (slots.Free > slotsToLeaveFree) {
 						try {
-							// Delete all old espionage reports.
-							if (ogamedService.DeleteAllEspionageReports()) {
-								// TODO: Verify this is needed at this point. Do we want / need to keep the reports, or delete them when read?
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Old espionage reports deleted.");
+							// Prune all reports older than KeepReportFor and all reports of state AttackSent: information no longer actual.
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Removing old data from farm targets");
+							var newTime = GetDateTime();
+							var removeReports = farmTargets.Where(t => t.State == FarmState.AttackSent || (t.Report != null && DateTime.Compare(t.Report.Date.AddMinutes((double) settings.Brain.AutoFarm.KeepReportFor), GetDateTime()) < 0)).ToList();
+							foreach (var remove in removeReports) {
+								var updateReport = remove;
+								updateReport.State = FarmState.ProbesPending;
+								updateReport.Report = null;
+								farmTargets.Remove(remove);
+								farmTargets.Add(updateReport);
 							}
 
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets");
@@ -1579,28 +1582,33 @@ namespace Tbot {
 											return;
 										}
 
+										FarmTarget target = new(planet.Coordinate, planet, FarmState.ProbesPending);
+
 										if (!exists.Any()) {
 											// Does not exist, add to farmTargets list, set state to probes pending.
-											farmTargets.Add(new(planet.Coordinate, planet, FarmState.ProbesPending));
+											farmTargets.Add(target);
 										} else {
-											// Already exists, update farmTargets list with updated planet, set state to probes pending.
-
+											// Already exists, update farmTargets list with updated planet.
 											var farmTarget = exists.First();
-											var newFarmTarget = farmTarget;
+											target = farmTarget;
+											target.Planet = planet;
 
-											newFarmTarget.Planet = planet;
-
-											// TODO: See which other state needs to be retained.
-											if (farmTarget.State != FarmState.ProbesRequired && farmTarget.State != FarmState.FailedProbesRequired)
-												newFarmTarget.State = FarmState.ProbesPending;
+											if (farmTarget.State == FarmState.Idle)
+												target.State = FarmState.ProbesPending;
 
 											farmTargets.Remove(farmTarget);
-											farmTargets.Add(newFarmTarget);
-										}
+											farmTargets.Add(target);
 
-										// TODO: define target earlier, add to farmTargets from defined target instead of getting Last() after adding.
-										// TODO: skip probing for all where reports are available and status is probesPending.
-										FarmTarget target = farmTargets.Last();
+											// If target marked not suitable based on a non-expired espionage report, skip probing.
+											if (farmTarget.State == FarmState.NotSuitable && farmTarget.Report != null) {
+												continue;
+											}
+
+											// If probes are already sent or if an attack is pending, skip probing.
+											if (farmTarget.State == FarmState.ProbesSent || farmTarget.State == FarmState.AttackPending) {
+												continue;
+											}
+										}
 
 										// Send spy probe from closest celestial with available probes to last added target.
 										List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
@@ -1613,9 +1621,9 @@ namespace Tbot {
 											fleets = UpdateFleets();
 
 											if (target.State == FarmState.ProbesRequired)
-												numProbes *= 5;
+												numProbes *= 3;
 											if (target.State == FarmState.FailedProbesRequired)
-												numProbes *= 25;
+												numProbes *= 9;
 
 											// Check if probes and slots are available: If not, wait for them.
 											if ((int) tempCelestial.Ships.EspionageProbe < numProbes) {
@@ -1690,10 +1698,20 @@ namespace Tbot {
 
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Processing espionage reports of found inactives...");
 
-						// TODO future: Concurrently read espionage reports. Whenever minimum target resources is exceeded, attack. Proceed with scanning after fleet slots open up.
+						// TODO Future: Concurrently read espionage reports. Whenever minimum target resources is exceeded, attack. Proceed with scanning after fleet slots open up.
+						// TODO Future: Check if probes were destroyed, blacklist target if so to avoid additional kills.
 						// Process reports.
-						foreach (var summary in ogamedService.GetEspionageReports()) {
-							var report = ogamedService.GetEspionageReport(summary.Target);
+						List<EspionageReportSummary> summaryReports = ogamedService.GetEspionageReports();
+						foreach (var summary in summaryReports) {
+							if (summary.Type == EspionageReportType.Action)
+								continue;
+
+							var report = ogamedService.GetEspionageReport(summary.ID);
+							if (DateTime.Compare(report.Date.AddMinutes((double) settings.Brain.AutoFarm.KeepReportFor), GetDateTime()) < 0) {
+								ogamedService.DeleteReport(report.ID);
+								continue;
+							}
+
 							var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
 							if (matchingTarget.Count() == 0) {
 								// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
@@ -1703,23 +1721,33 @@ namespace Tbot {
 								continue;
 							}
 
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{report.Coordinate} report processed, loot: {report.Loot(userInfo.Class)}");
-
 							var target = matchingTarget.First();
-
 							var newFarmTarget = target;
+
+							if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
+								// Target has a more recent report. Delete report.
+								ogamedService.DeleteReport(report.ID);
+								continue;
+							}
+
 							newFarmTarget.Report = report;
 
-							if (!report.HasFleetInformation || !report.HasDefensesInformation) {
-								if (target.State == FarmState.ProbesRequired)
-									newFarmTarget.State = FarmState.FailedProbesRequired;
-								else
-									newFarmTarget.State = FarmState.ProbesRequired;
-							} else if (settings.Brain.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.Brain.AutoFarm.MinimumResources
+							if (settings.Brain.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.Brain.AutoFarm.MinimumResources
 								|| settings.Brain.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.Brain.AutoFarm.MinimumResources
 								|| settings.Brain.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.Brain.AutoFarm.MinimumResources
 								|| (settings.Brain.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.Brain.AutoFarm.MinimumResources)) {
-								newFarmTarget.State = FarmState.AttackPending;
+								if (!report.HasFleetInformation || !report.HasDefensesInformation) {
+									if (target.State == FarmState.ProbesRequired)
+										newFarmTarget.State = FarmState.FailedProbesRequired;
+									else
+										newFarmTarget.State = FarmState.ProbesRequired;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+								} else if (report.IsDefenceless()) {
+									newFarmTarget.State = FarmState.AttackPending;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+								} else {
+									newFarmTarget.State = FarmState.NotSuitable;
+								}
 							} else {
 								newFarmTarget.State = FarmState.NotSuitable;
 							}
@@ -1728,8 +1756,12 @@ namespace Tbot {
 							farmTargets.Add(newFarmTarget);
 						}
 
+						if (ogamedService.DeleteAllEspionageReports())
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Parsed espionage reports deleted from message inbox.");
+
 						// Send attacks.
 						fleets = UpdateFleets();
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Attacking suitable farm targets...");
 
 						List<FarmTarget> attackTargets;
 						if (settings.Brain.AutoFarm.PreferedResource == "Metal")
@@ -1747,7 +1779,7 @@ namespace Tbot {
 							cargoShip = Buildables.LargeCargo;
 						}
 						if (cargoShip == Buildables.Null) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: primary ship is Null");
+							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoShip is Null");
 							return;
 						}
 
@@ -1764,43 +1796,59 @@ namespace Tbot {
 								slots = UpdateSlots();
 								fleets = UpdateFleets();
 
-								if (cargoShip == Buildables.SmallCargo && tempCelestial.Ships.SmallCargo < numCargo || cargoShip == Buildables.LargeCargo && tempCelestial.Ships.LargeCargo < numCargo)
-									numCargo = settings.Brain.AutoFarm.MinCargosToSend;
+								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 
-								if (cargoShip == Buildables.SmallCargo && tempCelestial.Ships.SmallCargo >= numCargo || cargoShip == Buildables.LargeCargo && tempCelestial.Ships.LargeCargo >= numCargo) {
-									if (slots.Free <= slotsToLeaveFree) {
-										// No slots free, wait for first fleet to come back.
-										if (fleets.Any()) {
-											int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Out of fleet slots. Waiting for fleet to return...");
-											Thread.Sleep(interval);
-										} else {
-											Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available and no fleets returning!");
-											return;
-										}
-									}
-
-									slots = UpdateSlots();
-									if (slots.Free > slotsToLeaveFree) {
-										tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
-
-										Ships ships = new();
-										ships.Add(cargoShip, numCargo);
-										SendFleet(tempCelestial, ships, target.Coordinate, Missions.Attack, Speeds.HundredPercent);
-
-										newTarget.State = FarmState.AttackSent;
+								if (cargoShip == Buildables.SmallCargo && tempCelestial.Ships.SmallCargo < numCargo) {
+									if (tempCelestial.Ships.SmallCargo >= settings.Brain.AutoFarm.MinCargosToSend) {
+										numCargo = tempCelestial.Ships.SmallCargo;
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient small cargo ships on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
 										break;
 									}
+								}
+								if (cargoShip == Buildables.LargeCargo && tempCelestial.Ships.LargeCargo < numCargo) {
+									if (tempCelestial.Ships.LargeCargo >= settings.Brain.AutoFarm.MinCargosToSend) {
+										numCargo = tempCelestial.Ships.LargeCargo;
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient large cargo ships on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
+										break;
+									}
+								}
 
-								} else {
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient cargo ships on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
+								if (slots.Free <= slotsToLeaveFree) {
+									// No slots free, wait for first fleet to come back.
+									if (fleets.Any()) {
+										// TODO Future: Set a configurable maximum wait time.
+										int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+										if (interval < 10 * 60 * 1000) {
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, "Out of fleet slots. Waiting for fleet to return...");
+											Thread.Sleep(interval);
+										} else {
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, "No available fleet slots.");
+											return;
+										}
+									} else {
+										Helpers.WriteLog(LogType.Error, LogSender.Brain, "Error: No fleet slots available and no fleets returning!");
+										return;
+									}
+								}
+
+								slots = UpdateSlots();
+								if (slots.Free > slotsToLeaveFree) {
+									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+
+									Ships ships = new();
+									ships.Add(cargoShip, numCargo);
+									SendFleet(tempCelestial, ships, target.Coordinate, Missions.Attack, Speeds.HundredPercent);
+
+									newTarget.State = FarmState.AttackSent;
 									break;
 								}
 							}
 
 							if (newTarget.State != FarmState.AttackSent) {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Unable to attack {target.Coordinate}.");
-								break;
+								return;
 							}
 
 							// Update farmTarget list with updated farm state.
