@@ -962,29 +962,27 @@ namespace Tbot.Model {
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
 		public bool IsDefenceless() {
 			if (HasDefensesInformation && HasFleetInformation) {
-				return LightFighter == 0
-					&& HeavyFighter == 0
-					&& Cruiser == 0
-					&& Battleship == 0
-					&& Battlecruiser == 0
-					&& Bomber == 0
-					&& Destroyer == 0
-					&& Deathstar == 0
-					&& SmallCargo == 0
-					&& LargeCargo == 0
-					&& ColonyShip == 0
-					&& Recycler == 0
-					&& Crawler == 0
-					&& Reaper == 0
-					&& Pathfinder == 0
-					&& RocketLauncher == 0
-					&& LightLaser == 0
-					&& HeavyLaser == 0
-					&& GaussCannon == 0
-					&& IonCannon == 0
-					&& PlasmaTurret == 0
-					&& SmallShieldDome == 0
-					&& LargeShieldDome == 0;
+				return LightFighter == null
+					&& HeavyFighter == null
+					&& Cruiser == null
+					&& Battleship == null
+					&& Battlecruiser == null
+					&& Bomber == null
+					&& Destroyer == null
+					&& Deathstar == null
+					&& SmallCargo == null
+					&& LargeCargo == null
+					&& Recycler == null
+					&& Reaper == null
+					&& Pathfinder == null
+					&& RocketLauncher == null
+					&& LightLaser == null
+					&& HeavyLaser == null
+					&& GaussCannon == null
+					&& IonCannon == null
+					&& PlasmaTurret == null
+					&& SmallShieldDome == null
+					&& LargeShieldDome == null;
 			}
 			return false;
 		}
