@@ -382,18 +382,7 @@ namespace Tbot.Model {
 		public long LargeShieldDome { get; set; }
 		public long AntiBallisticMissiles { get; set; }
 		public long InterplanetaryMissiles { get; set; }
-		public bool IsEmpty() {
-			return RocketLauncher == 0
-				&& LightLaser == 0
-				&& HeavyLaser == 0
-				&& GaussCannon == 0
-				&& IonCannon == 0
-				&& PlasmaTurret == 0
-				&& SmallShieldDome == 0
-				&& LargeShieldDome == 0
-				&& AntiBallisticMissiles == 0
-				&& InterplanetaryMissiles == 0;
-		}
+
 		public int GetAmount(Buildables defence) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {

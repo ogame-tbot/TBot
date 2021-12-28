@@ -1536,7 +1536,7 @@ namespace Tbot {
 								farmTargets.Add(updateReport);
 							}
 
-							/// Galaxy scanning & target probing.
+							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets...");
 							foreach (var origin in settings.Brain.AutoFarm.ScanRange) {
 								int galaxy		= (int) origin.Galaxy;
