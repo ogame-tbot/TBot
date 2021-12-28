@@ -82,6 +82,42 @@
 	},
 	"Brain": {
 		"Active": true,
+		"AutoFarm": {
+			"Active": true,
+			"ExcludeMoons": true,
+			"ScanRange": [
+				{
+					"Galaxy": 2,
+					"StartSystem": 360,
+					"EndSystem": 420
+				}
+			],
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 3,
+					"Planet": 3
+				}
+			],
+			"KeepReportFor": 180,
+			"NumProbes": 10,
+			"Origin": [
+				{
+					"Galaxy": 2,
+					"System": 396,
+					"Position": 4,
+					"Type": "Planet"
+				}
+			],
+			"CargoType": "LargeCargo",
+			"MinCargosToKeep": 0,
+			"MinCargosToSend": 2,
+			"MinimumResources": 100000,
+			"PreferedResource": "",
+			"SlotsToLeaveFree": 1,
+			"CheckIntervalMin": 2,
+			"CheckIntervalMax": 10
+		},
 		"AutoMine": {
 			"Active": true,
 			"MaxMetalMine": 40,
