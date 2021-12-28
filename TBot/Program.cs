@@ -1538,10 +1538,10 @@ namespace Tbot {
 
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets...");
-							foreach (var origin in settings.Brain.AutoFarm.ScanRange) {
-								int galaxy		= (int) origin.Galaxy;
-								int startSystem = (int) origin.StartSystem;
-								int endSystem	= (int) origin.EndSystem;
+							foreach (var range in settings.Brain.AutoFarm.ScanRange) {
+								int galaxy		= (int) range.Galaxy;
+								int startSystem = (int) range.StartSystem;
+								int endSystem	= (int) range.EndSystem;
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
@@ -1560,6 +1560,8 @@ namespace Tbot {
 										continue;
 
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
+
+									// TODO: Add moons to targets if settings.Brain.AutoFarm.ExcludeMoons == false.
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Planet planet in galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation)) {
@@ -1613,11 +1615,44 @@ namespace Tbot {
 											}
 										}
 
-										// Send spy probe from closest celestial with available probes to last added target.
-										List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
+										// Send spy probe from closest celestial with available probes to the target.
+										List<Celestial> closestCelestials = new();
+										if (settings.Brain.AutoFarm.Origin.Length > 0) {
+											try {
+												List<Celestial> tempCelestials = new();
+												foreach (var origin in settings.Brain.AutoFarm.Origin) {
+													Coordinate customOriginCoords = new(
+														(int) origin.Galaxy,
+														(int) origin.System,
+														(int) origin.Position,
+														Enum.Parse<Celestials>(origin.Type.ToString())
+													);
+													Celestial customOrigin = celestials
+														.Unique()
+														.Single(planet => planet.HasCoords(customOriginCoords));
+													tempCelestials.Add(customOrigin);
+												}
+												closestCelestials = tempCelestials
+													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData))
+													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+											} catch (Exception e) {
+												Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Exception: {e.Message}");
+												Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+												Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom origin");
+
+												closestCelestials = celestials
+													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData))
+													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+											}
+										} else {
+											closestCelestials = celestials
+												.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData))
+												.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+										}
+
 										foreach (var closest in closestCelestials) {
-											Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
+											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 											slots = UpdateSlots();
 											fleets = UpdateFleets();
