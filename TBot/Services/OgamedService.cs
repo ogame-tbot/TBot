@@ -827,6 +827,20 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
+		public bool DeleteAllEspionageReports() {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/delete-all-espionage-reports",
+					Method = Method.POST
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
 		public List<Model.EspionageReportSummary> GetEspionageReports() {
 			var request = new RestRequest {
 				Resource = "/bot/espionage-report",

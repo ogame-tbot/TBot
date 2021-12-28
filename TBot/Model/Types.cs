@@ -1043,5 +1043,11 @@ namespace Tbot.Model {
 		public Planet Planet { get; set; }
 		public FarmState State { get; set; }
 		public EspionageReport Report { get; set; }
+		public bool HasCoords(Coordinate coords) {
+			return coords.Galaxy == Coordinate.Galaxy
+				&& coords.System == Coordinate.System
+				&& coords.Position == Coordinate.Position
+				&& coords.Type == Coordinate.Type;
+		}
 	}
 }
