@@ -1990,20 +1990,36 @@ namespace Tbot.Includes {
 				return null;
 		}
 
-		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
+		public static List<Fleet> GetReturningEspionages(List<Fleet> fleets) {
 			var celestialEspionages = fleets.Where(f => f.Mission == Missions.Spy);
 			if (celestialEspionages.Any()) {
+				return celestialEspionages.ToList();
+			} else
+				return null;
+		}
+
+		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
+			var celestialEspionages = GetReturningEspionages(fleets);
+			if (celestialEspionages != null) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();
 			} else
 				return null;
 		}
 
-		public static Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets) {
+		public static List<Fleet> GetReturningEspionages(Coordinate origin, List<Fleet> fleets) {
 			var celestialEspionages = fleets
 				.Where(f => f.Origin.IsSame(origin))
 				.Where(f => f.Mission == Missions.Spy);
 			if (celestialEspionages.Any()) {
+				return celestialEspionages.ToList();
+			} else
+				return null;
+		}
+
+		public static Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets) {
+			var celestialEspionages = GetReturningEspionages(origin, fleets);
+			if (celestialEspionages != null) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();
 			} else

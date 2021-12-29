@@ -1665,9 +1665,6 @@ namespace Tbot {
 											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
-											slots = UpdateSlots();
-											fleets = UpdateFleets();
-
 											int neededProbes = (int) settings.Brain.AutoFarm.NumProbes;
 											if (target.State == FarmState.ProbesRequired)
 												neededProbes *= 3;
@@ -1677,18 +1674,37 @@ namespace Tbot {
 											// Check if probes and slots are available: If not, wait for them.
 											if ((int) tempCelestial.Ships.EspionageProbe < neededProbes) {
 												// Wait for probes to come back to current celestial. If no on-route, continue to next iteration.
-												// TODO BUG: Check needed to see number of probes coming back. Should wait until (accumulated) fleets containing sufficient probes return.
 												Fleet returning = Helpers.GetFirstReturningEspionage(tempCelestial.Coordinate, fleets);
-												if (returning != null) {
+												if (returning != null && returning.Ships.EspionageProbe >= neededProbes) {
 													int interval = (int) ((1000 * returning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
 													Thread.Sleep(interval);
-												} else {
+												}
+												// If neededProbes is greater than the number of probes returning in first espionage
+												// wait until enough fleets return 
+												else if (returning != null && returning.Ships.EspionageProbe < neededProbes) {
+													fleets = UpdateFleets();
+													var returningFleets = Helpers.GetReturningEspionages(tempCelestial.Coordinate, fleets)
+														.OrderBy(f => f.BackIn)
+														.ToArray();
+													long probesCount = 0;
+													for (int i = 0; i <= returningFleets.Length; i++) {
+														probesCount += returningFleets[i].Ships.EspionageProbe;
+														if (probesCount >= neededProbes) {
+															int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+															Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
+															Thread.Sleep(interval);
+															break;
+														}
+													}
+												}
+												else {
 													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {tempCelestial.Coordinate.ToString()}, insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
 													continue;
 												}
 											}
 
+											fleets = UpdateFleets();
 											slots = UpdateSlots();
 
 											if ((int) slots.Free <= slotsToLeaveFree) {
