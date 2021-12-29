@@ -26,6 +26,7 @@ namespace Tbot.Includes {
 					LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
 					LogSender.Harvest => ConsoleColor.Green,
 					LogSender.Colonize => ConsoleColor.DarkRed,
+					LogSender.AutoFarm => ConsoleColor.DarkCyan,
 					LogSender.SleepMode => ConsoleColor.DarkBlue,
 					LogSender.Tbot => ConsoleColor.DarkYellow,
 					_ => ConsoleColor.Gray

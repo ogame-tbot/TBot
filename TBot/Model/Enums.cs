@@ -240,7 +240,8 @@ namespace Tbot.Model {
 		Harvest,
 		FleetScheduler,
 		SleepMode,
-		Colonize
+		Colonize,
+		AutoFarm
 	}
 
 	public enum Feature {
@@ -256,6 +257,6 @@ namespace Tbot.Model {
 		SleepMode = 9,
 		BrainAutoResearch = 10,
 		Colonize = 11,
-		BrainAutoFarm = 12
+		AutoFarm = 12
 	}
 }
