@@ -3,11 +3,18 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Tbot.Model {
-	public enum Classes {
+	public enum CharacterClass {
 		NoClass = 0,
 		Collector = 1,
 		General = 2,
 		Discoverer = 3
+	}
+
+	public enum AllianceClass {
+		NoClass = 0,
+		Warrior = 1,
+		Trader = 2,
+		Researcher = 3
 	}
 
 	public enum Celestials {
@@ -194,6 +201,30 @@ namespace Tbot.Model {
 		Debris
 	}
 
+	public enum EspionageReportType {
+		Action = 0,
+		Report = 1
+	}
+
+	public enum FarmState {
+		/// Target listed, no action taken or to be taken.
+		Idle,
+		/// Espionage probes are to be sent to this target.
+		ProbesPending,
+		/// Espionage probes are sent, no report received yet.
+		ProbesSent,
+		/// Additional espionage probes are required for more info.
+		ProbesRequired,
+		/// Additional espionage probes were sent, but insufficient, more required.
+		FailedProbesRequired,
+		/// Suitable target detected, attack is pending.
+		AttackPending,
+		/// Suitable target detected, attack is ongoing.
+		AttackSent,
+		/// Target not suitable (insufficient resources / too much defense / insufficicent information available).
+		NotSuitable
+	}
+
 	public enum LogType {
 		Info,
 		Debug,
@@ -208,7 +239,9 @@ namespace Tbot.Model {
 		Expeditions,
 		Harvest,
 		FleetScheduler,
-		SleepMode
+		SleepMode,
+		Colonize,
+		AutoFarm
 	}
 
 	public enum Feature {
@@ -223,5 +256,7 @@ namespace Tbot.Model {
 		FleetScheduler = 8,
 		SleepMode = 9,
 		BrainAutoResearch = 10,
+		Colonize = 11,
+		AutoFarm = 12
 	}
 }

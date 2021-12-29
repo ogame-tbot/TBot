@@ -244,7 +244,7 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<UserInfo>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
-		public Classes GetUserClass() {
+		public CharacterClass GetUserClass() {
 			var request = new RestRequest {
 				Resource = "/bot/character-class",
 				Method = Method.GET
@@ -253,7 +253,7 @@ namespace Tbot.Services {
 			if (result.Status != "ok") {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
-				return JsonConvert.DeserializeObject<Classes>(JsonConvert.SerializeObject(result.Result));
+				return JsonConvert.DeserializeObject<CharacterClass>(JsonConvert.SerializeObject(result.Result));
 		}
 
 		public List<Planet> GetPlanets() {
@@ -837,6 +837,70 @@ namespace Tbot.Services {
 				else
 					return true;
 			} catch { return false; }
+		}
+
+		public bool DeleteReport(int reportID) {
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/delete-report/{reportID}",
+					Method = Method.POST
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
+		public bool DeleteAllEspionageReports() {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/delete-all-espionage-reports",
+					Method = Method.POST
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
+		public List<Model.EspionageReportSummary> GetEspionageReports() {
+			var request = new RestRequest {
+				Resource = "/bot/espionage-report",
+				Method = Method.GET
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<List<EspionageReportSummary>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.EspionageReport GetEspionageReport(Coordinate coordinate) {
+			var request = new RestRequest {
+				Resource = $"/bot/espionage-report/{coordinate.Galaxy}/{coordinate.System}/{coordinate.Position}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<EspionageReport>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.EspionageReport GetEspionageReport(int msgId) {
+			var request = new RestRequest {
+				Resource = $"/bot/espionage-report/{msgId}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<EspionageReport>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 	}
 }

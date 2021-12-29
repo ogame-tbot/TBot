@@ -1,4 +1,4 @@
-﻿{
+{
 	"Credentials": {
 		"Universe": "",
 		"Email": "",
@@ -266,12 +266,72 @@
 			}
 		]
 	},
+	"AutoFarm": {
+		"Active": true,
+		"ExcludeMoons": true,
+		"ScanRange": [
+			{
+				"Galaxy": 2,
+				"StartSystem": 360,
+				"EndSystem": 420
+			}
+		],
+		"Exclude": [
+			{
+				"Galaxy": 3,
+				"System": 3,
+				"Planet": 3
+			}
+		],
+		"KeepReportFor": 180,
+		"NumProbes": 10,
+		"Origin": [
+			{
+				"Galaxy": 2,
+				"System": 396,
+				"Position": 4,
+				"Type": "Planet"
+			}
+		],
+		"CargoType": "LargeCargo",
+		"MinCargosToKeep": 0,
+		"MinCargosToSend": 2,
+		"MinimumResources": 100000,
+		"PreferedResource": "",
+		"SlotsToLeaveFree": 1,
+		"CheckIntervalMin": 2,
+		"CheckIntervalMax": 10
+	},
 	"AutoHarvest": {
 		"Active": false,
 		"HarvestOwnDF": true,
 		"HarvestDeepSpace": true,
 		"MinimumResourcesOwnDF": 300,
 		"MinimumResourcesDeepSpace": 50000,
+		"CheckIntervalMin": 30,
+		"CheckIntervalMax": 60
+	},
+	"AutoColonize": {
+		"Active": true,
+		"Origin": {
+			"Galaxy": 5,
+			"System": 64,
+			"Position": 8,
+			"Type": "Planet"
+		},
+		"SlotsToLeaveFree": 0,
+		"Targets": [
+			{
+				"Galaxy": 6,
+				"System": 1,
+				"Position": 8
+			},
+			{
+				"Galaxy": 6,
+				"System": 1,
+				"Position": 9
+			}
+		],
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},

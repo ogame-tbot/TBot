@@ -23,8 +23,9 @@ namespace Tbot.Includes {
 
 		public static bool Has(this List<Celestial> celestials, Celestial celestial) {
 			foreach (Celestial cel in celestials) {
-				if (cel.HasCoords(celestial.Coordinate))
+				if (cel.HasCoords(celestial.Coordinate)) {
 					return true;
+				}
 			}
 			return false;
 		}
@@ -44,14 +45,15 @@ namespace Tbot.Includes {
 		}
 
 		public static string EscapeForCSV(this string str) {
-			bool mustQuote = (str.Contains(",") || str.Contains("\"") || str.Contains("\r") || str.Contains("\n"));
+			bool mustQuote = str.Contains(",") || str.Contains("\"") || str.Contains("\r") || str.Contains("\n");
 			if (mustQuote) {
 				StringBuilder sb = new();
 				sb.Append("\"");
 				foreach (char nextChar in str) {
 					sb.Append(nextChar);
-					if (nextChar == '"')
+					if (nextChar == '"') {
 						sb.Append("\"");
+					}
 				}
 				sb.Append("\"");
 				return sb.ToString();
