@@ -1711,12 +1711,18 @@ namespace Tbot {
 												}
 											}
 
+											fleets = UpdateFleets();
 											slots = UpdateSlots();
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 											if (slots.Free > slotsToLeaveFree) {
+												if (Helpers.GetReturningEspionages(tempCelestial.Coordinate, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
+													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Probes already on route towards {target.ToString()}.");
+													break;
+												}
 												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
 													Ships ships = new();
 													ships.Add(Buildables.EspionageProbe, neededProbes);
+													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
 													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
