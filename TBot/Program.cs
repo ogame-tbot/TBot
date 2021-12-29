@@ -1855,7 +1855,7 @@ namespace Tbot {
 						foreach (FarmTarget target in attackTargets) {
 							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
-							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class);
+							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
 							List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 							foreach (var closest in closestCelestials) {
@@ -1866,21 +1866,13 @@ namespace Tbot {
 								fleets = UpdateFleets();
 
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
-								if (cargoShip == Buildables.SmallCargo && tempCelestial.Ships.SmallCargo < numCargo) {
-									if (tempCelestial.Ships.SmallCargo >= settings.Brain.AutoFarm.MinCargosToSend) {
-										numCargo = tempCelestial.Ships.SmallCargo;
-									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient small cargo ships on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-										break;
+								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
+									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.Brain.AutoFarm.MinCargosToSend) {
+										numCargo = Helpers.CalcShipNumberForPayload(target.Report.Loot(userInfo.Class), cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 									}
-								}
-								if (cargoShip == Buildables.LargeCargo && tempCelestial.Ships.LargeCargo < numCargo) {
-									if (tempCelestial.Ships.LargeCargo >= settings.Brain.AutoFarm.MinCargosToSend) {
-										numCargo = tempCelestial.Ships.LargeCargo;
-									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient large cargo ships on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-										break;
-									}
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
+									break;
 								}
 
 								if (slots.Free <= slotsToLeaveFree) {
