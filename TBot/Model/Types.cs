@@ -946,7 +946,7 @@ namespace Tbot.Model {
 		}
 
 		/// <summary>
-		/// Get whether or not the scanned planet has any defence (either ships ore defence) against an attack.
+		/// Get whether or not the scanned planet has any defence (either ships or defence) against an attack.
 		/// </summary>
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
 		public bool IsDefenceless() {
@@ -1017,24 +1017,22 @@ namespace Tbot.Model {
 	}
 
 	/// <summary>
-	/// Farming target found during a galaxy scan.
+	/// Celestial under consideration to be targetted for farming.
 	/// </summary>
 	public class FarmTarget {
-		public FarmTarget(Coordinate coordinate, Planet planet, FarmState farmState = FarmState.Idle, EspionageReport report = null) {
-			Coordinate = coordinate;
-			Planet = planet;
+		public FarmTarget(Celestial target, FarmState farmState = FarmState.Idle, EspionageReport report = null) {
+			Celestial = target;
 			State = farmState;
 			Report = report;
 		}
-		public Coordinate Coordinate { get; set; }
-		public Planet Planet { get; set; }
+		public Celestial Celestial { get; set; }
 		public FarmState State { get; set; }
 		public EspionageReport Report { get; set; }
 		public bool HasCoords(Coordinate coords) {
-			return coords.Galaxy == Coordinate.Galaxy
-				&& coords.System == Coordinate.System
-				&& coords.Position == Coordinate.Position
-				&& coords.Type == Coordinate.Type;
+			return coords.Galaxy == Celestial.Coordinate.Galaxy
+				&& coords.System == Celestial.Coordinate.System
+				&& coords.Position == Celestial.Coordinate.Position
+				&& coords.Type == Celestial.Coordinate.Type;
 		}
 	}
 }

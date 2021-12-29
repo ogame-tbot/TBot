@@ -1538,10 +1538,10 @@ namespace Tbot {
 
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, "Detecting farm targets...");
-							foreach (var origin in settings.Brain.AutoFarm.ScanRange) {
-								int galaxy		= (int) origin.Galaxy;
-								int startSystem = (int) origin.StartSystem;
-								int endSystem	= (int) origin.EndSystem;
+							foreach (var range in settings.Brain.AutoFarm.ScanRange) {
+								int galaxy		= (int) range.Galaxy;
+								int startSystem = (int) range.StartSystem;
+								int endSystem	= (int) range.EndSystem;
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
@@ -1561,8 +1561,21 @@ namespace Tbot {
 
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
 
+									var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
+									List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
+									if ((bool) settings.Brain.AutoFarm.ExcludeMoons == false) {
+										foreach (var t in planets) {
+											if (t.Moon != null) {
+												Celestial tempCelestial = t.Moon;
+												tempCelestial.Coordinate = t.Coordinate;
+												tempCelestial.Coordinate.Type = Celestials.Moon;
+												scannedTargets.Add(tempCelestial);
+											}
+										}
+									}
+
 									// Add each planet that has inactive status to farmTargets.
-									foreach (Planet planet in galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation)) {
+									foreach (Celestial planet in scannedTargets) {
 										// Check excluded planet.
 										bool excludePlanet = false;
 										foreach (var exclude in settings.Brain.AutoFarm.Exclude) {
@@ -1578,14 +1591,14 @@ namespace Tbot {
 											continue;
 
 										// Check if planet with coordinates exists already in farmTargets list.
-										var exists = farmTargets.Where(t => t != null && t.Planet.HasCoords(planet.Coordinate));
+										var exists = farmTargets.Where(t => t != null && t.Celestial.HasCoords(planet.Coordinate));
 										if (exists.Count() > 1) {
 											// BUG: Same coordinates should never appear multiple times in farmTargets. The list should only contain unique coordinates.
 											Helpers.WriteLog(LogType.Warning, LogSender.Brain, "BUG: Same coordinates appeared multiple times within farmTargets!");
 											return;
 										}
 
-										FarmTarget target = new(planet.Coordinate, planet, FarmState.ProbesPending);
+										FarmTarget target = new(planet, FarmState.ProbesPending);
 
 										if (!exists.Any()) {
 											// Does not exist, add to farmTargets list, set state to probes pending.
@@ -1594,7 +1607,7 @@ namespace Tbot {
 											// Already exists, update farmTargets list with updated planet.
 											var farmTarget = exists.First();
 											target = farmTarget;
-											target.Planet = planet;
+											target.Celestial = planet;
 
 											if (farmTarget.State == FarmState.Idle)
 												target.State = FarmState.ProbesPending;
@@ -1613,11 +1626,44 @@ namespace Tbot {
 											}
 										}
 
-										// Send spy probe from closest celestial with available probes to last added target.
-										List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
+										// Send spy probe from closest celestial with available probes to the target.
+										List<Celestial> closestCelestials = new();
+										if (settings.Brain.AutoFarm.Origin.Length > 0) {
+											try {
+												List<Celestial> tempCelestials = new();
+												foreach (var origin in settings.Brain.AutoFarm.Origin) {
+													Coordinate customOriginCoords = new(
+														(int) origin.Galaxy,
+														(int) origin.System,
+														(int) origin.Position,
+														Enum.Parse<Celestials>(origin.Type.ToString())
+													);
+													Celestial customOrigin = celestials
+														.Unique()
+														.Single(planet => planet.HasCoords(customOriginCoords));
+													tempCelestials.Add(customOrigin);
+												}
+												closestCelestials = tempCelestials
+													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+											} catch (Exception e) {
+												Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Exception: {e.Message}");
+												Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+												Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse custom origin");
+
+												closestCelestials = celestials
+													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+											}
+										} else {
+											closestCelestials = celestials
+												.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+												.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+										}
+
 										foreach (var closest in closestCelestials) {
-											Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
+											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 											slots = UpdateSlots();
 											fleets = UpdateFleets();
@@ -1638,7 +1684,7 @@ namespace Tbot {
 													Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Waiting for probes to return...");
 													Thread.Sleep(interval);
 												} else {
-													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Cannot spy {target.Coordinate.ToString()} from {tempCelestial.Coordinate.ToString()}, insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
+													Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {tempCelestial.Coordinate.ToString()}, insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
 													continue;
 												}
 											}
@@ -1665,7 +1711,7 @@ namespace Tbot {
 												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
 													Ships ships = new();
 													ships.Add(Buildables.EspionageProbe, neededProbes);
-													SendFleet(tempCelestial, ships, target.Coordinate, Missions.Spy, Speeds.HundredPercent);
+													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
 														break;
@@ -1805,7 +1851,7 @@ namespace Tbot {
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class);
 
-							List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Coordinate, serverData)).ToList();
+							List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 							foreach (var closest in closestCelestials) {
 								Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
 								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
@@ -1855,7 +1901,7 @@ namespace Tbot {
 
 									Ships ships = new();
 									ships.Add(cargoShip, numCargo);
-									SendFleet(tempCelestial, ships, target.Coordinate, Missions.Attack, Speeds.HundredPercent);
+									SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
 
 									newTarget.State = FarmState.AttackSent;
 									break;
@@ -1863,7 +1909,7 @@ namespace Tbot {
 							}
 
 							if (newTarget.State != FarmState.AttackSent) {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Unable to attack {target.Coordinate}.");
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Unable to attack {target.Celestial.Coordinate}.");
 								return;
 							}
 
