@@ -1561,10 +1561,21 @@ namespace Tbot {
 
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
 
-									// TODO: Add moons to targets if settings.Brain.AutoFarm.ExcludeMoons == false.
+									var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
+									List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
+									if ((bool) settings.Brain.AutoFarm.ExcludeMoons == false) {
+										foreach (var t in planets) {
+											if (t.Moon != null) {
+												Celestial tempCelestial = t.Moon;
+												tempCelestial.Coordinate = t.Coordinate;
+												tempCelestial.Coordinate.Type = Celestials.Moon;
+												scannedTargets.Add(tempCelestial);
+											}
+										}
+									}
 
 									// Add each planet that has inactive status to farmTargets.
-									foreach (Celestial planet in galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation)) {
+									foreach (Celestial planet in scannedTargets) {
 										// Check excluded planet.
 										bool excludePlanet = false;
 										foreach (var exclude in settings.Brain.AutoFarm.Exclude) {
