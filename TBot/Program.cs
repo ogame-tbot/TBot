@@ -2182,16 +2182,19 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: not enough fields available.");
 				}
 
+				celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 				if (started) {
 					if (buildable == Buildables.SolarSatellite)
-						interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+						interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					else {
-						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 						if (celestial.HasConstruction())
 							interval = (celestial.Constructions.BuildingCountdown * 1000);
 						else
 							interval = 0;
 					}
+				}
+				else if (celestial.HasConstruction()) {
+					interval = (celestial.Constructions.BuildingCountdown * 1000);
 				} else {
 					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
@@ -2231,7 +2234,7 @@ namespace Tbot {
 							}
 						}
 
-						fleets = UpdateFleets();						
+						fleets = UpdateFleets();
 						var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
 						if (incomingFleets.Any()) {
 							var fleet = incomingFleets.First();
@@ -2274,55 +2277,7 @@ namespace Tbot {
 						transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
 
 						interval = Math.Min(Math.Min(Math.Min(Math.Min(productionTime, transportTime), returningExpoTime), returningExpoOriginTime), transportOriginTime);
-					}/* else {
-						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-						if (celestial.HasConstruction())
-							interval = (celestial.Constructions.BuildingCountdown * 1000);
-						else {
-							fleets = UpdateFleets();
-
-							var incomingFleetTime = long.MaxValue;
-							var returningExpoTime = long.MaxValue;
-							var transportOriginTime = long.MaxValue;
-							var returningExpoOriginTime = long.MaxValue;
-
-							var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
-							if (returningExpo != null)
-								returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-							var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-							if (incomingFleets.Any()) {
-								var fleet = incomingFleets.First();
-								incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-							}
-
-							if ((bool) settings.Brain.AutoMine.Transports.Active) {
-								Celestial origin = celestials
-										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-								var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
-								if (returningExpoOrigin != null)
-									returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-								var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
-								if (incomingOriginFleets.Any()) {
-									var fleet = incomingFleets.First();
-									transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								}
-							}
-
-							incomingFleetTime = incomingFleetTime < 0 || double.IsNaN(incomingFleetTime) ? long.MaxValue : incomingFleetTime;
-							returningExpoTime = returningExpoTime < 0 || double.IsNaN(returningExpoTime) ? long.MaxValue : returningExpoTime;
-							transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
-							returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
-
-							interval = Math.Min(Math.Min(Math.Min(returningExpoTime, incomingFleetTime), transportOriginTime), returningExpoOriginTime);
-						}
-					}*/
+					}
 				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
