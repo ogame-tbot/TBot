@@ -730,7 +730,7 @@ namespace Tbot {
 		private static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Timeout.Infinite));
 		}
 
 		private static void StopAutoFarm(bool echo = true) {
@@ -1725,7 +1725,7 @@ namespace Tbot {
 												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
 													Ships ships = new();
 													ships.Add(Buildables.EspionageProbe, neededProbes);
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
+													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
 													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
