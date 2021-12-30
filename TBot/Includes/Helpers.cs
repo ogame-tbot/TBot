@@ -483,7 +483,7 @@ namespace Tbot.Includes {
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, CharacterClass playerClass) {
 			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-			return (long) Math.Round(((3500 / (double) speed) * Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
+			return (long) Math.Round(((3500 / (double) speed * Math.Sqrt((double) distance * 10 / slowestShipSpeed)) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
 		}
 
 		public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, CharacterClass playerClass) {
@@ -666,12 +666,12 @@ namespace Tbot.Includes {
 
 		private static int CalcGalaxyDistance(Coordinate origin, Coordinate destination, int galaxiesNumber, bool donutGalaxy = true) {
 			if (!donutGalaxy)
-				return 2000 * Math.Abs(origin.Galaxy - destination.Galaxy);
+				return 20000 * Math.Abs(origin.Galaxy - destination.Galaxy);
 
 			if (origin.Galaxy > destination.Galaxy)
-				return 2000 * Math.Min((origin.Galaxy - destination.Galaxy), ((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
+				return 20000 * Math.Min((origin.Galaxy - destination.Galaxy), ((destination.Galaxy + galaxiesNumber) - origin.Galaxy));
 
-			return 2000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
+			return 20000 * Math.Min((destination.Galaxy - origin.Galaxy), ((origin.Galaxy + galaxiesNumber) - destination.Galaxy));
 		}
 
 		private static int CalcSystemDistance(Coordinate origin, Coordinate destination, int systemsNumber, bool donutSystem = true) {
