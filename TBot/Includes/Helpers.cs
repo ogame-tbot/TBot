@@ -1991,16 +1991,26 @@ namespace Tbot.Includes {
 				return null;
 		}
 
-		public static List<Fleet> GetReturningEspionages(List<Fleet> fleets) {
-			var celestialEspionages = fleets.Where(f => f.Mission == Missions.Spy);
-			if (celestialEspionages.Any()) {
-				return celestialEspionages.ToList();
+		public static List<Fleet> GetMissionsInProgress(Missions mission, List<Fleet> fleets) {
+			var inProgress = fleets.Where(f => f.Mission == mission);
+			if (inProgress.Any()) {
+				return inProgress.ToList();
 			} else
-				return null;
+				return new List<Fleet>();
+		}
+
+		public static List<Fleet> GetMissionsInProgress(Coordinate origin, Missions mission, List<Fleet> fleets) {
+			var inProgress = fleets
+				.Where(f => f.Origin.IsSame(origin))
+				.Where(f => f.Mission == mission);
+			if (inProgress.Any()) {
+				return inProgress.ToList();
+			} else
+				return new List<Fleet>();
 		}
 
 		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
-			var celestialEspionages = GetReturningEspionages(fleets);
+			var celestialEspionages = GetMissionsInProgress(Missions.Spy, fleets);
 			if (celestialEspionages != null) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();
@@ -2008,18 +2018,8 @@ namespace Tbot.Includes {
 				return null;
 		}
 
-		public static List<Fleet> GetReturningEspionages(Coordinate origin, List<Fleet> fleets) {
-			var celestialEspionages = fleets
-				.Where(f => f.Origin.IsSame(origin))
-				.Where(f => f.Mission == Missions.Spy);
-			if (celestialEspionages.Any()) {
-				return celestialEspionages.ToList();
-			} else
-				return null;
-		}
-
 		public static Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets) {
-			var celestialEspionages = GetReturningEspionages(origin, fleets);
+			var celestialEspionages = GetMissionsInProgress(origin, Missions.Spy, fleets);
 			if (celestialEspionages != null) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();

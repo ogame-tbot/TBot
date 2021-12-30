@@ -737,7 +737,7 @@ namespace Tbot {
 		private static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Timeout.Infinite));
 		}
 
 		private static void StopAutoFarm(bool echo = true) {
@@ -1567,7 +1567,6 @@ namespace Tbot {
 										continue;
 
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
-
 									var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
 									List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
 									if ((bool) settings.AutoFarm.ExcludeMoons == false) {
@@ -1681,11 +1680,11 @@ namespace Tbot {
 											// Check if probes and slots are available: If not, wait for them.
 											if ((int) tempCelestial.Ships.EspionageProbe < neededProbes) {
 												// Wait for probes to come back to current celestial. If no on-route, continue to next iteration.
-												var returning = Helpers.GetReturningEspionages(tempCelestial.Coordinate, fleets);
-												if (returning != null) {
-													var returningProbes = returning.Sum(f => f.Ships.EspionageProbe);
+												var espionageMissions = Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets);
+												if (espionageMissions.Any()) {
+													var returningProbes = espionageMissions.Sum(f => f.Ships.EspionageProbe);
 													if (tempCelestial.Ships.EspionageProbe + returningProbes >= neededProbes) {
-														var returningFleets = returning.OrderBy(f => f.BackIn).ToArray();
+														var returningFleets = espionageMissions.OrderBy(f => f.BackIn).ToArray();
 														long probesCount = 0;
 														for (int i = 0; i <= returningFleets.Length; i++) {
 															probesCount += returningFleets[i].Ships.EspionageProbe;
@@ -1722,14 +1721,18 @@ namespace Tbot {
 											slots = UpdateSlots();
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 											if (slots.Free > slotsToLeaveFree) {
-												if (Helpers.GetReturningEspionages(tempCelestial.Coordinate, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
+												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
+													break;
+												}
+												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Attack, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
+													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
 													break;
 												}
 												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
 													Ships ships = new();
 													ships.Add(Buildables.EspionageProbe, neededProbes);
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
+													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
 													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
@@ -1882,10 +1885,10 @@ namespace Tbot {
 								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
 									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
 										numCargo = Helpers.CalcShipNumberForPayload(target.Report.Loot(userInfo.Class), cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
+										break;
 									}
-								} else {
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-									break;
 								}
 
 								if (slots.Free <= slotsToLeaveFree) {

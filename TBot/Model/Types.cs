@@ -1034,5 +1034,17 @@ namespace Tbot.Model {
 				&& coords.Position == Celestial.Coordinate.Position
 				&& coords.Type == Celestial.Coordinate.Type;
 		}
+		private string GetCelestialCode() {
+			return Celestial.Coordinate.Type switch {
+				Celestials.Planet => "P",
+				Celestials.Debris => "DF",
+				Celestials.Moon => "M",
+				Celestials.DeepSpace => "DS",
+				_ => "",
+			};
+		}
+		public override string ToString() {
+			return $"[{GetCelestialCode()}:{Celestial.Coordinate.Galaxy}:{Celestial.Coordinate.System}:{Celestial.Coordinate.Position}]";
+		}
 	}
 }
