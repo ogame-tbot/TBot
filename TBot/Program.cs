@@ -1878,10 +1878,10 @@ namespace Tbot {
 								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
 									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
 										numCargo = Helpers.CalcShipNumberForPayload(target.Report.Loot(userInfo.Class), cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
+										break;
 									}
-								} else {
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-									break;
 								}
 
 								if (slots.Free <= slotsToLeaveFree) {
