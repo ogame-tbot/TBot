@@ -1992,8 +1992,7 @@ namespace Tbot.Includes {
 		}
 
 		public static List<Fleet> GetMissionsInProgress(Missions mission, List<Fleet> fleets) {
-			var inProgress = fleets
-				.Where(f => f.Mission == mission);
+			var inProgress = fleets.Where(f => f.Mission == mission);
 			if (inProgress.Any()) {
 				return inProgress.ToList();
 			} else
