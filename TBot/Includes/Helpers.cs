@@ -482,7 +482,7 @@ namespace Tbot.Includes {
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, Classes playerClass) {
 			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-			return (long) Math.Round(((3500 / (double) speed) * Math.Sqrt(distance * 10 / slowestShipSpeed) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
+			return (long) Math.Round(((3500 / (double) speed * Math.Sqrt((double) distance * 10 / slowestShipSpeed)) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
 		}
 
 		public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, Classes playerClass) {
