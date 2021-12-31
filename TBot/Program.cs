@@ -1717,9 +1717,8 @@ namespace Tbot {
 												}
 											}
 
-											fleets = UpdateFleets();
-											slots = UpdateSlots();
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+											slots = UpdateSlots();
 											if (slots.Free > slotsToLeaveFree) {
 												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
@@ -1840,7 +1839,6 @@ namespace Tbot {
 						ogamedService.DeleteAllEspionageReports();
 
 						/// Send attacks.
-						fleets = UpdateFleets();
 						List<FarmTarget> attackTargets;
 						if (settings.AutoFarm.PreferedResource == "Metal")
 							attackTargets = farmTargets.Where(t => t.State == FarmState.AttackPending).OrderByDescending(t => t.Report.Loot(userInfo.Class).Metal).ToList();
@@ -1859,39 +1857,75 @@ namespace Tbot {
 						}
 
 						Buildables cargoShip = Buildables.LargeCargo;
-						if (!Enum.TryParse<Buildables>(settings.AutoFarm.CargoType.ToString(), true, out cargoShip)) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse cargoShip. Falling back to default LargeCargo");
+						if (!Enum.TryParse<Buildables>((string) settings.AutoFarm.CargoType, true, out cargoShip)) {
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse cargoShip. Falling back to default LargeCargo");
 							cargoShip = Buildables.LargeCargo;
 						}
 						if (cargoShip == Buildables.Null) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoShip is Null");
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to send attack: cargoShip is Null");
+							return;
+						}
+						if (cargoShip == Buildables.EspionageProbe && serverData.ProbeCargo == 0) {
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to send attack: cargoShip set to EspionageProbe, but this universe does not have probe cargo.");
 							return;
 						}
 
+						researches = UpdateResearches();
 						foreach (FarmTarget target in attackTargets) {
 							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-							List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
-							foreach (var closest in closestCelestials) {
-								Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
-								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+							List<Celestial> closestCelestials = new();
+							if (settings.AutoFarm.Origin.Length > 0) {
+								try {
+									List<Celestial> tempCelestials = new();
+									foreach (var origin in settings.AutoFarm.Origin) {
+										Coordinate customOriginCoords = new(
+											(int) origin.Galaxy,
+											(int) origin.System,
+											(int) origin.Position,
+											Enum.Parse<Celestials>(origin.Type.ToString())
+										);
+										Celestial customOrigin = celestials
+											.Unique()
+											.Single(planet => planet.HasCoords(customOriginCoords));
+										tempCelestials.Add(customOrigin);
+									}
+									closestCelestials = tempCelestials
+										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+								} catch (Exception e) {
+									Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
+									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
+									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
 
-								slots = UpdateSlots();
-								fleets = UpdateFleets();
+									closestCelestials = celestials
+										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+								}
+							} else {
+								closestCelestials = celestials
+									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+									.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+							}
+							foreach (var closest in closestCelestials) {
+								Celestial tempCelestial = closest;
+								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
 									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
-										numCargo = Helpers.CalcShipNumberForPayload(target.Report.Loot(userInfo.Class), cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+										numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 									} else {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
 										break;
 									}
 								}
 
+								slots = UpdateSlots();
 								if (slots.Free <= slotsToLeaveFree) {
+									fleets = UpdateFleets();
 									// No slots free, wait for first fleet to come back.
 									if (fleets.Any()) {
 										// TODO Future: Set a configurable maximum wait time? Needed?
@@ -1911,8 +1945,7 @@ namespace Tbot {
 
 								slots = UpdateSlots();
 								if (slots.Free > slotsToLeaveFree) {
-									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
-
+									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {tempCelestial.ToString()} with {numCargo} {cargoShip.ToString()}.");
 									Ships ships = new();
 									ships.Add(cargoShip, numCargo);
 									SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
@@ -2189,16 +2222,19 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: not enough fields available.");
 				}
 
+				celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 				if (started) {
 					if (buildable == Buildables.SolarSatellite)
-						interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+						interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					else {
-						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 						if (celestial.HasConstruction())
 							interval = (celestial.Constructions.BuildingCountdown * 1000);
 						else
 							interval = 0;
 					}
+				}
+				else if (celestial.HasConstruction()) {
+					interval = (celestial.Constructions.BuildingCountdown * 1000);
 				} else {
 					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
@@ -2238,7 +2274,7 @@ namespace Tbot {
 							}
 						}
 
-						fleets = UpdateFleets();						
+						fleets = UpdateFleets();
 						var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
 						if (incomingFleets.Any()) {
 							var fleet = incomingFleets.First();
@@ -2281,55 +2317,7 @@ namespace Tbot {
 						transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
 
 						interval = Math.Min(Math.Min(Math.Min(Math.Min(productionTime, transportTime), returningExpoTime), returningExpoOriginTime), transportOriginTime);
-					}/* else {
-						celestial = UpdatePlanet(celestial, UpdateType.Constructions);
-						if (celestial.HasConstruction())
-							interval = (celestial.Constructions.BuildingCountdown * 1000);
-						else {
-							fleets = UpdateFleets();
-
-							var incomingFleetTime = long.MaxValue;
-							var returningExpoTime = long.MaxValue;
-							var transportOriginTime = long.MaxValue;
-							var returningExpoOriginTime = long.MaxValue;
-
-							var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
-							if (returningExpo != null)
-								returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-							var incomingFleets = Helpers.GetIncomingFleetsWithResources(celestial, fleets);
-							if (incomingFleets.Any()) {
-								var fleet = incomingFleets.First();
-								incomingFleetTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-							}
-
-							if ((bool) settings.Brain.AutoMine.Transports.Active) {
-								Celestial origin = celestials
-										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-								var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
-								if (returningExpoOrigin != null)
-									returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-
-								var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
-								if (incomingOriginFleets.Any()) {
-									var fleet = incomingFleets.First();
-									transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								}
-							}
-
-							incomingFleetTime = incomingFleetTime < 0 || double.IsNaN(incomingFleetTime) ? long.MaxValue : incomingFleetTime;
-							returningExpoTime = returningExpoTime < 0 || double.IsNaN(returningExpoTime) ? long.MaxValue : returningExpoTime;
-							transportOriginTime = transportOriginTime < 0 || double.IsNaN(transportOriginTime) ? long.MaxValue : transportOriginTime;
-							returningExpoOriginTime = returningExpoOriginTime < 0 || double.IsNaN(returningExpoOriginTime) ? long.MaxValue : returningExpoOriginTime;
-
-							interval = Math.Min(Math.Min(Math.Min(returningExpoTime, incomingFleetTime), transportOriginTime), returningExpoOriginTime);
-						}
-					}*/
+					}
 				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");

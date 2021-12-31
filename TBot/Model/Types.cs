@@ -844,11 +844,11 @@ namespace Tbot.Model {
 	}
 
 	public class EspionageReport {
-		public int Metal { get; set; }
-		public int Crystal { get; set; }
-		public int Deuterium { get; set; }
-		public int Energy { get; set; }
-		public int Darkmatter { get; set; }
+		public long Metal { get; set; }
+		public long Crystal { get; set; }
+		public long Deuterium { get; set; }
+		public long Energy { get; set; }
+		public long Darkmatter { get; set; }
 		public int ID { get; set; }
 		public string Username { get; set; }
 		public CharacterClass CharacterClass { get; set; }
@@ -909,34 +909,34 @@ namespace Tbot.Model {
 		public int? ArmourTechnology { get; set; }
 
 		// Defenses
-		public int? RocketLauncher { get; set; }
-		public int? LightLaser { get; set; }
-		public int? HeavyLaser { get; set; }
-		public int? GaussCannon { get; set; }
-		public int? IonCannon { get; set; }
-		public int? PlasmaTurret { get; set; }
-		public int? SmallShieldDome { get; set; }
-		public int? LargeShieldDome { get; set; }
-		public int? AntiBallisticMissiles { get; set; }
-		public int? InterplanetaryMissiles { get; set; }
+		public long? RocketLauncher { get; set; }
+		public long? LightLaser { get; set; }
+		public long? HeavyLaser { get; set; }
+		public long? GaussCannon { get; set; }
+		public long? IonCannon { get; set; }
+		public long? PlasmaTurret { get; set; }
+		public long? SmallShieldDome { get; set; }
+		public long? LargeShieldDome { get; set; }
+		public long? AntiBallisticMissiles { get; set; }
+		public long? InterplanetaryMissiles { get; set; }
 
 		// Fleets
-		public int? LightFighter { get; set; }
-		public int? HeavyFighter { get; set; }
-		public int? Cruiser { get; set; }
-		public int? Battleship { get; set; }
-		public int? Battlecruiser { get; set; }
-		public int? Bomber { get; set; }
-		public int? Destroyer { get; set; }
-		public int? Deathstar { get; set; }
-		public int? SmallCargo { get; set; }
-		public int? LargeCargo { get; set; }
-		public int? ColonyShip { get; set; }
-		public int? Recycler { get; set; }
-		public int? EspionageProbe { get; set; }
-		public int? Crawler { get; set; }
-		public int? Reaper { get; set; }
-		public int? Pathfinder { get; set; }
+		public long? LightFighter { get; set; }
+		public long? HeavyFighter { get; set; }
+		public long? Cruiser { get; set; }
+		public long? Battleship { get; set; }
+		public long? Battlecruiser { get; set; }
+		public long? Bomber { get; set; }
+		public long? Destroyer { get; set; }
+		public long? Deathstar { get; set; }
+		public long? SmallCargo { get; set; }
+		public long? LargeCargo { get; set; }
+		public long? ColonyShip { get; set; }
+		public long? Recycler { get; set; }
+		public long? EspionageProbe { get; set; }
+		public long? Crawler { get; set; }
+		public long? Reaper { get; set; }
+		public long? Pathfinder { get; set; }
 		public Coordinate Coordinate { get; set; }
 		public EspionageReportType Type { get; set; }
 		public DateTime Date { get; set; }
@@ -986,7 +986,7 @@ namespace Tbot.Model {
 				return 0.75F;
 			if (IsBandit)
 				return 1F;
-			if (!IsInactive && IsStarlord)
+			if (!IsInactive && HonorableTarget)
 				return 0.75F;
 			return 0.5F;
 		}

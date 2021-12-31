@@ -7,7 +7,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.4!
+TBot supports Ogame v8.5!
 
 Feel free to publish issues or pull requests
 
@@ -46,11 +46,12 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
+* AutoFarm: TBot will scan one or more ranges of systems spying inactive players and attacking them with the specified type of ship if they are profitable above a given amount.
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * AutoColonize: TBot will make new colonies. Input the list of coordinates of your desired colonies and TBot will do the rest.
 * SleepMode: TBot will not interact with your account between the hours specified in settings.json
   * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time (deploy with recall is supported!)
-* Local Proxy (tnx to ogamed): Tbot allows you to play in your browser
+* Local Proxy: Tbot allows you to play in your browser
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
@@ -141,7 +142,7 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ### Captcha solving
-TBot, being based on ogamed,  manual captcha solving as well as Ninja Captcha Autoresolve service.
+TBot, being based on ogamed, supports manual captcha solving as well as Ninja Captcha Autoresolve service.
 
 To manually solve captcha navigate to host:port/bot/captcha
 
