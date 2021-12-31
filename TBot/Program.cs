@@ -1710,9 +1710,8 @@ namespace Tbot {
 												}
 											}
 
-											fleets = UpdateFleets();
-											slots = UpdateSlots();
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+											slots = UpdateSlots();
 											if (slots.Free > slotsToLeaveFree) {
 												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
@@ -1833,7 +1832,6 @@ namespace Tbot {
 						ogamedService.DeleteAllEspionageReports();
 
 						/// Send attacks.
-						fleets = UpdateFleets();
 						List<FarmTarget> attackTargets;
 						if (settings.AutoFarm.PreferedResource == "Metal")
 							attackTargets = farmTargets.Where(t => t.State == FarmState.AttackPending).OrderByDescending(t => t.Report.Loot(userInfo.Class).Metal).ToList();
@@ -1860,16 +1858,52 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoShip is Null");
 							return;
 						}
+						if (cargoShip == Buildables.EspionageProbe && serverData.ProbeCargo == 0) {
+							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoship set to EspionageProbe, but this universe does not have probe cargo.");
+							return;
+						}
 
 						foreach (FarmTarget target in attackTargets) {
 							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-							List<Celestial> closestCelestials = celestials.ToList().OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
+							List<Celestial> closestCelestials = new();
+							if (settings.AutoFarm.Origin.Length > 0) {
+								try {
+									List<Celestial> tempCelestials = new();
+									foreach (var origin in settings.AutoFarm.Origin) {
+										Coordinate customOriginCoords = new(
+											(int) origin.Galaxy,
+											(int) origin.System,
+											(int) origin.Position,
+											Enum.Parse<Celestials>(origin.Type.ToString())
+										);
+										Celestial customOrigin = celestials
+											.Unique()
+											.Single(planet => planet.HasCoords(customOriginCoords));
+										tempCelestials.Add(customOrigin);
+									}
+									closestCelestials = tempCelestials
+										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+								} catch (Exception e) {
+									Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
+									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
+									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
+
+									closestCelestials = celestials
+										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+								}
+							} else {
+								closestCelestials = celestials
+									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+									.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+							}
 							foreach (var closest in closestCelestials) {
-								Planet tempCelestial = UpdatePlanet(closest, UpdateType.Fast) as Planet;
-								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
+								Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
+								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 								slots = UpdateSlots();
 								fleets = UpdateFleets();
