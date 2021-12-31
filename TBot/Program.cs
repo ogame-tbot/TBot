@@ -1863,6 +1863,7 @@ namespace Tbot {
 							return;
 						}
 
+						researches = UpdateResearches();
 						foreach (FarmTarget target in attackTargets) {
 							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
@@ -1902,23 +1903,22 @@ namespace Tbot {
 									.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
 							}
 							foreach (var closest in closestCelestials) {
-								Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
+								Celestial tempCelestial = closest;
 								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-
-								slots = UpdateSlots();
-								fleets = UpdateFleets();
 
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
 									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
-										numCargo = Helpers.CalcShipNumberForPayload(target.Report.Loot(userInfo.Class), cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+										numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 									} else {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
 										break;
 									}
 								}
 
+								slots = UpdateSlots();
 								if (slots.Free <= slotsToLeaveFree) {
+									fleets = UpdateFleets();
 									// No slots free, wait for first fleet to come back.
 									if (fleets.Any()) {
 										// TODO Future: Set a configurable maximum wait time? Needed?
