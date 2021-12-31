@@ -1938,8 +1938,7 @@ namespace Tbot {
 
 								slots = UpdateSlots();
 								if (slots.Free > slotsToLeaveFree) {
-									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships) as Planet;
-
+									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {tempCelestial.ToString()} with {numCargo} {cargoShip.ToString()}.");
 									Ships ships = new();
 									ships.Add(cargoShip, numCargo);
 									SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
