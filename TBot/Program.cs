@@ -1850,16 +1850,16 @@ namespace Tbot {
 						}
 
 						Buildables cargoShip = Buildables.LargeCargo;
-						if (!Enum.TryParse<Buildables>(settings.AutoFarm.CargoType.ToString(), true, out cargoShip)) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse cargoShip. Falling back to default LargeCargo");
+						if (!Enum.TryParse<Buildables>((string) settings.AutoFarm.CargoType, true, out cargoShip)) {
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse cargoShip. Falling back to default LargeCargo");
 							cargoShip = Buildables.LargeCargo;
 						}
 						if (cargoShip == Buildables.Null) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoShip is Null");
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to send attack: cargoShip is Null");
 							return;
 						}
 						if (cargoShip == Buildables.EspionageProbe && serverData.ProbeCargo == 0) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send attack: cargoship set to EspionageProbe, but this universe does not have probe cargo.");
+							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to send attack: cargoShip set to EspionageProbe, but this universe does not have probe cargo.");
 							return;
 						}
 
