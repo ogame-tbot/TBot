@@ -1907,13 +1907,13 @@ namespace Tbot {
 								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
-								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
-									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
-										numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-										break;
+								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep) {
+									var newNumCargo = tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep;
+									if (newNumCargo < (long) settings.AutoFarm.MinCargosToSend) {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo + (long) settings.AutoFarm.MinCargosToKeep} {cargoShip.ToString()}.");
+										continue;
 									}
+									numCargo = newNumCargo;
 								}
 
 								slots = UpdateSlots();
