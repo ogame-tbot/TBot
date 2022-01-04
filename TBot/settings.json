@@ -292,9 +292,12 @@
 				"Type": "Planet"
 			}
 		],
+		"MaxFlightDistance": 19000,
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 2,
+		"BuildCargos": true,
+		"BuildProbes": true,
 		"MinimumResources": 100000,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
