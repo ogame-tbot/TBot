@@ -2011,7 +2011,7 @@ namespace Tbot.Includes {
 
 		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
 			var celestialEspionages = GetMissionsInProgress(Missions.Spy, fleets);
-			if (celestialEspionages != null) {
+			if (celestialEspionages.Count > 0) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();
 			} else

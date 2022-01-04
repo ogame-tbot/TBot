@@ -730,7 +730,7 @@ namespace Tbot {
 		private static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		private static void StopAutoFarm(bool echo = true) {
@@ -1661,6 +1661,7 @@ namespace Tbot {
 										}
 
 										foreach (var closest in closestCelestials) {
+											// TODO: Keep ships (probes) per celestial locally, do not make a request for each target * celestial.
 											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
 											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
@@ -1838,22 +1839,23 @@ namespace Tbot {
 								}
 							} else {
 								closestCelestials = celestials
-									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-									.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
+									.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
+									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 							}
 
-							var closestSuitableCelestials = closestCelestials
-								.Where(c => c.Ships.GetAmount(cargoShip) >= numCargo + (long) settings.AutoFarm.MinCargosToKeep)
-								.Where(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance)
-								.ToList();
-
 							Celestial fromCelestial = null;
-							if (closestSuitableCelestials.Any()) {
-								fromCelestial = closestSuitableCelestials.First();
-							} else {
+							foreach (var c in closestCelestials) {
+								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
+								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep) &&
+									Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
+										fromCelestial = tempCelestial;
+										break;
+								}
+							}
+
+							if (fromCelestial == null) {
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 								foreach (var closest in closestCelestials) {
-
 									Celestial tempCelestial = closest;
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
