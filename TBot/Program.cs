@@ -1521,9 +1521,11 @@ namespace Tbot {
 				if ((bool) settings.AutoFarm.Active) {
 					// If not enough slots are free, the farmer cannot run.
 					slots = UpdateSlots();
+
+					int freeSlots = slots.Free;
 					int slotsToLeaveFree = (int) settings.AutoFarm.SlotsToLeaveFree;
 
-					if (slots.Free > slotsToLeaveFree) {
+					if (freeSlots > slotsToLeaveFree) {
 						try {
 							// Prune all reports older than KeepReportFor and all reports of state AttackSent: information no longer actual.
 							var newTime = GetDateTime();
@@ -1534,6 +1536,15 @@ namespace Tbot {
 								updateReport.Report = null;
 								farmTargets.Remove(remove);
 								farmTargets.Add(updateReport);
+							}
+
+							// Keep local record of celestials, to be updated by autofarmer itself, to reduce ogamed calls.
+							var localCelestials = UpdateCelestials();
+							Dictionary<int, long> celestialProbes = new Dictionary<int, long>();
+							foreach (var celestial in localCelestials) {
+								Celestial tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
+								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+								celestialProbes.Add(tempCelestial.ID, tempCelestial.Ships.EspionageProbe);
 							}
 
 							/// Galaxy scanning + target probing.
@@ -1562,6 +1573,10 @@ namespace Tbot {
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
 									var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
 									List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
+
+									if (!planets.Any())
+										continue;
+
 									if ((bool) settings.AutoFarm.ExcludeMoons == false) {
 										foreach (var t in planets) {
 											if (t.Moon != null) {
@@ -1626,107 +1641,99 @@ namespace Tbot {
 										}
 
 										// Send spy probe from closest celestial with available probes to the target.
-										List<Celestial> closestCelestials = new();
-										if (settings.AutoFarm.Origin.Length > 0) {
-											try {
-												List<Celestial> tempCelestials = new();
-												foreach (var origin in settings.AutoFarm.Origin) {
-													Coordinate customOriginCoords = new(
-														(int) origin.Galaxy,
-														(int) origin.System,
-														(int) origin.Position,
-														Enum.Parse<Celestials>(origin.Type.ToString())
-													);
-													Celestial customOrigin = celestials
-														.Unique()
-														.Single(planet => planet.HasCoords(customOriginCoords));
-													tempCelestials.Add(customOrigin);
-												}
-												closestCelestials = tempCelestials
-													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-											} catch (Exception e) {
-												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
-
-												closestCelestials = celestials
-													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-											}
-										} else {
-											closestCelestials = celestials
-												.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-												.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-										}
+										List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
+										List<Celestial> closestCelestials = tempCelestials
+											.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
+											.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 
 										foreach (var closest in closestCelestials) {
-											// TODO: Keep ships (probes) per celestial locally, do not make a request for each target * celestial.
-											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-
 											int neededProbes = (int) settings.AutoFarm.NumProbes;
 											if (target.State == FarmState.ProbesRequired)
 												neededProbes *= 3;
 											if (target.State == FarmState.FailedProbesRequired)
 												neededProbes *= 9;
 
-											// Check if probes and slots are available: If not, wait for them.
-											if ((int) tempCelestial.Ships.EspionageProbe < neededProbes) {
+											// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
+											if (celestialProbes[closest.ID] < neededProbes) {
+												var tempCelestial = UpdatePlanet(closest, UpdateType.Ships);
+												celestialProbes.Remove(closest.ID);
+												celestialProbes.Add(closest.ID, tempCelestial.Ships.EspionageProbe);
+											}
+
+											// Check if probes are available: If not, wait for them.
+											if (celestialProbes[closest.ID] < neededProbes) {
 												// Wait for probes to come back to current celestial. If no on-route, continue to next iteration.
-												var espionageMissions = Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets);
+												fleets = UpdateFleets();
+												var espionageMissions = Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Spy, fleets);
 												if (espionageMissions.Any()) {
 													var returningProbes = espionageMissions.Sum(f => f.Ships.EspionageProbe);
-													if (tempCelestial.Ships.EspionageProbe + returningProbes >= neededProbes) {
+													if (celestialProbes[closest.ID] + returningProbes >= neededProbes) {
 														var returningFleets = espionageMissions.OrderBy(f => f.BackIn).ToArray();
 														long probesCount = 0;
 														for (int i = 0; i <= returningFleets.Length; i++) {
 															probesCount += returningFleets[i].Ships.EspionageProbe;
 															if (probesCount >= neededProbes) {
-																int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+																int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 																Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Waiting for probes to return...");
 																Thread.Sleep(interval);
+																freeSlots++;
 																break;
 															}
 														}
 													}
 												}
 												else {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {tempCelestial.Coordinate.ToString()}, insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
+													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {closest.Coordinate.ToString()}, insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
 													continue;
 												}												
 											}
 
-											fleets = UpdateFleets();
-											slots = UpdateSlots();
-											if ((int) slots.Free <= slotsToLeaveFree) {
+											if (freeSlots <= slotsToLeaveFree) {
+												slots = UpdateSlots();
+												freeSlots = slots.Free;
+											}
+
+											if (freeSlots <= slotsToLeaveFree) {
 												// No slots available, wait for first fleet of any mission type to return.
+												fleets = UpdateFleets();
 												if (fleets.Any()) {
-													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting for fleet to return...");
 													Thread.Sleep(interval);
+													freeSlots++;
 												} else {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "No fleet slots available and no fleets returning!");
 													return;
 												}
 											}
 
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-											slots = UpdateSlots();
-											if (slots.Free > slotsToLeaveFree) {
-												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
-													break;
-												}
-												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Attack, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
-													break;
-												}
-												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
-													Ships ships = new();
-													ships.Add(Buildables.EspionageProbe, neededProbes);
-													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
-													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
+											fleets = UpdateFleets();
+											if (Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
+												break;
+											}
+											if (Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Attack, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
+												break;
+											}
+
+											// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
+											if (celestialProbes[closest.ID] < neededProbes) {
+												var tempCelestial = UpdatePlanet(closest, UpdateType.Ships);
+												celestialProbes.Remove(closest.ID);
+												celestialProbes.Add(closest.ID, tempCelestial.Ships.EspionageProbe);
+											}
+
+											if (celestialProbes[closest.ID] >= neededProbes) {
+												Ships ships = new();
+												ships.Add(Buildables.EspionageProbe, neededProbes);
+
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {closest.ToString()} with {neededProbes} probes.");
+
+												slots = UpdateSlots();
+												if (SendFleet(closest, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent) != 0) {
+													freeSlots--;
+													celestialProbes[closest.ID] -= neededProbes;
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
 														break;
@@ -1737,12 +1744,11 @@ namespace Tbot {
 
 													break;
 												} else {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
-													break;
+													continue;
 												}
 											} else {
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient fleet slots ({slots.Free}/{slotsToLeaveFree+1}). Aborting autofarm.");
-												return;
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
+												break;
 											}
 										}
 
@@ -1805,43 +1811,13 @@ namespace Tbot {
 						researches = UpdateResearches();
 						celestials = UpdateCelestials();
 						foreach (FarmTarget target in attackTargets) {
-							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-							List<Celestial> closestCelestials = new();
-							if (settings.AutoFarm.Origin.Length > 0) {
-								try {
-									List<Celestial> tempCelestials = new();
-									foreach (var origin in settings.AutoFarm.Origin) {
-										Coordinate customOriginCoords = new(
-											(int) origin.Galaxy,
-											(int) origin.System,
-											(int) origin.Position,
-											Enum.Parse<Celestials>(origin.Type.ToString())
-										);
-										Celestial customOrigin = celestials
-											.Unique()
-											.Single(planet => planet.HasCoords(customOriginCoords));
-										tempCelestials.Add(customOrigin);
-									}
-									closestCelestials = tempCelestials
-										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-								} catch (Exception e) {
-									Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
-									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
-									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
-
-									closestCelestials = celestials
-										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-								}
-							} else {
-								closestCelestials = celestials
-									.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
-									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
-							}
+							List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
+							List<Celestial> closestCelestials = tempCelestials
+								.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
+								.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 
 							Celestial fromCelestial = null;
 							foreach (var c in closestCelestials) {
@@ -1897,8 +1873,13 @@ namespace Tbot {
 								continue;
 							}
 
-							slots = UpdateSlots();
-							if (slots.Free <= slotsToLeaveFree) {
+							// Only execute update slots if our local copy indicates we have run out.
+							if (freeSlots <= slotsToLeaveFree) {
+								slots = UpdateSlots();
+								freeSlots = slots.Free;
+							}
+
+							if (freeSlots <= slotsToLeaveFree) {
 								fleets = UpdateFleets();
 								// No slots free, wait for first fleet to come back.
 								if (fleets.Any()) {
@@ -1923,18 +1904,15 @@ namespace Tbot {
 								Ships ships = new();
 								ships.Add(cargoShip, numCargo);
 								SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
+								freeSlots--;
 
-								newTarget.State = FarmState.AttackSent;
-								break;
-							}
-
-							if (newTarget.State != FarmState.AttackSent) {
+								farmTargets.Remove(target);
+								target.State = FarmState.AttackSent;
+								farmTargets.Add(target);
+							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
 								return;
 							}
-
-							farmTargets.Remove(target);
-							farmTargets.Add(newTarget);
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
@@ -1959,6 +1937,9 @@ namespace Tbot {
 			}
 		}
 
+		/// <summary>
+		/// Checks all received espionage reports and updates farmTargets to reflect latest data retrieved from reports.
+		/// </summary>
 		private static void AutoFarmProcessReports() {
 			// TODO Future: Read espionage reports in separate thread (concurently with probing itself).
 			// TODO Future: Check if probes were destroyed, blacklist target if so to avoid additional kills.
