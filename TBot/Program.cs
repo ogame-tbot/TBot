@@ -3291,7 +3291,6 @@ namespace Tbot {
 							);
 							Celestial origin = celestials.Single(c => c.HasCoords(originCoords));
 							UpdatePlanet(origin, UpdateType.Ships);
-							UpdatePlanet(origin, UpdateType.Productions);
 
 							var neededColonizers = maxPlanets - currentPlanets - slotsToLeaveFree;
 
@@ -3306,16 +3305,16 @@ namespace Tbot {
 									);
 									targets.Add(targetCoords);
 								}
-								List<Coordinate> filteredTargets = targets;
+								List<Coordinate> filteredTargets = new();
 								foreach (Coordinate t in targets) {
 									if (celestials.Any(c => c.HasCoords(t))) {
-										filteredTargets.Remove(t);
+										continue;
 									}
-
 									GalaxyInfo galaxy = ogamedService.GetGalaxyInfo(t);
 									if (galaxy.Planets.Any(p => p != null && p.HasCoords(t))) {
-										filteredTargets.Remove(t);
+										continue;
 									}
+									filteredTargets.Add(t);
 								}
 								if (filteredTargets.Count > 0) {
 									foreach (var target in filteredTargets) {
@@ -3325,14 +3324,17 @@ namespace Tbot {
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No valid coordinate in target list.");
 								}
-							} else if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
-								Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
-								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. Building....");
-								ogamedService.BuildShips(origin, Buildables.ColonyShip, neededColonizers - origin.Ships.ColonyShip);
-								interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-							}
+								UpdatePlanet(origin, UpdateType.Productions);
+								if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
+									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
+									interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. Building....");
+									ogamedService.BuildShips(origin, Buildables.ColonyShip, neededColonizers - origin.Ships.ColonyShip);
+									interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								}
+							}							
 						}
 					} else {
 						Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No new planet is needed.");
