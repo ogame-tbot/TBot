@@ -1748,7 +1748,7 @@ namespace Tbot {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
-												if (settings.AutoFarm.BuildProbes == true) {
+												if (settings.AutoFarm.BuildProbes && settings.AutoFarm.BuildProbes == true) {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 													var tempCelestial = UpdatePlanet(closest, UpdateType.Resources);
@@ -1840,10 +1840,11 @@ namespace Tbot {
 							Celestial fromCelestial = null;
 							foreach (var c in closestCelestials) {
 								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
-								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep) &&
-									Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
-										fromCelestial = tempCelestial;
-										break;
+								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
+									var distance = Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData);
+									if (settings.AutoFarm.MaxFlightDistance && distance > settings.AutoFarm.MaxFlightDistance) continue;
+									fromCelestial = tempCelestial;
+									break;
 								}
 							}
 
@@ -1856,7 +1857,7 @@ namespace Tbot {
 									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep
 										&& Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
 
-										if (settings.AutoFarm.BuildCargos == true) {
+										if (settings.AutoFarm.BuildCargos && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
 											if (tempCelestial.Resources.IsEnoughFor(cost))
