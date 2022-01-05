@@ -730,7 +730,7 @@ namespace Tbot {
 		private static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
 		private static void StopAutoFarm(bool echo = true) {
@@ -1748,6 +1748,24 @@ namespace Tbot {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
+												if (settings.AutoFarm.BuildProbes == true) {
+													var buildProbes = neededProbes - celestialProbes[closest.ID];
+													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
+													var tempCelestial = UpdatePlanet(closest, UpdateType.Resources);
+													if (tempCelestial.Resources.IsEnoughFor(cost))
+														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {buildProbes}x{Buildables.EspionageProbe.ToString()}");
+													else {
+														var buildableProbes = Helpers.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
+														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {buildProbes}x{Buildables.EspionageProbe.ToString()}. {buildableProbes} will be built instead.");
+														buildProbes = buildableProbes;
+													}
+
+													var result = ogamedService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
+													if (result)
+														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started.");
+													else
+														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+												}
 												break;
 											}
 										}
