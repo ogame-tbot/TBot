@@ -1547,15 +1547,22 @@ namespace Tbot {
 								celestialProbes.Add(tempCelestial.ID, tempCelestial.Ships.EspionageProbe);
 							}
 
+							// Keep track of number of targets probed.
+							int numProbed = 0;
+
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
+								if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) break;
+
 								int galaxy		= (int) range.Galaxy;
 								int startSystem = (int) range.StartSystem;
 								int endSystem	= (int) range.EndSystem;
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
+									if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) break;
+
 									// Check excluded system.
 									bool excludeSystem = false;
 									foreach (var exclude in settings.AutoFarm.Exclude) {
@@ -1590,6 +1597,11 @@ namespace Tbot {
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Celestial planet in scannedTargets) {
+										if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) {
+											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
+											break;
+										}
+
 										// Check excluded planet.
 										bool excludePlanet = false;
 										foreach (var exclude in settings.AutoFarm.Exclude) {
@@ -1733,6 +1745,7 @@ namespace Tbot {
 												slots = UpdateSlots();
 												if (SendFleet(closest, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent) != 0) {
 													freeSlots--;
+													numProbed++;
 													celestialProbes[closest.ID] -= neededProbes;
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
@@ -1769,8 +1782,6 @@ namespace Tbot {
 												break;
 											}
 										}
-
-										Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 									}
 								}
 							}
