@@ -292,6 +292,7 @@
 				"Type": "Planet"
 			}
 		],
+		"TargetsProbedBeforeAttack": 30,
 		"MaxFlightDistance": 19000,
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
