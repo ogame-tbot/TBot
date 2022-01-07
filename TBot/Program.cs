@@ -1597,10 +1597,12 @@ namespace Tbot {
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Celestial planet in scannedTargets) {
-										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) &&
-											settings.AutoFarm.MinimumPlayerRank != 0 && (int) settings.AutoFarm.MinimumPlayerRank < ((Planet) planet).Player.Rank) {
-											// Planer is below set minimum rank, skip.
-											continue;
+										// Check if target is below set minimum rank.
+										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
+											if (planet.Coordinate.Type == Celestials.Planet && (int) settings.AutoFarm.MinimumPlayerRank < (planet as Planet).Player.Rank) {
+												// TODO: If Coordinate.Type == Moon, get corresponding planet and find Player.Rank to compare against.
+												continue;
+											}
 										}
 
 										if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
