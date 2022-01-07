@@ -2051,6 +2051,15 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public static bool IsSettingSet(dynamic setting) {
+			try {
+				var x = setting;
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
 		public static int CalcMaxPlanets(int astrophysics) {
 			return (int) Math.Round((float) ((astrophysics + 3) / 2), 0, MidpointRounding.ToZero);
 		}

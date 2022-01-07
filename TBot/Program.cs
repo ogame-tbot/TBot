@@ -1553,7 +1553,7 @@ namespace Tbot {
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
-								if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) break;
+								if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
 
 								int galaxy		= (int) range.Galaxy;
 								int startSystem = (int) range.StartSystem;
@@ -1561,7 +1561,7 @@ namespace Tbot {
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
-									if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) break;
+									if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
 
 									// Check excluded system.
 									bool excludeSystem = false;
@@ -1597,7 +1597,14 @@ namespace Tbot {
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Celestial planet in scannedTargets) {
-										if (settings.AutoFarm.TargetsProbedBeforeAttack && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= settings.AutoFarm.TargetsProbedBeforeAttack) {
+										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) &&
+											settings.AutoFarm.MinimumPlayerRank != 0 && (int) settings.AutoFarm.MinimumPlayerRank < ((Planet) planet).Player.Rank) {
+											// Planer is below set minimum rank, skip.
+											continue;
+										}
+
+										if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
+											settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
 											break;
 										}
@@ -1761,7 +1768,7 @@ namespace Tbot {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
-												if (settings.AutoFarm.BuildProbes && settings.AutoFarm.BuildProbes == true) {
+												if (Helpers.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 													var tempCelestial = UpdatePlanet(closest, UpdateType.Resources);
@@ -1853,7 +1860,7 @@ namespace Tbot {
 								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									var distance = Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData);
-									if (settings.AutoFarm.MaxFlightDistance && distance > settings.AutoFarm.MaxFlightDistance) continue;
+									if (Helpers.IsSettingSet(settings.AutoFarm.MaxFlightDistance) && distance > settings.AutoFarm.MaxFlightDistance) continue;
 									fromCelestial = tempCelestial;
 									break;
 								}
@@ -1868,7 +1875,7 @@ namespace Tbot {
 									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep
 										&& Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
 
-										if (settings.AutoFarm.BuildCargos && settings.AutoFarm.BuildCargos == true) {
+										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
 											if (tempCelestial.Resources.IsEnoughFor(cost))
