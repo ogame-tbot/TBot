@@ -1599,8 +1599,16 @@ namespace Tbot {
 									foreach (Celestial planet in scannedTargets) {
 										// Check if target is below set minimum rank.
 										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
-											if (planet.Coordinate.Type == Celestials.Planet && (int) settings.AutoFarm.MinimumPlayerRank < (planet as Planet).Player.Rank) {
-												// TODO: If Coordinate.Type == Moon, get corresponding planet and find Player.Rank to compare against.
+											int rank = 1;
+											if (planet.Coordinate.Type == Celestials.Planet) {
+												rank = (planet as Planet).Player.Rank;
+											}
+											else {
+												if (scannedTargets.Any(t => t.HasCoords(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet)))) {
+													rank = (scannedTargets.Single(t => t.HasCoords(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet))) as Planet).Player.Rank;
+												}
+											}
+											if ((int) settings.AutoFarm.MinimumPlayerRank < rank) {
 												continue;
 											}
 										}
