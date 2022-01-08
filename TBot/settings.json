@@ -297,6 +297,8 @@
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
+		"BuildCargos": false,
+		"BuildProbes": false,
 		"MinimumResources": 1000000,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,

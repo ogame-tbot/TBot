@@ -1778,8 +1778,6 @@ namespace Tbot {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
-
-												/*
 												if (Helpers.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
@@ -1802,8 +1800,6 @@ namespace Tbot {
 													else
 														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 												}
-												*/
-
 												break;
 											}
 										}
@@ -1892,8 +1888,6 @@ namespace Tbot {
 
 									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep
 										&& Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
-
-										/*
 										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
@@ -1916,7 +1910,6 @@ namespace Tbot {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 											}
 										}
-										*/
 
 										if (tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep < (long) settings.AutoFarm.MinCargosToSend) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo + (long) settings.AutoFarm.MinCargosToKeep} {cargoShip.ToString()}.");
