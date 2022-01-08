@@ -37,11 +37,11 @@ jobs:
         env GOOS=windows GOARCH=amd64 go build -o ogamed.exe
         cd ${{ github.workspace }}
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed.exe ${{ github.workspace }}/publish/win64/
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/win64/
     - name: Package win64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/win64/ README.md
-        dest: TBot-${{ env.VERSION }}-win64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-win64.zip publish/win64/
 
     - name: Build TBot win32
       run: dotnet publish -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
@@ -51,11 +51,11 @@ jobs:
         env GOOS=windows GOARCH=386 go build -o ogamed.exe
         cd ${{ github.workspace }}/
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed.exe ${{ github.workspace }}/publish/win32/
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/win32/
     - name: Package win32
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/win32/ README.md
-        dest: TBot-${{ env.VERSION }}-win32.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-win32.zip publish/win32/
         
     - name: Build TBot linux64
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
@@ -67,11 +67,11 @@ jobs:
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linux64/
         chmod +x ${{ github.workspace }}/publish/linux64/TBot
         chmod +x ${{ github.workspace }}/publish/linux64/ogamed
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/linux64/
     - name: Package linux64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linux64/ README.md
-        dest: TBot-${{ env.VERSION }}-linux64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linux64.zip publish/linux64/
         
     - name: Build TBot linuxarm
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
@@ -83,11 +83,11 @@ jobs:
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm/
         chmod +x ${{ github.workspace }}/publish/linuxarm/TBot
         chmod +x ${{ github.workspace }}/publish/linuxarm/ogamed
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/linuxarm/
     - name: Package linuxarm
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linuxarm/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm.zip publish/linuxarm/
 
     - name: Build TBot linuxarm64
       run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
@@ -99,11 +99,11 @@ jobs:
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/linuxarm64/
         chmod +x ${{ github.workspace }}/publish/linuxarm64/TBot
         chmod +x ${{ github.workspace }}/publish/linuxarm64/ogamed
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/linuxarm64/
     - name: Package linuxarm64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linuxarm64/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm64.zip publish/linuxarm64/
         
     - name: Build TBot osx64
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
@@ -115,11 +115,11 @@ jobs:
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx64/
         chmod +x ${{ github.workspace }}/publish/osx64/TBot
         chmod +x ${{ github.workspace }}/publish/osx64/ogamed
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/osx64/
     - name: Package osx64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/osx64/ README.md
-        dest: TBot-${{ env.VERSION }}-osx64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-osx64.zip publish/osx64/
         
     - name: Draft Release
       uses: ncipollo/release-action@v1
