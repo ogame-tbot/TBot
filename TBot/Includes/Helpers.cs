@@ -2011,7 +2011,7 @@ namespace Tbot.Includes {
 
 		public static Fleet GetFirstReturningEspionage(List<Fleet> fleets) {
 			var celestialEspionages = GetMissionsInProgress(Missions.Spy, fleets);
-			if (celestialEspionages != null) {
+			if (celestialEspionages.Count > 0) {
 				return celestialEspionages
 					.OrderBy(fleet => fleet.BackIn).First();
 			} else
@@ -2049,6 +2049,15 @@ namespace Tbot.Includes {
 			}
 
 			return output;
+		}
+
+		public static bool IsSettingSet(dynamic setting) {
+			try {
+				var x = setting;
+				return true;
+			} catch {
+				return false;
+			}
 		}
 
 		public static int CalcMaxPlanets(int astrophysics) {

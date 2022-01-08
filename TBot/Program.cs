@@ -730,7 +730,7 @@ namespace Tbot {
 		private static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
 		private static void StopAutoFarm(bool echo = true) {
@@ -1521,9 +1521,11 @@ namespace Tbot {
 				if ((bool) settings.AutoFarm.Active) {
 					// If not enough slots are free, the farmer cannot run.
 					slots = UpdateSlots();
+
+					int freeSlots = slots.Free;
 					int slotsToLeaveFree = (int) settings.AutoFarm.SlotsToLeaveFree;
 
-					if (slots.Free > slotsToLeaveFree) {
+					if (freeSlots > slotsToLeaveFree) {
 						try {
 							// Prune all reports older than KeepReportFor and all reports of state AttackSent: information no longer actual.
 							var newTime = GetDateTime();
@@ -1536,15 +1538,31 @@ namespace Tbot {
 								farmTargets.Add(updateReport);
 							}
 
+							// Keep local record of celestials, to be updated by autofarmer itself, to reduce ogamed calls.
+							var localCelestials = UpdateCelestials();
+							Dictionary<int, long> celestialProbes = new Dictionary<int, long>();
+							foreach (var celestial in localCelestials) {
+								Celestial tempCelestial = UpdatePlanet(celestial, UpdateType.Fast);
+								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+								celestialProbes.Add(tempCelestial.ID, tempCelestial.Ships.EspionageProbe);
+							}
+
+							// Keep track of number of targets probed.
+							int numProbed = 0;
+
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
+								if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
+
 								int galaxy		= (int) range.Galaxy;
 								int startSystem = (int) range.StartSystem;
 								int endSystem	= (int) range.EndSystem;
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
+									if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
+
 									// Check excluded system.
 									bool excludeSystem = false;
 									foreach (var exclude in settings.AutoFarm.Exclude) {
@@ -1562,6 +1580,10 @@ namespace Tbot {
 									var galaxyInfo = ogamedService.GetGalaxyInfo(galaxy, system);
 									var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
 									List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
+
+									if (!planets.Any())
+										continue;
+
 									if ((bool) settings.AutoFarm.ExcludeMoons == false) {
 										foreach (var t in planets) {
 											if (t.Moon != null) {
@@ -1575,6 +1597,20 @@ namespace Tbot {
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Celestial planet in scannedTargets) {
+										// Check if target is below set minimum rank.
+										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
+											if (planet.Coordinate.Type == Celestials.Planet && (int) settings.AutoFarm.MinimumPlayerRank < (planet as Planet).Player.Rank) {
+												// TODO: If Coordinate.Type == Moon, get corresponding planet and find Player.Rank to compare against.
+												continue;
+											}
+										}
+
+										if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
+											settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) {
+											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
+											break;
+										}
+
 										// Check excluded planet.
 										bool excludePlanet = false;
 										foreach (var exclude in settings.AutoFarm.Exclude) {
@@ -1626,106 +1662,100 @@ namespace Tbot {
 										}
 
 										// Send spy probe from closest celestial with available probes to the target.
-										List<Celestial> closestCelestials = new();
-										if (settings.AutoFarm.Origin.Length > 0) {
-											try {
-												List<Celestial> tempCelestials = new();
-												foreach (var origin in settings.AutoFarm.Origin) {
-													Coordinate customOriginCoords = new(
-														(int) origin.Galaxy,
-														(int) origin.System,
-														(int) origin.Position,
-														Enum.Parse<Celestials>(origin.Type.ToString())
-													);
-													Celestial customOrigin = celestials
-														.Unique()
-														.Single(planet => planet.HasCoords(customOriginCoords));
-													tempCelestials.Add(customOrigin);
-												}
-												closestCelestials = tempCelestials
-													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-											} catch (Exception e) {
-												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
-
-												closestCelestials = celestials
-													.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-													.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-											}
-										} else {
-											closestCelestials = celestials
-												.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-												.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-										}
+										List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
+										List<Celestial> closestCelestials = tempCelestials
+											.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
+											.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 
 										foreach (var closest in closestCelestials) {
-											Celestial tempCelestial = UpdatePlanet(closest, UpdateType.Fast);
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-
 											int neededProbes = (int) settings.AutoFarm.NumProbes;
 											if (target.State == FarmState.ProbesRequired)
 												neededProbes *= 3;
 											if (target.State == FarmState.FailedProbesRequired)
 												neededProbes *= 9;
 
-											// Check if probes and slots are available: If not, wait for them.
-											if ((int) tempCelestial.Ships.EspionageProbe < neededProbes) {
+											// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
+											if (celestialProbes[closest.ID] < neededProbes) {
+												var tempCelestial = UpdatePlanet(closest, UpdateType.Ships);
+												celestialProbes.Remove(closest.ID);
+												celestialProbes.Add(closest.ID, tempCelestial.Ships.EspionageProbe);
+											}
+
+											// Check if probes are available: If not, wait for them.
+											if (celestialProbes[closest.ID] < neededProbes) {
 												// Wait for probes to come back to current celestial. If no on-route, continue to next iteration.
-												var espionageMissions = Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets);
+												fleets = UpdateFleets();
+												var espionageMissions = Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Spy, fleets);
 												if (espionageMissions.Any()) {
 													var returningProbes = espionageMissions.Sum(f => f.Ships.EspionageProbe);
-													if (tempCelestial.Ships.EspionageProbe + returningProbes >= neededProbes) {
+													if (celestialProbes[closest.ID] + returningProbes >= neededProbes) {
 														var returningFleets = espionageMissions.OrderBy(f => f.BackIn).ToArray();
 														long probesCount = 0;
 														for (int i = 0; i <= returningFleets.Length; i++) {
 															probesCount += returningFleets[i].Ships.EspionageProbe;
 															if (probesCount >= neededProbes) {
-																int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+																int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 																Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Waiting for probes to return...");
 																Thread.Sleep(interval);
+																freeSlots++;
 																break;
 															}
 														}
 													}
 												}
 												else {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {tempCelestial.Coordinate.ToString()}, insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
+													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {closest.Coordinate.ToString()}, insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
 													continue;
 												}												
 											}
 
-											fleets = UpdateFleets();
-											slots = UpdateSlots();
-											if ((int) slots.Free <= slotsToLeaveFree) {
+											if (freeSlots <= slotsToLeaveFree) {
+												slots = UpdateSlots();
+												freeSlots = slots.Free;
+											}
+
+											if (freeSlots <= slotsToLeaveFree) {
 												// No slots available, wait for first fleet of any mission type to return.
+												fleets = UpdateFleets();
 												if (fleets.Any()) {
-													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting for fleet to return...");
 													Thread.Sleep(interval);
+													freeSlots++;
 												} else {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "No fleet slots available and no fleets returning!");
 													return;
 												}
 											}
 
-											tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-											slots = UpdateSlots();
-											if (slots.Free > slotsToLeaveFree) {
-												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
-													break;
-												}
-												if (Helpers.GetMissionsInProgress(tempCelestial.Coordinate, Missions.Attack, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
-													break;
-												}
-												if ((int) tempCelestial.Ships.EspionageProbe >= neededProbes) {
-													Ships ships = new();
-													ships.Add(Buildables.EspionageProbe, neededProbes);
-													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {tempCelestial.ToString()} with {neededProbes} probes.");
-													SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
+											fleets = UpdateFleets();
+											if (Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
+												break;
+											}
+											if (Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Attack, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
+												break;
+											}
+
+											// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
+											if (celestialProbes[closest.ID] < neededProbes) {
+												var tempCelestial = UpdatePlanet(closest, UpdateType.Ships);
+												celestialProbes.Remove(closest.ID);
+												celestialProbes.Add(closest.ID, tempCelestial.Ships.EspionageProbe);
+											}
+
+											if (celestialProbes[closest.ID] >= neededProbes) {
+												Ships ships = new();
+												ships.Add(Buildables.EspionageProbe, neededProbes);
+
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {closest.ToString()} with {neededProbes} probes.");
+
+												slots = UpdateSlots();
+												if (SendFleet(closest, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent) != 0) {
+													freeSlots--;
+													numProbed++;
+													celestialProbes[closest.ID] -= neededProbes;
 
 													if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
 														break;
@@ -1736,16 +1766,31 @@ namespace Tbot {
 
 													break;
 												} else {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({tempCelestial.Ships.EspionageProbe}/{neededProbes}).");
-													break;
+													continue;
 												}
 											} else {
-												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient fleet slots ({slots.Free}/{slotsToLeaveFree+1}). Aborting autofarm.");
-												return;
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
+												if (Helpers.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
+													var buildProbes = neededProbes - celestialProbes[closest.ID];
+													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
+													var tempCelestial = UpdatePlanet(closest, UpdateType.Resources);
+													if (tempCelestial.Resources.IsEnoughFor(cost))
+														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {buildProbes}x{Buildables.EspionageProbe.ToString()}");
+													else {
+														var buildableProbes = Helpers.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
+														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {buildProbes}x{Buildables.EspionageProbe.ToString()}. {buildableProbes} will be built instead.");
+														buildProbes = buildableProbes;
+													}
+
+													var result = ogamedService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
+													if (result)
+														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started.");
+													else
+														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+												}
+												break;
 											}
 										}
-
-										Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 									}
 								}
 							}
@@ -1767,69 +1812,7 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Processing espionage reports of found inactives...");
 
 						/// Process reports.
-						// TODO Future: Read espionage reports in separate thread (concurently with probing itself).
-						// TODO Future: Check if probes were destroyed, blacklist target if so to avoid additional kills.
-						List<EspionageReportSummary> summaryReports = ogamedService.GetEspionageReports();
-						foreach (var summary in summaryReports) {
-							if (summary.Type == EspionageReportType.Action)
-								continue;
-
-							var report = ogamedService.GetEspionageReport(summary.ID);
-							if (DateTime.Compare(report.Date.AddMinutes((double) settings.AutoFarm.KeepReportFor), GetDateTime()) < 0) {
-								ogamedService.DeleteReport(report.ID);
-								continue;
-							}
-
-							var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
-							if (matchingTarget.Count() == 0) {
-								// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
-								if (!report.IsInactive)
-									continue;
-								// TODO: Get corresponding planet. Add to target list.
-								continue;
-							}
-
-							var target = matchingTarget.First();
-							var newFarmTarget = target;
-
-							if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
-								// Target has a more recent report. Delete report.
-								ogamedService.DeleteReport(report.ID);
-								continue;
-							}
-
-							newFarmTarget.Report = report;
-
-							if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
-								|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
-								|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
-								|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
-								if (!report.HasFleetInformation || !report.HasDefensesInformation) {
-									if (target.State == FarmState.ProbesRequired)
-										newFarmTarget.State = FarmState.FailedProbesRequired;
-									else if (target.State == FarmState.FailedProbesRequired)
-										newFarmTarget.State = FarmState.NotSuitable;
-									else
-										newFarmTarget.State = FarmState.ProbesRequired;
-
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
-								} else if (report.IsDefenceless()) {
-									newFarmTarget.State = FarmState.AttackPending;
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
-								} else {
-									newFarmTarget.State = FarmState.NotSuitable;
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
-								}
-							} else {
-								newFarmTarget.State = FarmState.NotSuitable;
-								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
-							}
-
-							farmTargets.Remove(target);
-							farmTargets.Add(newFarmTarget);
-						}
-
-						ogamedService.DeleteAllEspionageReports();
+						AutoFarmProcessReports();
 
 						/// Send attacks.
 						List<FarmTarget> attackTargets;
@@ -1864,97 +1847,111 @@ namespace Tbot {
 						}
 
 						researches = UpdateResearches();
+						celestials = UpdateCelestials();
 						foreach (FarmTarget target in attackTargets) {
-							FarmTarget newTarget = target;
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-							List<Celestial> closestCelestials = new();
-							if (settings.AutoFarm.Origin.Length > 0) {
-								try {
-									List<Celestial> tempCelestials = new();
-									foreach (var origin in settings.AutoFarm.Origin) {
-										Coordinate customOriginCoords = new(
-											(int) origin.Galaxy,
-											(int) origin.System,
-											(int) origin.Position,
-											Enum.Parse<Celestials>(origin.Type.ToString())
-										);
-										Celestial customOrigin = celestials
-											.Unique()
-											.Single(planet => planet.HasCoords(customOriginCoords));
-										tempCelestials.Add(customOrigin);
-									}
-									closestCelestials = tempCelestials
-										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-								} catch (Exception e) {
-									Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Exception: {e.Message}");
-									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
-									Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse custom origin");
+							List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
+							List<Celestial> closestCelestials = tempCelestials
+								.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
+								.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 
-									closestCelestials = celestials
-										.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-								}
-							} else {
-								closestCelestials = celestials
-									.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
-									.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon).ToList();
-							}
-							foreach (var closest in closestCelestials) {
-								Celestial tempCelestial = closest;
-								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-
-								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
-								if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo) {
-									if (tempCelestial.Ships.GetAmount(cargoShip) >= (long) settings.AutoFarm.MinCargosToSend) {
-										numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo} {cargoShip.ToString()}.");
-										break;
-									}
-								}
-
-								slots = UpdateSlots();
-								if (slots.Free <= slotsToLeaveFree) {
-									fleets = UpdateFleets();
-									// No slots free, wait for first fleet to come back.
-									if (fleets.Any()) {
-										// TODO Future: Set a configurable maximum wait time? Needed?
-										int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-										if (interval < 10 * 60 * 1000) {
-											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for fleet to return...");
-											Thread.Sleep(interval);
-										} else {
-											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "No available fleet slots.");
-											return;
-										}
-									} else {
-										Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");
-										return;
-									}
-								}
-
-								slots = UpdateSlots();
-								if (slots.Free > slotsToLeaveFree) {
-									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {tempCelestial.ToString()} with {numCargo} {cargoShip.ToString()}.");
-									Ships ships = new();
-									ships.Add(cargoShip, numCargo);
-									SendFleet(tempCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
-
-									newTarget.State = FarmState.AttackSent;
+							Celestial fromCelestial = null;
+							foreach (var c in closestCelestials) {
+								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
+								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
+									var distance = Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData);
+									if (Helpers.IsSettingSet(settings.AutoFarm.MaxFlightDistance) && distance > settings.AutoFarm.MaxFlightDistance) continue;
+									fromCelestial = tempCelestial;
 									break;
 								}
 							}
 
-							if (newTarget.State != FarmState.AttackSent) {
+							if (fromCelestial == null) {
+								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
+								foreach (var closest in closestCelestials) {
+									Celestial tempCelestial = closest;
+									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+
+									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep
+										&& Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
+
+										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
+											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
+											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
+											if (tempCelestial.Resources.IsEnoughFor(cost))
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {neededCargos}x{cargoShip.ToString()}");
+											else {
+												var buildableCargos = Helpers.CalcMaxBuildableNumber(cargoShip, tempCelestial.Resources);
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{cargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
+												neededCargos = buildableCargos;
+											}
+
+											var result = ogamedService.BuildShips(tempCelestial, cargoShip, neededCargos);
+											if (result)
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started.");
+											else
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+										}
+
+										if (tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep < (long) settings.AutoFarm.MinCargosToSend) {
+											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo + (long) settings.AutoFarm.MinCargosToKeep} {cargoShip.ToString()}.");
+											continue;
+										}
+
+										numCargo = tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep;
+										fromCelestial = tempCelestial;
+										break;
+									}
+								}
+							}
+
+							if (fromCelestial == null) {
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
+								continue;
+							}
+
+							// Only execute update slots if our local copy indicates we have run out.
+							if (freeSlots <= slotsToLeaveFree) {
+								slots = UpdateSlots();
+								freeSlots = slots.Free;
+							}
+
+							if (freeSlots <= slotsToLeaveFree) {
+								fleets = UpdateFleets();
+								// No slots free, wait for first fleet to come back.
+								if (fleets.Any()) {
+									// TODO Future: Set a configurable maximum wait time? Needed?
+									int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+									if (interval < 10 * 60 * 1000) {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for fleet to return...");
+										Thread.Sleep(interval);
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "No available fleet slots.");
+										return;
+									}
+								} else {
+									Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");
+									return;
+								}
+							}
+
+							slots = UpdateSlots();
+							if (slots.Free > slotsToLeaveFree) {
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
+								Ships ships = new();
+								ships.Add(cargoShip, numCargo);
+								SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
+								freeSlots--;
+
+								farmTargets.Remove(target);
+								target.State = FarmState.AttackSent;
+								farmTargets.Add(target);
+							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
 								return;
 							}
-
-							farmTargets.Remove(target);
-							farmTargets.Add(newTarget);
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
@@ -1977,6 +1974,75 @@ namespace Tbot {
 					xaSem[Feature.AutoFarm].Release();
 				}
 			}
+		}
+
+		/// <summary>
+		/// Checks all received espionage reports and updates farmTargets to reflect latest data retrieved from reports.
+		/// </summary>
+		private static void AutoFarmProcessReports() {
+			// TODO Future: Read espionage reports in separate thread (concurently with probing itself).
+			// TODO Future: Check if probes were destroyed, blacklist target if so to avoid additional kills.
+			List<EspionageReportSummary> summaryReports = ogamedService.GetEspionageReports();
+			foreach (var summary in summaryReports) {
+				if (summary.Type == EspionageReportType.Action)
+					continue;
+
+				var report = ogamedService.GetEspionageReport(summary.ID);
+				if (DateTime.Compare(report.Date.AddMinutes((double) settings.AutoFarm.KeepReportFor), GetDateTime()) < 0) {
+					ogamedService.DeleteReport(report.ID);
+					continue;
+				}
+
+				var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
+				if (matchingTarget.Count() == 0) {
+					// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
+					if (!report.IsInactive)
+						continue;
+					// TODO: Get corresponding planet. Add to target list.
+					continue;
+				}
+
+				var target = matchingTarget.First();
+				var newFarmTarget = target;
+
+				if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
+					// Target has a more recent report. Delete report.
+					ogamedService.DeleteReport(report.ID);
+					continue;
+				}
+
+				newFarmTarget.Report = report;
+
+				if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
+					|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
+					|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
+					|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
+					if (!report.HasFleetInformation || !report.HasDefensesInformation) {
+						if (target.State == FarmState.ProbesRequired)
+							newFarmTarget.State = FarmState.FailedProbesRequired;
+						else if (target.State == FarmState.FailedProbesRequired)
+							newFarmTarget.State = FarmState.NotSuitable;
+						else
+							newFarmTarget.State = FarmState.ProbesRequired;
+
+						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+					} else if (report.IsDefenceless()) {
+						newFarmTarget.State = FarmState.AttackPending;
+						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+					} else {
+						newFarmTarget.State = FarmState.NotSuitable;
+						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
+					}
+				} else {
+					newFarmTarget.State = FarmState.NotSuitable;
+					Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
+				}
+
+				farmTargets.Remove(target);
+				farmTargets.Add(newFarmTarget);
+			}
+
+			ogamedService.DeleteAllEspionageReports();
 		}
 
 		private static void AutoMine(object state) {
