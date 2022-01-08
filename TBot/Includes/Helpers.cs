@@ -950,8 +950,13 @@ namespace Tbot.Includes {
 					output.Crystal = (long) (50000 * level);
 					break;
 				case Buildables.AntiBallisticMissiles:
+					output.Metal = (long) (8000 * level);
+					output.Deuterium = (long) (2000 * level);
 					break;
 				case Buildables.InterplanetaryMissiles:
+					output.Metal = (long) (12500 * level);
+					output.Crystal = (long) (2500 * level);
+					output.Deuterium = (long) (10000 * level);
 					break;
 				case Buildables.SmallCargo:
 					output.Metal = (long) (2000 * level);
@@ -1016,6 +1021,9 @@ namespace Tbot.Includes {
 					output.Deuterium = (long) (15000 * level);
 					break;
 				case Buildables.Crawler:
+					output.Metal = (long) (2000 * level);
+					output.Crystal = (long) (2000 * level);
+					output.Deuterium = (long) (1000 * level);
 					break;
 				case Buildables.Reaper:
 					output.Metal = (long) (85000 * level);
@@ -1104,125 +1112,115 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		public static long CalcMaxBuildableNumber(Buildables buildable, Resources resources) {
-			long output;
-			Resources oneItemCost = new();
+		public static int CalcCumulativeLabLevel(List<Celestial> celestials, Researches researches) {
+			int output = 0;
+
+			if (celestials == null || celestials.Any(c => c.Facilities == null)) {
+				return 0;
+			}
+
+			output = celestials
+				.Where(c => c.Coordinate.Type == Celestials.Planet)
+				.OrderByDescending(c => c.Facilities.ResearchLab)
+				.Take(researches.IntergalacticResearchNetwork + 1)
+				.Sum(c => c.Facilities.ResearchLab);
+
+			return output;
+		}
+
+		public static long CalcProductionTime(Buildables buildable, int level, ServerData serverData, Facilities facilities, int cumulativeLabLevel = 0) {
+			double output = 1;
+			long structuralIntegrity = CalcPrice(buildable, level).StructuralIntegrity;
 
 			switch (buildable) {
+				case Buildables.MetalMine:
+				case Buildables.CrystalMine:
+				case Buildables.DeuteriumSynthesizer:
+				case Buildables.SolarPlant:
+				case Buildables.FusionReactor:
+				case Buildables.MetalStorage:
+				case Buildables.CrystalStorage:
+				case Buildables.DeuteriumTank:
+				case Buildables.ShieldedMetalDen:
+				case Buildables.UndergroundCrystalDen:
+				case Buildables.SeabedDeuteriumDen:
+				case Buildables.AllianceDepot:
+				case Buildables.RoboticsFactory:
+				case Buildables.Shipyard:
+				case Buildables.ResearchLab:
+				case Buildables.MissileSilo:
+				case Buildables.NaniteFactory:
+				case Buildables.Terraformer:
+				case Buildables.SpaceDock:
+				case Buildables.LunarBase:
+				case Buildables.SensorPhalanx:
+				case Buildables.JumpGate:
+					output = structuralIntegrity / (2500 * (1 + facilities.RoboticsFactory) * serverData.Speed * (long) Math.Pow(2, facilities.NaniteFactory));
+					break;
+
 				case Buildables.RocketLauncher:
-					oneItemCost.Metal = (long) (2000);
-					break;
 				case Buildables.LightLaser:
-					oneItemCost.Metal = (long) (1500);
-					oneItemCost.Crystal = (long) (500);
-					break;
 				case Buildables.HeavyLaser:
-					oneItemCost.Metal = (long) (6000);
-					oneItemCost.Crystal = (long) (2000);
-					break;
 				case Buildables.GaussCannon:
-					oneItemCost.Metal = (long) (20000);
-					oneItemCost.Crystal = (long) (15000);
-					oneItemCost.Deuterium = (long) (2000);
-					break;
 				case Buildables.IonCannon:
-					oneItemCost.Metal = (long) (5000);
-					oneItemCost.Crystal = (long) (3000);
-					break;
 				case Buildables.PlasmaTurret:
-					oneItemCost.Metal = (long) (50000);
-					oneItemCost.Crystal = (long) (50000);
-					oneItemCost.Deuterium = (long) (30000);
-					break;
 				case Buildables.SmallShieldDome:
-					oneItemCost.Metal = (long) (10000);
-					oneItemCost.Crystal = (long) (10000);
-					break;
 				case Buildables.LargeShieldDome:
-					oneItemCost.Metal = (long) (50000);
-					oneItemCost.Crystal = (long) (50000);
-					break;
 				case Buildables.AntiBallisticMissiles:
-					break;
 				case Buildables.InterplanetaryMissiles:
-					break;
 				case Buildables.SmallCargo:
-					oneItemCost.Metal = (long) (2000);
-					oneItemCost.Crystal = (long) (2000);
-					break;
 				case Buildables.LargeCargo:
-					oneItemCost.Metal = (long) (6000);
-					oneItemCost.Crystal = (long) (6000);
-					break;
 				case Buildables.LightFighter:
-					oneItemCost.Metal = (long) (3000);
-					oneItemCost.Crystal = (long) (1000);
-					break;
 				case Buildables.HeavyFighter:
-					oneItemCost.Metal = (long) (6000);
-					oneItemCost.Crystal = (long) (4000);
-					break;
 				case Buildables.Cruiser:
-					oneItemCost.Metal = (long) (20000);
-					oneItemCost.Crystal = (long) (7000);
-					oneItemCost.Deuterium = (long) (2000);
-					break;
 				case Buildables.Battleship:
-					oneItemCost.Metal = (long) (35000);
-					oneItemCost.Crystal = (long) (15000);
-					break;
 				case Buildables.ColonyShip:
-					oneItemCost.Metal = (long) (10000);
-					oneItemCost.Crystal = (long) (20000);
-					oneItemCost.Deuterium = (long) (10000);
-					break;
 				case Buildables.Recycler:
-					oneItemCost.Metal = (long) (10000);
-					oneItemCost.Crystal = (long) (6000);
-					oneItemCost.Deuterium = (long) (2000);
-					break;
 				case Buildables.EspionageProbe:
-					oneItemCost.Crystal = (long) (1000);
-					break;
 				case Buildables.Bomber:
-					oneItemCost.Metal = (long) (50000);
-					oneItemCost.Crystal = (long) (25000);
-					oneItemCost.Deuterium = (long) (15000);
-					break;
 				case Buildables.SolarSatellite:
-					oneItemCost.Crystal = (long) (2000);
-					oneItemCost.Deuterium = (long) (500);
-					break;
 				case Buildables.Destroyer:
-					oneItemCost.Metal = (long) (60000);
-					oneItemCost.Crystal = (long) (50000);
-					oneItemCost.Deuterium = (long) (15000);
-					break;
 				case Buildables.Deathstar:
-					oneItemCost.Metal = (long) (5000000);
-					oneItemCost.Crystal = (long) (4000000);
-					oneItemCost.Deuterium = (long) (1000000);
-					break;
 				case Buildables.Battlecruiser:
-					oneItemCost.Metal = (long) (30000);
-					oneItemCost.Crystal = (long) (40000);
-					oneItemCost.Deuterium = (long) (15000);
-					break;
 				case Buildables.Crawler:
-					break;
 				case Buildables.Reaper:
-					oneItemCost.Metal = (long) (85000);
-					oneItemCost.Crystal = (long) (55000);
-					oneItemCost.Deuterium = (long) (20000);
-					break;
 				case Buildables.Pathfinder:
-					oneItemCost.Metal = (long) (8000);
-					oneItemCost.Crystal = (long) (15000);
-					oneItemCost.Deuterium = (long) (8000);
+					output = structuralIntegrity / (2500 * (1 + facilities.Shipyard) * serverData.Speed * (long) Math.Pow(2, facilities.NaniteFactory));
 					break;
+
+				case Buildables.EspionageTechnology:
+				case Buildables.ComputerTechnology:
+				case Buildables.WeaponsTechnology:
+				case Buildables.ShieldingTechnology:
+				case Buildables.ArmourTechnology:
+				case Buildables.EnergyTechnology:
+				case Buildables.HyperspaceTechnology:
+				case Buildables.CombustionDrive:
+				case Buildables.ImpulseDrive:
+				case Buildables.HyperspaceDrive:
+				case Buildables.LaserTechnology:
+				case Buildables.IonTechnology:
+				case Buildables.PlasmaTechnology:
+				case Buildables.IntergalacticResearchNetwork:
+				case Buildables.Astrophysics:
+				case Buildables.GravitonTechnology:
+					if (cumulativeLabLevel == 0) {
+						cumulativeLabLevel = facilities.ResearchLab;
+					}
+					output = structuralIntegrity / (1000 * (1 + cumulativeLabLevel) * serverData.Speed);
+					break;
+
+				case Buildables.Null:
 				default:
 					break;
 			}
+
+			return (long) Math.Round(output * 3600, 0, MidpointRounding.ToPositiveInfinity);
+		}
+
+		public static long CalcMaxBuildableNumber(Buildables buildable, Resources resources) {
+			long output;
+			Resources oneItemCost = CalcPrice(buildable, 1);
 
 			long maxPerMet = long.MaxValue;
 			long maxPerCry = long.MaxValue;
@@ -1945,16 +1943,12 @@ namespace Tbot.Includes {
 		}
 
 		public static bool AreThereIncomingResources(Celestial celestial, List<Fleet> fleets) {
-			var transports = fleets
+			return fleets
 				.Where(f => f.Mission == Missions.Transport)
 				.Where(f => f.Resources.TotalResources > 0)
 				.Where(f => f.ReturnFlight == false)
 				.Where(f => f.Destination.IsSame(celestial.Coordinate))
-				.Count();
-			if (transports > 0)
-				return true;
-			else
-				return false;
+				.Any();
 		}
 
 		public static List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets) {
@@ -2063,8 +2057,14 @@ namespace Tbot.Includes {
 		public static int CalcMaxPlanets(int astrophysics) {
 			return (int) Math.Round((float) ((astrophysics + 3) / 2), 0, MidpointRounding.ToZero);
 		}
+
 		public static int CalcMaxPlanets(Researches researches) {
 			return researches == null ? 1 : CalcMaxPlanets(researches.Astrophysics);
 		}
+
+		public static int CalcMaxCrawlers(Planet planet, CharacterClass userClass) {
+			return 8 * (planet.Buildings.MetalMine + planet.Buildings.CrystalMine + planet.Buildings.DeuteriumSynthesizer);
+		}
+
 	}
 }

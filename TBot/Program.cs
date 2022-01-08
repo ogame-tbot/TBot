@@ -1791,8 +1791,12 @@ namespace Tbot {
 													}
 
 													var result = ogamedService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
-													if (result)
-														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started.");
+													if (result) {
+														tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
+														int interval = (int) Helpers.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, serverData, tempCelestial.Facilities) * 1000;
+														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
+														Thread.Sleep(interval);
+													}
 													else
 														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 												}
@@ -1897,10 +1901,15 @@ namespace Tbot {
 											}
 
 											var result = ogamedService.BuildShips(tempCelestial, cargoShip, neededCargos);
-											if (result)
-												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started.");
-											else
+											if (result) {
+												tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
+												int interval = (int) Helpers.CalcProductionTime(cargoShip, (int) neededCargos, serverData, tempCelestial.Facilities) * 1000;
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
+												Thread.Sleep(interval);
+											}
+											else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+											}
 										}
 
 										if (tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep < (long) settings.AutoFarm.MinCargosToSend) {

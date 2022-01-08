@@ -296,14 +296,14 @@
 		"MaxFlightDistance": 19000,
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
-		"MinCargosToSend": 2,
-		"BuildCargos": true,
-		"BuildProbes": true,
-		"MinimumResources": 100000,
+		"MinCargosToSend": 25,
+		"BuildCargos": false,
+		"BuildProbes": false,
+		"MinimumResources": 1000000,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
-		"CheckIntervalMin": 2,
-		"CheckIntervalMax": 10
+		"CheckIntervalMin": 30,
+		"CheckIntervalMax": 60
 	},
 	"AutoHarvest": {
 		"Active": false,

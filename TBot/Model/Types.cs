@@ -284,6 +284,12 @@ namespace Tbot.Model {
 			}
 		}
 
+		public long StructuralIntegrity {
+			get {
+				return Metal + Crystal;
+			}
+		}
+
 		public override string ToString() {
 			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
