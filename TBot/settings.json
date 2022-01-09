@@ -298,6 +298,7 @@
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
 		"MinimumResources": 1000000,
+		"MinimumPlayerRank": 500,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,
