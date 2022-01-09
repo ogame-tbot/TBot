@@ -1877,22 +1877,26 @@ namespace Tbot {
 							foreach (var c in closestCelestials) {
 								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
-									var distance = Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData);
-									if (Helpers.IsSettingSet(settings.AutoFarm.MaxFlightDistance) && distance > settings.AutoFarm.MaxFlightDistance) continue;
-									fromCelestial = tempCelestial;
+									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
+									var flightTime = Helpers.CalcFlightTime(tempCelestial.Coordinate, target.Celestial.Coordinate, (new Ships()).Add(cargoShip, 1), Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									if (!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) || (long) settings.AutoFarm.MaxFlightTime == 0 || flightTime <= (long) settings.AutoFarm.MaxFlightTime)
+										fromCelestial = tempCelestial;
 									break;
 								}
 							}
 
 							if (fromCelestial == null) {
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"No origin celestial available near destination {target.Celestial.ToString()} with enough cargo ships.");
 								// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 								foreach (var closest in closestCelestials) {
 									Celestial tempCelestial = closest;
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
-
-									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep
-										&& Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData) < settings.AutoFarm.MaxFlightDistance) {
-
+									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
+									var flightTime = Helpers.CalcFlightTime(tempCelestial.Coordinate, target.Celestial.Coordinate, (new Ships()).Add(cargoShip, 1), Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
+										(!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime)
+										|| (long) settings.AutoFarm.MaxFlightTime == 0
+										|| flightTime <= (long) settings.AutoFarm.MaxFlightTime)) {
 										/*
 										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
@@ -1931,7 +1935,7 @@ namespace Tbot {
 							}
 
 							if (fromCelestial == null) {
-								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}. No suitable origin celestial available near the destination.");
 								continue;
 							}
 
@@ -1972,7 +1976,7 @@ namespace Tbot {
 								target.State = FarmState.AttackSent;
 								farmTargets.Add(target);
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}. {slots.Free} free, {slotsToLeaveFree} required.");
 								return;
 							}
 						}

@@ -293,12 +293,12 @@
 			}
 		],
 		"TargetsProbedBeforeAttack": 30,
-		"MaxFlightDistance": 19000,
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
 		"MinimumResources": 1000000,
 		"MinimumPlayerRank": 500,
+		"MaxFlightTime": 7200,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,
