@@ -1945,14 +1945,13 @@ namespace Tbot {
 								fleets = UpdateFleets();
 								// No slots free, wait for first fleet to come back.
 								if (fleets.Any()) {
-									// TODO Future: Set a configurable maximum wait time? Needed?
 									int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-									if (interval < 10 * 60 * 1000) {
+									if (Helpers.IsSettingSet(settings.AutoFarm.MaxWaitTime) && interval > (int) settings.AutoFarm.MaxWaitTime) {
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting time to wait greater than set {(int) settings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
+										return;										
+									} else {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for fleet to return...");
 										Thread.Sleep(interval);
-									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "No available fleet slots.");
-										return;
 									}
 								} else {
 									Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");

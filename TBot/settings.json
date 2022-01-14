@@ -301,6 +301,7 @@
 		"MinimumResources": 1000000,
 		"MinimumPlayerRank": 500,
 		"MaxFlightTime": 7200,
+		"MaxWaitTime": 7200,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,
