@@ -796,7 +796,7 @@ namespace Tbot {
 				value.Dispose();
 			timers.Remove("SleepModeTimer");
 		}
-		
+
 		private static void InitializeFleetScheduler() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing fleet scheduler...");
 			scheduledFleets = new();
@@ -878,7 +878,7 @@ namespace Tbot {
 				payload.Deuterium = 0;
 
 			int fleetId = SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, payload, userInfo.Class, isSleepTimeFleetSave || forceUnsafe);
-			if (recall && fleetId != 0) {
+			if (recall && fleetId > 0) {
 				Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
 				DateTime time = GetDateTime();
 				var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
@@ -1480,7 +1480,7 @@ namespace Tbot {
 						var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
 						if (celestial.Constructions.ResearchCountdown != 0)
 							interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-						else if (fleetId != 0) {
+						else if (fleetId > 0) {
 							var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 							interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						} else if (celestial.Constructions.BuildingID == (int) Buildables.ResearchLab)
@@ -1553,21 +1553,25 @@ namespace Tbot {
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
-								if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
+								if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+									break;
 
-								int galaxy		= (int) range.Galaxy;
+								int galaxy = (int) range.Galaxy;
 								int startSystem = (int) range.StartSystem;
-								int endSystem	= (int) range.EndSystem;
+								int endSystem = (int) range.EndSystem;
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
-									if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) break;
+									if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+										break;
 
 									// Check excluded system.
 									bool excludeSystem = false;
 									foreach (var exclude in settings.AutoFarm.Exclude) {
 										bool hasPosition = false;
-										foreach (var value in exclude.Keys) if (value == "Position") hasPosition = true;
+										foreach (var value in exclude.Keys)
+											if (value == "Position")
+												hasPosition = true;
 										if ((int) exclude.Galaxy == galaxy && (int) exclude.System == system && !hasPosition) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Skipping system {system.ToString()}: system in exclude list.");
 											excludeSystem = true;
@@ -1597,13 +1601,13 @@ namespace Tbot {
 
 									// Add each planet that has inactive status to farmTargets.
 									foreach (Celestial planet in scannedTargets) {
+
 										// Check if target is below set minimum rank.
 										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
 											int rank = 1;
 											if (planet.Coordinate.Type == Celestials.Planet) {
 												rank = (planet as Planet).Player.Rank;
-											}
-											else {
+											} else {
 												if (scannedTargets.Any(t => t.HasCoords(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet)))) {
 													rank = (scannedTargets.Single(t => t.HasCoords(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet))) as Planet).Player.Rank;
 												}
@@ -1623,7 +1627,9 @@ namespace Tbot {
 										bool excludePlanet = false;
 										foreach (var exclude in settings.AutoFarm.Exclude) {
 											bool hasPosition = false;
-											foreach (var value in exclude.Keys) if (value == "Position") hasPosition = true;
+											foreach (var value in exclude.Keys)
+												if (value == "Position")
+													hasPosition = true;
 											if ((int) exclude.Galaxy == galaxy && (int) exclude.System == system && hasPosition && (int) exclude.Position == planet.Coordinate.Position) {
 												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Skipping {planet.ToString()}: celestial in exclude list.");
 												excludePlanet = true;
@@ -1676,6 +1682,12 @@ namespace Tbot {
 											.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
 
 										foreach (var closest in closestCelestials) {
+											// Check sleeping in loop to avoid the autofarm beeing stuck after sleep
+											if (isSleeping) {
+												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Stopping AutoFarm: Sleep Mode Active!");
+												xaSem[Feature.AutoFarm].Release();
+												return;
+											}
 											int neededProbes = (int) settings.AutoFarm.NumProbes;
 											if (target.State == FarmState.ProbesRequired)
 												neededProbes *= 3;
@@ -1710,11 +1722,10 @@ namespace Tbot {
 															}
 														}
 													}
-												}
-												else {
+												} else {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {closest.Coordinate.ToString()}, insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
 													continue;
-												}												
+												}
 											}
 
 											if (freeSlots <= slotsToLeaveFree) {
@@ -1760,7 +1771,8 @@ namespace Tbot {
 												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Spying {target.ToString()} from {closest.ToString()} with {neededProbes} probes.");
 
 												slots = UpdateSlots();
-												if (SendFleet(closest, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent) != 0) {
+												var returnedFleetId = SendFleet(closest, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
+												if (returnedFleetId > 0) {
 													freeSlots--;
 													numProbed++;
 													celestialProbes[closest.ID] -= neededProbes;
@@ -1773,7 +1785,12 @@ namespace Tbot {
 													farmTargets.Add(target);
 
 													break;
+												} else if (returnedFleetId == -1) {
+													// If trying to spy  return sleeptime code, stop the autofarm (sleeptime is to close to do anything)
+													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Stopping AutoFarm - SleepTime will start soon !");
+													return;
 												} else {
+
 													continue;
 												}
 											} else {
@@ -1864,7 +1881,14 @@ namespace Tbot {
 
 						researches = UpdateResearches();
 						celestials = UpdateCelestials();
+
+						int distanceToFarForSleep = 0;
 						foreach (FarmTarget target in attackTargets) {
+							if (isSleeping) {
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Stopping AutoFarm: Sleep Mode Active!");
+								xaSem[Feature.AutoFarm].Release();
+								return;
+							}
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
@@ -1878,7 +1902,8 @@ namespace Tbot {
 								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									var distance = Helpers.CalcDistance(tempCelestial.Coordinate, target.Celestial.Coordinate, serverData);
-									if (Helpers.IsSettingSet(settings.AutoFarm.MaxFlightDistance) && distance > settings.AutoFarm.MaxFlightDistance) continue;
+									if (Helpers.IsSettingSet(settings.AutoFarm.MaxFlightDistance) && distance > settings.AutoFarm.MaxFlightDistance)
+										continue;
 									fromCelestial = tempCelestial;
 									break;
 								}
@@ -1935,6 +1960,14 @@ namespace Tbot {
 								continue;
 							}
 
+							// Add condition for SleepMode: If current target if farther than a precedently canceled target because of sleepmode, abort before trying to send fleet
+							int distanceToCurrentTarget = Helpers.CalcDistance(fromCelestial.Coordinate, target.Celestial.Coordinate, serverData);
+							if (distanceToFarForSleep != 0 && distanceToCurrentTarget >= distanceToFarForSleep) {
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Skipping {target.Celestial.Coordinate}: would return in sleeping hours.");
+								continue;
+							}
+
+
 							// Only execute update slots if our local copy indicates we have run out.
 							if (freeSlots <= slotsToLeaveFree) {
 								slots = UpdateSlots();
@@ -1965,14 +1998,25 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 								Ships ships = new();
 								ships.Add(cargoShip, numCargo);
-								SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
-								freeSlots--;
+								
+								var returnedIdFleet = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
 
+								// if sendFleet return is the sleepMode code, store the distance 
+								if (returnedIdFleet == -1) {
+									distanceToFarForSleep = distanceToCurrentTarget;
+								}
+								// Only decrement freeslot if the fleet was really sent
+								else if (returnedIdFleet > 0) {
+									freeSlots--;
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Error occured while attacking {target.Celestial.Coordinate}.");
+								}
+							
 								farmTargets.Remove(target);
 								target.State = FarmState.AttackSent;
 								farmTargets.Add(target);
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}.");
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}, no slots available.");
 								return;
 							}
 						}
@@ -2184,8 +2228,9 @@ namespace Tbot {
 					}
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
-					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
-					
+					if (celestial is Moon)
+						xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
+
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
 						if (buildable == Buildables.SolarSatellite) {
@@ -2265,7 +2310,7 @@ namespace Tbot {
 						)
 					) {
 						stop = true;
-						string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities"); 
+						string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities");
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: {buildings} are at set level.");
 					}
 				}
@@ -2314,8 +2359,7 @@ namespace Tbot {
 						else
 							interval = 0;
 					}
-				}
-				else if (celestial.HasConstruction()) {
+				} else if (celestial.HasConstruction()) {
 					interval = (celestial.Constructions.BuildingCountdown * 1000);
 				} else {
 					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
@@ -2810,9 +2854,10 @@ namespace Tbot {
 				var returnTime = time.Add(TimeSpan.FromSeconds(flightTime)).Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
 				var minReturnTime = wakeUp.Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
 
+				// SleepMode return -1 instead of 0:  as a valid fleetID is always positive, negatives values can be used for specific error codes
 				if (time > maxDepartureTime || returnTime < minReturnTime) {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
-					return 0;
+					return -1;
 				}
 			}
 
@@ -2845,7 +2890,7 @@ namespace Tbot {
 				Thread.Sleep((int) IntervalType.AFewSeconds);
 				fleets = UpdateFleets();
 				Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = 0 };
-				if (recalledFleet.ID == 0) {
+				if (recalledFleet.ID <= 0) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred.");
 					if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
 						telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] Unable to recall fleet: an unknon error has occurred.");
@@ -3423,7 +3468,7 @@ namespace Tbot {
 									ogamedService.BuildShips(origin, Buildables.ColonyShip, neededColonizers - origin.Ships.ColonyShip);
 									interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								}
-							}							
+							}
 						}
 					} else {
 						Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No new planet is needed.");
