@@ -1863,7 +1863,7 @@ namespace Tbot {
 						int attackTargetsCount = 0;
 						foreach (FarmTarget target in attackTargets) {
 							attackTargetsCount++;
-							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count}.");
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userInfo.Class).TransportableResources}.");
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
