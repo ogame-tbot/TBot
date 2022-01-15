@@ -1860,7 +1860,10 @@ namespace Tbot {
 
 						researches = UpdateResearches();
 						celestials = UpdateCelestials();
+						int attackTargetsCount = 0;
 						foreach (FarmTarget target in attackTargets) {
+							attackTargetsCount++;
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count}.");
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
@@ -1941,7 +1944,7 @@ namespace Tbot {
 								freeSlots = slots.Free;
 							}
 
-							if (freeSlots <= slotsToLeaveFree) {
+							while (freeSlots <= slotsToLeaveFree) {
 								fleets = UpdateFleets();
 								// No slots free, wait for first fleet to come back.
 								if (fleets.Any()) {
@@ -1950,8 +1953,10 @@ namespace Tbot {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting time to wait greater than set {(int) settings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
 										return;										
 									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for fleet to return...");
+										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for first fleet to return...");
 										Thread.Sleep(interval);
+										slots = UpdateSlots();
+										freeSlots = slots.Free;
 									}
 								} else {
 									Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");
@@ -1959,7 +1964,6 @@ namespace Tbot {
 								}
 							}
 
-							slots = UpdateSlots();
 							if (slots.Free > slotsToLeaveFree) {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 								Ships ships = new();
@@ -1984,6 +1988,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, $"AutoFarm Exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
 			} finally {
+				Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacked targets: {farmTargets.Where(t => t.State == FarmState.AttackSent).Count()}");
 				if (!isSleeping) {
 					var time = GetDateTime();
 					var interval = Helpers.CalcRandomInterval((int) settings.AutoFarm.CheckIntervalMin, (int) settings.AutoFarm.CheckIntervalMax);
