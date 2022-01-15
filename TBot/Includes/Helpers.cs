@@ -521,6 +521,58 @@ namespace Tbot.Includes {
 			};
 		}
 
+		public static List<decimal> GetValidSpeedsForClass(CharacterClass playerClass) {
+			var speeds = new List<decimal>();
+			if (playerClass == CharacterClass.General) {
+				speeds.Add(Speeds.HundredPercent);
+				speeds.Add(Speeds.NinetyfivePercent);
+				speeds.Add(Speeds.NinetyPercent);
+				speeds.Add(Speeds.EightyfivePercent);
+				speeds.Add(Speeds.EightyPercent);
+				speeds.Add(Speeds.SeventyfivePercent);
+				speeds.Add(Speeds.SeventyPercent);
+				speeds.Add(Speeds.SixtyfivePercent);
+				speeds.Add(Speeds.SixtyPercent);
+				speeds.Add(Speeds.FiftyfivePercent);
+				speeds.Add(Speeds.FiftyPercent);
+				speeds.Add(Speeds.FourtyfivePercent);
+				speeds.Add(Speeds.FourtyPercent);
+				speeds.Add(Speeds.ThirtyfivePercent);
+				speeds.Add(Speeds.ThirtyPercent);
+				speeds.Add(Speeds.TwentyfivePercent);
+				speeds.Add(Speeds.TwentyPercent);
+				speeds.Add(Speeds.FifteenPercent);
+				speeds.Add(Speeds.TenPercent);
+				speeds.Add(Speeds.FivePercent);
+			} else {
+				speeds.Add(Speeds.HundredPercent);
+				speeds.Add(Speeds.NinetyPercent);
+				speeds.Add(Speeds.EightyPercent);
+				speeds.Add(Speeds.SeventyPercent);
+				speeds.Add(Speeds.SixtyPercent);
+				speeds.Add(Speeds.FiftyPercent);
+				speeds.Add(Speeds.FourtyPercent);
+				speeds.Add(Speeds.ThirtyPercent);
+				speeds.Add(Speeds.TwentyPercent);
+				speeds.Add(Speeds.TenPercent);
+			}
+			return speeds;
+		}
+
+		public static decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination,Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
+			var speeds = GetValidSpeedsForClass(playerClass);
+			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
+			var maxFuel = loot.ConvertedDeuterium * ratio;
+			foreach (var speed in speeds) {
+				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
+			}
+			return speedPredictions
+				.Where(p => p.Value.Fuel < maxFuel)
+				.OrderByDescending(p => p.Key)
+				.First()
+				.Key;
+		}
+
 		public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, CharacterClass playerClass, long deutToLeave = 0, int probeCargo = 0) {
 			var capacity = CalcFleetCapacity(ships, hyperspaceTech, playerClass, probeCargo);
 			if (resources.TotalResources <= capacity) {
@@ -2065,6 +2117,5 @@ namespace Tbot.Includes {
 		public static int CalcMaxCrawlers(Planet planet, CharacterClass userClass) {
 			return 8 * (planet.Buildings.MetalMine + planet.Buildings.CrystalMine + planet.Buildings.DeuteriumSynthesizer);
 		}
-
 	}
 }

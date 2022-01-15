@@ -1880,7 +1880,12 @@ namespace Tbot {
 								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									decimal lootFuelRatio = (decimal) 0.5;
+									if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+										lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
+									}
+									var speed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
+									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
 									if (
 										(
 											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
@@ -1903,7 +1908,12 @@ namespace Tbot {
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									decimal lootFuelRatio = (decimal) 0.5;
+									if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+										lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
+									}
+									var speed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
+									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
 									if (
 										tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
 										tempCelestial.Resources.Deuterium >= prediction.Fuel &&
@@ -1983,7 +1993,18 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 								Ships ships = new();
 								ships.Add(cargoShip, numCargo);
-								SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, Speeds.HundredPercent);
+
+								decimal lootFuelRatio = (decimal) 0.5;
+								if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+									lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
+								}
+								var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
+								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+								var fleetPrediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, optimalSpeed, researches, serverData, userInfo.Class);
+								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight time: {fleetPrediction.Time} s");
+								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight fuel: {fleetPrediction.Fuel}");
+
+								SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, optimalSpeed);
 								freeSlots--;
 
 								farmTargets.Remove(target);
@@ -2773,6 +2794,7 @@ namespace Tbot {
 				return 0;
 			}
 
+			/*
 			if (
 				playerClass != CharacterClass.General && (
 					speed == Speeds.FivePercent ||
@@ -2786,7 +2808,8 @@ namespace Tbot {
 					speed == Speeds.EightyfivePercent ||
 					speed == Speeds.NinetyfivePercent
 				)
-			) {
+			) {*/
+			if (!Helpers.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
 				return 0;
 			}

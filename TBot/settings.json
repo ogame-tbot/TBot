@@ -302,6 +302,7 @@
 		"MinimumPlayerRank": 500,
 		"MaxFlightTime": 7200,
 		"MaxWaitTime": 7200,
+		"MinLootFuelRatio": 0.5,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,
