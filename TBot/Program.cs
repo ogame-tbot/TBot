@@ -1782,9 +1782,9 @@ namespace Tbot {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 													var tempCelestial = UpdatePlanet(closest, UpdateType.Resources);
-													if (tempCelestial.Resources.IsEnoughFor(cost))
+													if (tempCelestial.Resources.IsEnoughFor(cost)) {
 														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {buildProbes}x{Buildables.EspionageProbe.ToString()}");
-													else {
+													} else {
 														var buildableProbes = Helpers.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
 														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {buildProbes}x{Buildables.EspionageProbe.ToString()}. {buildableProbes} will be built instead.");
 														buildProbes = buildableProbes;
@@ -1793,12 +1793,13 @@ namespace Tbot {
 													var result = ogamedService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
 													if (result) {
 														tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
-														int interval = (int) Helpers.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, serverData, tempCelestial.Facilities) * 1000;
+														int interval = (int) (Helpers.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, serverData, tempCelestial.Facilities) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
 														Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 														Thread.Sleep(interval);
 													}
-													else
+													else {
 														Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+													}
 												}
 												break;
 											}
@@ -1912,13 +1913,12 @@ namespace Tbot {
 											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
 										)
 									) {
-										/*
 										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
-											if (tempCelestial.Resources.IsEnoughFor(cost))
+											if (tempCelestial.Resources.IsEnoughFor(cost)) {
 												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {neededCargos}x{cargoShip.ToString()}");
-											else {
+											} else {
 												var buildableCargos = Helpers.CalcMaxBuildableNumber(cargoShip, tempCelestial.Resources);
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{cargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
 												neededCargos = buildableCargos;
@@ -1927,7 +1927,7 @@ namespace Tbot {
 											var result = ogamedService.BuildShips(tempCelestial, cargoShip, neededCargos);
 											if (result) {
 												tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Facilities);
-												int interval = (int) Helpers.CalcProductionTime(cargoShip, (int) neededCargos, serverData, tempCelestial.Facilities) * 1000;
+												int interval = (int) (Helpers.CalcProductionTime(cargoShip, (int) neededCargos, serverData, tempCelestial.Facilities) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
 												Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 												Thread.Sleep(interval);
 											}
@@ -1935,7 +1935,6 @@ namespace Tbot {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 											}
 										}
-										*/
 
 										if (tempCelestial.Ships.GetAmount(cargoShip) - (long) settings.AutoFarm.MinCargosToKeep < (long) settings.AutoFarm.MinCargosToSend) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Insufficient {cargoShip.ToString()} on {tempCelestial.Coordinate}, require {numCargo + (long) settings.AutoFarm.MinCargosToKeep} {cargoShip.ToString()}.");
