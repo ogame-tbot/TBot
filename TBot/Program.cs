@@ -1722,21 +1722,21 @@ namespace Tbot {
 												freeSlots = slots.Free;
 											}
 
-											if (freeSlots <= slotsToLeaveFree) {
+											while (freeSlots <= slotsToLeaveFree) {
 												// No slots available, wait for first fleet of any mission type to return.
 												fleets = UpdateFleets();
 												if (fleets.Any()) {
 													int interval = (int) ((1000 * fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 													Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting for fleet to return...");
 													Thread.Sleep(interval);
-													freeSlots++;
+													fleets = UpdateFleets();
+													freeSlots = slots.Free;
 												} else {
-													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "No fleet slots available and no fleets returning!");
+													Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");
 													return;
 												}
 											}
 
-											fleets = UpdateFleets();
 											if (Helpers.GetMissionsInProgress(closest.Coordinate, Missions.Spy, fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
 												break;
