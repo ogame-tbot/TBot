@@ -1866,6 +1866,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userInfo.Class).TransportableResources}.");
 							var loot = target.Report.Loot(userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+							var attackingShips = new Ships().Add(cargoShip, numCargo);
 
 							List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
 							List<Celestial> closestCelestials = tempCelestials
@@ -1875,12 +1876,21 @@ namespace Tbot {
 							Celestial fromCelestial = null;
 							foreach (var c in closestCelestials) {
 								var tempCelestial = UpdatePlanet(c, UpdateType.Ships);
+								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									var flightTime = Helpers.CalcFlightTime(tempCelestial.Coordinate, target.Celestial.Coordinate, (new Ships()).Add(cargoShip, 1), Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
-									if (!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) || (long) settings.AutoFarm.MaxFlightTime == 0 || flightTime <= (long) settings.AutoFarm.MaxFlightTime)
+									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									if (
+										(
+											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											(long) settings.AutoFarm.MaxFlightTime == 0 ||
+											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
+										) &&
+										prediction.Fuel <= tempCelestial.Resources.Deuterium
+									) {
 										fromCelestial = tempCelestial;
-									break;
+										break;
+									}										
 								}
 							}
 
@@ -1890,12 +1900,18 @@ namespace Tbot {
 								foreach (var closest in closestCelestials) {
 									Celestial tempCelestial = closest;
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
+									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									var flightTime = Helpers.CalcFlightTime(tempCelestial.Coordinate, target.Celestial.Coordinate, (new Ships()).Add(cargoShip, 1), Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
-									if (tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
-										(!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime)
-										|| (long) settings.AutoFarm.MaxFlightTime == 0
-										|| flightTime <= (long) settings.AutoFarm.MaxFlightTime)) {
+									var prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+									if (
+										tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
+										tempCelestial.Resources.Deuterium >= prediction.Fuel &&
+										(
+											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											(long) settings.AutoFarm.MaxFlightTime == 0 ||
+											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
+										)
+									) {
 										/*
 										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
