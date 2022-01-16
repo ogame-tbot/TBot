@@ -3014,6 +3014,9 @@ namespace Tbot {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
+				int interval;
+				DateTime time;
+				DateTime newTime;
 
 				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Sleep Mode Active!");
@@ -3025,6 +3028,11 @@ namespace Tbot {
 					researches = UpdateResearches();
 					if (researches.Astrophysics == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
+						time = GetDateTime();
+						interval = Helpers.CalcRandomInterval(IntervalType.AboutHalfAnHour);
+						newTime = time.AddMilliseconds(interval);						
+						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
 						return;
 					}
 
@@ -3236,16 +3244,15 @@ namespace Tbot {
 					}
 
 					slots = UpdateSlots();
-					int interval;
 					if (orderedFleets.Count == 0 || slots.ExpFree > 0) {
 						interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
 						interval = (int) ((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
 					}
-					var time = GetDateTime();
+					time = GetDateTime();
 					if (interval <= 0)
 						interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-					DateTime newTime = time.AddMilliseconds(interval);
+					newTime = time.AddMilliseconds(interval);
 					timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
 					UpdateTitle();
