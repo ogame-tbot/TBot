@@ -358,8 +358,26 @@ namespace Tbot {
 			if (e.ChangeType != WatcherChangeTypes.Changed) {
 				return;
 			}
+
+			xaSem[Feature.Defender].WaitOne();
+			xaSem[Feature.Brain].WaitOne();
+			xaSem[Feature.Expeditions].WaitOne();
+			xaSem[Feature.Harvest].WaitOne();
+			xaSem[Feature.Colonize].WaitOne();
+			xaSem[Feature.AutoFarm].WaitOne();
+			xaSem[Feature.SleepMode].WaitOne();
+
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
 			ReadSettings();
+
+			xaSem[Feature.Defender].Release();
+			xaSem[Feature.Brain].Release();
+			xaSem[Feature.Expeditions].Release();
+			xaSem[Feature.Harvest].Release();
+			xaSem[Feature.Colonize].Release();
+			xaSem[Feature.AutoFarm].Release();
+			xaSem[Feature.SleepMode].Release();
+
 			InitializeSleepMode();
 			UpdateTitle();
 		}
@@ -1038,6 +1056,8 @@ namespace Tbot {
 				xaSem[Feature.Brain].WaitOne();
 				xaSem[Feature.Expeditions].WaitOne();
 				xaSem[Feature.Harvest].WaitOne();
+				xaSem[Feature.Colonize].WaitOne();
+				xaSem[Feature.AutoFarm].WaitOne();
 				xaSem[Feature.SleepMode].WaitOne();
 
 				DateTime time = GetDateTime();
@@ -1163,6 +1183,8 @@ namespace Tbot {
 				xaSem[Feature.Brain].Release();
 				xaSem[Feature.Expeditions].Release();
 				xaSem[Feature.Harvest].Release();
+				xaSem[Feature.Colonize].Release();
+				xaSem[Feature.AutoFarm].Release();
 				xaSem[Feature.SleepMode].Release();
 			}
 		}
