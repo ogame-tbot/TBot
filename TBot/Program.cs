@@ -58,12 +58,16 @@ namespace Tbot {
 				ProxySettings proxy = new();
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
-					proxy.Enabled = (bool) settings.General.Proxy.Enabled;
-					proxy.Address = (string) settings.General.Proxy.Address;
-					proxy.Type = (string) settings.General.Proxy.Type ?? "socks5";
-					proxy.Username = (string) settings.General.Proxy.Username ?? "";
-					proxy.Password = (string) settings.General.Proxy.Password ?? "";
-
+					if ((string) settings.General.Proxy.Type == "socks5" || (string) settings.General.Proxy.Type == "https") {
+						proxy.Enabled = (bool) settings.General.Proxy.Enabled;
+						proxy.Address = (string) settings.General.Proxy.Address;
+						proxy.Type = (string) settings.General.Proxy.Type ?? "socks5";
+						proxy.Username = (string) settings.General.Proxy.Username ?? "";
+						proxy.Password = (string) settings.General.Proxy.Password ?? "";
+					}
+					else {
+						Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to initialize proxy: unsupported proxy type");
+					}
 				}
 				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy);
 			} catch (Exception e) {
@@ -635,12 +639,19 @@ namespace Tbot {
 				researches = UpdateResearches();
 			}
 			string title = $"[{serverInfo.Name}.{serverInfo.Language}] {userInfo.PlayerName} - Rank: {userInfo.Rank} - http://{(string) settings.General.Host}:{(string) settings.General.Port}";
-			if ((bool) settings.General.Proxy.Enabled)
+			if (
+				(bool) settings.General.Proxy.Enabled &&
+				(string) settings.General.Proxy.Address != "" &&
+				((string) settings.General.Proxy.Type == "socks5" || (string) settings.General.Proxy.Type == "https")
+			) {
 				title += " (Proxy active)";
-			if ((string) settings.General.CustomTitle != "")
+			}				
+			if ((string) settings.General.CustomTitle != "") {
 				title = $"{(string) settings.General.CustomTitle} - {title}";
-			if (underAttack)
+			}				
+			if (underAttack) {
 				title = $"ENEMY ACTIVITY! - {title}";
+			}
 
 			Helpers.SetTitle(title);
 		}

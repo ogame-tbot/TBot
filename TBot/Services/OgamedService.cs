@@ -27,14 +27,16 @@ namespace Tbot.Services {
 				if (captchaKey != "")
 					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
-					args += $" --proxy={proxySettings.Address}";
-					args += $" --proxy-type={proxySettings.Type}";
-					if (proxySettings.Username != "")
-						args += $" --proxy-username={proxySettings.Username}";
-					if (proxySettings.Password != "")
-						args += $" --proxy-password={proxySettings.Password}";
-					if (proxySettings.LoginOnly)
-						args += " --proxy-login-only=true";
+					if (proxySettings.Type == "socks5" || proxySettings.Type == "https") {
+						args += $" --proxy={proxySettings.Address}";
+						args += $" --proxy-type={proxySettings.Type}";
+						if (proxySettings.Username != "")
+							args += $" --proxy-username={proxySettings.Username}";
+						if (proxySettings.Password != "")
+							args += $" --proxy-password={proxySettings.Password}";
+						if (proxySettings.LoginOnly)
+							args += " --proxy-login-only=true";
+					}
 				}
 				if (credentials.IsLobbyPioneers)
 					args += " --lobby=lobby-pioneers";
