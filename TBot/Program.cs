@@ -2965,18 +2965,26 @@ namespace Tbot {
 			}
 
 			try {
-				if ((bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
-					if (attack.MissionType == Missions.Spy)
-						Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
-					else
-						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: only Espionage Probes.");
+				if (attack.Ships != null) {
+					if ((bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
+						if (attack.MissionType == Missions.Spy)
+							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
+						else
+							Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: only Espionage Probes.");
 
-					return;
+						return;
+					}
+					if (
+						(bool) settings.Defender.IgnoreWeakAttack &&
+						attack.Ships.GetFleetPoints() < (attackedCelestial.Ships.GetFleetPoints() / (int) settings.Defender.WeakAttackRatio)
+					) {
+						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: weak attack.");
+						return;
+					}
 				}
-				if ((bool) settings.Defender.IgnoreWeakAttack && attack.Ships.GetFleetPoints() < (attackedCelestial.Ships.GetFleetPoints() / (int) settings.Defender.WeakAttackRatio)) {
-					Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: weak attack.");
-					return;
-				}
+				else {
+					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Unable to detect fleet composition.");
+				}				
 			} catch {
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking attacker fleet composition");
 			}
