@@ -39,10 +39,9 @@ jobs:
         cd ${{ github.workspace }}
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed.exe ${{ github.workspace }}/publish/win64/
     - name: Package win64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/win64/ README.md
-        dest: TBot-${{ env.VERSION }}-win64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-win64.zip publish/win64/
     - name: Upload win64
       uses: actions/upload-artifact@v2
       with:
@@ -58,10 +57,9 @@ jobs:
         cd ${{ github.workspace }}/
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed.exe ${{ github.workspace }}/publish/win32/
     - name: Package win32
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/win32/ README.md
-        dest: TBot-${{ env.VERSION }}-win32.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-win32.zip publish/win32/
     - name: Upload win32
       uses: actions/upload-artifact@v2
       with:
@@ -79,10 +77,9 @@ jobs:
         chmod +x ${{ github.workspace }}/publish/linux64/TBot
         chmod +x ${{ github.workspace }}/publish/linux64/ogamed
     - name: Package linux64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linux64/ README.md
-        dest: TBot-${{ env.VERSION }}-linux64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linux64.zip publish/linux64/
     - name: Upload linux64
       uses: actions/upload-artifact@v2
       with:
@@ -100,10 +97,9 @@ jobs:
         chmod +x ${{ github.workspace }}/publish/linuxarm/TBot
         chmod +x ${{ github.workspace }}/publish/linuxarm/ogamed
     - name: Package linuxarm
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linuxarm/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm.zip publish/linuxarm/
     - name: Upload linuxarm
       uses: actions/upload-artifact@v2
       with:
@@ -121,10 +117,9 @@ jobs:
         chmod +x ${{ github.workspace }}/publish/linuxarm64/TBot
         chmod +x ${{ github.workspace }}/publish/linuxarm64/ogamed
     - name: Package linuxarm64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/linuxarm64/ README.md
-        dest: TBot-${{ env.VERSION }}-linuxarm64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm64.zip publish/linuxarm64/
     - name: Upload linuxarm64
       uses: actions/upload-artifact@v2
       with:
@@ -142,10 +137,9 @@ jobs:
         chmod +x ${{ github.workspace }}/publish/osx64/TBot
         chmod +x ${{ github.workspace }}/publish/osx64/ogamed
     - name: Package osx64
-      uses: papeloto/action-zip@v1
+      uses: montudor/action-zip@v1
       with:
-        files: publish/osx64/ README.md
-        dest: TBot-${{ env.VERSION }}-osx64.zip
+        args: zip -qq -r TBot-${{ env.VERSION }}-osx64.zip publish/osx64/
     - name: Upload osx64
       uses: actions/upload-artifact@v2
       with:

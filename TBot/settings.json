@@ -293,14 +293,21 @@
 				"Type": "Planet"
 			}
 		],
+		"TargetsProbedBeforeAttack": 30,
 		"CargoType": "LargeCargo",
 		"MinCargosToKeep": 0,
-		"MinCargosToSend": 2,
-		"MinimumResources": 100000,
+		"MinCargosToSend": 25,
+		"BuildCargos": false,
+		"BuildProbes": false,
+		"MinimumResources": 1000000,
+		"MinimumPlayerRank": 500,
+		"MaxFlightTime": 7200,
+		"MaxWaitTime": 7200,
+		"MinLootFuelRatio": 0.5,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
-		"CheckIntervalMin": 2,
-		"CheckIntervalMax": 10
+		"CheckIntervalMin": 30,
+		"CheckIntervalMax": 60
 	},
 	"AutoHarvest": {
 		"Active": false,
