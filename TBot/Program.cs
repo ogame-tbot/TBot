@@ -3563,6 +3563,10 @@ namespace Tbot {
 									filteredTargets.Add(t);
 								}
 								if (filteredTargets.Count > 0) {
+									filteredTargets = filteredTargets
+										.OrderBy(t => Helpers.CalcDistance(origin.Coordinate, t, serverData))
+										.Take(maxPlanets - currentPlanets)
+										.ToList();
 									foreach (var target in filteredTargets) {
 										Ships ships = new() { ColonyShip = 1 };
 										var fleetId = SendFleet(origin, ships, target, Missions.Colonize, Speeds.HundredPercent);
