@@ -2379,8 +2379,11 @@ namespace Tbot {
 
 				celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 				if (started) {
-					if (buildable == Buildables.SolarSatellite)
-						interval = Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+					if (buildable == Buildables.SolarSatellite) {
+						celestial = UpdatePlanet(celestial, UpdateType.Productions);
+						celestial = UpdatePlanet(celestial, UpdateType.Facilities);
+						interval = Helpers.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, serverData, celestial.Facilities) * 1000;
+					}						
 					else {
 						if (celestial.HasConstruction())
 							interval = (celestial.Constructions.BuildingCountdown * 1000);
@@ -2434,13 +2437,13 @@ namespace Tbot {
 						if (incomingFleets.Any()) {
 							var fleet = incomingFleets.First();
 							transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving by {now.AddMilliseconds(transportTime).ToString()}");
+							//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving by {now.AddMilliseconds(transportTime).ToString()}");
 						}
 
 						var returningExpo = Helpers.GetFirstReturningExpedition(celestial.Coordinate, fleets);
 						if (returningExpo != null) {
 							returningExpoTime = (long) (returningExpo.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
+							//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
 						}
 
 						if ((bool) settings.Brain.AutoMine.Transports.Active) {
@@ -2454,14 +2457,14 @@ namespace Tbot {
 							var returningExpoOrigin = Helpers.GetFirstReturningExpedition(origin.Coordinate, fleets);
 							if (returningExpoOrigin != null) {
 								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning in transport origin celestial by {now.AddMilliseconds(returningExpoOriginTime).ToString()}");
+								//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next expedition returning in transport origin celestial by {now.AddMilliseconds(returningExpoOriginTime).ToString()}");
 							}
 
 							var incomingOriginFleets = Helpers.GetIncomingFleetsWithResources(origin, fleets);
 							if (incomingOriginFleets.Any()) {
 								var fleet = incomingOriginFleets.First();
 								transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving in transport origin celestial by {DateTime.Now.AddMilliseconds(transportOriginTime).ToString()}");
+								//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next fleet with resources arriving in transport origin celestial by {DateTime.Now.AddMilliseconds(transportOriginTime).ToString()}");
 							}
 						}
 
