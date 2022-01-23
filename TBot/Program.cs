@@ -3628,6 +3628,7 @@ namespace Tbot {
 										UpdatePlanet(origin, UpdateType.Constructions);
 										if (origin.HasConstruction() && (origin.Constructions.BuildingID == (int) Buildables.Shipyard || origin.Constructions.BuildingID == (int) Buildables.NaniteFactory)) {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Unable to build colony ship: {((Buildables) origin.Constructions.BuildingID).ToString()} is in construction");
+											interval = origin.Constructions.BuildingCountdown * 1000;
 										}
 										else if (origin.Facilities.Shipyard >= 4 && researches.ImpulseDrive >= 3) {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Building {neededColonizers - origin.Ships.ColonyShip}....");
@@ -3654,7 +3655,7 @@ namespace Tbot {
 					}
 
 					DateTime newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+					timers.GetValueOrDefault("ColonizeTimer").Change(interval + Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");
 				}
 			} catch (Exception e) {
