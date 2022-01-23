@@ -2066,13 +2066,28 @@ namespace Tbot {
 								if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
 									lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
 								}
+
+								decimal speed;
+								if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+									speed = (int) settings.AutoFarm.FleetSpeed / 10;
+									if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
+										Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+										speed = Speeds.HundredPercent;
+									}
+								} else {
+									speed = Speeds.HundredPercent;
+								}
+								var prediction = ogamedService.PredictFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, speed);
+								/*
 								var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
 								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
 								var fleetPrediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, optimalSpeed, researches, serverData, userInfo.Class);
 								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight time: {fleetPrediction.Time} s");
 								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight fuel: {fleetPrediction.Fuel}");
-
 								var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, optimalSpeed);
+								*/
+								var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, speed);
+
 								if (fleetId > 0) {
 									freeSlots--;
 								}
