@@ -294,6 +294,7 @@
 		],
 		"TargetsProbedBeforeAttack": 30,
 		"CargoType": "LargeCargo",
+		"FleetSpeed": 100,
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
 		"BuildCargos": false,

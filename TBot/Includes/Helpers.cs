@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Linq;
 using System.IO;
+using Tbot.Services;
 
 namespace Tbot.Includes {
 
@@ -559,12 +560,12 @@ namespace Tbot.Includes {
 			return speeds;
 		}
 
-		public static decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination,Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
+		public static decimal CalcOptimalFarmSpeed(OgamedService service, Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
 			var speeds = GetValidSpeedsForClass(playerClass);
 			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
 			var maxFuel = loot.ConvertedDeuterium * ratio;
 			foreach (var speed in speeds) {
-				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
+				speedPredictions.Add(speed, service.PredictFleet(origin, ships, destination, Missions.Attack, speed));
 			}
 			return speedPredictions
 				.Where(p => p.Value.Fuel < maxFuel)
