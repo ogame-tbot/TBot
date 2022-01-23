@@ -2678,14 +2678,13 @@ namespace Tbot {
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
 					if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 						Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
-						Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 
 					}
 
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 					var capacity = Helpers.CalcFleetCapacity(tempCelestial.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: Available capacity: {capacity.ToString("N0")} - Resources: {tempCelestial.Resources.TotalResources.ToString("N0")}");
 					if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool) settings.Brain.AutoCargo.ExcludeMoons) {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
 						continue;
@@ -2716,7 +2715,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: Building {neededCargos}x{preferredCargoShip.ToString()}");
 						else {
 							var buildableCargos = Helpers.CalcMaxBuildableNumber(preferredCargoShip, tempCelestial.Resources);
-							Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
 							neededCargos = buildableCargos;
 						}
 
@@ -2734,7 +2733,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are in production.");
 						}
 					} else {
-						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"{tempCelestial.ToString()}: No ships will be built.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: No ships will be built.");
 					}
 
 					newCelestials.Remove(celestial);
