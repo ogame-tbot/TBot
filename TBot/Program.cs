@@ -1501,7 +1501,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
 					} else {
 						long interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = celestials
@@ -2870,7 +2870,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
 					} else {
 						var time = GetDateTime();
 						var interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
@@ -3393,7 +3393,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Stopping feature.");
 					}
 					xaSem[Feature.Expeditions].Release();
 				}
@@ -3527,7 +3527,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Stopping feature.");
 					}
 					xaSem[Feature.Harvest].Release();
 				}
@@ -3671,7 +3671,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Stopping feature.");
 					}
 					xaSem[Feature.Colonize].Release();
 				}
