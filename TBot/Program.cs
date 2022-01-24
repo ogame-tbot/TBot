@@ -1501,7 +1501,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
 					} else {
 						long interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = celestials
@@ -2495,7 +2495,7 @@ namespace Tbot {
 								float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
 								float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
 								productionTime = (long) (Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"The required resources will be produced by {now.AddMilliseconds(productionTime).ToString()}");
+								//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"The required resources will be produced by {now.AddMilliseconds(productionTime).ToString()}");
 							}
 						}
 
@@ -2678,14 +2678,13 @@ namespace Tbot {
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Constructions);
 					if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 						Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
-						Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 
 					}
 
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 					tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 					var capacity = Helpers.CalcFleetCapacity(tempCelestial.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: Available capacity: {capacity.ToString("N0")} - Resources: {tempCelestial.Resources.TotalResources.ToString("N0")}");
 					if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool) settings.Brain.AutoCargo.ExcludeMoons) {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
 						continue;
@@ -2716,7 +2715,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: Building {neededCargos}x{preferredCargoShip.ToString()}");
 						else {
 							var buildableCargos = Helpers.CalcMaxBuildableNumber(preferredCargoShip, tempCelestial.Resources);
-							Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
 							neededCargos = buildableCargos;
 						}
 
@@ -2734,7 +2733,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are in production.");
 						}
 					} else {
-						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"{tempCelestial.ToString()}: No ships will be built.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{tempCelestial.ToString()}: No ships will be built.");
 					}
 
 					newCelestials.Remove(celestial);
@@ -2865,7 +2864,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
 					} else {
 						var time = GetDateTime();
 						var interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
@@ -3388,7 +3387,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Stopping feature.");
 					}
 					xaSem[Feature.Expeditions].Release();
 				}
@@ -3522,7 +3521,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Stopping feature.");
 					}
 					xaSem[Feature.Harvest].Release();
 				}
@@ -3613,16 +3612,21 @@ namespace Tbot {
 								UpdatePlanet(origin, UpdateType.Facilities);
 								if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
-									interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr, serverData, origin.Facilities);
+									interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr, serverData, origin.Facilities) * 1000;
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed.");
 									UpdatePlanet(origin, UpdateType.Resources);
 									var cost = Helpers.CalcPrice(Buildables.ColonyShip, neededColonizers - (int) origin.Ships.ColonyShip);
 									if (origin.Resources.IsEnoughFor(cost)) {
-										if (origin.Facilities.Shipyard >= 4 && researches.ImpulseDrive >= 3) {
+										UpdatePlanet(origin, UpdateType.Constructions);
+										if (origin.HasConstruction() && (origin.Constructions.BuildingID == (int) Buildables.Shipyard || origin.Constructions.BuildingID == (int) Buildables.NaniteFactory)) {
+											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Unable to build colony ship: {((Buildables) origin.Constructions.BuildingID).ToString()} is in construction");
+											interval = origin.Constructions.BuildingCountdown * 1000;
+										}
+										else if (origin.Facilities.Shipyard >= 4 && researches.ImpulseDrive >= 3) {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Building {neededColonizers - origin.Ships.ColonyShip}....");
 											ogamedService.BuildShips(origin, Buildables.ColonyShip, neededColonizers - origin.Ships.ColonyShip);
-											interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, neededColonizers - (int) origin.Ships.ColonyShip, serverData, origin.Facilities);
+											interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, neededColonizers - (int) origin.Ships.ColonyShip, serverData, origin.Facilities) * 1000;
 										}
 										else {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Requirements to build colony ship not met");
@@ -3644,7 +3648,7 @@ namespace Tbot {
 					}
 
 					DateTime newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+					timers.GetValueOrDefault("ColonizeTimer").Change(interval + Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");
 				}
 			} catch (Exception e) {
@@ -3661,7 +3665,7 @@ namespace Tbot {
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Stopping feature.");
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Stopping feature.");
 					}
 					xaSem[Feature.Colonize].Release();
 				}
