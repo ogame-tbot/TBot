@@ -2789,7 +2789,7 @@ namespace Tbot {
 					List<Celestial> newCelestials = celestials.ToList();
 					List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoRepatriate.Exclude, celestials);
 
-					foreach (Celestial celestial in (bool) settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials) {
+					foreach (Celestial celestial in (bool) settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials.OrderBy(c => Helpers.CalcDistance(c.Coordinate, destinationCoordinate, serverData)).ToList()) {
 						if (celestialsToExclude.Has(celestial)) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: celestial in exclude list.");
 							continue;
@@ -2812,12 +2812,6 @@ namespace Tbot {
 						}
 
 						tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
-
-						if (tempCelestial.Resources.TotalResources < (int) settings.Brain.AutoRepatriate.MinimumResources) {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: resources under set limit");
-							continue;
-						}
-
 						tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 
 						Buildables preferredShip = Buildables.SmallCargo;
@@ -2837,7 +2831,7 @@ namespace Tbot {
 							}
 						}
 
-						if (payload.IsEmpty()) {
+						if (payload.TotalResources < (long) settings.Brain.AutoRepatriate.MinimumResources || payload.IsEmpty()) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: resources under set limit");
 							continue;
 						}
