@@ -2567,7 +2567,7 @@ namespace Tbot {
 				} else {
 					var missingResources = resources.Difference(destination.Resources);
 
-					Resources resToLeave = new();
+					Resources resToLeave = new(0, 0, 0);
 					if ((long) settings.Brain.AutoMine.Transports.DeutToLeave > 0)
 						resToLeave.Deuterium = (long) settings.Brain.AutoMine.Transports.DeutToLeave;
 
