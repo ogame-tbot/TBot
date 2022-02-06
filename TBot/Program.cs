@@ -658,12 +658,15 @@ namespace Tbot {
 
 		private static void CheckCelestials() {
 			try {
-				if (!isSleeping && celestials.Count != UpdateCelestials().Count) {
-					if (features.TryGetValue(Feature.BrainAutoMine, out bool value) && value)
-						timers.Remove("AutoMineTimer");
-					timers.Add("AutoMineTimer", new Timer(AutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+				var newCelestials = UpdateCelestials();
+				if (!isSleeping && celestials.Count != newCelestials.Count) {
+					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) {
+						xaSem[Feature.Brain].WaitOne();
+						InitializeBrainAutoMine();
+						xaSem[Feature.Brain].Release();
+					}
 				}
-				celestials = celestials.Unique().ToList();
+				celestials = newCelestials.Unique().ToList();
 			} catch { }
 		}
 
