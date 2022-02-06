@@ -309,7 +309,7 @@ namespace Tbot.Model {
 				tempCry -= resToLeave.Crystal;
 				tempDeut -= resToLeave.Deuterium;
 			}
-			return cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut;
+			return (cost.Metal == 0 || cost.Metal <= tempMet) && (cost.Crystal == 0 || cost.Crystal <= tempCry) && (cost.Deuterium == 0 || cost.Deuterium <= tempDeut);
 		}
 
 		public bool IsEmpty() {
