@@ -100,6 +100,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
 				}
 				else {
+					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Trying to solve captcha...");
 					var text = ogamedService.GetCaptchaTextImage(challengeID);
 					var icons = ogamedService.GetCaptchaIcons(challengeID);
 					var answer = OgameCaptchaSolver.GetCapcthaSolution(icons, text);
@@ -110,6 +111,7 @@ namespace Tbot {
 			}
 			
 			if (isLoggedIn) {
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Logged in!");
 				serverInfo = UpdateServerInfo();
 				serverData = UpdateServerData();
 				userInfo = UpdateUserInfo();

@@ -109,7 +109,7 @@ namespace Tbot.Services {
 					Method = Method.GET
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-				if (result != null)
+				if (result != null && result.Status == "ok")
 					return (string) result.Result;
 				else
 					return "";
