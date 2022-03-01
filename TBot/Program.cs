@@ -94,9 +94,22 @@ namespace Tbot {
 			Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 
 			if (!isLoggedIn) {
-				Helpers.WriteLog(LogType.Error, LogSender.Tbot, "Unable to login.");
-				Console.ReadLine();
-			} else {
+				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to login. Checking captcha...");
+				string challengeID = ogamedService.GetCaptchaChallengeID();
+				if (challengeID == "") {
+					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
+				}
+				else {
+					var text = ogamedService.GetCaptchaTextImage(challengeID);
+					var icons = ogamedService.GetCaptchaIcons(challengeID);
+					var answer = OgameCaptchaSolver.GetCapcthaSolution(icons, text);
+					ogamedService.SolveCaptcha(challengeID, answer);
+					Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+					isLoggedIn = ogamedService.Login();
+				}
+			}
+			
+			if (isLoggedIn) {
 				serverInfo = UpdateServerInfo();
 				serverData = UpdateServerData();
 				userInfo = UpdateUserInfo();
@@ -160,6 +173,10 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
 				}
 
+				Console.ReadLine();
+			}
+			else {
+				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to login.");
 				Console.ReadLine();
 			}
 		}
@@ -942,7 +959,7 @@ namespace Tbot {
 					possibleDestinations = celestials
 						.Where(planet => planet.ID != origin.ID)
 						.Where(planet => (planet.Coordinate.Type == Celestials.Moon) || forceUnsafe)
-						.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon ? 0 : 1)
+						.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
 						.ThenBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
 						.Select(planet => planet.Coordinate)
 						.ToList();

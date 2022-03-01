@@ -102,6 +102,60 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
+		public string GetCaptchaChallengeID() {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/captcha/challengeID",
+					Method = Method.GET
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result != null)
+					return (string) result.Result;
+				else
+					return "";
+			} catch { return ""; }
+		}
+
+		public byte[] GetCaptchaTextImage(string challengeID) {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/captcha/question/" + challengeID,
+					Method = Method.GET
+				};
+				var result = Client.Execute(request).RawBytes;
+				if (result != null)
+					return result;
+				else
+					return new byte[0];
+			} catch { return new byte[0]; }
+		}
+
+		public byte[] GetCaptchaIcons(string challengeID) {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/captcha/icons/" + challengeID,
+					Method = Method.GET
+				};
+				var result = Client.Execute(request).RawBytes;
+				if (result != null)
+					return result;
+				else
+					return new byte[0];
+			} catch { return new byte[0]; }
+		}
+
+		public void SolveCaptcha(string challengeID, int answer) {
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/captcha/solve",
+					Method = Method.POST,
+				};
+				request.AddParameter("challenge_id", challengeID, ParameterType.GetOrPost);
+				request.AddParameter("answer", answer, ParameterType.GetOrPost);
+				Client.Execute(request);
+			} catch {}
+		}
+
 		public Server GetServerInfo() {
 			var request = new RestRequest {
 				Resource = "/bot/server",

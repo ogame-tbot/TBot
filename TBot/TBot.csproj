@@ -38,6 +38,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="RestSharp" Version="106.15.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.0.0" />
     <PackageReference Include="Telegram.Bot" Version="17.0.0" />
   </ItemGroup>
 
