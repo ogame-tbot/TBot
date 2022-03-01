@@ -661,15 +661,21 @@ namespace Tbot {
 				if (!isSleeping) {
 					var newCelestials = UpdateCelestials();
 					if (celestials.Count != newCelestials.Count) {
-						if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) {
-							xaSem[Feature.Brain].WaitOne();
-							InitializeBrainAutoMine();
-							xaSem[Feature.Brain].Release();
+						celestials = newCelestials.Unique().ToList();
+						if (celestials.Count > newCelestials.Count) {
+							Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Less celestials than last check detected!!");
 						}
-					}
-					celestials = newCelestials.Unique().ToList();
-				}				
-			} catch { }
+						else {
+							Helpers.WriteLog(LogType.Info, LogSender.Tbot, "More celestials than last check detected");
+							if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) {
+								InitializeBrainAutoMine();
+							}
+						}						
+					}					
+				}
+			} catch {
+				celestials = celestials.Unique().ToList();
+			}
 		}
 
 		private static void InitializeDefender() {
