@@ -1,4 +1,4 @@
 [submodule "ogame"]
 	path = ogame
-	url = https://github.com/0xE232FE/ogame.mod.git
-	branch = develop_FlightTime
+	url = https://github.com/kokiddp/ogame.git
+	branch = master
