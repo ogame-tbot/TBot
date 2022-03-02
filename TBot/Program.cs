@@ -966,11 +966,16 @@ namespace Tbot {
 				case Missions.Deploy:
 					possibleDestinations = celestials
 						.Where(planet => planet.ID != origin.ID)
-						.Where(planet => (planet.Coordinate.Type == Celestials.Moon) || forceUnsafe)
-						.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-						.ThenBy(planet => Helpers.CalcDistance(origin.Coordinate, planet.Coordinate, serverData))
+						.Where(planet => (planet.Coordinate.Type == Celestials.Moon))
 						.Select(planet => planet.Coordinate)
 						.ToList();
+
+					if (possibleDestinations.Count == 0 && forceUnsafe) {
+						possibleDestinations = celestials
+							.Where(planet => planet.ID != origin.ID)
+							.Select(planet => planet.Coordinate)
+							.ToList();
+					}
 
 					foreach (var possibleDestination in possibleDestinations) {
 						foreach (var currentSpeed in validSpeeds) {

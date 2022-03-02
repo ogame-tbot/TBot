@@ -55,7 +55,7 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
-* Proxy: TBot supports routing your traffic through a proxy
+* Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings.json. The settings are quite self-explainatory.
 * LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
@@ -142,7 +142,9 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ### Captcha solving
-TBot, being based on ogamed, supports manual captcha solving as well as Ninja Captcha Autoresolve service.
+TBot implements an automatic captcha solving mechanism.
+
+However, being based on ogamed, it supports manual captcha solving as well as Ninja Captcha Autoresolve service.
 
 To manually solve captcha navigate to host:port/bot/captcha
 
