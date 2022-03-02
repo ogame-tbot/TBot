@@ -122,7 +122,8 @@ namespace Tbot.Services {
 					Resource = "/bot/captcha/question/" + challengeID,
 					Method = Method.GET
 				};
-				var result = Client.Execute(request).RawBytes;
+				var response = Client.Execute(request);
+				var result = response.RawBytes;
 				if (result != null)
 					return result;
 				else
@@ -136,7 +137,8 @@ namespace Tbot.Services {
 					Resource = "/bot/captcha/icons/" + challengeID,
 					Method = Method.GET
 				};
-				var result = Client.Execute(request).RawBytes;
+				var response = Client.Execute(request);
+				var result = response.RawBytes;
 				if (result != null)
 					return result;
 				else

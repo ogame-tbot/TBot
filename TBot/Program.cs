@@ -103,7 +103,13 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Trying to solve captcha...");
 					var text = ogamedService.GetCaptchaTextImage(challengeID);
 					var icons = ogamedService.GetCaptchaIcons(challengeID);
-					var answer = OgameCaptchaSolver.GetCapcthaSolution(icons, text);
+					int answer;
+					if (text.Length > 0 && icons.Length > 0) {
+						answer = OgameCaptchaSolver.GetCapcthaSolution(icons, text);
+					}
+					else {
+						answer = OgameCaptchaSolver.GetCapcthaSolution(challengeID, settings.General.UserAgent);
+					}
 					ogamedService.SolveCaptcha(challengeID, answer);
 					Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 					isLoggedIn = ogamedService.Login();

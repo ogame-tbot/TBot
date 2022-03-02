@@ -1,3 +1,4 @@
+using RestSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
@@ -8,10 +9,50 @@ using System.Net;
 using System.Security.Cryptography;
 
 namespace Tbot.Services {
-	/// <summary>
-	/// The main OgameCaptchaSolver Class
-	/// </summary>
+
 	public static class OgameCaptchaSolver {
+
+		public static int GetCapcthaSolution(string challengeId, string? userAgent = null) {
+			RestClient client = SetupRestClient(userAgent);
+
+			return GetCapcthaSolution(challengeId, client);
+		}
+
+		public static int GetCapcthaSolution(string challengeId, RestClient client) {
+			var challengeURL = "https://image-drop-challenge.gameforge.com/challenge/" + challengeId + "/en-GB";
+			var challengeRequest = new RestRequest() {
+				Method = Method.GET,
+				Resource = challengeURL
+			};
+			challengeRequest.AddHeader("Content-Type", "application/json");
+			client.Execute(challengeRequest);
+
+			var challengeImageRequest = new RestRequest() {
+				Method = Method.GET,
+				Resource = challengeURL + "/drag-icons"
+			};
+			challengeImageRequest.AddHeader("Content-Type", "application/json");
+			IRestResponse challengeImageResponse = client.Execute(challengeImageRequest);
+
+			var challengeTextRequest = new RestRequest() {
+				Method = Method.GET,
+				Resource = challengeURL + "/text"
+			};
+			challengeTextRequest.AddHeader("Content-Type", "application/json");
+			IRestResponse challengeTextResponse = client.Execute(challengeTextRequest);
+
+			return GetCapcthaSolution(challengeImageResponse.RawBytes, challengeTextResponse.RawBytes);
+		}
+
+		private static RestClient SetupRestClient(string? userAgent = null) {
+			RestClient client = new() {
+				UserAgent = userAgent is not null ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
+			};
+			client.AddDefaultHeader("Accept", "gzip, deflate, br");
+			client.Timeout = 30000;
+
+			return client;
+		}
 
 		public static int GetCapcthaSolution(byte[] images, byte[] text) {
 			string textHash = GetImageHash(text);
