@@ -12,7 +12,7 @@ namespace Tbot.Services {
 
 	public static class OgameCaptchaSolver {
 
-		public static int GetCapcthaSolution(string challengeId, string? userAgent = null) {
+		public static int GetCapcthaSolution(string challengeId, string userAgent = "") {
 			RestClient client = SetupRestClient(userAgent);
 
 			return GetCapcthaSolution(challengeId, client);
@@ -44,9 +44,9 @@ namespace Tbot.Services {
 			return GetCapcthaSolution(challengeImageResponse.RawBytes, challengeTextResponse.RawBytes);
 		}
 
-		private static RestClient SetupRestClient(string? userAgent = null) {
+		private static RestClient SetupRestClient(string userAgent = "") {
 			RestClient client = new() {
-				UserAgent = userAgent is not null ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
+				UserAgent = userAgent != "" ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
 			};
 			client.AddDefaultHeader("Accept", "gzip, deflate, br");
 			client.Timeout = 30000;
