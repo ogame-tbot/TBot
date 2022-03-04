@@ -2845,7 +2845,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoCargo.Active) {
+				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) {
 					if (settings.Brain.AutoRepatriate.Target) {
 						fleets = UpdateFleets();
 
@@ -3687,7 +3687,12 @@ namespace Tbot {
 								UpdatePlanet(origin, UpdateType.Facilities);
 								if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
-									interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr, serverData, origin.Facilities) * 1000;
+									foreach (var prod in origin.Productions) {
+										interval += (int) Helpers.CalcProductionTime((Buildables) prod.ID, prod.Nbr, serverData, origin.Facilities) * 1000;
+										if (prod.ID == (int) Buildables.ColonyShip) {
+											break;
+										}
+									}
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed.");
 									UpdatePlanet(origin, UpdateType.Resources);
