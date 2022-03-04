@@ -226,6 +226,7 @@
 		"Active": true,
 		"PrimaryShip": "LargeCargo",
 		"MinPrimaryToSend": 1000,
+		"PrimaryToKeep": 10000,
 		"SecondaryShip": "Null",
 		"MinSecondaryToSend": 0,
 		"SecondaryToPrimaryRatio": 2,

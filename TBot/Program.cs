@@ -3351,10 +3351,15 @@ namespace Tbot {
 												continue;
 											}
 
-											fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
+											var availableShips = origin.Ships.GetMovableShips();
+											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
+												availableShips = availableShips.Remove(primaryShip, (int) settings.Expeditions.PrimaryToKeep);
+											}
+
+											fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
-												if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) settings.Expeditions.MinPrimaryToSend}");
 													continue;
 												}
@@ -3367,7 +3372,7 @@ namespace Tbot {
 											if (secondaryShip != Buildables.Null) {
 												long secondaryToSend = Math.Min(
 													(long) Math.Round(
-														origin.Ships.GetAmount(secondaryShip) / (float) expsToSendFromThisOrigin,
+														availableShips.GetAmount(secondaryShip) / (float) expsToSendFromThisOrigin,
 														0,
 														MidpointRounding.ToZero
 													),
@@ -3382,7 +3387,7 @@ namespace Tbot {
 													continue;
 												} else {
 													fleet.Add(secondaryShip, secondaryToSend);
-													if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+													if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 														Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
 														continue;
 													}
