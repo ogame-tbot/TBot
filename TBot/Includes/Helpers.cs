@@ -469,7 +469,12 @@ namespace Tbot.Includes {
 			double fuelConsumption = (double) deuteriumSaveFactor * (double) baseConsumption;
 			if (playerClass == CharacterClass.General)
 				fuelConsumption /= 2;
-			return (int) Math.Round(fuelConsumption, MidpointRounding.ToZero);
+			fuelConsumption = Math.Round(fuelConsumption);
+			if (fuelConsumption < 1) {
+				return 1;
+			} else {
+				return (int) fuelConsumption;
+			}				
 		}
 
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
@@ -488,7 +493,7 @@ namespace Tbot.Includes {
 			double v = (double) slowestShipSpeed;
 			double a = (double) fleetSpeed;
 			double d = (double) distance;
-			long output =  (long) Math.Round((((double) 35000 / s ) * Math.Sqrt(d * (double) 10 / v) + (double) 10) / a, MidpointRounding.AwayFromZero);
+			long output =  (long) Math.Round((((double) 35000 / s ) * Math.Sqrt(d * (double) 10 / v) + (double) 10) / a);
 			return output;
 		}
 
@@ -509,13 +514,14 @@ namespace Tbot.Includes {
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (float) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
+					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
 					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, playerClass);
-					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 *  Math.Pow((double) tempSpeed / (double) 10 + (double) 1, 2);
+					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 *  Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
 					tempFuel += thisFuel;
 				}
 			}
-			return (long) (1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
+			long output = (long) (1 + Math.Round(tempFuel));
+			return output;
 		}
 
 		public static FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {

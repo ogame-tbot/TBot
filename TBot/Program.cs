@@ -3013,6 +3013,8 @@ namespace Tbot {
 
 			FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, ships, destination, mission, speed);
 			FleetPrediction fleetPredictionAlt = Helpers.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, userInfo.Class);
+			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"ogamed: time: {fleetPrediction.Time.ToString()}; fuel: {fleetPrediction.Fuel.ToString()}");
+			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"tbot: time: {fleetPredictionAlt.Time.ToString()}; fuel: {fleetPredictionAlt.Fuel.ToString()}");
 
 			var flightTime = mission switch {
 				Missions.Deploy => fleetPrediction.Time,
