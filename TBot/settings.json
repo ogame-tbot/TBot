@@ -104,6 +104,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
@@ -156,6 +157,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
