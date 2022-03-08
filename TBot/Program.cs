@@ -979,7 +979,8 @@ namespace Tbot {
 
 					foreach (var possibleDestination in possibleDestinations) {
 						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
 							FleetHypotesis fleetHypotesis = new() {
 								Origin = origin,
 								Destination = possibleDestination,
@@ -999,7 +1000,8 @@ namespace Tbot {
 				case Missions.Spy:
 					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
 					foreach (var currentSpeed in validSpeeds) {
-						FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), destination, mission, currentSpeed);
+						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
 						FleetHypotesis fleetHypotesis = new() {
 							Origin = origin,
 							Destination = destination,
@@ -1031,7 +1033,8 @@ namespace Tbot {
 					}
 					foreach (var possibleDestination in possibleDestinations) {
 						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
 							FleetHypotesis fleetHypotesis = new() {
 								Origin = origin,
 								Destination = possibleDestination,
@@ -1061,7 +1064,8 @@ namespace Tbot {
 					}
 					foreach (var possibleDestination in possibleDestinations) {
 						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), possibleDestination, mission, currentSpeed);
+							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
 							FleetHypotesis fleetHypotesis = new() {
 								Origin = origin,
 								Destination = possibleDestination,
@@ -1089,7 +1093,8 @@ namespace Tbot {
 					.First();
 			} else {
 				mission = Missions.Transport;
-				FleetPrediction fleetPrediction = ogamedService.PredictFleet(origin, origin.Ships.GetMovableShips(), new Coordinate(), mission, Speeds.TenPercent);
+				FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, new Coordinate(), origin.Ships.GetMovableShips(), mission, Speeds.TenPercent, researches, serverData, userInfo.Class);
+
 				return new() {
 					Origin = origin,
 					Destination = new Coordinate(),
@@ -2000,7 +2005,8 @@ namespace Tbot {
 										speed = Speeds.HundredPercent;
 										//speed = Helpers.CalcOptimalFarmSpeed(ogamedService, tempCelestial, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
 									}
-									var prediction = ogamedService.PredictFleet(tempCelestial, attackingShips, target.Celestial.Coordinate, Missions.Attack, speed);
+									FleetPrediction prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
+
 									if (
 										(
 											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
@@ -2039,7 +2045,8 @@ namespace Tbot {
 										speed = Speeds.HundredPercent;
 										//speed = Helpers.CalcOptimalFarmSpeed(ogamedService, tempCelestial, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
 									}
-									var prediction = ogamedService.PredictFleet(tempCelestial, attackingShips, target.Celestial.Coordinate, Missions.Attack, speed);
+									FleetPrediction prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
+
 									if (
 										tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
 										tempCelestial.Resources.Deuterium >= prediction.Fuel &&
@@ -2135,15 +2142,15 @@ namespace Tbot {
 								} else {
 									speed = Speeds.HundredPercent;
 								}
-								var prediction = ogamedService.PredictFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, speed);
-								/*
+								FleetPrediction prediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, speed, researches, serverData, userInfo.Class);
+
 								var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
 								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
 								var fleetPrediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, optimalSpeed, researches, serverData, userInfo.Class);
 								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight time: {fleetPrediction.Time} s");
-								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight fuel: {fleetPrediction.Fuel}");
-								var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, optimalSpeed);
-								*/
+								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight fuel: {fleetPrediction.Fuel} deut");
+								//var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, optimalSpeed);
+
 								var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, speed);
 
 								if (fleetId > 0) {
@@ -2630,6 +2637,12 @@ namespace Tbot {
 				} else {
 					var missingResources = resources.Difference(destination.Resources);
 
+					if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+						missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+						missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+						missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+					}
+
 					Resources resToLeave = new(0, 0, 0);
 					if ((long) settings.Brain.AutoMine.Transports.DeutToLeave > 0)
 						resToLeave.Deuterium = (long) settings.Brain.AutoMine.Transports.DeutToLeave;
@@ -2640,7 +2653,7 @@ namespace Tbot {
 						Buildables preferredShip = Buildables.SmallCargo;
 						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
-							preferredShip = Buildables.Null;
+							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 						Ships ships = new();
@@ -2652,7 +2665,8 @@ namespace Tbot {
 								destination = UpdatePlanet(destination, UpdateType.Buildings);
 								destination = UpdatePlanet(destination, UpdateType.ResourcesProduction);
 
-								var flightPrediction = ogamedService.PredictFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent);
+								FleetPrediction flightPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, ships, Missions.Transport, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+
 								var flightTime = flightPrediction.Time;
 
 								float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
@@ -2845,7 +2859,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoCargo.Active) {
+				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) {
 					if (settings.Brain.AutoRepatriate.Target) {
 						fleets = UpdateFleets();
 
@@ -2994,7 +3008,7 @@ namespace Tbot {
 				return 0;
 			}
 
-			var fleetPrediction = ogamedService.PredictFleet(origin, ships, destination, mission, speed);
+			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, userInfo.Class);
 			var flightTime = mission switch {
 				Missions.Deploy => fleetPrediction.Time,
 				Missions.Expedition => (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
@@ -3330,10 +3344,15 @@ namespace Tbot {
 												continue;
 											}
 
-											fleet = Helpers.CalcFullExpeditionShips(origin.Ships, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
+											var availableShips = origin.Ships.GetMovableShips();
+											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
+												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
+											}
+
+											fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
-												if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) settings.Expeditions.MinPrimaryToSend}");
 													continue;
 												}
@@ -3346,7 +3365,7 @@ namespace Tbot {
 											if (secondaryShip != Buildables.Null) {
 												long secondaryToSend = Math.Min(
 													(long) Math.Round(
-														origin.Ships.GetAmount(secondaryShip) / (float) expsToSendFromThisOrigin,
+														availableShips.GetAmount(secondaryShip) / (float) expsToSendFromThisOrigin,
 														0,
 														MidpointRounding.ToZero
 													),
@@ -3361,7 +3380,7 @@ namespace Tbot {
 													continue;
 												} else {
 													fleet.Add(secondaryShip, secondaryToSend);
-													if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+													if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 														Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
 														continue;
 													}
@@ -3687,7 +3706,17 @@ namespace Tbot {
 								UpdatePlanet(origin, UpdateType.Facilities);
 								if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
-									interval = (int) Helpers.CalcProductionTime(Buildables.ColonyShip, origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr, serverData, origin.Facilities) * 1000;
+									foreach (var prod in origin.Productions) {
+										if (prod == origin.Productions.First()) {
+											interval += (int) Helpers.CalcProductionTime((Buildables) prod.ID, prod.Nbr - 1, serverData, origin.Facilities) * 1000;
+										}
+										else {
+											interval += (int) Helpers.CalcProductionTime((Buildables) prod.ID, prod.Nbr, serverData, origin.Facilities) * 1000;
+										}										
+										if (prod.ID == (int) Buildables.ColonyShip) {
+											break;
+										}
+									}
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed.");
 									UpdatePlanet(origin, UpdateType.Resources);

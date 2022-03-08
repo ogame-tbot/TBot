@@ -466,10 +466,15 @@ namespace Tbot.Includes {
 				default:
 					return 0;
 			}
-			float fuelConsumption = (float) (deuteriumSaveFactor * baseConsumption);
+			double fuelConsumption = (double) deuteriumSaveFactor * (double) baseConsumption;
 			if (playerClass == CharacterClass.General)
 				fuelConsumption /= 2;
-			return (int) Math.Round(fuelConsumption, MidpointRounding.ToZero);
+			fuelConsumption = Math.Round(fuelConsumption);
+			if (fuelConsumption < 1) {
+				return 1;
+			} else {
+				return (int) fuelConsumption;
+			}				
 		}
 
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
@@ -484,12 +489,17 @@ namespace Tbot.Includes {
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, CharacterClass playerClass) {
 			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-			return (long) Math.Round(((3500 / (double) speed * Math.Sqrt((double) distance * 10 / slowestShipSpeed)) + 10) / fleetSpeed, MidpointRounding.AwayFromZero);
+			double s = (double) speed;
+			double v = (double) slowestShipSpeed;
+			double a = (double) fleetSpeed;
+			double d = (double) distance;
+			long output =  (long) Math.Round((((double) 35000 / s ) * Math.Sqrt(d * (double) 10 / v) + (double) 10) / a);
+			return output;
 		}
 
 		public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, CharacterClass playerClass) {
 			var fleetSpeed = mission switch {
-				Missions.Attack or Missions.FederalAttack or Missions.Destroy => serverData.SpeedFleetWar,
+				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Harvest or Missions.Spy => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
@@ -498,19 +508,20 @@ namespace Tbot.Includes {
 
 		public static long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, CharacterClass playerClass) {
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
-			float tempFuel = 0.0F;
+			double tempFuel = (double) 0;
 			foreach (PropertyInfo prop in ships.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(ships, null);
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					float tempSpeed = 35000 / ((flightTime * fleetSpeed) - 10) * (float) Math.Sqrt(distance * 10 / CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
+					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
 					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, playerClass);
-					float thisFuel = (float) (shipConsumption * qty * distance) / 35000F * (float) Math.Pow(tempSpeed / 10 + 1, 2);
+					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 *  Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
 					tempFuel += thisFuel;
 				}
 			}
-			return (long) (1 + Math.Round(tempFuel, MidpointRounding.AwayFromZero));
+			long output = (long) (1 + Math.Round(tempFuel));
+			return output;
 		}
 
 		public static FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
@@ -520,6 +531,10 @@ namespace Tbot.Includes {
 				Fuel = fuel,
 				Time = time
 			};
+		}
+
+		public static FleetPrediction CalcFleetPrediction(Celestial origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
+			return CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, playerClass);
 		}
 
 		public static List<decimal> GetValidSpeedsForClass(CharacterClass playerClass) {
@@ -572,6 +587,24 @@ namespace Tbot.Includes {
 				.OrderByDescending(p => p.Key)
 				.First()
 				.Key;
+		}
+
+		public static decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
+			var speeds = GetValidSpeedsForClass(playerClass);
+			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
+			var maxFuel = loot.ConvertedDeuterium * ratio;
+			foreach (var speed in speeds) {
+				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
+			}
+			return speedPredictions
+				.Where(p => p.Value.Fuel < maxFuel)
+				.OrderByDescending(p => p.Key)
+				.First()
+				.Key;
+		}
+
+		public static decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
+			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, researches, serverData, playerClass);
 		}
 
 		public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, CharacterClass playerClass, long deutToLeave = 0, int probeCargo = 0) {
@@ -1208,7 +1241,7 @@ namespace Tbot.Includes {
 				case Buildables.LunarBase:
 				case Buildables.SensorPhalanx:
 				case Buildables.JumpGate:
-					output = structuralIntegrity / (2500 * (1 + facilities.RoboticsFactory) * serverData.Speed * (long) Math.Pow(2, facilities.NaniteFactory));
+					output = (double) structuralIntegrity / ((double)2500 * ((double) 1 + (double) facilities.RoboticsFactory) * (double) serverData.Speed * (double) Math.Pow(2, facilities.NaniteFactory));
 					break;
 
 				case Buildables.RocketLauncher:
@@ -1238,7 +1271,7 @@ namespace Tbot.Includes {
 				case Buildables.Crawler:
 				case Buildables.Reaper:
 				case Buildables.Pathfinder:
-					output = structuralIntegrity / (2500 * (1 + facilities.Shipyard) * serverData.Speed * (long) Math.Pow(2, facilities.NaniteFactory));
+					output = (double) structuralIntegrity / ((double) 2500 * ((double) 1 + (double) facilities.Shipyard) * (double) serverData.Speed * (double) Math.Pow(2, facilities.NaniteFactory));
 					break;
 
 				case Buildables.EspionageTechnology:
@@ -1260,14 +1293,14 @@ namespace Tbot.Includes {
 					if (cumulativeLabLevel == 0) {
 						cumulativeLabLevel = facilities.ResearchLab;
 					}
-					output = structuralIntegrity / (1000 * (1 + cumulativeLabLevel) * serverData.Speed);
+					output = (double) structuralIntegrity / ((double) 1000 * ((double) 1 + (double) cumulativeLabLevel) * (double) serverData.Speed);
 					break;
 
 				case Buildables.Null:
 				default:
 					break;
 			}
-
+			
 			return (long) Math.Round(output * 3600, 0, MidpointRounding.ToPositiveInfinity);
 		}
 
