@@ -58,15 +58,21 @@ namespace Tbot {
 				ProxySettings proxy = new();
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
-					if ((string) settings.General.Proxy.Type == "socks5" || (string) settings.General.Proxy.Type == "https") {
+					string proxyType = ((string) settings.General.Proxy.Type).ToLower();
+					if (proxyType == "https") {
+						proxyType = "http";
+					}
+					if (proxyType == "socks5" || proxyType == "http") {
 						proxy.Enabled = (bool) settings.General.Proxy.Enabled;
 						proxy.Address = (string) settings.General.Proxy.Address;
-						proxy.Type = (string) settings.General.Proxy.Type ?? "socks5";
+						proxy.Type = proxyType;
 						proxy.Username = (string) settings.General.Proxy.Username ?? "";
 						proxy.Password = (string) settings.General.Proxy.Password ?? "";
 					}
 					else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to initialize proxy: unsupported proxy type");
+						Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Press enter to continue");
+						Console.ReadLine();
 					}
 				}
 				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy);

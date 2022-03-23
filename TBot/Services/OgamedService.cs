@@ -27,7 +27,7 @@ namespace Tbot.Services {
 				if (captchaKey != "")
 					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
-					if (proxySettings.Type == "socks5" || proxySettings.Type == "https") {
+					if (proxySettings.Type == "socks5" || proxySettings.Type == "http") {
 						args += $" --proxy={proxySettings.Address}";
 						args += $" --proxy-type={proxySettings.Type}";
 						if (proxySettings.Username != "")
