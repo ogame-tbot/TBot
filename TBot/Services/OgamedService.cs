@@ -158,6 +158,18 @@ namespace Tbot.Services {
 			} catch {}
 		}
 
+		public string GetIP() {
+			var request = new RestRequest {
+				Resource = "/bot/ip",
+				Method = Method.GET
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return result.Result;
+		}
+
 		public Server GetServerInfo() {
 			var request = new RestRequest {
 				Resource = "/bot/server",

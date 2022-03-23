@@ -675,7 +675,8 @@ namespace Tbot {
 				(string) settings.General.Proxy.Address != "" &&
 				((string) settings.General.Proxy.Type == "socks5" || (string) settings.General.Proxy.Type == "https")
 			) {
-				title += " (Proxy active)";
+				var ip = ogamedService.GetIP();
+				title += $" (Proxy active: {ip})";
 			}				
 			if ((string) settings.General.CustomTitle != "") {
 				title = $"{(string) settings.General.CustomTitle} - {title}";
