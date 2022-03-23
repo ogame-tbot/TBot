@@ -59,12 +59,16 @@ namespace Tbot {
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
 					string proxyType = ((string) settings.General.Proxy.Type).ToLower();
+					string proxyAddress = (string) settings.General.Proxy.Address;
 					if (proxyType == "https") {
 						proxyType = "http";
 					}
+					if (proxyType == "http" && proxyAddress.Contains(':') && !proxyAddress.StartsWith("http://")) {
+						proxyAddress = "http://" + proxyAddress;
+					}
 					if (proxyType == "socks5" || proxyType == "http") {
 						proxy.Enabled = (bool) settings.General.Proxy.Enabled;
-						proxy.Address = (string) settings.General.Proxy.Address;
+						proxy.Address = proxyAddress;
 						proxy.Type = proxyType;
 						proxy.Username = (string) settings.General.Proxy.Username ?? "";
 						proxy.Password = (string) settings.General.Proxy.Password ?? "";
@@ -670,13 +674,10 @@ namespace Tbot {
 				researches = UpdateResearches();
 			}
 			string title = $"[{serverInfo.Name}.{serverInfo.Language}] {userInfo.PlayerName} - Rank: {userInfo.Rank} - http://{(string) settings.General.Host}:{(string) settings.General.Port}";
-			if (
-				(bool) settings.General.Proxy.Enabled &&
-				(string) settings.General.Proxy.Address != "" &&
-				((string) settings.General.Proxy.Type == "socks5" || (string) settings.General.Proxy.Type == "https")
-			) {
-				var ip = ogamedService.GetIP();
-				title += $" (Proxy active: {ip})";
+			var ogamedIP = ogamedService.GetOgamedIP();
+			var tbotIP = ogamedService.GetTbotIP();
+			if (ogamedIP != tbotIP) {
+				title += $" (Proxy active: {ogamedIP})";
 			}				
 			if ((string) settings.General.CustomTitle != "") {
 				title = $"{(string) settings.General.CustomTitle} - {title}";

@@ -158,7 +158,7 @@ namespace Tbot.Services {
 			} catch {}
 		}
 
-		public string GetIP() {
+		public string GetOgamedIP() {
 			var request = new RestRequest {
 				Resource = "/bot/ip",
 				Method = Method.GET
@@ -168,6 +168,20 @@ namespace Tbot.Services {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return result.Result;
+		}
+
+		public string GetTbotIP() {
+			var request = new RestRequest {
+				Resource = "https://jsonip.com/",
+				Method = Method.GET
+			};
+			try {
+				var result = JsonConvert.DeserializeObject<dynamic>(Client.Execute(request).Content);
+				return result.ip;
+			}
+			catch {
+				return "";
+			}
 		}
 
 		public Server GetServerInfo() {
