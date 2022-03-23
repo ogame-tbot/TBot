@@ -1590,12 +1590,12 @@ namespace Tbot {
 							celestial = UpdatePlanet(celestial, UpdateType.Constructions) as Planet;
 							var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
 							if (celestial.Constructions.ResearchCountdown != 0)
-								interval = (celestial.Constructions.ResearchCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (long) ((long) celestial.Constructions.ResearchCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 							else if (fleetId != 0) {
 								var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 								interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 							} else if (celestial.Constructions.BuildingID == (int) Buildables.ResearchLab)
-								interval = (celestial.Constructions.BuildingCountdown * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (long) ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 							else if (incomingFleets.Count > 0) {
 								var fleet = incomingFleets
 									.OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
@@ -2531,13 +2531,13 @@ namespace Tbot {
 					}						
 					else {
 						if (celestial.HasConstruction())
-							interval = (celestial.Constructions.BuildingCountdown * 1000);
+							interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 						else
 							interval = 0;
 					}
 				}
 				else if (celestial.HasConstruction()) {
-					interval = (celestial.Constructions.BuildingCountdown * 1000);
+					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 				} else {
 					celestial = UpdatePlanet(celestial, UpdateType.Buildings);
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities);
@@ -2930,17 +2930,22 @@ namespace Tbot {
 							long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
 							Ships ships = new();
-							if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
-								ships.Add(preferredShip, idealShips);
-							} else {
-								ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
-							}
-							payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+							if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
+								if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
+									ships.Add(preferredShip, idealShips);
+								} else {
+									ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
+								}
+								payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-							var fleetId = SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
-							if (fleetId == -1) {
-								stop = true;
-								return;
+								var fleetId = SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+								if (fleetId == -1) {
+									stop = true;
+									return;
+								}
+							}
+							else {
+								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
 							}
 
 							newCelestials.Remove(celestial);
@@ -3014,14 +3019,17 @@ namespace Tbot {
 			if (!Helpers.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
 				return 0;
-			}
-
+			}			
 			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, userInfo.Class);
+			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"Calculated flight time (one-way): {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+
 			var flightTime = mission switch {
 				Missions.Deploy => fleetPrediction.Time,
 				Missions.Expedition => (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
 				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
 			};
+			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"Calculated flight time (full trip): {TimeSpan.FromSeconds(flightTime).ToString()}");
+			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"Calculated flight fuel: {fleetPrediction.Fuel.ToString()}");
 
 			origin = UpdatePlanet(origin, UpdateType.Resources);
 			if (origin.Resources.Deuterium < fleetPrediction.Fuel) {
@@ -3043,18 +3051,24 @@ namespace Tbot {
 			) {
 				DateTime time = GetDateTime();
 
-				if (time >= goToSleep && time >= wakeUp) {
-					if (goToSleep >= wakeUp)
-						wakeUp = wakeUp.AddDays(1);
-					else
-						goToSleep = goToSleep.AddDays(1);
+				if (Helpers.ShouldSleep(time, goToSleep, wakeUp)) {
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: bed time has passed");
+					return -1;
 				}
 
-				var maxDepartureTime = goToSleep.Subtract(TimeSpan.FromSeconds(flightTime)).Subtract(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
-				var returnTime = time.Add(TimeSpan.FromSeconds(flightTime)).Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
-				var minReturnTime = wakeUp.Add(TimeSpan.FromMilliseconds(Helpers.CalcRandomInterval(IntervalType.SomeSeconds)));
+				if (goToSleep >= wakeUp) {
+					wakeUp = wakeUp.AddDays(1);
+				}
+				if (goToSleep < time) {
+					goToSleep = goToSleep.AddDays(1);
+				}
+				Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"goToSleep : {goToSleep.ToString()}");
+				Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"wakeUp : {wakeUp.ToString()}");
 
-				if (time > maxDepartureTime || returnTime < minReturnTime) {
+				DateTime returnTime = time.AddSeconds(flightTime);
+				Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"returnTime : {returnTime.ToString()}");
+
+				if (returnTime >= goToSleep && returnTime <= wakeUp) {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
 					return -1;
 				}
@@ -3069,6 +3083,7 @@ namespace Tbot {
 					Fleet fleet = ogamedService.SendFleet(origin, ships, destination, mission, speed, payload);
 					fleets = ogamedService.GetFleets();
 					slots = UpdateSlots();
+					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "Fleet succesfully sent");
 					return fleet.ID;
 				} catch (Exception e) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to send fleet: an exception has occurred: {e.Message}");
@@ -3642,7 +3657,7 @@ namespace Tbot {
 				}
 
 				if ((bool) settings.AutoColonize.Active) {
-					int interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+					long interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
 					Helpers.WriteLog(LogType.Info, LogSender.Colonize, "Checking if a new planet is needed...");
 
 					researches = UpdateResearches();
@@ -3733,7 +3748,7 @@ namespace Tbot {
 										UpdatePlanet(origin, UpdateType.Constructions);
 										if (origin.HasConstruction() && (origin.Constructions.BuildingID == (int) Buildables.Shipyard || origin.Constructions.BuildingID == (int) Buildables.NaniteFactory)) {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Unable to build colony ship: {((Buildables) origin.Constructions.BuildingID).ToString()} is in construction");
-											interval = origin.Constructions.BuildingCountdown * 1000;
+											interval = (long) origin.Constructions.BuildingCountdown * (long) 1000;
 										}
 										else if (origin.Facilities.Shipyard >= 4 && researches.ImpulseDrive >= 3) {
 											Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Building {neededColonizers - origin.Ships.ColonyShip}....");

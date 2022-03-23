@@ -108,6 +108,30 @@ namespace Tbot.Includes {
 			return rand.Next(minMillis, maxMillis);
 		}
 
+		public static bool ShouldSleep(DateTime time, DateTime goToSleep, DateTime wakeUp) {
+			if (time >= goToSleep) {
+				if (time >= wakeUp) {
+					if (goToSleep >= wakeUp) {
+						return true;
+					} else {
+						return false;
+					}
+				} else {
+					return true;
+				}
+			} else {
+				if (time >= wakeUp) {
+					return false;
+				} else {
+					if (goToSleep >= wakeUp) {
+						return true;
+					} else {
+						return false;
+					}
+				}
+			}
+		}
+
 		public static int CalcShipCapacity(Buildables buildable, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
 			int baseCargo;
 			int bonus = (hyperspaceTech * 5);
