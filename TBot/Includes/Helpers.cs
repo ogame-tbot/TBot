@@ -1613,7 +1613,7 @@ namespace Tbot.Includes {
 
 		public static Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1) {
 			Buildables buildableToBuild = Buildables.Null;
-			if (ShouldBuildTerraformer(planet, maxFacilities.Terraformer))
+			if (ShouldBuildTerraformer(planet, researches, maxFacilities.Terraformer))
 				buildableToBuild = Buildables.Terraformer;
 			if (buildableToBuild == Buildables.Null && ShouldBuildEnergySource(planet))
 				buildableToBuild = GetNextEnergySourceToBuild(planet, maxBuildings.SolarPlant, maxBuildings.FusionReactor);
@@ -1785,7 +1785,9 @@ namespace Tbot.Includes {
 				return false;
 		}
 
-		public static bool ShouldBuildTerraformer(Planet celestial, int maxLevel = 10) {
+		public static bool ShouldBuildTerraformer(Planet celestial, Researches researches, int maxLevel = 10) {
+			if (researches.EnergyTechnology < 12)
+				return false;
 			var nextLevel = GetNextLevel(celestial, Buildables.Terraformer);
 			if (celestial.Fields.Free == 1 && nextLevel <= maxLevel)
 				return true;
