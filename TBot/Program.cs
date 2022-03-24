@@ -1289,7 +1289,7 @@ namespace Tbot {
 										interval = (long) tempFleet.BackIn;
 								}
 							}
-							interval *= 1000;
+							interval *= (long) 1000;
 							if (interval <= 0)
 								interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 							DateTime newTime = time.AddMilliseconds(interval);
@@ -1302,11 +1302,6 @@ namespace Tbot {
 					}
 				}
 				if (!delayed) {
-					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoMineFirst)
-					//     AutoMine(null);
-					// if ((bool)settings.SleepMode.AutoFleetSave.RunAutoResearchFirst)
-					//     AutoResearch(null);
-
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Going to sleep...");
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
 
@@ -3062,6 +3057,9 @@ namespace Tbot {
 				if (goToSleep < time) {
 					goToSleep = goToSleep.AddDays(1);
 				}
+				if (wakeUp < time) {
+					wakeUp = wakeUp.AddDays(1);
+				}
 				Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"goToSleep : {goToSleep.ToString()}");
 				Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"wakeUp : {wakeUp.ToString()}");
 
@@ -3081,9 +3079,9 @@ namespace Tbot {
 					payload = new();
 				try {
 					Fleet fleet = ogamedService.SendFleet(origin, ships, destination, mission, speed, payload);
-					fleets = ogamedService.GetFleets();
-					slots = UpdateSlots();
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, "Fleet succesfully sent");
+					fleets = ogamedService.GetFleets();
+					slots = UpdateSlots();					
 					return fleet.ID;
 				} catch (Exception e) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to send fleet: an exception has occurred: {e.Message}");

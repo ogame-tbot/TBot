@@ -61,7 +61,7 @@
 			"Probes": 20
 		},
 		"MessageAttacker": {
-			"Active": true,
+			"Active": false,
 			"Messages": [
 				"hey",
 				"hello",
