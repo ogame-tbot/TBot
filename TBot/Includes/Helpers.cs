@@ -599,36 +599,27 @@ namespace Tbot.Includes {
 			return speeds;
 		}
 
-		public static decimal CalcOptimalFarmSpeed(OgamedService service, Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
-			var speeds = GetValidSpeedsForClass(playerClass);
-			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
-			var maxFuel = loot.ConvertedDeuterium * ratio;
-			foreach (var speed in speeds) {
-				speedPredictions.Add(speed, service.PredictFleet(origin, ships, destination, Missions.Attack, speed));
-			}
-			return speedPredictions
-				.Where(p => p.Value.Fuel < maxFuel)
-				.OrderByDescending(p => p.Key)
-				.First()
-				.Key;
-		}
-
-		public static decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
+		public static decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, CharacterClass playerClass) {
 			var speeds = GetValidSpeedsForClass(playerClass);
 			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
 			var maxFuel = loot.ConvertedDeuterium * ratio;
 			foreach (var speed in speeds) {
 				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
 			}
-			return speedPredictions
+			if (speedPredictions.Any(p => p.Value.Fuel < maxFuel)) {
+				return speedPredictions
 				.Where(p => p.Value.Fuel < maxFuel)
+				.Where(p => p.Value.Time < maxFlightTime)
 				.OrderByDescending(p => p.Key)
 				.First()
 				.Key;
+			} else {
+				return 0;
+			}
 		}
 
-		public static decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, Researches researches, ServerData serverData, CharacterClass playerClass) {
-			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, researches, serverData, playerClass);
+		public static decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, CharacterClass playerClass) {
+			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, maxFlightTime, researches, serverData, playerClass);
 		}
 
 		public static Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, CharacterClass playerClass, long deutToLeave = 0, int probeCargo = 0) {
@@ -2098,7 +2089,7 @@ namespace Tbot.Includes {
 		}
 
 		public static List<Fleet> GetMissionsInProgress(Missions mission, List<Fleet> fleets) {
-			var inProgress = fleets.Where(f => f.Mission == mission);
+			var inProgress = (fleets ?? new List<Fleet>()).Where(f => f.Mission == mission);
 			if (inProgress.Any()) {
 				return inProgress.ToList();
 			} else
@@ -2106,7 +2097,7 @@ namespace Tbot.Includes {
 		}
 
 		public static List<Fleet> GetMissionsInProgress(Coordinate origin, Missions mission, List<Fleet> fleets) {
-			var inProgress = fleets
+			var inProgress = (fleets ?? new List<Fleet>())
 				.Where(f => f.Origin.IsSame(origin))
 				.Where(f => f.Mission == mission);
 			if (inProgress.Any()) {

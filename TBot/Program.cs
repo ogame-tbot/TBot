@@ -1830,6 +1830,7 @@ namespace Tbot {
 												freeSlots = slots.Free;
 											}
 
+											fleets = UpdateFleets();
 											while (freeSlots <= slotsToLeaveFree) {
 												// No slots available, wait for first fleet of any mission type to return.
 												fleets = UpdateFleets();
@@ -1975,6 +1976,8 @@ namespace Tbot {
 						researches = UpdateResearches();
 						celestials = UpdateCelestials();
 						int attackTargetsCount = 0;
+						decimal lootFuelRatio = Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) ? (decimal) settings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
+						decimal speed = 0;
 						foreach (FarmTarget target in attackTargets) {
 							attackTargetsCount++;
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userInfo.Class).TransportableResources}.");
@@ -1996,20 +1999,28 @@ namespace Tbot {
 								tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									decimal lootFuelRatio = (decimal) 0.5;
-									if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-										lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
+									speed = 0;
+									if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+										long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+										var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, maxFlightTime, researches, serverData, userInfo.Class);
+										if (optimalSpeed == 0) {
+											Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+
+										} else {
+											Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+											speed = optimalSpeed;
+										}
 									}
-									decimal speed;
-									if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
-										speed = (int) settings.AutoFarm.FleetSpeed / 10;
-										if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
-											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+									if (speed == 0) {
+										if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+											speed = (int) settings.AutoFarm.FleetSpeed / 10;
+											if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+												speed = Speeds.HundredPercent;
+											}
+										} else {
 											speed = Speeds.HundredPercent;
 										}
-									} else {
-										speed = Speeds.HundredPercent;
-										//speed = Helpers.CalcOptimalFarmSpeed(ogamedService, tempCelestial, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
 									}
 									FleetPrediction prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
 
@@ -2035,11 +2046,7 @@ namespace Tbot {
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Ships);
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateType.Resources);
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
-									decimal lootFuelRatio = (decimal) 0.5;
-									if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-										lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
-									}
-									decimal speed;
+									speed = 0;
 									if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) settings.AutoFarm.FleetSpeed / 10;
 										if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
@@ -2048,8 +2055,29 @@ namespace Tbot {
 										}
 									}
 									else {
-										speed = Speeds.HundredPercent;
-										speed = Helpers.CalcOptimalFarmSpeed(ogamedService, tempCelestial, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
+										speed = 0;
+										if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+											long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+											var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, maxFlightTime, researches, serverData, userInfo.Class);
+											if (optimalSpeed == 0) {
+												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+
+											} else {
+												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+												speed = optimalSpeed;
+											}
+										}
+										if (speed == 0) {
+											if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+												speed = (int) settings.AutoFarm.FleetSpeed / 10;
+												if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
+													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+													speed = Speeds.HundredPercent;
+												}
+											} else {
+												speed = Speeds.HundredPercent;
+											}
+										}
 									}
 									FleetPrediction prediction = Helpers.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, researches, serverData, userInfo.Class);
 
@@ -2131,33 +2159,32 @@ namespace Tbot {
 							if (slots.Free > slotsToLeaveFree) {
 								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 								Ships ships = new();
-								ships.Add(cargoShip, numCargo);
 
-								decimal lootFuelRatio = (decimal) 0.5;
-								if (Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-									lootFuelRatio = (decimal) settings.AutoFarm.MinLootFuelRatio;
+								speed = 0;
+								if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+									long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+									var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userInfo.Class), lootFuelRatio, maxFlightTime, researches, serverData, userInfo.Class);
+									if (optimalSpeed == 0) {
+										Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+
+									} else {
+										Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
+										speed = optimalSpeed;
+									}
 								}
-
-								decimal speed;
-								if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
-									speed = (int) settings.AutoFarm.FleetSpeed / 10;
-									if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
-										Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+								if (speed == 0) {
+									if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+										speed = (int) settings.AutoFarm.FleetSpeed / 10;
+										if (!Helpers.GetValidSpeedsForClass(userInfo.Class).Any(s => s == speed)) {
+											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
+											speed = Speeds.HundredPercent;
+										}
+									} else {
 										speed = Speeds.HundredPercent;
 									}
-								} else {
-									speed = Speeds.HundredPercent;
 								}
-								FleetPrediction prediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, speed, researches, serverData, userInfo.Class);
 
-								var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, target.Report.Loot(userInfo.Class), lootFuelRatio, researches, serverData, userInfo.Class);
-								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
-								var fleetPrediction = Helpers.CalcFleetPrediction(fromCelestial.Coordinate, target.Celestial.Coordinate, ships, Missions.Attack, optimalSpeed, researches, serverData, userInfo.Class);
-								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight time: {fleetPrediction.Time} s");
-								Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Calculated flight fuel: {fleetPrediction.Fuel} deut");
-								//var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, optimalSpeed);
-
-								var fleetId = SendFleet(fromCelestial, ships, target.Celestial.Coordinate, Missions.Attack, speed);
+								var fleetId = SendFleet(fromCelestial, attackingShips, target.Celestial.Coordinate, Missions.Attack, speed);
 
 								if (fleetId > 0) {
 									freeSlots--;
@@ -2216,59 +2243,64 @@ namespace Tbot {
 				if (summary.Type == EspionageReportType.Action)
 					continue;
 
-				var report = ogamedService.GetEspionageReport(summary.ID);
-				if (DateTime.Compare(report.Date.AddMinutes((double) settings.AutoFarm.KeepReportFor), GetDateTime()) < 0) {
-					ogamedService.DeleteReport(report.ID);
-					continue;
-				}
-
-				var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
-				if (matchingTarget.Count() == 0) {
-					// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
-					if (!report.IsInactive)
+				try {
+					var report = ogamedService.GetEspionageReport(summary.ID);
+					if (DateTime.Compare(report.Date.AddMinutes((double) settings.AutoFarm.KeepReportFor), GetDateTime()) < 0) {
+						ogamedService.DeleteReport(report.ID);
 						continue;
-					// TODO: Get corresponding planet. Add to target list.
-					continue;
-				}
+					}
 
-				var target = matchingTarget.First();
-				var newFarmTarget = target;
+					var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
+					if (matchingTarget.Count() == 0) {
+						// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
+						if (!report.IsInactive)
+							continue;
+						// TODO: Get corresponding planet. Add to target list.
+						continue;
+					}
 
-				if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
-					// Target has a more recent report. Delete report.
-					ogamedService.DeleteReport(report.ID);
-					continue;
-				}
+					var target = matchingTarget.First();
+					var newFarmTarget = target;
 
-				newFarmTarget.Report = report;
+					if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
+						// Target has a more recent report. Delete report.
+						ogamedService.DeleteReport(report.ID);
+						continue;
+					}
 
-				if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
-					|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
-					|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
-					|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
-					if (!report.HasFleetInformation || !report.HasDefensesInformation) {
-						if (target.State == FarmState.ProbesRequired)
-							newFarmTarget.State = FarmState.FailedProbesRequired;
-						else if (target.State == FarmState.FailedProbesRequired)
+					newFarmTarget.Report = report;
+					if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
+						|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
+						|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
+						|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
+						if (!report.HasFleetInformation || !report.HasDefensesInformation) {
+							if (target.State == FarmState.ProbesRequired)
+								newFarmTarget.State = FarmState.FailedProbesRequired;
+							else if (target.State == FarmState.FailedProbesRequired)
+								newFarmTarget.State = FarmState.NotSuitable;
+							else
+								newFarmTarget.State = FarmState.ProbesRequired;
+
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+						} else if (report.IsDefenceless()) {
+							newFarmTarget.State = FarmState.AttackPending;
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+						} else {
 							newFarmTarget.State = FarmState.NotSuitable;
-						else
-							newFarmTarget.State = FarmState.ProbesRequired;
-
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
-					} else if (report.IsDefenceless()) {
-						newFarmTarget.State = FarmState.AttackPending;
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
+						}
 					} else {
 						newFarmTarget.State = FarmState.NotSuitable;
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
+						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
 					}
-				} else {
-					newFarmTarget.State = FarmState.NotSuitable;
-					Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
-				}
 
-				farmTargets.Remove(target);
-				farmTargets.Add(newFarmTarget);
+					farmTargets.Remove(target);
+					farmTargets.Add(newFarmTarget);
+				} catch (Exception e) {
+					Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, $"AutoFarmProcessReports Exception: {e.Message}");
+					Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
+					continue;
+				}
 			}
 
 			ogamedService.DeleteAllEspionageReports();
