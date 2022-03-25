@@ -7,7 +7,7 @@
 		"LobbyPioneers": false
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"Proxy": {
@@ -61,7 +61,7 @@
 			"Probes": 20
 		},
 		"MessageAttacker": {
-			"Active": true,
+			"Active": false,
 			"Messages": [
 				"hey",
 				"hello",
@@ -104,6 +104,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
@@ -156,6 +157,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
@@ -226,6 +228,7 @@
 		"Active": true,
 		"PrimaryShip": "LargeCargo",
 		"MinPrimaryToSend": 1000,
+		"PrimaryToKeep": 10000,
 		"SecondaryShip": "Null",
 		"MinSecondaryToSend": 0,
 		"SecondaryToPrimaryRatio": 2,
@@ -293,6 +296,7 @@
 		"FleetSpeed": 100,
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
+		"CargoSurplusPercentage": 10,
 		"BuildCargos": false,
 		"BuildProbes": false,
 		"MinimumResources": 1000000,

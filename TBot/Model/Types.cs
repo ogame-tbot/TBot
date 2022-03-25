@@ -783,6 +783,9 @@ namespace Tbot.Model {
 		public string Username { get; set; }
 		public string Password { get; set; }
 		public bool LoginOnly { get; set; }
+		public ProxySettings() {
+			Enabled = false;
+		}
 	}
 
 	public class Staff {

@@ -27,7 +27,7 @@ namespace Tbot.Services {
 				if (captchaKey != "")
 					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
-					if (proxySettings.Type == "socks5" || proxySettings.Type == "https") {
+					if (proxySettings.Type == "socks5" || proxySettings.Type == "http") {
 						args += $" --proxy={proxySettings.Address}";
 						args += $" --proxy-type={proxySettings.Type}";
 						if (proxySettings.Username != "")
@@ -156,6 +156,32 @@ namespace Tbot.Services {
 				request.AddParameter("answer", answer, ParameterType.GetOrPost);
 				Client.Execute(request);
 			} catch {}
+		}
+
+		public string GetOgamedIP() {
+			var request = new RestRequest {
+				Resource = "/bot/ip",
+				Method = Method.GET
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return result.Result;
+		}
+
+		public string GetTbotIP() {
+			var request = new RestRequest {
+				Resource = "https://jsonip.com/",
+				Method = Method.GET
+			};
+			try {
+				var result = JsonConvert.DeserializeObject<dynamic>(Client.Execute(request).Content);
+				return result.ip;
+			}
+			catch {
+				return "";
+			}
 		}
 
 		public Server GetServerInfo() {
@@ -709,40 +735,6 @@ namespace Tbot.Services {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Fleet>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
-		}
-
-		public FleetPrediction PredictFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed) {
-			var request = new RestRequest {
-				Resource = $"/bot/planets/{origin.ID}/flighttime",
-				Method = Method.POST,
-			};
-
-			request.AddParameter("galaxy", destination.Galaxy, ParameterType.GetOrPost);
-			request.AddParameter("system", destination.System, ParameterType.GetOrPost);
-			request.AddParameter("position", destination.Position, ParameterType.GetOrPost);
-			request.AddParameter("type", (int) destination.Type, ParameterType.GetOrPost);
-
-			foreach (PropertyInfo prop in ships.GetType().GetProperties()) {
-				long qty = (long) prop.GetValue(ships, null);
-				if (qty == 0)
-					continue;
-				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					request.AddParameter("ships", (int) buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost);
-				}
-			}
-
-			request.AddParameter("mission", (int) mission, ParameterType.GetOrPost);
-
-			request.AddParameter("speed", speed.ToString(), ParameterType.GetOrPost);
-
-			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-			if (result.Status != "ok") {
-				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
-			} else
-				return new() {
-					Time = result.Result.Secs,
-					Fuel = result.Result.Fuel
-				};
 		}
 
 		public bool CancelFleet(Fleet fleet) {
