@@ -1,4 +1,4 @@
 [submodule "ogame"]
 	path = ogame
 	url = https://github.com/kokiddp/ogame.git
-	branch = develop
+	branch = master
