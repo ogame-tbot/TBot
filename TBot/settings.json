@@ -296,6 +296,7 @@
 		"FleetSpeed": 100,
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
+		"CargoSurplusPercentage": 10,
 		"BuildCargos": false,
 		"BuildProbes": false,
 		"MinimumResources": 1000000,
