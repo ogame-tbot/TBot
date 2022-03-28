@@ -674,11 +674,15 @@ namespace Tbot {
 				researches = UpdateResearches();
 			}
 			string title = $"[{serverInfo.Name}.{serverInfo.Language}] {userInfo.PlayerName} - Rank: {userInfo.Rank} - http://{(string) settings.General.Host}:{(string) settings.General.Port}";
-			var ogamedIP = ogamedService.GetOgamedIP();
-			var tbotIP = ogamedService.GetTbotIP();
-			if (ogamedIP != tbotIP) {
-				title += $" (Proxy active: {ogamedIP})";
-			}				
+
+			if ((bool) settings.General.Proxy.Enabled) {
+				var ogamedIP = ogamedService.GetOgamedIP();
+				var tbotIP = ogamedService.GetTbotIP();
+				if (ogamedIP != "" && tbotIP != "" && ogamedIP != tbotIP) {
+					title += $" (Proxy active: {ogamedIP})";
+				}
+			}
+					
 			if ((string) settings.General.CustomTitle != "") {
 				title = $"{(string) settings.General.CustomTitle} - {title}";
 			}				

@@ -163,11 +163,15 @@ namespace Tbot.Services {
 				Resource = "/bot/ip",
 				Method = Method.GET
 			};
-			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-			if (result.Status != "ok") {
-				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
-			} else
-				return result.Result;
+			try {
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok") {
+					return "";
+				} else
+					return result.Result;
+			} catch {
+				return "";
+			}
 		}
 
 		public string GetTbotIP() {
