@@ -664,33 +664,38 @@ namespace Tbot {
 		}
 
 		private static void UpdateTitle(bool force = true, bool underAttack = false) {
-			CheckCelestials();
-			if (force) {
-				serverInfo = UpdateServerInfo();
-				serverData = UpdateServerData();
-				userInfo = UpdateUserInfo();
-				staff = UpdateStaff();
-				celestials = UpdateCelestials();
-				researches = UpdateResearches();
-			}
-			string title = $"[{serverInfo.Name}.{serverInfo.Language}] {userInfo.PlayerName} - Rank: {userInfo.Rank} - http://{(string) settings.General.Host}:{(string) settings.General.Port}";
-
-			if ((bool) settings.General.Proxy.Enabled) {
-				var ogamedIP = ogamedService.GetOgamedIP();
-				var tbotIP = ogamedService.GetTbotIP();
-				if (ogamedIP != "" && tbotIP != "" && ogamedIP != tbotIP) {
-					title += $" (Proxy active: {ogamedIP})";
+			try {
+				CheckCelestials();
+				if (force) {
+					serverInfo = UpdateServerInfo();
+					serverData = UpdateServerData();
+					userInfo = UpdateUserInfo();
+					staff = UpdateStaff();
+					celestials = UpdateCelestials();
+					researches = UpdateResearches();
 				}
-			}
-					
-			if ((string) settings.General.CustomTitle != "") {
-				title = $"{(string) settings.General.CustomTitle} - {title}";
-			}				
-			if (underAttack) {
-				title = $"ENEMY ACTIVITY! - {title}";
-			}
+				string title = $"[{serverInfo.Name}.{serverInfo.Language}] {userInfo.PlayerName} - Rank: {userInfo.Rank} - http://{(string) settings.General.Host}:{(string) settings.General.Port}";
 
-			Helpers.SetTitle(title);
+				if ((bool) settings.General.Proxy.Enabled) {
+					var ogamedIP = ogamedService.GetOgamedIP();
+					var tbotIP = ogamedService.GetTbotIP();
+					if (ogamedIP != "" && tbotIP != "" && ogamedIP != tbotIP) {
+						title += $" (Proxy active: {ogamedIP})";
+					}
+				}
+
+				if ((string) settings.General.CustomTitle != "") {
+					title = $"{(string) settings.General.CustomTitle} - {title}";
+				}
+				if (underAttack) {
+					title = $"ENEMY ACTIVITY! - {title}";
+				}
+
+				Helpers.SetTitle(title);
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"UpdateTitle exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
+			}
 		}
 
 		private static void CheckCelestials() {
