@@ -2250,52 +2250,57 @@ namespace Tbot {
 						continue;
 					}
 
-					var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
-					if (matchingTarget.Count() == 0) {
-						// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
-						if (!report.IsInactive)
+					if (farmTargets.Any(t => t.HasCoords(report.Coordinate))) {
+						var matchingTarget = farmTargets.Where(t => t.HasCoords(report.Coordinate));
+						if (matchingTarget.Count() == 0) {
+							// Report received of planet not in farmTargets. If inactive: add, otherwise: ignore.
+							if (!report.IsInactive)
+								continue;
+							// TODO: Get corresponding planet. Add to target list.
 							continue;
-						// TODO: Get corresponding planet. Add to target list.
-						continue;
-					}
+						}
 
-					var target = matchingTarget.First();
-					var newFarmTarget = target;
+						var target = matchingTarget.First();
+						var newFarmTarget = target;
 
-					if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
-						// Target has a more recent report. Delete report.
-						ogamedService.DeleteReport(report.ID);
-						continue;
-					}
+						if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
+							// Target has a more recent report. Delete report.
+							ogamedService.DeleteReport(report.ID);
+							continue;
+						}
 
-					newFarmTarget.Report = report;
-					if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
-						|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
-						|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
-						|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
-						if (!report.HasFleetInformation || !report.HasDefensesInformation) {
-							if (target.State == FarmState.ProbesRequired)
-								newFarmTarget.State = FarmState.FailedProbesRequired;
-							else if (target.State == FarmState.FailedProbesRequired)
+						newFarmTarget.Report = report;
+						if (settings.AutoFarm.PreferedResource == "Metal" && report.Loot(userInfo.Class).Metal > settings.AutoFarm.MinimumResources
+							|| settings.AutoFarm.PreferedResource == "Crystal" && report.Loot(userInfo.Class).Crystal > settings.AutoFarm.MinimumResources
+							|| settings.AutoFarm.PreferedResource == "Deuterium" && report.Loot(userInfo.Class).Deuterium > settings.AutoFarm.MinimumResources
+							|| (settings.AutoFarm.PreferedResource == "" && report.Loot(userInfo.Class).TotalResources > settings.AutoFarm.MinimumResources)) {
+							if (!report.HasFleetInformation || !report.HasDefensesInformation) {
+								if (target.State == FarmState.ProbesRequired)
+									newFarmTarget.State = FarmState.FailedProbesRequired;
+								else if (target.State == FarmState.FailedProbesRequired)
+									newFarmTarget.State = FarmState.NotSuitable;
+								else
+									newFarmTarget.State = FarmState.ProbesRequired;
+
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+							} else if (report.IsDefenceless()) {
+								newFarmTarget.State = FarmState.AttackPending;
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+							} else {
 								newFarmTarget.State = FarmState.NotSuitable;
-							else
-								newFarmTarget.State = FarmState.ProbesRequired;
-
-							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
-						} else if (report.IsDefenceless()) {
-							newFarmTarget.State = FarmState.AttackPending;
-							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(userInfo.Class)}");
+								Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
+							}
 						} else {
 							newFarmTarget.State = FarmState.NotSuitable;
-							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - defences present.");
+							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
 						}
-					} else {
-						newFarmTarget.State = FarmState.NotSuitable;
-						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not suitable - insufficient loot ({report.Loot(userInfo.Class)})");
-					}
 
-					farmTargets.Remove(target);
-					farmTargets.Add(newFarmTarget);
+						farmTargets.Remove(target);
+						farmTargets.Add(newFarmTarget);
+					}
+					else {
+						Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Target {report.Coordinate} not scanned by TBot, ignoring...");
+					}
 				} catch (Exception e) {
 					Helpers.WriteLog(LogType.Error, LogSender.AutoFarm, $"AutoFarmProcessReports Exception: {e.Message}");
 					Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
