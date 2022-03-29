@@ -1375,6 +1375,7 @@ namespace Tbot {
 					return;
 				}
 
+				fleets = UpdateFleets();
 				bool isUnderAttack = ogamedService.IsUnderAttack();
 				DateTime time = GetDateTime();
 				if (isUnderAttack) {
@@ -1383,8 +1384,28 @@ namespace Tbot {
 					UpdateTitle(false, true);
 					Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
 					attacks = ogamedService.GetAttacks();
-					foreach (AttackerFleet attack in attacks)
+					foreach (AttackerFleet attack in attacks) {
 						HandleAttack(attack);
+					}
+				} else if (fleets.Any(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination))) {
+					Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
+					List<Fleet> hiddenAttacks = fleets.Where(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination)).ToList();
+					foreach (var a in hiddenAttacks) {
+						HandleAttack(new AttackerFleet {
+							ID = a.ID,
+							MissionType = a.Mission,
+							Origin = a.Origin,
+							Destination = a.Destination,
+							DestinationName = celestials.Single(c => c.HasCoords(a.Destination)).Name,
+							ArrivalTime = a.ArrivalTime,
+							ArriveIn = a.ArriveIn,
+							AttackerName = "HIDDEN ATTACKER",
+							AttackerID = 0,
+							UnionID = a.UnionID ?? 0,
+							Missiles = 0,
+							Ships = a.Ships
+						});
+					}
 				} else {
 					Helpers.SetTitle();
 					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
@@ -3260,15 +3281,20 @@ namespace Tbot {
 
 			if ((bool) settings.Defender.MessageAttacker.Active) {
 				try {
-					Random random = new();
-					string[] messages = settings.Defender.MessageAttacker.Messages;
-					string message = messages.ToList().Shuffle().First();
-					Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Sending message \"{message}\" to attacker {attack.AttackerName}");
-					var result = ogamedService.SendMessage(attack.AttackerID, message);
-					if (result)
-						Helpers.WriteLog(LogType.Info, LogSender.Defender, "Message succesfully sent.");
-					else
+					if (attack.AttackerID != 0) {
+						Random random = new();
+						string[] messages = settings.Defender.MessageAttacker.Messages;
+						string message = messages.ToList().Shuffle().First();
+						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Sending message \"{message}\" to attacker {attack.AttackerName}");
+						var result = ogamedService.SendMessage(attack.AttackerID, message);
+						if (result)
+							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Message succesfully sent.");
+						else
+							Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Unable send message.");
+					}
+					else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Unable send message.");
+					}
 
 				} catch (Exception e) {
 					Helpers.WriteLog(LogType.Error, LogSender.Defender, $"Could not message attacker: an exception has occurred: {e.Message}");
