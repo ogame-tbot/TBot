@@ -3350,7 +3350,7 @@ namespace Tbot {
 					}
 
 					if (Helpers.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
-						if ((double) expsToSend < (double) ((double) slots.ExpTotal / 2D + 1D)) {
+						if ((double) expsToSend < Math.Round((double) slots.ExpTotal / 2D, 0, MidpointRounding.ToZero) + 1D) {
 							expsToSend = 0;
 						}
 					}
