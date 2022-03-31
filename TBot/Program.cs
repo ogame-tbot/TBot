@@ -1387,7 +1387,7 @@ namespace Tbot {
 					foreach (AttackerFleet attack in attacks) {
 						HandleAttack(attack);
 					}
-				} else if (fleets.Any(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination))) {
+				/* } else if (fleets.Any(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination))) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
 					List<Fleet> hiddenAttacks = fleets.Where(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination)).ToList();
 					foreach (var a in hiddenAttacks) {
@@ -1406,6 +1406,7 @@ namespace Tbot {
 							Ships = a.Ships
 						});
 					}
+				*/
 				} else {
 					Helpers.SetTitle();
 					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
@@ -3339,13 +3340,19 @@ namespace Tbot {
 					fleets = UpdateFleets();
 					serverData = ogamedService.GetServerData();
 					int expsToSend;
-					if ((bool) settings.Expeditions.WaitForAllExpeditions) {
+					if (Helpers.IsSettingSet(settings.Expeditions.WaitForAllExpeditions) && (bool) settings.Expeditions.WaitForAllExpeditions) {
 						if (slots.ExpInUse == 0)
 							expsToSend = slots.ExpTotal;
 						else
 							expsToSend = 0;
 					} else {
 						expsToSend = Math.Min(slots.ExpFree, slots.Free);
+					}
+
+					if (Helpers.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
+						if ((double) expsToSend < (double) ((double) slots.ExpTotal / 2D + 1D)) {
+							expsToSend = 0;
+						}
 					}
 
 					if (expsToSend > 0) {

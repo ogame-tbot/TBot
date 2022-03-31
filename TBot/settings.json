@@ -243,6 +243,7 @@
 			}
 		},
 		"WaitForAllExpeditions": false,
+		"WaitForMajorityOfExpeditions": true,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1
