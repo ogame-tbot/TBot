@@ -1377,6 +1377,7 @@ namespace Tbot {
 
 				fleets = UpdateFleets();
 				bool isUnderAttack = ogamedService.IsUnderAttack();
+				attacks = ogamedService.GetAttacks();
 				DateTime time = GetDateTime();
 				if (isUnderAttack) {
 					if ((bool) settings.Defender.Alarm.Active)
@@ -1387,26 +1388,15 @@ namespace Tbot {
 					foreach (AttackerFleet attack in attacks) {
 						HandleAttack(attack);
 					}
-				/* } else if (fleets.Any(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination))) {
+				} else if (attacks.Count != 0) {
+					if ((bool) settings.Defender.Alarm.Active)
+						Task.Factory.StartNew(() => Helpers.PlayAlarm());
+					UpdateTitle(false, true);
 					Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
-					List<Fleet> hiddenAttacks = fleets.Where(f => f.Mission == Missions.FederalAttack && celestials.Has(f.Destination)).ToList();
-					foreach (var a in hiddenAttacks) {
-						HandleAttack(new AttackerFleet {
-							ID = a.ID,
-							MissionType = a.Mission,
-							Origin = a.Origin,
-							Destination = a.Destination,
-							DestinationName = celestials.Single(c => c.HasCoords(a.Destination)).Name,
-							ArrivalTime = a.ArrivalTime,
-							ArriveIn = a.ArriveIn,
-							AttackerName = "HIDDEN ATTACKER",
-							AttackerID = 0,
-							UnionID = a.UnionID ?? 0,
-							Missiles = 0,
-							Ships = a.Ships
-						});
+					attacks = ogamedService.GetAttacks();
+					foreach (AttackerFleet attack in attacks) {
+						HandleAttack(attack);
 					}
-				*/
 				} else {
 					Helpers.SetTitle();
 					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
