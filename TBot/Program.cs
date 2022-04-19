@@ -2416,6 +2416,7 @@ namespace Tbot {
 			int level = 0;
 			bool started = false;
 			bool stop = false;
+			long energy = 0;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
 				celestial = UpdatePlanet(celestial, UpdateType.Fast);
@@ -2457,10 +2458,22 @@ namespace Tbot {
 					
 					if (buildable == Buildables.SolarPlant || buildable == Buildables.FusionReactor) {
 						if (!celestial.Resources.IsEnoughFor(xCostBuildable) && celestial is Planet) {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources for {buildable.ToString()}, building Solar Satellites instead.")
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources for {buildable.ToString()}, building Solar Satellites instead.");
 							buildable = Buildables.SolarSatellite;
 							level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
 							xCostBuildable = Helpers.CalcPrice(buildable, level);
+						}
+					}
+
+					if (buildable == Buildables.Terraformer) {
+						if (!celestial.Resources.IsEnoughFor(xCostBuildable)) {
+							if (celestial.Resources.Energy < xCostBuildable.Energy) {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough energy to build {buildable.ToString()}, building Solar Satellites to make up difference.");
+								energy = xCostBuildable.Energy - celestial.Resources.Energy;
+								buildable = Buildables.SolarSatellite;
+								level = Helpers.CalcNeededSolarSatellites(celestial as Planet, energy, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+								xCostBuildable = Helpers.CalcPrice(buildable, level);
+							}
 						}
 					}
 
