@@ -2481,7 +2481,7 @@ namespace Tbot {
 										started = true;
 										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
 									} else
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknow error has occurred");
+										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
 								}
 							} else {
 								celestial = UpdatePlanet(celestial, UpdateType.Constructions);
