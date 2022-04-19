@@ -2455,6 +2455,15 @@ namespace Tbot {
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
 					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
 					
+					if (buildable == Buildables.SolarPlant || buildable == Buildables.FusionReactor) {
+						if (!celestial.Resources.IsEnoughFor(xCostBuildable) && celestial is Planet) {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources for {buildable.ToString()}, building Solar Satellites instead.")
+							buildable = Buildables.SolarSatellite;
+							level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+							xCostBuildable = Helpers.CalcPrice(buildable, level);
+						}
+					}
+
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
 						if (buildable == Buildables.SolarSatellite) {
@@ -2462,7 +2471,8 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {level.ToString()} x {buildable.ToString()} on {celestial.ToString()}");
 								result = ogamedService.BuildShips(celestial, buildable, level);
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: There is already a production ongoing.");
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Adding {level.ToString()} x {buildable.ToString()} to build queue on {celestial.ToString()}");
+								result = ogamedService.BuildShips(celestial, buildable, level);
 							}
 						} else {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
