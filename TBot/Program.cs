@@ -1377,18 +1377,8 @@ namespace Tbot {
 
 				fleets = UpdateFleets();
 				bool isUnderAttack = ogamedService.IsUnderAttack();
-				attacks = ogamedService.GetAttacks();
 				DateTime time = GetDateTime();
 				if (isUnderAttack) {
-					if ((bool) settings.Defender.Alarm.Active)
-						Task.Factory.StartNew(() => Helpers.PlayAlarm());
-					UpdateTitle(false, true);
-					Helpers.WriteLog(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
-					attacks = ogamedService.GetAttacks();
-					foreach (AttackerFleet attack in attacks) {
-						HandleAttack(attack);
-					}
-				} else if (attacks.Count != 0) {
 					if ((bool) settings.Defender.Alarm.Active)
 						Task.Factory.StartNew(() => Helpers.PlayAlarm());
 					UpdateTitle(false, true);
