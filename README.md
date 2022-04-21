@@ -7,7 +7,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.6!
+TBot supports Ogame v8.7!
 
 Feel free to publish issues or pull requests
 
@@ -39,7 +39,7 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
-  * TBot can automatically optimize expeditions for your account, sending them from the one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
+  * TBot can automatically optimize expeditions for your account, sending them from one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
@@ -57,11 +57,10 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings.json. The settings are quite self-explainatory.
-* LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
 ## Settings Hot Reload
 
-TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well of the specific feature config settings.
+TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
   
 ## Running on Windows
 
