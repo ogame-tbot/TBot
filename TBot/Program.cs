@@ -1007,7 +1007,7 @@ namespace Tbot {
 								Duration = fleetPrediction.Time,
 								Fuel = fleetPrediction.Fuel
 							};
-							if (fleetHypotesis.Duration >= minFlightTime) {
+							if (fleetHypotesis.Duration >= minFlightTime && fleetHypotesis.Fuel <= maxFuel) {
 								possibleFleets.Add(fleetHypotesis);
 								break;
 							}
@@ -1104,7 +1104,6 @@ namespace Tbot {
 			}
 			if (possibleFleets.Count > 0) {
 				return possibleFleets
-					.Where(pf => pf.Fuel <= maxFuel)
 					.OrderBy(pf => pf.Fuel)
 					.ThenBy(pf => pf.Duration)
 					.First();
