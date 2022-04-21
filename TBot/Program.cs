@@ -2443,6 +2443,15 @@ namespace Tbot {
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
 					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
+
+					if (buildable == Buildables.Terraformer) {
+						if (xCostBuildable.Energy < celestial.ResourcesProduction.Energy.CurrentProduction) {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough energy to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+							buildable = Buildables.SolarSatellite;
+							level = Helpers.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+							xCostBuildable = Helpers.CalcPrice(buildable, level);
+						}
+					}
 					
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
@@ -2469,8 +2478,9 @@ namespace Tbot {
 									if (celestial.Resources.Energy >= 0) {
 										started = true;
 										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
-									} else
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknow error has occurred");
+									} else {
+										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
+									}
 								}
 							} else {
 								celestial = UpdatePlanet(celestial, UpdateType.Constructions);
@@ -2491,7 +2501,12 @@ namespace Tbot {
 						} else if (buildable != Buildables.SolarSatellite)
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+						if (buildable == Buildables.SolarSatellite) {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {level.ToString()}x {buildable.ToString()} on {celestial.ToString()}");
+
+						} else {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+						}
 						if ((bool) settings.Brain.AutoMine.Transports.Active) {
 							fleets = UpdateFleets();
 							if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
