@@ -3625,23 +3625,46 @@ namespace Tbot {
 						}
 
 						if ((bool) settings.AutoHarvest.HarvestDeepSpace) {
-							Coordinate dest = new(tempCelestial.Coordinate.Galaxy, tempCelestial.Coordinate.System, 16, Celestials.DeepSpace);
-							if (dic.Keys.Any(d => d.IsSame(dest)))
-								continue;
-							if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
-								continue;
-							ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(tempCelestial.Coordinate).ExpeditionDebris;
-							if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesDeepSpace) {
-								if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
-									dic.Add(dest, moon);
-								else if (moon.Ships.Pathfinder > 0)
-									dic.Add(dest, moon);
-								else if (tempCelestial.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
-									dic.Add(dest, tempCelestial);
-								else if (tempCelestial.Ships.Pathfinder > 0)
-									dic.Add(dest, tempCelestial);
-								else
-									Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Skipping harvest in {dest.ToString()}: not enough pathfinders.");
+							List<Coordinate> destinations = new List<Coordinate>();
+							if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
+								int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+
+								for (int i = -range; i <= range + 1; i++) {
+									Coordinate destination = new Coordinate {
+										Galaxy = tempCelestial.Coordinate.Galaxy,
+										System = tempCelestial.Coordinate.System + i,
+										Position = 16,
+										Type = Celestials.DeepSpace
+									};
+									if (destination.System <= 0)
+										destination.System = 499;
+									if (destination.System >= 500)
+										destination.System = 1;
+
+									destinations.Add(destination);
+								}
+							} else {
+								destinations.Add(new(tempCelestial.Coordinate.Galaxy, tempCelestial.Coordinate.System, 16, Celestials.DeepSpace));
+							}
+
+							foreach (Coordinate dest in destinations) {
+								if (dic.Keys.Any(d => d.IsSame(dest)))
+									continue;
+								if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
+									continue;
+								ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(tempCelestial.Coordinate).ExpeditionDebris;
+								if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesDeepSpace) {
+									if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
+										dic.Add(dest, moon);
+									else if (moon.Ships.Pathfinder > 0)
+										dic.Add(dest, moon);
+									else if (tempCelestial.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
+										dic.Add(dest, tempCelestial);
+									else if (tempCelestial.Ships.Pathfinder > 0)
+										dic.Add(dest, tempCelestial);
+									else
+										Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Skipping harvest in {dest.ToString()}: not enough pathfinders.");
+								}
 							}
 						}
 
@@ -3675,7 +3698,18 @@ namespace Tbot {
 						}
 					}
 
-					int interval = (int) Helpers.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+					fleets = UpdateFleets();
+					int interval;
+					if (fleets.Any(f => f.Mission == Missions.Harvest)) {
+						interval = (fleets
+							.Where(f => f.Mission == Missions.Harvest)
+							.OrderBy(f => f.BackIn)
+							.First()
+							.BackIn ?? 0) * 1000;
+					}
+					else {
+						interval = (int) Helpers.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+					}
 					var time = GetDateTime();
 					if (interval <= 0)
 						interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
