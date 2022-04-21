@@ -1534,7 +1534,7 @@ namespace Tbot {
 							else
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Research {research.ToString()} level {level.ToString()} could not be started on {celestial.ToString()}");
 						} else {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 							if ((bool) settings.Brain.AutoResearch.Transports.Active) {
 								fleets = UpdateFleets();
 								if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
@@ -2001,7 +2001,8 @@ namespace Tbot {
 							List<Celestial> tempCelestials = (settings.AutoFarm.Origin.Length > 0) ? Helpers.ParseCelestialsList(settings.AutoFarm.Origin, celestials) : celestials;
 							List<Celestial> closestCelestials = tempCelestials
 								.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
-								.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData)).ToList();
+								.OrderBy(c => Helpers.CalcDistance(c.Coordinate, target.Celestial.Coordinate, serverData))
+								.ToList();
 
 							Celestial fromCelestial = null;
 							foreach (var c in closestCelestials) {
@@ -2502,10 +2503,10 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 					} else {
 						if (buildable == Buildables.SolarSatellite) {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {level.ToString()}x {buildable.ToString()} on {celestial.ToString()}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {level.ToString()}x {buildable.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 
 						} else {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 						}
 						if ((bool) settings.Brain.AutoMine.Transports.Active) {
 							fleets = UpdateFleets();
@@ -2770,7 +2771,7 @@ namespace Tbot {
 							return 0;
 						}
 					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: not enough resources in origin.");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
 						return 0;
 					}
 				}
@@ -3868,7 +3869,7 @@ namespace Tbot {
 										}
 									}
 									else {
-										Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Not enough resources to build {neededColonizers} colony ship(s).");
+										Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Not enough resources to build {neededColonizers} colony ship(s). Needed: {cost.TransportableResources} - Available: {origin.Resources.TransportableResources}");
 									}
 								}
 							}							

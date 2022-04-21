@@ -503,7 +503,7 @@ namespace Tbot.Includes {
 
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
 			var fleetSpeed = mission switch {
-				Missions.Attack or Missions.FederalAttack or Missions.Destroy => serverData.SpeedFleetWar,
+				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Spy or Missions.Harvest => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
@@ -606,7 +606,7 @@ namespace Tbot.Includes {
 			foreach (var speed in speeds) {
 				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
 			}
-			if (speedPredictions.Any(p => p.Value.Fuel < maxFuel)) {
+			if (speedPredictions.Any(p => p.Value.Fuel < maxFuel && p.Value.Time < maxFlightTime)) {
 				return speedPredictions
 				.Where(p => p.Value.Fuel < maxFuel)
 				.Where(p => p.Value.Time < maxFlightTime)
@@ -614,7 +614,7 @@ namespace Tbot.Includes {
 				.First()
 				.Key;
 			} else {
-				return 0;
+				return Speeds.HundredPercent;
 			}
 		}
 
