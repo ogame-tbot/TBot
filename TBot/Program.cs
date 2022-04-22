@@ -2446,7 +2446,7 @@ namespace Tbot {
 					if (celestial is Moon) xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
 
 					if (buildable == Buildables.Terraformer) {
-						if (xCostBuildable.Energy < celestial.ResourcesProduction.Energy.CurrentProduction) {
+						if (xCostBuildable.Energy > celestial.ResourcesProduction.Energy.CurrentProduction) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough energy to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 							buildable = Buildables.SolarSatellite;
 							level = Helpers.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
