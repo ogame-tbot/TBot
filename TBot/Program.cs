@@ -2555,7 +2555,15 @@ namespace Tbot {
 								nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn
 							)
 						) {
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next mine's days of investment return: {Math.Round(nextDOIR, 2).ToString()} days.");
+							if (nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn) {
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine.MaxDaysOfInvestmentReturn to at least {Math.Round(nextDOIR, 2, MidpointRounding.ToPositiveInfinity).ToString()}.");
+							}
+							if ((celestial as Planet).HasMines(maxBuildings)) {
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine mines max levels");
+							}
+							if ((celestial as Planet).HasMines(maxBuildings)) {
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine facilities max levels");
+							}
 							stop = true;
 						}
 					}
