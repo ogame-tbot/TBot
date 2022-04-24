@@ -2376,7 +2376,7 @@ namespace Tbot {
 					AutoMinerSettings autoMinerSettings = new() {
 						OptimizeForStart = (bool) settings.Brain.AutoMine.OptimizeForStart,
 						PrioritizeRobotsAndNanites = (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanites,
-						MaxDaysOfInvestmentReturn = (int) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
+						MaxDaysOfInvestmentReturn = (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
 						DepositHours = (int) settings.Brain.AutoMine.DepositHours,
 						BuildDepositIfFull = (bool) settings.Brain.AutoMine.BuildDepositIfFull,
 						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
@@ -2547,21 +2547,18 @@ namespace Tbot {
 					}
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build.");
+					var nextDOIR = Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 					if (
-						(
-							celestial.Coordinate.Type == Celestials.Planet && (
-								(celestial as Planet).HasMines(maxBuildings) ||
-								Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull) > autoMinerSettings.MaxDaysOfInvestmentReturn
-							)
-						) ||
-						(
-							celestial.Coordinate.Type == Celestials.Moon &&
-							(celestial as Moon).HasLunarFacilities(maxLunarFacilities)
+						celestial.Coordinate.Type == Celestials.Planet &&
+						(celestial as Planet).HasFacilities(maxFacilities) && (
+							(celestial as Planet).HasMines(maxBuildings) ||
+							nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn
 						)
 					) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next mine's days of investment return: {Math.Round(nextDOIR, 2).ToString()} days.");
 						stop = true;
-						string buildings = (celestial.Coordinate.Type == Celestials.Planet ? "mines" : "facilities"); 
-						//Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}: {buildings} are at set level.");
+					} else if (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
+						stop = true;
 					}
 				}
 			} catch (Exception e) {

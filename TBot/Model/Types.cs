@@ -177,6 +177,15 @@ namespace Tbot.Model {
 				&& Buildings.CrystalMine >= buildings.CrystalMine
 				&& Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer;
 		}
+
+		public bool HasFacilities(Facilities facilities, bool ignoreSpaceDock = true) {
+			return Facilities.RoboticsFactory >= facilities.RoboticsFactory
+				&& Facilities.Shipyard >= facilities.Shipyard
+				&& Facilities.ResearchLab >= facilities.ResearchLab
+				&& Facilities.MissileSilo >= facilities.MissileSilo
+				&& Facilities.NaniteFactory >= facilities.NaniteFactory
+				&& (Facilities.SpaceDock >= facilities.SpaceDock || ignoreSpaceDock);
+		}
 	}
 
 	public class Settings {
@@ -837,7 +846,7 @@ namespace Tbot.Model {
 	public class AutoMinerSettings {
 		public bool OptimizeForStart { get; set; }
 		public bool PrioritizeRobotsAndNanites { get; set; }
-		public int MaxDaysOfInvestmentReturn { get; set; }
+		public float MaxDaysOfInvestmentReturn { get; set; }
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
 		public int DeutToLeaveOnMoons { get; set; }
