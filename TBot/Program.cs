@@ -1466,6 +1466,7 @@ namespace Tbot {
 		private static void AutoResearch(object state) {
 			int fleetId = 0;
 			bool stop = false;
+			bool delay = false;
 			try {
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
@@ -1549,6 +1550,9 @@ namespace Tbot {
 									if (fleetId == -1) {
 										stop = true;
 									}
+									if (fleetId == -2) {
+										delay = true;
+									}
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 									fleetId = (fleets
@@ -1578,6 +1582,14 @@ namespace Tbot {
 				if (!isSleeping) {
 					if (stop) {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
+					} else if (delay) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+						var time = GetDateTime();
+						fleets = UpdateFleets();
+						long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						var newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
 					} else {
 						long interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = celestials
@@ -1615,8 +1627,8 @@ namespace Tbot {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
-						UpdateTitle();
 					}
+					UpdateTitle();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -2406,6 +2418,7 @@ namespace Tbot {
 			int level = 0;
 			bool started = false;
 			bool stop = false;
+			bool delay = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
 				celestial = UpdatePlanet(celestial, UpdateType.Fast);
@@ -2523,6 +2536,10 @@ namespace Tbot {
 									stop = true;
 									return;
 								}
+								if (fleetId == -2) {
+									delay = true;
+									return;
+								}
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 							}
@@ -2559,6 +2576,17 @@ namespace Tbot {
 					if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
+				} else if (delay) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					fleets = UpdateFleets();
+					long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 					if (interval == long.MaxValue || interval == long.MinValue)
@@ -2917,6 +2945,7 @@ namespace Tbot {
 
 		private static void AutoRepatriate(object state) {
 			bool stop = false;
+			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Brain].WaitOne();
@@ -3004,6 +3033,10 @@ namespace Tbot {
 									stop = true;
 									return;
 								}
+								if (fleetId == -2) {
+									delay = true;
+									return;
+								}
 							}
 							else {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
@@ -3028,7 +3061,15 @@ namespace Tbot {
 				if (!isSleeping) {
 					if (stop) {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
-					} else {
+					} else if (delay) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+						var time = GetDateTime();
+						fleets = UpdateFleets();
+						long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						var newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
+					} else 	{
 						var time = GetDateTime();
 						var interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
 						if (interval <= 0)
@@ -3036,8 +3077,8 @@ namespace Tbot {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
-						UpdateTitle();
-					}					
+					}
+					UpdateTitle();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -3156,7 +3197,7 @@ namespace Tbot {
 				}
 			} else {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
-				return 0;
+				return -2;
 			}
 		}
 
@@ -3306,6 +3347,7 @@ namespace Tbot {
 
 		private static void HandleExpeditions(object state) {
 			bool stop = false;
+			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
@@ -3522,6 +3564,10 @@ namespace Tbot {
 													stop = true;
 													return;
 												}
+												if (fleetId == -2) {
+													delay = true;
+													return;
+												}
 												Thread.Sleep((int) IntervalType.AFewSeconds);
 											} else {
 												Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Unable to send expeditions: no expedition slots available.");
@@ -3575,12 +3621,21 @@ namespace Tbot {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
-				UpdateTitle();
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Stopping feature.");
 					}
+					if (delay) {
+						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Delaying...");
+						var time = GetDateTime();
+						fleets = UpdateFleets();
+						long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						var newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
+					}
+					UpdateTitle();
 					xaSem[Feature.Expeditions].Release();
 				}
 			}
@@ -3588,6 +3643,7 @@ namespace Tbot {
 
 		private static void HandleHarvest(object state) {
 			bool stop = false;
+			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Harvest].WaitOne();
@@ -3712,6 +3768,10 @@ namespace Tbot {
 							stop = true;
 							return;
 						}
+						if (fleetId == -2) {
+							delay = true;
+							return;
+						}
 					}
 
 					fleets = UpdateFleets();
@@ -3743,18 +3803,28 @@ namespace Tbot {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
-				UpdateTitle();
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
 						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Stopping feature.");
 					}
+					if (delay) {
+						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Delaying...");
+						var time = GetDateTime();
+						fleets = UpdateFleets();
+						long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						var newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
+					}
+					UpdateTitle();
 					xaSem[Feature.Harvest].Release();
 				}
 			}
 		}
 		private static void HandleColonize(object state) {
 			bool stop = false;
+			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Colonize].WaitOne();
@@ -3829,6 +3899,10 @@ namespace Tbot {
 											stop = true;
 											return;
 										}
+										if (fleetId == -2) {
+											delay = true;
+											return;
+										}
 									}
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Colonize, "No valid coordinate in target list.");
@@ -3897,12 +3971,21 @@ namespace Tbot {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");
-				UpdateTitle();
 			} finally {
 				if (!isSleeping) {
 					if (stop) {
 						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Stopping feature.");
 					}
+					if (delay) {
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Delaying...");
+						var time = GetDateTime();
+						fleets = UpdateFleets();
+						long interval = fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0 * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						var newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");
+					}
+					UpdateTitle();
 					xaSem[Feature.Colonize].Release();
 				}
 			}
