@@ -3724,7 +3724,7 @@ namespace Tbot {
 									continue;
 								if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 									continue;
-								ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(tempCelestial.Coordinate).ExpeditionDebris;
+								ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(dest).ExpeditionDebris;
 								if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesDeepSpace) {
 									if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
 										dic.Add(dest, moon);
