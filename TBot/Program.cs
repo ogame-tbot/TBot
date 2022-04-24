@@ -2528,7 +2528,7 @@ namespace Tbot {
 					} else {
 						if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
 							float DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-							if (DOIR < _nextDOIR) {
+							if (DOIR < _nextDOIR || _nextDOIR == 0) {
 								_nextDOIR = DOIR;
 							}
 						}
@@ -2575,7 +2575,7 @@ namespace Tbot {
 							if (nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn) {
 								var nextMine = Helpers.GetNextMineToBuild(celestial as Planet, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, autoMinerSettings.OptimizeForStart, float.MaxValue);
 								var nexMineLevel = Helpers.GetNextLevel(celestial, nextMine);
-								if (nextDOIR < _nextDOIR) {
+								if (nextDOIR < _nextDOIR || _nextDOIR == 0) {
 									_nextDOIR = nextDOIR;
 								}
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine.MaxDaysOfInvestmentReturn to at least {Math.Round(nextDOIR, 2, MidpointRounding.ToPositiveInfinity).ToString()}.");
