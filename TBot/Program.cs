@@ -26,6 +26,8 @@ namespace Tbot {
 		static volatile ConcurrentDictionary<Feature, bool> features;
 		static volatile List<FleetSchedule> scheduledFleets;
 		static volatile List<FarmTarget> farmTargets;
+		static volatile float _lastDOIR;
+		static volatile float _nextDOIR;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
 		static Dictionary<Feature, Semaphore> xaSem = new();
@@ -147,6 +149,9 @@ namespace Tbot {
 						telegramMessenger = new TelegramMessenger((string) settings.TelegramMessenger.API, (string) settings.TelegramMessenger.ChatId);
 						telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}.{serverData.Language}] TBot activated");
 					}
+
+					_lastDOIR = 0;
+					_nextDOIR = 0;
 
 					timers = new Dictionary<string, Timer>();
 
@@ -2451,8 +2456,8 @@ namespace Tbot {
 				if (buildable != Buildables.Null && level > 0) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
 					if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
-						float daysOfReturn = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Investment return: {Math.Round(daysOfReturn, 2).ToString()} days.");
+						float DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Days of investment return: {Math.Round(DOIR, 2).ToString()} days.");
 					}
 
 					Resources xCostBuildable = Helpers.CalcPrice(buildable, level);
@@ -2482,6 +2487,12 @@ namespace Tbot {
 						}
 
 						if (result) {
+							if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
+								float DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+								if (DOIR > _lastDOIR) {
+									_lastDOIR = DOIR;
+								}
+							}
 							if (buildable == Buildables.SolarSatellite) {
 								celestial = UpdatePlanet(celestial, UpdateType.Productions);
 								if (celestial.Productions.First().ID == (int) buildable) {
@@ -2515,6 +2526,12 @@ namespace Tbot {
 						} else if (buildable != Buildables.SolarSatellite)
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 					} else {
+						if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
+							float DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+							if (DOIR < _nextDOIR) {
+								_nextDOIR = DOIR;
+							}
+						}
 						if (buildable == Buildables.SolarSatellite) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {level.ToString()}x {buildable.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 
@@ -2558,6 +2575,9 @@ namespace Tbot {
 							if (nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn) {
 								var nextMine = Helpers.GetNextMineToBuild(celestial as Planet, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, autoMinerSettings.OptimizeForStart, float.MaxValue);
 								var nexMineLevel = Helpers.GetNextLevel(celestial, nextMine);
+								if (nextDOIR < _nextDOIR) {
+									_nextDOIR = nextDOIR;
+								}
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine.MaxDaysOfInvestmentReturn to at least {Math.Round(nextDOIR, 2, MidpointRounding.ToPositiveInfinity).ToString()}.");
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next mine to build: {nextMine.ToString()} lv {nexMineLevel.ToString()}.");
 
@@ -2613,6 +2633,9 @@ namespace Tbot {
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Last DOIR: {Math.Round(_lastDOIR, 2)}");
+					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next DOIR: {Math.Round(_nextDOIR, 2)}");
+
 				}
 			}
 		}
