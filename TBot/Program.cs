@@ -2443,6 +2443,11 @@ namespace Tbot {
 						)
 					) {
 						var buildingBeingBuilt = (Buildables) celestial.Constructions.BuildingID;
+						celestial = UpdatePlanet(celestial, UpdateType.Buildings);
+						celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction);
+						celestial = UpdatePlanet(celestial, UpdateType.Resources);
+						celestial = UpdatePlanet(celestial, UpdateType.Facilities);
+
 						var levelBeingBuilt = Helpers.GetNextLevel(celestial, buildingBeingBuilt);
 						var DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						if (DOIR > _lastDOIR) {
