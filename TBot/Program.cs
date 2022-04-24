@@ -2556,7 +2556,11 @@ namespace Tbot {
 							)
 						) {
 							if (nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn) {
+								var nextMine = Helpers.GetNextMineToBuild(celestial as Planet, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, autoMinerSettings.OptimizeForStart, float.MaxValue);
+								var nexMineLevel = Helpers.GetNextLevel(celestial, nextMine);
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine.MaxDaysOfInvestmentReturn to at least {Math.Round(nextDOIR, 2, MidpointRounding.ToPositiveInfinity).ToString()}.");
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next mine to build: {nextMine.ToString()} lv {nexMineLevel.ToString()}.");
+
 							}
 							if ((celestial as Planet).HasMines(maxBuildings)) {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine mines max levels");
@@ -2569,6 +2573,7 @@ namespace Tbot {
 					}
 					else if (celestial.Coordinate.Type == Celestials.Moon) {
 						if ((celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
 							stop = true;
 						}
 					}
