@@ -2435,6 +2435,20 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateType.Constructions);
 				if (celestial.Constructions.BuildingID != 0) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building in production.");
+					if (
+						celestial is Planet && (
+							celestial.Constructions.BuildingID == (int) Buildables.MetalMine ||
+							celestial.Constructions.BuildingID == (int) Buildables.CrystalMine ||
+							celestial.Constructions.BuildingID == (int) Buildables.DeuteriumSynthesizer
+						)
+					) {
+						var buildingBeingBuilt = (Buildables) celestial.Constructions.BuildingID;
+						var levelBeingBuilt = Helpers.GetNextLevel(celestial, buildingBeingBuilt);
+						var DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						if (DOIR > _lastDOIR) {
+							_lastDOIR = DOIR;
+						}
+					}
 					return;
 				}
 
@@ -2633,6 +2647,9 @@ namespace Tbot {
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+					if (_lastDOIR >= _nextDOIR) {
+						_nextDOIR = 0;
+					}
 					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Last DOIR: {Math.Round(_lastDOIR, 2)}");
 					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next DOIR: {Math.Round(_nextDOIR, 2)}");
 
