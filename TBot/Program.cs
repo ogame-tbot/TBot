@@ -2547,18 +2547,22 @@ namespace Tbot {
 					}
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build.");
-					var nextDOIR = Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-					if (
-						celestial.Coordinate.Type == Celestials.Planet &&
-						(celestial as Planet).HasFacilities(maxFacilities) && (
-							(celestial as Planet).HasMines(maxBuildings) ||
-							nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn
-						)
-					) {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next mine's days of investment return: {Math.Round(nextDOIR, 2).ToString()} days.");
-						stop = true;
-					} else if (celestial.Coordinate.Type == Celestials.Moon && (celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
-						stop = true;
+					if (celestial.Coordinate.Type == Celestials.Planet) {
+						var nextDOIR = Helpers.CalcNextDaysOfInvestmentReturn(celestial as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						if (
+							(celestial as Planet).HasFacilities(maxFacilities) && (
+								(celestial as Planet).HasMines(maxBuildings) ||
+								nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn
+							)
+						) {
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next mine's days of investment return: {Math.Round(nextDOIR, 2).ToString()} days.");
+							stop = true;
+						}
+					}
+					else if (celestial.Coordinate.Type == Celestials.Moon) {
+						if ((celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
+							stop = true;
+						}
 					}
 				}
 			} catch (Exception e) {
