@@ -1537,10 +1537,25 @@ namespace Tbot {
 					var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
 
-					if (plasmaDOIR <= _lastDOIR && celestial.Facilities.ResearchLab >= 4 && researches.EnergyTechnology >= 8 && researches.LaserTechnology >= 10 && researches.IonTechnology >= 5) {
+					if (
+						_lastDOIR > 0 &&
+						plasmaDOIR <= _lastDOIR &&
+						(int) settings.Brain.AutoResearch.MaxPlasmaTechnology >= researches.PlasmaTechnology + 1 &&
+						celestial.Facilities.ResearchLab >= 4 &&
+						researches.EnergyTechnology >= 8 &
+						researches.LaserTechnology >= 10 &&
+						researches.IonTechnology >= 5
+					) {
 						research = Buildables.PlasmaTechnology;
 					}
-					else if (astroDOIR >= _lastDOIR && celestial.Facilities.ResearchLab >= 3 && researches.EspionageTechnology >= 4 && researches.ImpulseDrive >= 3) {
+					else if (
+						_lastDOIR > 0 &&
+						(int) settings.Brain.AutoResearch.MaxAstrophysics >= (researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2) &&
+						astroDOIR <= _lastDOIR &&
+						celestial.Facilities.ResearchLab >= 3 &&
+						researches.EspionageTechnology >= 4 &&
+						researches.ImpulseDrive >= 3
+					) {
 						research = Buildables.Astrophysics;
 					}
 					else {
@@ -2406,9 +2421,15 @@ namespace Tbot {
 
 					List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
 					List<Celestial> celestialsToMine = new();
-					if (state == null)
-						celestialsToMine = celestials;
-					else
+					if (state == null) {
+						foreach (Celestial celestial in celestialsToMine.Where(p => p is Planet)) {
+							var cel = UpdatePlanet(celestial, UpdateType.Buildings);
+							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+							if (DOIR < _nextDOIR || _nextDOIR == 0) {
+								_nextDOIR = DOIR;
+							}
+						}
+					} else
 						celestialsToMine.Add(state as Celestial);
 
 					foreach (Celestial celestial in (bool) settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine.OrderBy(c => c.Fields.Built).ToList()) {
