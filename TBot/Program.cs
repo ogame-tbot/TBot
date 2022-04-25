@@ -1540,6 +1540,7 @@ namespace Tbot {
 					if (
 						_lastDOIR > 0 &&
 						plasmaDOIR <= _lastDOIR &&
+						plasmaDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
 						(int) settings.Brain.AutoResearch.MaxPlasmaTechnology >= researches.PlasmaTechnology + 1 &&
 						celestial.Facilities.ResearchLab >= 4 &&
 						researches.EnergyTechnology >= 8 &
@@ -1551,6 +1552,7 @@ namespace Tbot {
 					else if (
 						_lastDOIR > 0 &&
 						(int) settings.Brain.AutoResearch.MaxAstrophysics >= (researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2) &&
+						astroDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
 						astroDOIR <= _lastDOIR &&
 						celestial.Facilities.ResearchLab >= 3 &&
 						researches.EspionageTechnology >= 4 &&
@@ -1645,7 +1647,7 @@ namespace Tbot {
 							var incomingFleets = Helpers.GetIncomingFleets(celestial, fleets);
 							if (celestial.Constructions.ResearchCountdown != 0)
 								interval = (long) ((long) celestial.Constructions.ResearchCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-							else if (fleetId != 0) {
+							else if (fleetId > 0) {
 								var fleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 								interval = (fleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 							} else if (celestial.Constructions.BuildingID == (int) Buildables.ResearchLab)
@@ -2422,18 +2424,20 @@ namespace Tbot {
 					List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
 					List<Celestial> celestialsToMine = new();
 					if (state == null) {
-						celestialsToMine = celestials;
 						foreach (Celestial celestial in celestialsToMine.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateType.Buildings);
 							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 							if (DOIR < _nextDOIR || _nextDOIR == 0) {
 								_nextDOIR = DOIR;
 							}
+							celestialsToMine.Add(cel);
 						}
+						celestialsToMine = celestialsToMine.OrderBy(cel => Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull)).ToList();
+						celestialsToMine.AddRange(celestials.Where(c => c is Moon));
 					} else
 						celestialsToMine.Add(state as Celestial);
 
-					foreach (Celestial celestial in (bool) settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine.OrderBy(c => c.Fields.Built).ToList()) {
+					foreach (Celestial celestial in (bool) settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine) {
 						if (celestialsToExclude.Has(celestial)) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: celestial in exclude list.");
 							continue;
