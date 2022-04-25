@@ -1525,10 +1525,27 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: the Research Lab is upgrading.");
 						return;
 					}
+					slots = UpdateSlots();
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
 					celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
-					slots = UpdateSlots();
-					Buildables research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
+					celestials = UpdatePlanets(UpdateType.Buildings);
+
+					Buildables research;
+
+					var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
+					var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
+
+					if (plasmaDOIR <= _lastDOIR && celestial.Facilities.ResearchLab >= 4 && researches.EnergyTechnology >= 8 && researches.LaserTechnology >= 10 && researches.IonTechnology >= 5) {
+						research = Buildables.PlasmaTechnology;
+					}
+					else if (astroDOIR >= _lastDOIR && celestial.Facilities.ResearchLab >= 3 && researches.EspionageTechnology >= 4 && researches.ImpulseDrive >= 3) {
+						research = Buildables.Astrophysics;
+					}
+					else {
+						research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
+					}
 					int level = Helpers.GetNextLevel(researches, research);
 					if (research != Buildables.Null) {
 						celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;

@@ -1613,6 +1613,61 @@ namespace Tbot.Includes {
 			return Math.Min(float.IsNaN(deuteriumDOIR) ? float.MaxValue : deuteriumDOIR, Math.Min(float.IsNaN(crystalDOIR) ? float.MaxValue : crystalDOIR, float.IsNaN(metalDOIR) ? float.MaxValue : metalDOIR));
 		}
 
+		public static float CalcNextPlasmaTechDOIR(List<Planet> planets, Researches researches, int speedFactor = 1, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false) {
+			var nextPlasmaLevel = researches.PlasmaTechnology + 1;
+			var nextPlasmaCost = CalcPrice(Buildables.PlasmaTechnology, nextPlasmaLevel).ConvertedDeuterium;
+
+			long currentProd = 0;
+			long nextProd = 0;
+			foreach (var planet in planets) {
+				currentProd += (long) Math.Round(CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) / (float) 2.5 * 24, 0);
+				currentProd += (long) Math.Round(CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) / (float) 1.5 * 24, 0);
+				currentProd += CalcDeuteriumProduction(planet.Buildings.DeuteriumSynthesizer, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * 24;
+
+				nextProd += (long) Math.Round(CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, nextPlasmaLevel, playerClass, hasGeologist, hasStaff) / (float) 2.5 * 24, 0);
+				nextProd += (long) Math.Round(CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, nextPlasmaLevel, playerClass, hasGeologist, hasStaff) / (float) 1.5 * 24, 0);
+				nextProd += CalcDeuteriumProduction(planet.Buildings.DeuteriumSynthesizer, planet.Temperature.Average, speedFactor, ratio, nextPlasmaLevel, playerClass, hasGeologist, hasStaff) * 24;
+			}
+
+			float delta = nextProd - currentProd;
+			return nextPlasmaCost / delta;
+		}
+
+		public static float CalcNextAstroDOIR(List<Planet> planets, Researches researches, int speedFactor = 1, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false) {
+			var nextAstroLevel = researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2;
+			var nextAstroCost = CalcPrice(Buildables.Astrophysics, nextAstroLevel).ConvertedDeuterium;
+			if (researches.Astrophysics % 2 != 0) {
+				nextAstroCost += CalcPrice(Buildables.Astrophysics, nextAstroLevel - 1).ConvertedDeuterium;
+			}
+			int averageMetal = (int) Math.Round(planets.Average(p => p.Buildings.MetalMine), 0);
+			long metalCost = 0;
+			for (int i = 1; i <= averageMetal; i++) {
+				metalCost += CalcPrice(Buildables.MetalMine, i).ConvertedDeuterium;
+			}
+			int averageCrystal = (int) Math.Round(planets.Average(p => p.Buildings.CrystalMine), 0);
+			long crystalCost = 0;
+			for (int i = 1; i <= averageCrystal; i++) {
+				crystalCost += CalcPrice(Buildables.CrystalMine, i).ConvertedDeuterium;
+			}
+			int averageDeuterium = (int) Math.Round(planets.Average(p => p.Buildings.DeuteriumSynthesizer), 0);
+			long deuteriumCost = 0;
+			for (int i = 1; i <= averageDeuterium; i++) {
+				deuteriumCost += CalcPrice(Buildables.DeuteriumSynthesizer, i).ConvertedDeuterium;
+			}
+			long totalCost = nextAstroCost + metalCost + crystalCost + deuteriumCost;
+
+			long dailyProd = 0;
+			foreach (var planet in planets) {
+				dailyProd += (long) Math.Round(CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) / (float) 2.5 * 24, 0);
+				dailyProd += (long) Math.Round(CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) / (float) 1.5 * 24, 0);
+				dailyProd += CalcDeuteriumProduction(planet.Buildings.DeuteriumSynthesizer, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff) * 24;
+			}
+			long nextDailyProd = dailyProd + (long) Math.Round((float) dailyProd / (float) planets.Count, 0);
+
+			float delta = nextDailyProd - dailyProd;
+			return totalCost / delta;
+		}
+
 		public static Buildings GetMaxBuildings(int maxMetalMine, int maxCrystalMine, int maxDeuteriumSynthetizer, int maxSolarPlant, int maxFusionReactor, int maxMetalStorage, int maxCrystalStorage, int maxDeuteriumTank) {
 			return new() {
 				MetalMine = maxMetalMine,
