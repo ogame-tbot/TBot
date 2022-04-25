@@ -2422,6 +2422,7 @@ namespace Tbot {
 					List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoMine.Exclude, celestials);
 					List<Celestial> celestialsToMine = new();
 					if (state == null) {
+						celestialsToMine = celestials;
 						foreach (Celestial celestial in celestialsToMine.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateType.Buildings);
 							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
