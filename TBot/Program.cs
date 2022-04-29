@@ -2434,8 +2434,9 @@ namespace Tbot {
 						}
 						celestialsToMine = celestialsToMine.OrderBy(cel => Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull)).ToList();
 						celestialsToMine.AddRange(celestials.Where(c => c is Moon));
-					} else
+					} else {
 						celestialsToMine.Add(state as Celestial);
+					}
 
 					foreach (Celestial celestial in (bool) settings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine) {
 						if (celestialsToExclude.Has(celestial)) {
@@ -2698,8 +2699,8 @@ namespace Tbot {
 					if (_lastDOIR >= _nextDOIR) {
 						_nextDOIR = 0;
 					}
-					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Last DOIR: {Math.Round(_lastDOIR, 2)}");
-					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next DOIR: {Math.Round(_nextDOIR, 2)}");
+					//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Last DOIR: {Math.Round(_lastDOIR, 2)}");
+					//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next DOIR: {Math.Round(_nextDOIR, 2)}");
 
 				}
 			}
