@@ -3714,6 +3714,16 @@ namespace Tbot {
 					newTime = time.AddMilliseconds(interval);
 					timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 					Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
+					//----------------------------------------
+					if (orderedFleets.Count == 0 || slots.ExpFree > 0) {
+						//none
+					} else {
+						interval = 3600000 + ((interval - 3600000) / 2);
+						newTime = time.AddMilliseconds(interval);
+						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
+					}
+					//----------------------------------------
 					UpdateTitle();
 				}
 			} catch (Exception e) {
