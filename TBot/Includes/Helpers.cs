@@ -1198,9 +1198,9 @@ namespace Tbot.Includes {
 					output.Deuterium = (long) (160000 * Math.Pow(2, level - 1));
 					break;
 				case Buildables.Astrophysics:
-					output.Metal = (long) (4000 * Math.Pow(2, level - 1));
-					output.Crystal = (long) (8000 * Math.Pow(2, level - 1));
-					output.Deuterium = (long) (4000 * Math.Pow(2, level - 1));
+					output.Metal = (long) (4000 * Math.Pow(1.75, level - 1));
+					output.Crystal = (long) (8000 * Math.Pow(1.75, level - 1));
+					output.Deuterium = (long) (4000 * Math.Pow(1.75, level - 1));
 					break;
 				case Buildables.GravitonTechnology:
 					output.Energy = (long) (300000 * Math.Pow(2, level - 1));
@@ -1634,10 +1634,9 @@ namespace Tbot.Includes {
 		}
 
 		public static float CalcNextAstroDOIR(List<Planet> planets, Researches researches, int speedFactor = 1, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false) {
-			var nextAstroLevel = researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2;
-			var nextAstroCost = CalcPrice(Buildables.Astrophysics, nextAstroLevel).ConvertedDeuterium;
+			var nextAstroCost = CalcPrice(Buildables.Astrophysics, researches.Astrophysics + 1).ConvertedDeuterium;
 			if (researches.Astrophysics % 2 != 0) {
-				nextAstroCost += CalcPrice(Buildables.Astrophysics, nextAstroLevel - 1).ConvertedDeuterium;
+				nextAstroCost += CalcPrice(Buildables.Astrophysics, researches.Astrophysics + 2).ConvertedDeuterium;
 			}
 			int averageMetal = (int) Math.Round(planets.Average(p => p.Buildings.MetalMine), 0);
 			long metalCost = 0;
@@ -2138,7 +2137,7 @@ namespace Tbot.Includes {
 					case Buildables.GravitonTechnology:
 						if (celestial.Facilities.ResearchLab < 12)
 							continue;
-						if (celestial.Resources.Energy < CalcPrice(Buildables.GravitonTechnology, GetNextLevel(researches, Buildables.GravitonTechnology)).Energy)
+						if (celestial.ResourcesProduction.Energy.CurrentProduction < CalcPrice(Buildables.GravitonTechnology, GetNextLevel(researches, Buildables.GravitonTechnology)).Energy)
 							continue;
 						break;
 
