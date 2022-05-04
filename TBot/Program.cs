@@ -803,7 +803,7 @@ namespace Tbot {
 		private static void InitializeBrainAutoResearch() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autoresearch...");
 			StopBrainAutoResearch(false);
-			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		private static void StopBrainAutoResearch(bool echo = true) {
