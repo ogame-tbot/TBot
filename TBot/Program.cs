@@ -1564,7 +1564,14 @@ namespace Tbot {
 					else {
 						research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
 					}
-					if (research != Buildables.Null && research != Buildables.IntergalacticResearchNetwork && (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)) {
+					if (
+						research != Buildables.Null &&
+						research != Buildables.IntergalacticResearchNetwork &&
+						celestial.Facilities.ResearchLab >= 10 &&
+						researches.ComputerTechnology >= 8 &&
+						researches.HyperspaceTechnology >= 8 &&
+						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)
+					) {
 						celestials = UpdatePlanets(UpdateType.Facilities);
 						var cumulativeLabLevel = Helpers.CalcCumulativeLabLevel(celestials, researches);
 						var researchTime = Helpers.CalcProductionTime(research, Helpers.GetNextLevel(researches, research), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
@@ -1573,6 +1580,7 @@ namespace Tbot {
 							research = Buildables.IntergalacticResearchNetwork;
 						}
 					}
+
 					int level = Helpers.GetNextLevel(researches, research);
 					if (research != Buildables.Null) {
 						celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
