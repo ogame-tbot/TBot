@@ -1233,7 +1233,7 @@ namespace Tbot.Includes {
 			return CalcProductionTime(buildable, level, serverData.Speed, facilities, cumulativeLabLevel);
 		}
 
-		public static long CalcProductionTime(Buildables buildable, int level, int speed = 1, Facilities facilities = null, int cumulativeLabLevel = 1) {
+		public static long CalcProductionTime(Buildables buildable, int level, int speed = 1, Facilities facilities = null, int cumulativeLabLevel = 1, bool isDiscoverer = false, bool hasTechnocrat = false) {
 			if (facilities == null) {
 				facilities = new() {
 					RoboticsFactory = 0,
@@ -1322,6 +1322,12 @@ namespace Tbot.Includes {
 						cumulativeLabLevel = facilities.ResearchLab;
 					}
 					output = (double) structuralIntegrity / ((double) 1000 * ((double) 1 + (double) cumulativeLabLevel) * (double) speed);
+					if (isDiscoverer) {
+						output = output * 3 / 4;
+					}
+					if (hasTechnocrat) {
+						output = output * 3 / 4;
+					}
 					break;
 
 				case Buildables.Null:

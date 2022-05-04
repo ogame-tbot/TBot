@@ -255,6 +255,9 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
+		public int SpeedResearch { get {
+			return Speed * ResearchDurationDivisor;
+		} }
 	}
 
 	public class UserInfo {
