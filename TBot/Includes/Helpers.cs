@@ -1794,13 +1794,15 @@ namespace Tbot.Includes {
 				var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
 				var nextMineLevel = GetNextLevel(celestial, nextMine);
 				var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
+				var nextMineTime = CalcProductionTime(nextMine, nextMineLevel, speedFactor, celestial.Facilities);
 
 				var nextRobotsLevel = GetNextLevel(celestial, Buildables.RoboticsFactory);
 				var nextRobotsPrice = CalcPrice(Buildables.RoboticsFactory, nextRobotsLevel);
+				var nextRobotsTime = CalcProductionTime(Buildables.RoboticsFactory, nextRobotsLevel, speedFactor, celestial.Facilities);
 
 				if (
 					nextRobotsLevel <= maxLevel &&
-					(nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium || force)
+					(nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium || nextRobotsTime < nextMineTime || force)
 				)
 					return true;
 				else
@@ -1856,6 +1858,11 @@ namespace Tbot.Includes {
 			var nextLabLevel = GetNextLevel(celestial, Buildables.ResearchLab);
 			var nextLabPrice = CalcPrice(Buildables.ResearchLab, nextLabLevel);
 
+			var nextResearch = GetNextResearchToBuild(celestial, researches);
+			var nextResearchLevel = GetNextLevel(researches, nextResearch);
+			var nextResearchTime = CalcProductionTime(nextResearch, nextResearchLevel, 1, celestial.Facilities);
+			var nextLabTime = CalcProductionTime(Buildables.ResearchLab, nextLabLevel, 1, celestial.Facilities);
+
 			if (
 				nextLabLevel <= maxLevel &&
 				(nextMinePrice.ConvertedDeuterium > nextLabPrice.ConvertedDeuterium || force)
@@ -1887,11 +1894,11 @@ namespace Tbot.Includes {
 			var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
 			var nextMineLevel = GetNextLevel(celestial, nextMine);
 			var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
-			var nextMineTime = CalcProductionTime(nextMine, nextMineLevel);
+			var nextMineTime = CalcProductionTime(nextMine, nextMineLevel, speedFactor, celestial.Facilities);
 
 			var nextNanitesLevel = GetNextLevel(celestial, Buildables.NaniteFactory);
 			var nextNanitesPrice = CalcPrice(Buildables.NaniteFactory, nextNanitesLevel);
-			var nextNanitesTime = CalcProductionTime(Buildables.NaniteFactory, nextNanitesLevel);
+			var nextNanitesTime = CalcProductionTime(Buildables.NaniteFactory, nextNanitesLevel, speedFactor, celestial.Facilities);
 
 			if (
 				nextNanitesLevel <= maxLevel &&

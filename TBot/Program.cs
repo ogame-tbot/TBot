@@ -1528,6 +1528,7 @@ namespace Tbot {
 					slots = UpdateSlots();
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
 					celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
+					celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction) as Planet;
 					celestials = UpdatePlanets(UpdateType.Buildings);
 
 					Buildables research;
