@@ -1808,6 +1808,7 @@ namespace Tbot.Includes {
 
 				if (
 					nextRobotsLevel <= maxLevel &&
+					celestial.Buildings.DeuteriumSynthesizer >= 5 &&
 					(nextMinePrice.ConvertedDeuterium > nextRobotsPrice.ConvertedDeuterium || nextRobotsTime < nextMineTime || force)
 				)
 					return true;
