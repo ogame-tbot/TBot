@@ -3404,7 +3404,12 @@ namespace Tbot {
 					}
 				}
 				else {
-					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Unable to detect fleet composition.");
+					if ((bool) settings.Defender.IgnoreMissiles && attack.MissionType == Missions.MissileAttack) {
+						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
+						return;
+					} else {
+						Helpers.WriteLog(LogType.Info, LogSender.Defender, "Unable to detect fleet composition.");
+					}
 				}				
 			} catch {
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking attacker fleet composition");
