@@ -563,7 +563,8 @@ namespace Tbot.Includes {
 
 		public static List<decimal> GetValidSpeedsForClass(CharacterClass playerClass) {
 			var speeds = new List<decimal>();
-			if (playerClass == CharacterClass.General) {
+			/** TODO: fix general speeds
+			if (/*playerClass == CharacterClass.General*/false) {
 				speeds.Add(Speeds.HundredPercent);
 				speeds.Add(Speeds.NinetyfivePercent);
 				speeds.Add(Speeds.NinetyPercent);
