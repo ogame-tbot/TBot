@@ -790,6 +790,49 @@ namespace Tbot.Includes {
 			return 1000 + 5 * Math.Abs(destination.Position - origin.Position);
 		}
 
+		public static long CalcEnergyProduction(Buildables buildable, int level, int energyTechnology = 0, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			long prod = 0;
+			if (buildable == Buildables.SolarPlant) {
+				prod = (long) Math.Round(20 * level * Math.Pow(1.1, level) * ratio);
+			} else if (buildable == Buildables.FusionReactor) {
+				prod = (long) Math.Round(30 * level * Math.Pow(1.05 + (0.1 * energyTechnology), level) * ratio);
+			}
+
+			if (hasEngineer) {
+				prod = (long) Math.Round(prod * 1.1);
+			}
+			if (hasStaff) {
+				prod = (long) Math.Round(prod * 1.02);
+			}
+			if (playerClass == CharacterClass.Collector) {
+				prod = (long) Math.Round(prod * 1.1);
+			}
+			
+			return prod;
+		}
+
+		public static long CalcEnergyProduction(Buildables buildable, int level, Researches researches, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			return CalcEnergyProduction(buildable, level, researches.EnergyTechnology, ratio, playerClass, hasEngineer, hasStaff);
+		}
+
+		public static bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			if (researches.EnergyTechnology >= maxEnergyTech)
+				return false;
+
+			var avgFusion = (int) Math.Round(planets.Average(p => p.Buildings.FusionReactor));
+			var energyProd = (long) Math.Round(planets.Average(p => CalcEnergyProduction(Buildables.FusionReactor, p.Buildings.FusionReactor, researches, 1, playerClass, hasEngineer, hasStaff)));
+			var avgEnergyProd = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, researches, 1, playerClass, hasEngineer, hasStaff);
+
+			var fusionCost = (long) CalcPrice(Buildables.FusionReactor, avgFusion + 1).ConvertedDeuterium * planets.Count;
+			var fusionEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion + 1, researches, 1, playerClass, hasEngineer, hasStaff);
+			float fusionRatio = (float) fusionEnergy / (float) fusionCost;
+			var energyTechCost = (long) CalcPrice(Buildables.EnergyTechnology, researches.EnergyTechnology + 1).ConvertedDeuterium;
+			var energyTechEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, researches.EnergyTechnology + 1, 1, playerClass, hasEngineer, hasStaff);
+			float energyTechRatio = (float) energyTechEnergy / (float) energyTechCost;
+
+			return energyTechEnergy >= fusionRatio;
+		}
+
 		public static long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false) {
 			int baseProd = position switch {
 				6 => (int) Math.Round(30 + (30 * 0.17)),
