@@ -795,17 +795,17 @@ namespace Tbot.Includes {
 			if (buildable == Buildables.SolarPlant) {
 				prod = (long) Math.Round(20 * level * Math.Pow(1.1, level) * ratio);
 			} else if (buildable == Buildables.FusionReactor) {
-				prod = (long) Math.Round(30 * level * Math.Pow(1.05 + (0.1 * energyTechnology), level) * ratio);
+				prod = (long) Math.Round(30 * level * Math.Pow(1.05 + (0.01 * energyTechnology), level) * ratio);
 			}
 
 			if (hasEngineer) {
-				prod = (long) Math.Round(prod * 1.1);
+				prod += (long) Math.Round(prod * 0.1);
 			}
 			if (hasStaff) {
-				prod = (long) Math.Round(prod * 1.02);
+				prod += (long) Math.Round(prod * 0.02);
 			}
 			if (playerClass == CharacterClass.Collector) {
-				prod = (long) Math.Round(prod * 1.1);
+				prod += (long) Math.Round(prod * 0.1);
 			}
 			
 			return prod;
@@ -813,24 +813,6 @@ namespace Tbot.Includes {
 
 		public static long CalcEnergyProduction(Buildables buildable, int level, Researches researches, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
 			return CalcEnergyProduction(buildable, level, researches.EnergyTechnology, ratio, playerClass, hasEngineer, hasStaff);
-		}
-
-		public static bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
-			if (researches.EnergyTechnology >= maxEnergyTech)
-				return false;
-
-			var avgFusion = (int) Math.Round(planets.Average(p => p.Buildings.FusionReactor));
-			var energyProd = (long) Math.Round(planets.Average(p => CalcEnergyProduction(Buildables.FusionReactor, p.Buildings.FusionReactor, researches, 1, playerClass, hasEngineer, hasStaff)));
-			var avgEnergyProd = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, researches, 1, playerClass, hasEngineer, hasStaff);
-
-			var fusionCost = (long) CalcPrice(Buildables.FusionReactor, avgFusion + 1).ConvertedDeuterium * planets.Count;
-			var fusionEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion + 1, researches, 1, playerClass, hasEngineer, hasStaff);
-			float fusionRatio = (float) fusionEnergy / (float) fusionCost;
-			var energyTechCost = (long) CalcPrice(Buildables.EnergyTechnology, researches.EnergyTechnology + 1).ConvertedDeuterium;
-			var energyTechEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, researches.EnergyTechnology + 1, 1, playerClass, hasEngineer, hasStaff);
-			float energyTechRatio = (float) energyTechEnergy / (float) energyTechCost;
-
-			return energyTechEnergy >= fusionRatio;
 		}
 
 		public static long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false) {
@@ -1806,7 +1788,7 @@ namespace Tbot.Includes {
 				facilityToBuild = Buildables.RoboticsFactory;
 			if (facilityToBuild == Buildables.Null && ShouldBuildShipyard(planet, maxFacilities.Shipyard, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force) && !planet.HasProduction())
 				facilityToBuild = Buildables.Shipyard;
-			if (facilityToBuild == Buildables.Null && ShouldBuildResearchLab(planet, maxFacilities.ResearchLab, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force) && planet.Constructions.ResearchID == 0)
+			if (facilityToBuild == Buildables.Null && ShouldBuildResearchLab(planet, maxFacilities.ResearchLab, researches, serverData.Speed, serverData.ResearchDurationDivisor, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force) && planet.Constructions.ResearchID == 0)
 				facilityToBuild = Buildables.ResearchLab;
 			if (facilityToBuild == Buildables.Null && ShouldBuildMissileSilo(planet, maxFacilities.MissileSilo, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force))
 				facilityToBuild = Buildables.MissileSilo;
@@ -1899,7 +1881,7 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public static bool ShouldBuildResearchLab(Planet celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, float maxDaysOfInvestmentReturn = 36500, bool force = false) {
+		public static bool ShouldBuildResearchLab(Planet celestial, int maxLevel = 12, Researches researches = null, int speedFactor = 1, float researchDurationDivisor = 2, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, float maxDaysOfInvestmentReturn = 36500, bool force = false) {
 			var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
 			var nextMineLevel = GetNextLevel(celestial, nextMine);
 			var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
@@ -1909,8 +1891,8 @@ namespace Tbot.Includes {
 
 			var nextResearch = GetNextResearchToBuild(celestial, researches);
 			var nextResearchLevel = GetNextLevel(researches, nextResearch);
-			var nextResearchTime = CalcProductionTime(nextResearch, nextResearchLevel, 1, celestial.Facilities);
-			var nextLabTime = CalcProductionTime(Buildables.ResearchLab, nextLabLevel, 1, celestial.Facilities);
+			var nextResearchTime = CalcProductionTime(nextResearch, nextResearchLevel, (int) Math.Round(speedFactor * researchDurationDivisor), celestial.Facilities);
+			var nextLabTime = CalcProductionTime(Buildables.ResearchLab, nextLabLevel, speedFactor, celestial.Facilities);
 
 			if (
 				nextLabLevel <= maxLevel &&
@@ -2028,6 +2010,28 @@ namespace Tbot.Includes {
 				return true;
 			else
 				return false;
+		}
+
+		public static bool ShouldResearchEnergyTech(List<Planet> planets, int energyTech, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			if (energyTech >= maxEnergyTech)
+				return false;
+
+			var avgFusion = (int) Math.Round(planets.Where(p => p.Buildings.FusionReactor > 0).Average(p => p.Buildings.FusionReactor));
+			var energyProd = (long) Math.Round(planets.Where(p => p.Buildings.FusionReactor > 0).Average(p => CalcEnergyProduction(Buildables.FusionReactor, p.Buildings.FusionReactor, energyTech, 1, playerClass, hasEngineer, hasStaff)));
+			var avgEnergyProd = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, energyTech, 1, playerClass, hasEngineer, hasStaff);
+
+			var fusionCost = (long) CalcPrice(Buildables.FusionReactor, avgFusion + 1).ConvertedDeuterium * planets.Where(p => p.Buildings.FusionReactor > 0).Count();
+			var fusionEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion + 1, energyTech, 1, playerClass, hasEngineer, hasStaff);
+			float fusionRatio = (float) fusionEnergy / (float) fusionCost;
+			var energyTechCost = (long) CalcPrice(Buildables.EnergyTechnology, energyTech + 1).ConvertedDeuterium;
+			var energyTechEnergy = CalcEnergyProduction(Buildables.FusionReactor, avgFusion, energyTech + 1, 1, playerClass, hasEngineer, hasStaff);
+			float energyTechRatio = (float) energyTechEnergy / (float) energyTechCost;
+
+			return energyTechRatio >= fusionRatio;
+		}
+
+		public static bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			return ShouldResearchEnergyTech(planets, researches.EnergyTechnology, maxEnergyTech, playerClass, hasEngineer, hasStaff);
 		}
 
 		public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25, bool optimizeForStart = true, bool ensureExpoSlots = true) {
