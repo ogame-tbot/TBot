@@ -3386,8 +3386,17 @@ namespace Tbot {
 			}
 
 			try {
-				if (attack.Ships != null) {
-					if ((bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
+				if (attack.MissionType == Missions.MissileAttack) {
+					if (
+						!Helpers.IsSettingSet(settings.Defender.IgnoreMissiles) ||
+						(Helpers.IsSettingSet(settings.Defender.IgnoreMissiles) && (bool) settings.Defender.IgnoreMissiles)
+					) {
+						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
+						return;
+					}					
+				}
+				if (attack.Ships != null && researches.EspionageTechnology >= 8) {
+					if (Helpers.IsSettingSet(settings.Defender.IgnoreProbes) && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
 						if (attack.MissionType == Missions.Spy)
 							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
 						else
@@ -3404,12 +3413,7 @@ namespace Tbot {
 					}
 				}
 				else {
-					if ((bool) settings.Defender.IgnoreMissiles && attack.MissionType == Missions.MissileAttack) {
-						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
-						return;
-					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Defender, "Unable to detect fleet composition.");
-					}
+					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Unable to detect fleet composition.");
 				}				
 			} catch {
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking attacker fleet composition");

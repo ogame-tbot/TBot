@@ -44,7 +44,7 @@
 		"CheckIntervalMax": 22,
 		"IgnoreProbes": true,
 		"IgnoreMissiles": true,
-		"IgnoreWeakAttack": true,
+		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
 		"Autofleet": {
 			"Active": true,
