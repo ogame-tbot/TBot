@@ -367,6 +367,25 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
+		
+		public int GetLevel(Buildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(this);
+				}
+			}
+			return output;
+		}
+
+		public Buildings SetLevel(Buildables buildable, int level) {
+			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
+				if (prop.Name == buildable.ToString()) {
+					prop.SetValue(this, level);
+				}
+			}
+			return this;
+		}		
 	}
 
 	public class Supplies : Buildings { }

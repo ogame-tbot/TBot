@@ -194,6 +194,26 @@ namespace Tbot {
 					InitializeSleepMode();
 				} else {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
+					/*
+					celestials = GetPlanets();
+					UpdateTitle(true);
+					celestials = UpdatePlanets(UpdateType.Buildings);
+					researches = UpdateResearches();					
+					var cels = celestials;
+					for (var i = 0; i < 50; i++) {
+						var newCels = new List<Celestial>();
+						foreach (Celestial celestial in cels.Where(p => p is Planet)) {
+							var cel = celestial as Planet;
+							var nextMine = Helpers.GetNextMineToBuild(cel, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, true, int.MaxValue);
+							var lv = Helpers.GetNextLevel(cel, nextMine, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextMine.ToString()} {lv}; DOIR: {DOIR.ToString()}.");
+							cel.Buildings.SetLevel(nextMine, lv);
+							newCels.Add(cel);
+						}
+						cels = newCels;
+					}
+					*/
 				}
 
 				Console.ReadLine();
@@ -2446,7 +2466,10 @@ namespace Tbot {
 					if (state == null) {
 						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateType.Buildings);
+							var nextMine = Helpers.GetNextMineToBuild(cel as Planet, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, true, int.MaxValue);
+							var lv = Helpers.GetNextLevel(cel, nextMine);
 							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel as Planet, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextMine.ToString()} lv {lv.ToString()}; DOIR: {DOIR.ToString()}.");
 							if (DOIR < _nextDOIR || _nextDOIR == 0) {
 								_nextDOIR = DOIR;
 							}

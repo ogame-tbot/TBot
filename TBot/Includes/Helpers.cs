@@ -2027,7 +2027,7 @@ namespace Tbot.Includes {
 		public static bool ShouldResearchEnergyTech(List<Planet> planets, int energyTech, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
 			if (energyTech >= maxEnergyTech)
 				return false;
-			if (!planets.Any(p => p.Buildings.FusionReactor >= 1))
+			if (!planets.Any(p => p.Buildings.FusionReactor > 0))
 				return false;
 
 			var avgFusion = (int) Math.Round(planets.Where(p => p.Buildings.FusionReactor > 0).Average(p => p.Buildings.FusionReactor));
