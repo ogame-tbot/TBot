@@ -1490,7 +1490,7 @@ namespace Tbot.Includes {
 		public static Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor) {
 			if (planet.Buildings.SolarPlant < maxSolarPlant)
 				return Buildables.SolarPlant;
-			if (planet.Buildings.FusionReactor < maxFusionReactor)
+			if (planet.Buildings.DeuteriumSynthesizer >= 5 && planet.Buildings.FusionReactor < maxFusionReactor)
 				return Buildables.FusionReactor;
 			return Buildables.SolarSatellite;
 		}
