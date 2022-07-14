@@ -245,6 +245,7 @@
 		},
 		"WaitForAllExpeditions": false,
 		"WaitForMajorityOfExpeditions": true,
+		"NumberSlotsToIncreaseIntervalCheck": 8,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1
