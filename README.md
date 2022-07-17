@@ -1,4 +1,4 @@
-<img src="https://ogame-tbot.net/logo-claim.jpg" width="300" alt="TBot - OGame bot"/>
+![TBot - OGame bot](https://ogame-tbot.net/logo-claim.jpg "TBot - OGame bot")
 
 # TBot
 OGame Bot
