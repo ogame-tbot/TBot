@@ -131,7 +131,7 @@ Once it is detached you may close the ssh instance and TBot will run fine. You c
 The testing was done on the smallest LightSail instance has been running up to 4 instances of TBot (different accounts each), with no problems so far, however if you run a 5th instance, it can cause the server to run out of RAM and it'll crash.
 
 
-### Telegram
+## Telegram
 TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
 * Create a new Telegram bot
   * Write "/new_bot" to [@botfather](https://t.me/botfather)
@@ -143,7 +143,7 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * It will answer you a message containing your user ID and chat ID (WARNING: you need the USER ID)
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
-### Captcha solving
+## Captcha solving
 TBot implements an automatic captcha solving mechanism.
 
 However, being based on ogamed, it supports manual captcha solving as well as Ninja Captcha Autoresolve service.
