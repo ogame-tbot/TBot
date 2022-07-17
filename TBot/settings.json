@@ -168,6 +168,10 @@
 			},
 			"OptimizeForStart": true,
 			"EnsureExpoSlots": true,
+			"PrioritizeAstrophysics": true,
+			"PrioritizePlasmaTechnology": true,
+			"PrioritizeEnergyTechnology": true,
+			"PrioritizeIntergalacticResearchNetwork": true,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},

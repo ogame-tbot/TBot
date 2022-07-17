@@ -1550,45 +1550,53 @@ namespace Tbot {
 					celestial = UpdatePlanet(celestial, UpdateType.Facilities) as Planet;
 					celestial = UpdatePlanet(celestial, UpdateType.Resources) as Planet;
 					celestial = UpdatePlanet(celestial, UpdateType.ResourcesProduction) as Planet;
-					celestials = UpdatePlanets(UpdateType.Buildings);
-					celestials = UpdatePlanets(UpdateType.Facilities);
 
 					Buildables research;
 
-					var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
-					var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-					Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
+					if ((bool) settings.Brain.AutoResearch.PrioritizeAstrophysics || (bool) settings.Brain.AutoResearch.PrioritizePlasmaTechnology || (bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology || (bool) settings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork) {
+						celestials = UpdatePlanets(UpdateType.Buildings);
+						celestials = UpdatePlanets(UpdateType.Facilities);
 
-					if (
-						_lastDOIR > 0 &&
-						plasmaDOIR <= _lastDOIR &&
-						plasmaDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
-						(int) settings.Brain.AutoResearch.MaxPlasmaTechnology >= researches.PlasmaTechnology + 1 &&
-						celestial.Facilities.ResearchLab >= 4 &&
-						researches.EnergyTechnology >= 8 &
-						researches.LaserTechnology >= 10 &&
-						researches.IonTechnology >= 5
-					) {
-						research = Buildables.PlasmaTechnology;
-					} else if (Helpers.ShouldResearchEnergyTech(celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
-						research = Buildables.EnergyTechnology;
-					} else if (
-						_lastDOIR > 0 &&
-						(int) settings.Brain.AutoResearch.MaxAstrophysics >= (researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2) &&
-						astroDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
-						astroDOIR <= _lastDOIR &&
-						celestial.Facilities.ResearchLab >= 3 &&
-						researches.EspionageTechnology >= 4 &&
-						researches.ImpulseDrive >= 3
-					) {
-						research = Buildables.Astrophysics;
-					}					
+						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
+						var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
+
+						if (
+							(bool) settings.Brain.AutoResearch.PrioritizePlasmaTechnology &&
+							_lastDOIR > 0 &&
+							plasmaDOIR <= _lastDOIR &&
+							plasmaDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
+							(int) settings.Brain.AutoResearch.MaxPlasmaTechnology >= researches.PlasmaTechnology + 1 &&
+							celestial.Facilities.ResearchLab >= 4 &&
+							researches.EnergyTechnology >= 8 &
+							researches.LaserTechnology >= 10 &&
+							researches.IonTechnology >= 5
+						) {
+							research = Buildables.PlasmaTechnology;
+						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
+							research = Buildables.EnergyTechnology;
+						} else if (
+							(bool) settings.Brain.AutoResearch.PrioritizeAstrophysics &&
+							_lastDOIR > 0 &&
+							(int) settings.Brain.AutoResearch.MaxAstrophysics >= (researches.Astrophysics % 2 == 0 ? researches.Astrophysics + 1 : researches.Astrophysics + 2) &&
+							astroDOIR <= (float) settings.Brain.AutoMine.MaxDaysOfInvestmentReturn &&
+							astroDOIR <= _lastDOIR &&
+							celestial.Facilities.ResearchLab >= 3 &&
+							researches.EspionageTechnology >= 4 &&
+							researches.ImpulseDrive >= 3
+						) {
+							research = Buildables.Astrophysics;
+						} else {
+							research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
+						}
+					}
 					else {
 						research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
 					}
-					/*
+
 					if (
+						(bool) settings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork &&
 						research != Buildables.Null &&
 						research != Buildables.IntergalacticResearchNetwork &&
 						celestial.Facilities.ResearchLab >= 10 &&
@@ -1596,7 +1604,6 @@ namespace Tbot {
 						researches.HyperspaceTechnology >= 8 &&
 						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)
 					) {
-						celestials = UpdatePlanets(UpdateType.Facilities);
 						var cumulativeLabLevel = Helpers.CalcCumulativeLabLevel(celestials, researches);
 						var researchTime = Helpers.CalcProductionTime(research, Helpers.GetNextLevel(researches, research), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
 						var irnTime = Helpers.CalcProductionTime(Buildables.IntergalacticResearchNetwork, Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
@@ -1604,7 +1611,6 @@ namespace Tbot {
 							research = Buildables.IntergalacticResearchNetwork;
 						}
 					}
-					*/
 
 					int level = Helpers.GetNextLevel(researches, research);
 					if (research != Buildables.Null) {
