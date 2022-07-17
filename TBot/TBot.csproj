@@ -8,19 +8,21 @@
     <Version>0.2.56</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Copyright>2021 © ELK-Lab</Copyright>
+    <Copyright>2022 © ELK-Lab</Copyright>
     <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.ogame-tbot.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ogame-tbot/TBot</RepositoryUrl>
     <AssemblyVersion>0.2.56.0</AssemblyVersion>
     <FileVersion>0.2.56.0</FileVersion>
     <Description>OGame Bot</Description>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ELK-Lab.pfx</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <RootNamespace>Tbot</RootNamespace>
     <PackageReleaseNotes></PackageReleaseNotes>
     <Configurations>Debug;Release</Configurations>
+    <ApplicationIcon>tbot.ico</ApplicationIcon>
+    <PackageIcon></PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -34,6 +36,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="tbot.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
