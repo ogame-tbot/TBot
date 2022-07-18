@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace Tbot.Model {
 	public class Credentials {
@@ -14,20 +13,35 @@ namespace Tbot.Model {
 		public string BasicAuthPassword { get; set; }
 	}
 
-	public class OgamedResponse {
+	public class OgamedResponse<T> {
 		public string Status { get; set; }
+
 		public int Code { get; set; }
+
 		public string Message { get; set; }
-		public dynamic Result { get; set; }
+
+		public T Result { get; set; }
+	}
+
+	public class JsonIpResponse {
+		public string Ip { get; set; }
+
+		public string GeoIp { get; set; }
+
+		public string ApiHelp { get; set; }
 	}
 
 	public class Coordinate {
+
+		public Coordinate() { }
+
 		public Coordinate(int galaxy = 1, int system = 1, int position = 1, Celestials type = Celestials.Planet) {
 			Galaxy = galaxy;
 			System = system;
 			Position = position;
 			Type = type;
 		}
+
 		public int Galaxy { get; set; }
 		public int System { get; set; }
 		public int Position { get; set; }
@@ -255,9 +269,11 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
-		public int SpeedResearch { get {
-			return Speed * ResearchDurationDivisor;
-		} }
+		public int SpeedResearch {
+			get {
+				return Speed * ResearchDurationDivisor;
+			}
+		}
 	}
 
 	public class UserInfo {
@@ -271,6 +287,9 @@ namespace Tbot.Model {
 	}
 
 	public class Resources {
+
+		public Resources() { }
+
 		public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long energy = 0, long darkmatter = 0) {
 			Metal = metal;
 			Crystal = crystal;
@@ -278,6 +297,7 @@ namespace Tbot.Model {
 			Energy = energy;
 			Darkmatter = darkmatter;
 		}
+
 		public long Metal { get; set; }
 		public long Crystal { get; set; }
 		public long Deuterium { get; set; }
@@ -305,7 +325,7 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
-		
+
 		public string TransportableResources {
 			get {
 				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")}";
@@ -367,7 +387,7 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
-		
+
 		public int GetLevel(Buildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -385,7 +405,7 @@ namespace Tbot.Model {
 				}
 			}
 			return this;
-		}		
+		}
 	}
 
 	public class Supplies : Buildings { }
@@ -451,6 +471,8 @@ namespace Tbot.Model {
 		public long Crawler { get; set; }
 		public long Reaper { get; set; }
 		public long Pathfinder { get; set; }
+
+		public Ships() { }
 
 		public Ships(
 			long lightFighter = 0,
@@ -912,8 +934,8 @@ namespace Tbot.Model {
 		public int? DeuteriumSynthesizer { get; set; }
 		public int? SolarPlant { get; set; }
 		public int? FusionReactor { get; set; }
-		public int? SolarSatellite{ get; set; }
-		public int? MetalStorage{ get; set; }
+		public int? SolarSatellite { get; set; }
+		public int? MetalStorage { get; set; }
 		public int? CrystalStorage { get; set; }
 		public int? DeuteriumTank { get; set; }
 
@@ -1060,11 +1082,15 @@ namespace Tbot.Model {
 	/// Celestial under consideration to be targetted for farming.
 	/// </summary>
 	public class FarmTarget {
+
+		public FarmTarget() { }
+
 		public FarmTarget(Celestial target, FarmState farmState = FarmState.Idle, EspionageReport report = null) {
 			Celestial = target;
 			State = farmState;
 			Report = report;
 		}
+
 		public Celestial Celestial { get; set; }
 		public FarmState State { get; set; }
 		public EspionageReport Report { get; set; }
