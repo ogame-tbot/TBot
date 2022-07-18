@@ -284,7 +284,7 @@
 			{
 				"Galaxy": 3,
 				"System": 3,
-				"Planet": 3
+				"Position": 3
 			}
 		],
 		"KeepReportFor": 180,
