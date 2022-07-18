@@ -3531,7 +3531,7 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
 						time = GetDateTime();
 						interval = Helpers.CalcRandomInterval(IntervalType.AboutHalfAnHour);
-						newTime = time.AddMilliseconds(interval);						
+						newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
 						return;
@@ -3598,35 +3598,6 @@ namespace Tbot {
 								if ((bool) settings.Expeditions.RandomizeOrder) {
 									origins = origins.Shuffle().ToList();
 								}
-								List<Ships> fleetExpe = new();
-								Ships fleet;
-								bool needFillSlots = true;
-								if ((bool) settings.Expeditions.ManualSlots.Active) {
-									foreach (var compo in settings.Expeditions.ManualSlots.Slots) {
-										fleet = new(
-											(long) compo.LightFighter,
-											(long) compo.HeavyFighter,
-											(long) compo.Cruiser,
-											(long) compo.Battleship,
-											(long) compo.Battlecruiser,
-											(long) compo.Bomber,
-											(long) compo.Destroyer,
-											(long) compo.Deathstar,
-											(long) compo.SmallCargo,
-											(long) compo.LargeCargo,
-											(long) compo.ColonyShip,
-											(long) compo.Recycler,
-											(long) compo.EspionageProbe,
-											0,
-											0,
-											(long) compo.Reaper,
-											(long) compo.Pathfinder
-										);
-										fleetExpe.Add(fleet);
-									}
-									if (!(bool) settings.Expeditions.ManualSlots.FillOtherSlots)
-										needFillSlots = false;
-								}
 								foreach (var origin in origins) {
 									int expsToSendFromThisOrigin;
 									if (origins.Count >= expsToSend) {
@@ -3641,87 +3612,88 @@ namespace Tbot {
 										Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: no ships available");
 										continue;
 									} else {
-										Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"{expsToSendFromThisOrigin.ToString()} expeditions will be sent from {origin.ToString()}");
-										int manualSlotsSendFromThisOrigin = 0;
-										for (int i = 0; i < expsToSendFromThisOrigin; i++) {
+										Ships fleet;
+										if ((bool) settings.Expeditions.ManualShips.Active) {
+											fleet = new(
+												(long) settings.Expeditions.ManualShips.Ships.LightFighter,
+												(long) settings.Expeditions.ManualShips.Ships.HeavyFighter,
+												(long) settings.Expeditions.ManualShips.Ships.Cruiser,
+												(long) settings.Expeditions.ManualShips.Ships.Battleship,
+												(long) settings.Expeditions.ManualShips.Ships.Battlecruiser,
+												(long) settings.Expeditions.ManualShips.Ships.Bomber,
+												(long) settings.Expeditions.ManualShips.Ships.Destroyer,
+												(long) settings.Expeditions.ManualShips.Ships.Deathstar,
+												(long) settings.Expeditions.ManualShips.Ships.SmallCargo,
+												(long) settings.Expeditions.ManualShips.Ships.LargeCargo,
+												(long) settings.Expeditions.ManualShips.Ships.ColonyShip,
+												(long) settings.Expeditions.ManualShips.Ships.Recycler,
+												(long) settings.Expeditions.ManualShips.Ships.EspionageProbe,
+												0,
+												0,
+												(long) settings.Expeditions.ManualShips.Ships.Reaper,
+												(long) settings.Expeditions.ManualShips.Ships.Pathfinder
+											);
+											if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
+												continue;
+											}
+										} else {
+											Buildables primaryShip = Buildables.LargeCargo;
+											if (!Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), true, out primaryShip)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse PrimaryShip. Falling back to default LargeCargo");
+												primaryShip = Buildables.LargeCargo;
+											}
+											if (primaryShip == Buildables.Null) {
+												Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
+												continue;
+											}
+
 											var availableShips = origin.Ships.GetMovableShips();
-											if ((bool) settings.Expeditions.ManualShips.Active) {
-												fleet = new(
-													(long) settings.Expeditions.ManualShips.Ships.LightFighter,
-													(long) settings.Expeditions.ManualShips.Ships.HeavyFighter,
-													(long) settings.Expeditions.ManualShips.Ships.Cruiser,
-													(long) settings.Expeditions.ManualShips.Ships.Battleship,
-													(long) settings.Expeditions.ManualShips.Ships.Battlecruiser,
-													(long) settings.Expeditions.ManualShips.Ships.Bomber,
-													(long) settings.Expeditions.ManualShips.Ships.Destroyer,
-													(long) settings.Expeditions.ManualShips.Ships.Deathstar,
-													(long) settings.Expeditions.ManualShips.Ships.SmallCargo,
-													(long) settings.Expeditions.ManualShips.Ships.LargeCargo,
-													(long) settings.Expeditions.ManualShips.Ships.ColonyShip,
-													(long) settings.Expeditions.ManualShips.Ships.Recycler,
-													(long) settings.Expeditions.ManualShips.Ships.EspionageProbe,
-													0,
-													0,
-													(long) settings.Expeditions.ManualShips.Ships.Reaper,
-													(long) settings.Expeditions.ManualShips.Ships.Pathfinder
+											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
+												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
+											}
+
+											fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
+											if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
+												fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
+												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) settings.Expeditions.MinPrimaryToSend}");
+													continue;
+												}
+											}
+											Buildables secondaryShip = Buildables.Null;
+											if (!Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, true, out secondaryShip)) {
+												Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse SecondaryShip. Falling back to default Null");
+												secondaryShip = Buildables.Null;
+											}
+											if (secondaryShip != Buildables.Null) {
+												long secondaryToSend = Math.Min(
+													(long) Math.Round(
+														availableShips.GetAmount(secondaryShip) / (float) expsToSendFromThisOrigin,
+														0,
+														MidpointRounding.ToZero
+													),
+													(long) Math.Round(
+														fleet.GetAmount(primaryShip) * (float) settings.Expeditions.SecondaryToPrimaryRatio,
+														0,
+														MidpointRounding.ToZero
+													)
 												);
-												if (!origin.Ships.HasAtLeast(fleet, (expsToSendFromThisOrigin - manualSlotsSendFromThisOrigin))) {
-													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
+												if (secondaryToSend < (long) settings.Expeditions.MinSecondaryToSend) {
+													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {secondaryShip.ToString()} in origin {origin.ToString()} under set number of {(long) settings.Expeditions.MinSecondaryToSend}");
 													continue;
-												}
-											} else {
-												Buildables primaryShip = Buildables.LargeCargo;
-												if (!Enum.TryParse<Buildables>(settings.Expeditions.PrimaryShip.ToString(), true, out primaryShip)) {
-													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse PrimaryShip. Falling back to default LargeCargo");
-													primaryShip = Buildables.LargeCargo;
-												}
-												if (primaryShip == Buildables.Null) {
-													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to send expeditions: primary ship is Null");
-													continue;
-												}
-
-												if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
-													availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
-												}
-
-												fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, (expsToSendFromThisOrigin - manualSlotsSendFromThisOrigin), serverData, researches, userInfo.Class, serverData.ProbeCargo);
-												if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
-													fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
-													if (!availableShips.HasAtLeast(fleet, (expsToSendFromThisOrigin - manualSlotsSendFromThisOrigin))) {
-														Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) settings.Expeditions.MinPrimaryToSend}");
+												} else {
+													fleet.Add(secondaryShip, secondaryToSend);
+													if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
+														Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
 														continue;
-													}
-												}
-												Buildables secondaryShip = Buildables.Null;
-												if (!Enum.TryParse<Buildables>(settings.Expeditions.SecondaryShip, true, out secondaryShip)) {
-													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, "Unable to parse SecondaryShip. Falling back to default Null");
-													secondaryShip = Buildables.Null;
-												}
-												if (secondaryShip != Buildables.Null) {
-													long secondaryToSend = Math.Min(
-														(long) Math.Round(
-															availableShips.GetAmount(secondaryShip) / (float) (expsToSendFromThisOrigin - manualSlotsSendFromThisOrigin),
-															0,
-															MidpointRounding.ToZero
-														),
-														(long) Math.Round(
-															fleet.GetAmount(primaryShip) * (float) settings.Expeditions.SecondaryToPrimaryRatio,
-															0,
-															MidpointRounding.ToZero
-														)
-													);
-													if (secondaryToSend < (long) settings.Expeditions.MinSecondaryToSend) {
-														Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: available {secondaryShip.ToString()} in origin {origin.ToString()} under set number of {(long) settings.Expeditions.MinSecondaryToSend}");
-														continue;
-													} else {
-														fleet.Add(secondaryShip, secondaryToSend);
-														if (!availableShips.HasAtLeast(fleet, (expsToSendFromThisOrigin - manualSlotsSendFromThisOrigin))) {
-															Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
-															continue;
-														}
 													}
 												}
 											}
+										}
+
+										Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"{expsToSendFromThisOrigin.ToString()} expeditions with {fleet.ToString()} will be sent from {origin.ToString()}");
+										for (int i = 0; i < expsToSendFromThisOrigin; i++) {
 											Coordinate destination;
 											if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
 												var rand = new Random();
@@ -3749,23 +3721,6 @@ namespace Tbot {
 											Resources payload = new();
 											if ((long) settings.Expeditions.FuelToCarry > 0) {
 												payload.Deuterium = (long) settings.Expeditions.FuelToCarry;
-											}
-											if ((fleetExpe.Count <= 0) && !needFillSlots) {
-												Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send more expeditions, No filling of desired slots");
-												break;
-											}
-											foreach (Ships fleetExp in fleetExpe) {
-												var availableShips2 = UpdatePlanet(origin, UpdateType.Ships).Ships.GetMovableShips();
-												if (!availableShips2.HasAtLeast(fleetExp)) {
-													Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}. Test with another composition");
-													continue;
-												} else {
-													fleet = fleetExp;
-													fleetExpe.RemoveAt((int) fleetExpe.LastIndexOf(fleetExp));
-													//availableShips.RemoveFleet(fleetExp);
-													manualSlotsSendFromThisOrigin++;
-													break;
-												}
 											}
 											if (slots.ExpFree > 0) {
 												var fleetId = SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);

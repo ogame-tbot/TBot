@@ -247,28 +247,6 @@
 				"EspionageProbe": 1
 			}
 		},
-		"ManualSlots": {
-			"Active": false,
-			"FillOtherSlots": true,
-			"Slots": [
-				{
-					"Pathfinder": 50000,
-					"EspionageProbe": 1
-				},
-				{
-					"Battlecruiser": 100000,
-					"Reaper": 1,
-					"Pathfinder": 1,
-					"EspionageProbe": 1
-				},
-				{
-					"Battleship": 100000,
-					"Reaper": 1,
-					"Pathfinder": 1,
-					"EspionageProbe": 1
-				}
-			]
-		},
 		"WaitForAllExpeditions": false,
 		"WaitForMajorityOfExpeditions": true,
 		"SplitExpeditionsBetweenSystems": {
