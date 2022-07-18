@@ -36,7 +36,13 @@ namespace Tbot {
 			Helpers.SetTitle();
 			isSleeping = false;
 
-			ReadSettings();
+			try {
+				ReadSettings();
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Tbot, e.Message);
+				return;
+			}
+
 			FileSystemWatcher settingsWatcher = new(Path.GetFullPath(AppContext.BaseDirectory));
 			settingsWatcher.Filter = "settings.json";
 			settingsWatcher.NotifyFilter = NotifyFilters.LastWrite;
@@ -432,7 +438,13 @@ namespace Tbot {
 			xaSem[Feature.SleepMode].WaitOne();
 
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
-			ReadSettings();
+
+			try {
+				ReadSettings();
+			} catch (Exception ex) {
+				Helpers.WriteLog(LogType.Error, LogSender.Tbot, ex.Message + ": skipping changes");
+				return;
+			}
 
 			xaSem[Feature.Defender].Release();
 			xaSem[Feature.Brain].Release();

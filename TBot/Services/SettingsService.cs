@@ -447,8 +447,12 @@ namespace Tbot.Services {
 
 	public static class SettingsService {
 		public static ConfigSettings GetSettings() {
-			string file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
-			return JsonSerializer.Deserialize<ConfigSettings>(file);
+			try {
+				string file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
+				return JsonSerializer.Deserialize<ConfigSettings>(file);
+			} catch (JsonException e) {
+				throw new Exception($"Malformed settings {e.Path} at line {e.LineNumber}");
+			}
 		}
 	}
 }
