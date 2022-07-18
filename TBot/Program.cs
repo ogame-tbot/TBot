@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
 using Tbot.Includes;
 using Tbot.Model;
 using Tbot.Services;
@@ -37,11 +38,10 @@ namespace Tbot {
 			isSleeping = false;
 
 			ReadSettings();
-			FileSystemWatcher settingsWatcher = new(Path.GetFullPath(AppContext.BaseDirectory));
-			settingsWatcher.Filter = "settings.json";
-			settingsWatcher.NotifyFilter = NotifyFilters.LastWrite;
-			settingsWatcher.Changed += new(OnSettingsChanged);
-			settingsWatcher.EnableRaisingEvents = true;
+
+			PhysicalFileProvider physicalFileProvider = new(Path.GetFullPath(AppContext.BaseDirectory));
+			var changeToken = physicalFileProvider.Watch("settings.json");
+			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
 				Universe = (string) settings.Credentials.Universe,
@@ -418,11 +418,7 @@ namespace Tbot {
 			settings = SettingsService.GetSettings();
 		}
 
-		private static void OnSettingsChanged(object sender, FileSystemEventArgs e) {
-			if (e.ChangeType != WatcherChangeTypes.Changed) {
-				return;
-			}
-
+		private static void OnSettingsChanged(object state) {
 			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
 			xaSem[Feature.Expeditions].WaitOne();
