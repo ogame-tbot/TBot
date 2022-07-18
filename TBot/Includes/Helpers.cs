@@ -654,7 +654,7 @@ namespace Tbot.Includes {
 			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
 		}
 
-		public static Ships CalcIdealExpeditionShips(Buildables buildable, int ecoSpeed, long topOnePoints, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
+		public static Ships CalcIdealExpeditionShips(Buildables buildable, int ecoSpeed, float topOnePoints, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
 			var fleet = new Ships();
 
 			int freightCap;
@@ -713,7 +713,7 @@ namespace Tbot.Includes {
 				return Buildables.Null;
 		}
 
-		public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int ecoSpeed, long topOnePoints, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
+		public static Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int ecoSpeed, float topOnePoints, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
 			Ships ideal = CalcIdealExpeditionShips(primaryShip, ecoSpeed, topOnePoints, hyperspaceTech, playerClass, probeCargo);
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				if (prop.Name == primaryShip.ToString()) {
