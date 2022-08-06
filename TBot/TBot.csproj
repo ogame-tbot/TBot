@@ -5,22 +5,24 @@
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>disable</Nullable>
     <Authors>ELK-Lab</Authors>
-    <Version>0.2.44</Version>
+    <Version>0.2.57</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Copyright>2021 © ELK-Lab</Copyright>
+    <Copyright>2022 © ELK-Lab</Copyright>
     <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.ogame-tbot.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ogame-tbot/TBot</RepositoryUrl>
-    <AssemblyVersion>0.2.44.1</AssemblyVersion>
-    <FileVersion>0.2.44.1</FileVersion>
+    <AssemblyVersion>0.2.57.0</AssemblyVersion>
+    <FileVersion>0.2.57.0</FileVersion>
     <Description>OGame Bot</Description>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ELK-Lab.pfx</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <RootNamespace>Tbot</RootNamespace>
     <PackageReleaseNotes></PackageReleaseNotes>
     <Configurations>Debug;Release</Configurations>
+    <ApplicationIcon>tbot.ico</ApplicationIcon>
+    <PackageIcon></PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -36,8 +38,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="tbot.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="RestSharp" Version="106.15.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.0.0" />
     <PackageReference Include="Telegram.Bot" Version="17.0.0" />
   </ItemGroup>
 

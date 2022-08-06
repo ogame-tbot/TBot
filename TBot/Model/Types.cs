@@ -177,6 +177,15 @@ namespace Tbot.Model {
 				&& Buildings.CrystalMine >= buildings.CrystalMine
 				&& Buildings.DeuteriumSynthesizer >= buildings.DeuteriumSynthesizer;
 		}
+
+		public bool HasFacilities(Facilities facilities, bool ignoreSpaceDock = true) {
+			return Facilities.RoboticsFactory >= facilities.RoboticsFactory
+				&& Facilities.Shipyard >= facilities.Shipyard
+				&& Facilities.ResearchLab >= facilities.ResearchLab
+				&& Facilities.MissileSilo >= facilities.MissileSilo
+				&& Facilities.NaniteFactory >= facilities.NaniteFactory
+				&& (Facilities.SpaceDock >= facilities.SpaceDock || ignoreSpaceDock);
+		}
 	}
 
 	public class Settings {
@@ -232,7 +241,7 @@ namespace Tbot.Model {
 		public float RepairFactor { get; set; }
 		public int NewbieProtectionLimit { get; set; }
 		public int NewbieProtectionHigh { get; set; }
-		public long TopScore { get; set; }
+		public float TopScore { get; set; }
 		public int BonusFields { get; set; }
 		public bool DonutGalaxy { get; set; }
 		public bool DonutSystem { get; set; }
@@ -246,6 +255,9 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
+		public int SpeedResearch { get {
+			return Speed * ResearchDurationDivisor;
+		} }
 	}
 
 	public class UserInfo {
@@ -309,7 +321,7 @@ namespace Tbot.Model {
 				tempCry -= resToLeave.Crystal;
 				tempDeut -= resToLeave.Deuterium;
 			}
-			return cost.Metal <= tempMet && cost.Crystal <= tempCry && cost.Deuterium <= tempDeut;
+			return (cost.Metal == 0 || cost.Metal <= tempMet) && (cost.Crystal == 0 || cost.Crystal <= tempCry) && (cost.Deuterium == 0 || cost.Deuterium <= tempDeut);
 		}
 
 		public bool IsEmpty() {
@@ -355,6 +367,25 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
+		
+		public int GetLevel(Buildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(this);
+				}
+			}
+			return output;
+		}
+
+		public Buildings SetLevel(Buildables buildable, int level) {
+			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
+				if (prop.Name == buildable.ToString()) {
+					prop.SetValue(this, level);
+				}
+			}
+			return this;
+		}		
 	}
 
 	public class Supplies : Buildings { }
@@ -783,6 +814,9 @@ namespace Tbot.Model {
 		public string Username { get; set; }
 		public string Password { get; set; }
 		public bool LoginOnly { get; set; }
+		public ProxySettings() {
+			Enabled = false;
+		}
 	}
 
 	public class Staff {
@@ -834,7 +868,7 @@ namespace Tbot.Model {
 	public class AutoMinerSettings {
 		public bool OptimizeForStart { get; set; }
 		public bool PrioritizeRobotsAndNanites { get; set; }
-		public int MaxDaysOfInvestmentReturn { get; set; }
+		public float MaxDaysOfInvestmentReturn { get; set; }
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
 		public int DeutToLeaveOnMoons { get; set; }

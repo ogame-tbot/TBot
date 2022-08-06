@@ -4,14 +4,10 @@
 		"Email": "",
 		"Password": "",
 		"Language": "",
-		"LobbyPioneers": false,
-		"BasicAuth": {
-			"Username": "",
-			"Password": ""
-		}
+		"LobbyPioneers": false
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"Proxy": {
@@ -47,7 +43,8 @@
 		"CheckIntervalMin": 1,
 		"CheckIntervalMax": 22,
 		"IgnoreProbes": true,
-		"IgnoreWeakAttack": true,
+		"IgnoreMissiles": true,
+		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
 		"Autofleet": {
 			"Active": true,
@@ -65,7 +62,7 @@
 			"Probes": 20
 		},
 		"MessageAttacker": {
-			"Active": true,
+			"Active": false,
 			"Messages": [
 				"hey",
 				"hello",
@@ -108,6 +105,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
@@ -160,6 +158,7 @@
 				"Active": true,
 				"CargoType": "SmallCargo",
 				"DeutToLeave": 1000000,
+				"RoundResources": true,
 				"Origin": {
 					"Galaxy": 3,
 					"System": 333,
@@ -169,6 +168,10 @@
 			},
 			"OptimizeForStart": true,
 			"EnsureExpoSlots": true,
+			"PrioritizeAstrophysics": true,
+			"PrioritizePlasmaTechnology": true,
+			"PrioritizeEnergyTechnology": true,
+			"PrioritizeIntergalacticResearchNetwork": true,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
 		},
@@ -230,6 +233,7 @@
 		"Active": true,
 		"PrimaryShip": "LargeCargo",
 		"MinPrimaryToSend": 1000,
+		"PrimaryToKeep": 10000,
 		"SecondaryShip": "Null",
 		"MinSecondaryToSend": 0,
 		"SecondaryToPrimaryRatio": 2,
@@ -244,6 +248,7 @@
 			}
 		},
 		"WaitForAllExpeditions": false,
+		"WaitForMajorityOfExpeditions": true,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1
@@ -293,12 +298,18 @@
 			}
 		],
 		"TargetsProbedBeforeAttack": 30,
-		"MaxFlightDistance": 19000,
 		"CargoType": "LargeCargo",
+		"FleetSpeed": 100,
 		"MinCargosToKeep": 0,
 		"MinCargosToSend": 25,
+		"CargoSurplusPercentage": 10,
+		"BuildCargos": false,
+		"BuildProbes": false,
 		"MinimumResources": 1000000,
 		"MinimumPlayerRank": 500,
+		"MaxFlightTime": 7200,
+		"MaxWaitTime": 7200,
+		"MinLootFuelRatio": 0.5,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,

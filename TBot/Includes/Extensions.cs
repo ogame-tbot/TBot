@@ -30,6 +30,15 @@ namespace Tbot.Includes {
 			return false;
 		}
 
+		public static bool Has(this List<Celestial> celestials, Coordinate coords) {
+			foreach (Celestial cel in celestials) {
+				if (cel.HasCoords(coords)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public static IEnumerable<Celestial> Unique(this IEnumerable<Celestial> source) {
 			return source.Distinct(new CelestialComparer()).ToList();
 		}

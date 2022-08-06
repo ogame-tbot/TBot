@@ -1,3 +1,5 @@
+![TBot - OGame bot](https://ogame-tbot.net/logo-claim.jpg "TBot - OGame bot")
+
 # TBot
 OGame Bot
 
@@ -7,7 +9,8 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame v8.5!
+TBot supports Ogame **v8.7.4** and **v9.0.1**!
+Keep in mind that none of the new features are automated yet, but all the old ones work just fine on v9.
 
 Feel free to publish issues or pull requests
 
@@ -39,7 +42,7 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
-  * TBot can automatically optimize expeditions for your account, sending them from the one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
+  * TBot can automatically optimize expeditions for your account, sending them from one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
 * Brain: TBot has a series of extra functionalities
   * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
@@ -55,13 +58,12 @@ TBot has a wide variety of useful features. They all can be configured and custo
   * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
-* Proxy: TBot supports routing your traffic through a proxy
+* Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings.json. The settings are quite self-explainatory.
-* LobbyPioneers: TBot supports "normal" lobby as well as Pioneers' lobby
 
 ## Settings Hot Reload
 
-TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well of the specific feature config settings.
+TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
   
 ## Running on Windows
 
@@ -129,7 +131,7 @@ Once it is detached you may close the ssh instance and TBot will run fine. You c
 The testing was done on the smallest LightSail instance has been running up to 4 instances of TBot (different accounts each), with no problems so far, however if you run a 5th instance, it can cause the server to run out of RAM and it'll crash.
 
 
-### Telegram
+## Telegram
 TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
 * Create a new Telegram bot
   * Write "/new_bot" to [@botfather](https://t.me/botfather)
@@ -141,8 +143,10 @@ TBot supports automated Telegram messaging. In order to enable it, you need to f
   * It will answer you a message containing your user ID and chat ID (WARNING: you need the USER ID)
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
-### Captcha solving
-TBot, being based on ogamed, supports manual captcha solving as well as Ninja Captcha Autoresolve service.
+## Captcha solving
+TBot implements an automatic captcha solving mechanism.
+
+However, being based on ogamed, it supports manual captcha solving as well as Ninja Captcha Autoresolve service.
 
 To manually solve captcha navigate to host:port/bot/captcha
 
