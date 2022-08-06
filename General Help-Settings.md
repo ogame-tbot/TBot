@@ -130,3 +130,56 @@ The actions TBot does once an attack is being received and is **not** ignored be
       }
 
 Other actions by the Defender settings are `SpyAttacker`, `MessageAttacker` and `TelegramMessenger`  which are self explanatory,  and `Alarm`, which if set to true, will play a loud sound in your computer (useless if TBot is in a remote server) .
+
+
+#### Brain
+This section controls most of the actions in TBot, specially when it comes to building things and researching.
+
+      "Brain": {
+        "Active": true,
+
+The above setting turn all of the Brain functions on or off.
+
+        "AutoMine": {
+			"Active": true,
+This section turn on or off the AutoMine actions, which include settings for the maximum levels for all the buildings you want on your planets/ moons. For example, the line:
+
+      "MaxMetalMine": 40,
+      "MaxCrystalMine": 35,
+means the max metal mine to be built by the brain is a level 40 mine, etceteras.
+
+The Transports section sets a kind of ship and a planet of origin from which resources will be sent to other planets. The `DeutToLeave` setting is the ammount of Deuterium to be left in the origin coordinates. If you set the `"Exclude":` to some coordinates, it will not ship resources or build things in those coordinates.
+
+The following lines:
+
+      "OptimizeForStart": true,
+      "PrioritizeRobotsAndNanites": false,
+      "BuildDepositIfFull": false,
+      "DepositHours": 6,
+      "MaxDaysOfInvestmentReturn": 365,
+      "DeutToLeaveOnMoons": 1000000,
+      "CheckIntervalMin": 10,
+      "CheckIntervalMax": 20
+are especially useful in the beginning, when your priorities in terms of buildings have to do with getting Nanites built and your deposits with some space. Also in the initial part of the game, it is important for the Brain to check often what needs to be built.
+
+
+#### Autoreasearch
+When this setting is set to true, TBot will do the research in the planet set, much like the brain builds things. So you set the levels of technologies you want, a Target planet to do the research, an origin and type of ship to sent the resources to complete the research. It can be the same or a different planet from the `AutoMine` settings.
+
+In the early game, the settings:
+
+      "OptimizeForStart": true,
+      "EnsureExpoSlots": true,
+      "PrioritizeAstrophysics": true,
+      "PrioritizePlasmaTechnology": true,
+      "PrioritizeEnergyTechnology": true,
+      "PrioritizeIntergalacticResearchNetwork": true,
+      "CheckIntervalMin": 10,
+      "CheckIntervalMax": 20
+
+  will help you get the Astrophysics going, and in the late game, you can set it to research the only profitable techs, Plasma, Energy ,Intergalactic Research Network, and Astrophysics.
+
+
+  #### AutoCargo
+
+  
