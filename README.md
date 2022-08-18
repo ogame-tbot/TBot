@@ -9,8 +9,8 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v8.7.4** and **v9.0.1**!
-Keep in mind that none of the new features are automated yet, but all the old ones work just fine on v9.
+TBot supports Ogame **v9.0.2**!
+Keep in mind that none of the new LifeForm features are automated yet, but all the old ones work just fine on v9.
 
 Feel free to publish issues or pull requests
 
@@ -33,7 +33,8 @@ Do you like the project? Buy me a beer!
 [![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x129a661940E4eE0Aff581D0D778d6233722b6557)](https://en.cryptobadges.io/donate/0x129a661940E4eE0Aff581D0D778d6233722b6557)
 
 ## Features
-TBot has a wide variety of useful features. They all can be configured and customized editing settings.json. Here follows a shot explaination of each of them:
+TBot has a wide variety of useful features. They all can be configured and customized editing settings.json.
+Here follows a short explanation of each of them, read the [Wiki](https://github.com/ogame-tbot/TBot/wiki/Configuration-guide) for a more indepth explanation.
 
 * Defender: TBot checks periodically for incoming attacks
   * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible
