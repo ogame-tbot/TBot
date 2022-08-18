@@ -19,6 +19,9 @@ namespace Tbot.Services {
 				Timeout = 86400000,
 				ReadWriteTimeout = 86400000
 			};
+			if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "") {
+				Client.Authenticator = new RestSharp.Authenticators.HttpBasicAuthenticator(credentials.BasicAuthUsername, credentials.BasicAuthPassword);
+			}
 		}
 
 		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
