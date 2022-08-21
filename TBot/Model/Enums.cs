@@ -200,7 +200,7 @@ namespace Tbot.Model {
 		AboutAnHour
 	}
 
-	public enum UpdateType {
+	public enum UpdateTypes {
 		Fast,
 		Techs,
 		Full,
