@@ -951,12 +951,12 @@ namespace Tbot {
 				}
 			}
 
-			Missions mission = Missions.Harvest;
+			Missions mission = Missions.Deploy;
 			List<FleetHypotesis> fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 
 			if (fleetHypotesis.Count() == 0) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Harvest possible doing Deploy..");
-				mission = Missions.Deploy;
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Deploy possible doing Harvest..");
+				mission = Missions.Harvest;
 				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 
 				if (fleetHypotesis.Count() == 0 && !forceUnsafe ) {
