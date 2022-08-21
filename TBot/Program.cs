@@ -1109,16 +1109,16 @@ namespace Tbot {
 					}
 
 					if (possibleDestinations.Count == 0) {
-						int sys = origin.Coordinate.System;
-						for ( sys = sys-5 ; sys <= sys+5; sys++) {
+						int sys = 0;
+						for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
 							galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 							harvestablePos = new();
 							foreach (var planet in galaxyInfo.Planets) {
-								if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0)
+								if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
 									Console.WriteLine(planet.Debris.Resources.TotalResources);
 									possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+								}
 							}
-						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Checking debris field at: {sys.ToString()}");
 						}
 					}
 
