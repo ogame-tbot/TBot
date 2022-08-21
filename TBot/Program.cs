@@ -915,26 +915,30 @@ namespace Tbot {
 			timers.Remove("FleetSchedulerTimer");
 		}
 
-		private static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false) {
-			celestial = UpdatePlanet(celestial, UpdateType.Ships);
+		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false) {
+			DateTime departureTime = GetDateTime();
+			
+			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
 				return;
 			}
 
-			celestial = UpdatePlanet(celestial, UpdateType.Resources);
+			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 			Celestial destination = new() { ID = 0 };
 			if (!forceUnsafe)
 				forceUnsafe = (bool) settings.SleepMode.AutoFleetSave.ForceUnsafe;
+
 			bool recall = false;
+			if ((bool) settings.SleepMode.AutoFleetSave.Recall)
+				recall = true;
 
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
 				return;
 			}
-			long maxDeuterium = celestial.Resources.Deuterium;
 
-			DateTime departureTime = GetDateTime();
+			long maxDeuterium = celestial.Resources.Deuterium;
 
 			if (isSleepTimeFleetSave) {
 				if (DateTime.TryParse((string) settings.SleepMode.WakeUp, out DateTime wakeUp)) {
@@ -947,31 +951,38 @@ namespace Tbot {
 				}
 			}
 
-			Missions mission = Missions.Deploy;
-			FleetHypotesis fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-			if ((bool) settings.SleepMode.AutoFleetSave.Recall)
-				recall = true;
-			if ((fleetHypotesis.Origin.Coordinate.Type == Celestials.Moon) || forceUnsafe) {
-				if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0) {
-					mission = Missions.Spy;
-					fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+			Missions mission = Missions.Harvest;
+			List<FleetHypotesis> fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+
+			if (fleetHypotesis.Count() == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Harvest possible doing Deploy..");
+				mission = Missions.Deploy;
+				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+
+				if (fleetHypotesis.Count() == 0 && !forceUnsafe ) {
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} no Deploy or Harvest possible and forceUnsafe disabled!");
+					return;
 				}
-				if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0 && Helpers.CalcMaxPlanets(researches.Astrophysics) == celestials.Unique().Where(c => c.Coordinate.Type == Celestials.Planet).Count()) {
-					mission = Missions.Colonize;
-					fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				else {  //fleetHypotesis.Count() == 0 && forceUnsafe enabled
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} no Deploy or Harvest possible doing Unsafe..");
+					return;
+					/*
+					Need to modify this, going to 1,1,1 is bad, better Harvest near origin SS, Spy near origin SS, colonize near origin SS if not enough fuel than going to 1,1,1
+
+					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0) {
+						mission = Missions.Harvest;
+						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+					}
+					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0) {
+						mission = Missions.Spy;
+						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+					}
+					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0 && Helpers.CalcMaxPlanets(researches.Astrophysics) == celestials.Unique().Where(c => c.Coordinate.Type == Celestials.Planet).Count()) {
+						mission = Missions.Colonize;
+						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+					}
+					*/
 				}
-				if (fleetHypotesis.Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0) {
-					mission = Missions.Harvest;
-					fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-				}
-			}
-			if (celestial.Resources.Deuterium < fleetHypotesis.Fuel) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: not enough fuel!");
-				return;
-			}
-			if (Helpers.CalcFleetFuelCapacity(fleetHypotesis.Ships, serverData.ProbeCargo) < fleetHypotesis.Fuel) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: ships don't have enough fuel capacity!");
-				return;
 			}
 
 			var payload = celestial.Resources;
@@ -980,8 +991,27 @@ namespace Tbot {
 			if (payload.Deuterium < 0)
 				payload.Deuterium = 0;
 
-			int fleetId = SendFleet(fleetHypotesis.Origin, fleetHypotesis.Ships, fleetHypotesis.Destination, fleetHypotesis.Mission, fleetHypotesis.Speed, payload, userInfo.Class, isSleepTimeFleetSave || forceUnsafe);
-			if (recall && fleetId != 0) {
+
+			FleetHypotesis possibleFleet = new();
+			int fleetId = 0;
+			if ( mission == Missions.Harvest) {
+				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration) ) {
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"checking fleet..: {fleet.Destination}");
+					if (CheckFuel(fleet, celestial)) {
+						fleetId = SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, userInfo.Class);
+
+						if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+							possibleFleet = fleet;	
+							break;
+						}
+					}
+				}
+			} else {
+				possibleFleet = fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration).First();
+				fleetId = SendFleet(possibleFleet.Origin, possibleFleet.Ships, possibleFleet.Destination, possibleFleet.Mission, possibleFleet.Speed, payload, userInfo.Class);
+			}
+
+			if (recall && fleetId != 0 || fleetId != -1 || fleetId != -2) {
 				Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
 				DateTime time = GetDateTime();
 				var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
@@ -990,17 +1020,128 @@ namespace Tbot {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
 				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
+				telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission}, recalled at {newTime.ToString()}");
 			}
 		}
 
-		private static FleetHypotesis GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
+		private static bool CheckFuel(FleetHypotesis fleetHypotesis, Celestial celestial) {
+			if (celestial.Resources.Deuterium < fleetHypotesis.Fuel) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: not enough fuel!");
+				return false;
+			}
+			if (Helpers.CalcFleetFuelCapacity(fleetHypotesis.Ships, serverData.ProbeCargo) < fleetHypotesis.Fuel) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: ships don't have enough fuel capacity!");
+				return false;
+			}
+			return true;
+		}
+		
+		private static List<FleetHypotesis> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
 			var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 			List<FleetHypotesis> possibleFleets = new();
 			List<Coordinate> possibleDestinations = new();
-
+			GalaxyInfo galaxyInfo = new();
 			origin = UpdatePlanet(origin, UpdateType.Resources);
 
 			switch (mission) {
+				case Missions.Spy:
+					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
+					foreach (var currentSpeed in validSpeeds) {
+						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
+						FleetHypotesis fleetHypotesis = new() {
+							Origin = origin,
+							Destination = destination,
+							Ships = origin.Ships.GetMovableShips(),
+							Mission = mission,
+							Speed = currentSpeed,
+							Duration = fleetPrediction.Time,
+							Fuel = fleetPrediction.Fuel
+						};
+						if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+							possibleFleets.Add(fleetHypotesis);
+							break;
+						}
+					}
+					break;
+				case Missions.Colonize:
+					for (int pos = 1; pos <= 15; pos++) {
+						if (pos == origin.Coordinate.Position)
+							continue;
+						galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
+						List<int> occupiedPos = new();
+						foreach (var planet in galaxyInfo.Planets) {
+							occupiedPos.Add(planet.Coordinate.Position);
+						}
+						if (occupiedPos.Any(op => op == pos))
+							continue;
+
+						possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Planet));
+					}
+					foreach (var possibleDestination in possibleDestinations) {
+						foreach (var currentSpeed in validSpeeds) {
+							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
+							FleetHypotesis fleetHypotesis = new() {
+								Origin = origin,
+								Destination = possibleDestination,
+								Ships = origin.Ships.GetMovableShips(),
+								Mission = mission,
+								Speed = currentSpeed,
+								Duration = fleetPrediction.Time,
+								Fuel = fleetPrediction.Fuel
+							};
+							if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+								possibleFleets.Add(fleetHypotesis);
+								break;
+							}
+						}
+					}
+					break;
+
+				case Missions.Harvest:
+					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, origin.Coordinate.System);
+					List<int> harvestablePos = new();
+					foreach (var planet in galaxyInfo.Planets ) {
+						if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
+							possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+						}		
+					}
+					possibleDestinations = new();
+					if (possibleDestinations.Count == 0) {
+						int sys = origin.Coordinate.System;
+						for ( sys = sys-5 ; sys <= sys+5; sys++) {
+							galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
+							harvestablePos = new();
+							foreach (var planet in galaxyInfo.Planets) {
+								if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0)
+									Console.WriteLine(planet.Debris.Resources.TotalResources);
+									possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+							}
+						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Checking debris field at: {sys.ToString()}");
+						}
+					}
+
+					foreach (var possibleDestination in possibleDestinations) {
+						foreach (var currentSpeed in validSpeeds) {
+							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
+
+							FleetHypotesis fleetHypotesis = new() {
+								Origin = origin,
+								Destination = possibleDestination,
+								Ships = origin.Ships.GetMovableShips(),
+								Mission = mission,
+								Speed = currentSpeed,
+								Duration = fleetPrediction.Time,
+								Fuel = fleetPrediction.Fuel
+							};
+							if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+								possibleFleets.Add(fleetHypotesis);
+								break;
+							}
+						}
+					}
+					break;
 				case Missions.Deploy:
 					possibleDestinations = celestials
 						.Where(planet => planet.ID != origin.ID)
@@ -1035,104 +1176,16 @@ namespace Tbot {
 						}
 					}
 					break;
-				case Missions.Spy:
-					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
-					foreach (var currentSpeed in validSpeeds) {
-						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
-
-						FleetHypotesis fleetHypotesis = new() {
-							Origin = origin,
-							Destination = destination,
-							Ships = origin.Ships.GetMovableShips(),
-							Mission = mission,
-							Speed = currentSpeed,
-							Duration = fleetPrediction.Time,
-							Fuel = fleetPrediction.Fuel
-						};
-						if (fleetHypotesis.Duration >= minFlightTime / 2) {
-							possibleFleets.Add(fleetHypotesis);
-							break;
-						}
-					}
-					break;
-				case Missions.Colonize:
-					for (int pos = 1; pos <= 15; pos++) {
-						if (pos == origin.Coordinate.Position)
-							continue;
-						GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
-						List<int> occupiedPos = new();
-						foreach (var planet in galaxyInfo.Planets) {
-							occupiedPos.Add(planet.Coordinate.Position);
-						}
-						if (occupiedPos.Any(op => op == pos))
-							continue;
-
-						possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Planet));
-					}
-					foreach (var possibleDestination in possibleDestinations) {
-						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
-
-							FleetHypotesis fleetHypotesis = new() {
-								Origin = origin,
-								Destination = possibleDestination,
-								Ships = origin.Ships.GetMovableShips(),
-								Mission = mission,
-								Speed = currentSpeed,
-								Duration = fleetPrediction.Time,
-								Fuel = fleetPrediction.Fuel
-							};
-							if (fleetHypotesis.Duration >= minFlightTime / 2) {
-								possibleFleets.Add(fleetHypotesis);
-								break;
-							}
-						}
-					}
-					break;
-				case Missions.Harvest:
-					for (int pos = 1; pos <= 15; pos++) {
-						if (pos == origin.Coordinate.Position)
-							continue;
-						GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
-						List<int> harvestablePos = new();
-						foreach (var planet in galaxyInfo.Planets) {
-							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0)
-								possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Debris));
-						}
-					}
-					foreach (var possibleDestination in possibleDestinations) {
-						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
-
-							FleetHypotesis fleetHypotesis = new() {
-								Origin = origin,
-								Destination = possibleDestination,
-								Ships = origin.Ships.GetMovableShips(),
-								Mission = mission,
-								Speed = currentSpeed,
-								Duration = fleetPrediction.Time,
-								Fuel = fleetPrediction.Fuel
-							};
-							if (fleetHypotesis.Duration >= minFlightTime / 2) {
-								possibleFleets.Add(fleetHypotesis);
-								break;
-							}
-						}
-					}
-					break;
 				default:
 					break;
 			}
 			if (possibleFleets.Count > 0) {
-				return possibleFleets
-					.OrderBy(pf => pf.Fuel)
-					.ThenBy(pf => pf.Duration)
-					.First();
+				return possibleFleets;
+
 			} else {
 				mission = Missions.Transport;
 				FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, new Coordinate(), origin.Ships.GetMovableShips(), mission, Speeds.TenPercent, researches, serverData, userInfo.Class);
-
-				return new() {
+				FleetHypotesis fleetHypotesis = new() {
 					Origin = origin,
 					Destination = new Coordinate(),
 					Ships = origin.Ships.GetMovableShips(),
@@ -1141,6 +1194,9 @@ namespace Tbot {
 					Duration = fleetPrediction.Time,
 					Fuel = fleetPrediction.Fuel
 				};
+				possibleFleets.Add(fleetHypotesis);
+
+				return possibleFleets;
 			}
 		}
 
