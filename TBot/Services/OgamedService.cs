@@ -6,11 +6,14 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
+
 
 namespace Tbot.Services {
 	class OgamedService {
 		private string Url { get; set; }
 		private RestClient Client { get; set; }
+
 
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
@@ -19,9 +22,7 @@ namespace Tbot.Services {
 				Timeout = 86400000,
 				ReadWriteTimeout = 86400000
 			};
-			if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "") {
-				Client.Authenticator = new RestSharp.Authenticators.HttpBasicAuthenticator(credentials.BasicAuthUsername, credentials.BasicAuthPassword);
-			}
+			Client.Authenticator = new RestSharp.Authenticators.HttpBasicAuthenticator(credentials.BasicAuthUsername, credentials.BasicAuthPassword);
 		}
 
 		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
@@ -83,6 +84,7 @@ namespace Tbot.Services {
 					Resource = "/bot/login",
 					Method = Method.GET
 				};
+
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 				if (result.Status != "ok")
 					return false;
@@ -97,6 +99,7 @@ namespace Tbot.Services {
 					Resource = "/bot/logout",
 					Method = Method.GET
 				};
+
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 				if (result.Status != "ok")
 					return false;
@@ -111,6 +114,7 @@ namespace Tbot.Services {
 					Resource = "/bot/captcha/challengeID",
 					Method = Method.GET
 				};
+
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 				if (result != null && result.Status == "ok")
 					return (string) result.Result;
@@ -125,6 +129,7 @@ namespace Tbot.Services {
 					Resource = "/bot/captcha/question/" + challengeID,
 					Method = Method.GET
 				};
+
 				var response = Client.Execute(request);
 				var result = response.RawBytes;
 				if (result != null)
@@ -140,6 +145,7 @@ namespace Tbot.Services {
 					Resource = "/bot/captcha/icons/" + challengeID,
 					Method = Method.GET
 				};
+
 				var response = Client.Execute(request);
 				var result = response.RawBytes;
 				if (result != null)
@@ -155,6 +161,7 @@ namespace Tbot.Services {
 					Resource = $"/bot/captcha/solve",
 					Method = Method.POST,
 				};
+
 				request.AddParameter("challenge_id", challengeID, ParameterType.GetOrPost);
 				request.AddParameter("answer", answer, ParameterType.GetOrPost);
 				Client.Execute(request);
@@ -166,6 +173,7 @@ namespace Tbot.Services {
 				Resource = "/bot/ip",
 				Method = Method.GET
 			};
+
 			try {
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 				if (result.Status != "ok") {
@@ -736,6 +744,7 @@ namespace Tbot.Services {
 			request.AddParameter("metal", payload.Metal, ParameterType.GetOrPost);
 			request.AddParameter("crystal", payload.Crystal, ParameterType.GetOrPost);
 			request.AddParameter("deuterium", payload.Deuterium, ParameterType.GetOrPost);
+			request.AddParameter("food", payload.Food, ParameterType.GetOrPost);
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
