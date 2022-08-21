@@ -3773,12 +3773,13 @@ namespace Tbot {
 							.OrderBy(fleet => fleet.BackIn)
 							.ToList();
 					}
-
 					slots = UpdateSlots();
-					if (orderedFleets.Count == 0 || slots.ExpFree > 0) {
+					if (orderedFleets.Count == 0 || ((bool) settings.Expeditions.WaitForMajorityOfExpeditions && slots.ExpFree > (slots.ExpTotal / 2))) {
 						interval = Helpers.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
 						interval = (int) ((1000 * orderedFleets.First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+						if (orderedFleets.Count >= (long) settings.Expeditions.NumberSlotsToIncreaseIntervalCheck)
+							interval += Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					}
 					time = GetDateTime();
 					if (interval <= 0)
