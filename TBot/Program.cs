@@ -1107,7 +1107,7 @@ namespace Tbot {
 							possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
 						}		
 					}
-					possibleDestinations = new();
+
 					if (possibleDestinations.Count == 0) {
 						int sys = origin.Coordinate.System;
 						for ( sys = sys-5 ; sys <= sys+5; sys++) {
