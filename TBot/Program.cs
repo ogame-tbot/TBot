@@ -426,6 +426,8 @@ namespace Tbot {
 		}
 
 		private static void WriteSetting(Celestial celestial) {
+			string type = "";
+			if (celestial.Coordinate.Type == Celestials.Moon) type = "Moon" ?? "Planet";
 
 			System.Threading.Thread.Sleep(500);
 			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
@@ -435,7 +437,7 @@ namespace Tbot {
 			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
 			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = (int) celestial.Coordinate.Type;
+			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
 
 			jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 			jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
@@ -445,23 +447,22 @@ namespace Tbot {
 			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
 			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = (int) celestial.Coordinate.Type;
+			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
 
 			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 			jsonObj["Brain"]["AutoRepatriate"]["Target"]["System"] = (int) celestial.Coordinate.System;
 			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = (int) celestial.Coordinate.Type;
+			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = type;
 
 			jsonObj["Expeditions"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 			jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
 			jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Expeditions"]["Origin"][0]["Type"] = (int) celestial.Coordinate.Type;
+			jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
-
-
 		}
+		
 		private static void WriteSetting() {
 			settings = SettingsService.GetSettings();
 		}
