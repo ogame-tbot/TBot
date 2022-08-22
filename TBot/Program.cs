@@ -918,13 +918,13 @@ namespace Tbot {
 		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false) {
 			DateTime departureTime = GetDateTime();
 			
-			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
+			celestial = UpdatePlanet(celestial, UpdateType.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
 				return;
 			}
 
-			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = UpdatePlanet(celestial, UpdateType.Resources);
 			Celestial destination = new() { ID = 0 };
 			if (!forceUnsafe)
 				forceUnsafe = (bool) settings.SleepMode.AutoFleetSave.ForceUnsafe;
@@ -962,9 +962,6 @@ namespace Tbot {
 			bool AlreadySent = false; //permit to swith to Harvest mission if not enough fuel to Deploy if celestial far away
 
 			Missions mission = Missions.Deploy;
-			if (TelegramMission != Missions.None)
-				mission = TelegramMission;
-
 			List<FleetHypotesis> fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 			if (fleetHypotesis.Count() > 0) { 
 				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
