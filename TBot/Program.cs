@@ -427,7 +427,8 @@ namespace Tbot {
 
 		private static void WriteSetting(Celestial celestial) {
 			string type = "";
-			if (celestial.Coordinate.Type == Celestials.Moon) type = "Moon" ?? "Planet";
+			if (celestial.Coordinate.Type == Celestials.Moon)
+				type = "Moon" ?? "Planet";
 
 			System.Threading.Thread.Sleep(500);
 			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
@@ -461,8 +462,9 @@ namespace Tbot {
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
+
 		}
-		
+
 		private static void WriteSetting() {
 			settings = SettingsService.GetSettings();
 		}
@@ -1019,8 +1021,14 @@ namespace Tbot {
 			return;
 		}
 
-		public static void TelegramSwitch(decimal speed) {
-			Celestial celestial = TelegramGetMainCelestial();
+		public static void TelegramSwitch(decimal speed, Celestial attacked = null) {
+			Celestial celestial;
+
+			if (attacked == null) {
+				celestial = TelegramGetMainCelestial();	
+			} else {
+				celestial = attacked;
+			}
 
 			if ( celestial.Coordinate.Type == Celestials.Planet) {
 				bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
@@ -1116,15 +1124,7 @@ namespace Tbot {
 				$"{resources}" +
 				"Ships:\n" +
 				$"{ships}");
-			/*
-			telegramMessenger.SendMessage($"{celestial.Coordinate.ToString()}\n\n" +
-				"Resources:\n" +
-				$"{celestial.Resources.Metal.ToString("#,#", CultureInfo.InvariantCulture)} Metal\n" +
-				$"{celestial.Resources.Crystal.ToString("#,#", CultureInfo.InvariantCulture)} Crystal\n" +
-				$"{celestial.Resources.Deuterium.ToString("#,#", CultureInfo.InvariantCulture)} Deuterium\n\n" +
-				"Ships:\n" +
-				$"{celestial.Ships.ToString()}");
-			*/
+
 			return;
 		}
 
@@ -1232,8 +1232,8 @@ namespace Tbot {
 				}
 				else {  //fleetHypotesis.Count() == 0 && forceUnsafe enabled
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} no Deploy or Harvest possible doing Unsafe..");
-					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} Unsafe not implemented yet!..");
-					
+					decimal speed = 100;
+					TelegramSwitch(speed, celestial);
 					/*
 					Need to modify this, going to 1,1,1 is bad, better Harvest near origin SS, Spy near origin SS, colonize near origin SS
 
