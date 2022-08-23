@@ -94,6 +94,7 @@ namespace Tbot.Model {
 	}
 
 	public enum Missions {
+		None = 0,
 		Attack = 1,
 		FederalAttack = 2,
 		Transport = 3,
@@ -200,7 +201,7 @@ namespace Tbot.Model {
 		AboutAnHour
 	}
 
-	public enum UpdateType {
+	public enum UpdateTypes {
 		Fast,
 		Techs,
 		Full,
