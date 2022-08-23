@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Linq;
 using Tbot.Includes;
 using Tbot.Model;
