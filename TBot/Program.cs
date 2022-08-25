@@ -153,7 +153,7 @@ namespace Tbot {
 					if ((bool) settings.TelegramMessenger.Active) {
 						Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
 						telegramMessenger = new TelegramMessenger((string) settings.TelegramMessenger.API, (string) settings.TelegramMessenger.ChatId);
-						telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] TBot activated");
+						telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` TBot activated");
 						Thread.Sleep(2000);
 						telegramMessenger.TelegramBot();
 					}
@@ -1884,7 +1884,7 @@ namespace Tbot {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
 				timers.Remove("TelegramSleepModeTimer");
-				telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Bot woke up!");
+				telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Bot woke up!");
 
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -1896,8 +1896,8 @@ namespace Tbot {
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
 				if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
-					telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Waking up");
-					telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Going to sleep at {state.ToString()}");
+					telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Waking up");
+					telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Going to sleep at {state.ToString()}");
 				}
 				isSleeping = false;
 				InitializeFeatures();
@@ -3942,19 +3942,19 @@ namespace Tbot {
 				if (recalledFleet.ID == 0) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred.");
 					//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-					//	telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Unable to recall fleet: an unknon error has occurred.");
+					//	telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Unable to recall fleet: an unknon error has occurred.");
 					//}
 				}
 				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 				if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-					telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 				}
 				return;
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
 				//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				//	telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Unable to recall fleet: an exception has occurred.");
+				//	telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Unable to recall fleet: an exception has occurred.");
 				//}
 				return;
 			} finally {
@@ -3970,7 +3970,7 @@ namespace Tbot {
 			fleets = UpdateFleets();
 			Fleet ToRecallFleet = fleets.SingleOrDefault(f => f.ID == fleetId) ?? new() { ID = 0 };
 			if ( ToRecallFleet.ID == 0) {
-				telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Unable to recall fleet! Already recalled?");
+				telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Unable to recall fleet! Already recalled?");
 				return;
 			}
 			RetireFleet(ToRecallFleet);
@@ -4062,7 +4062,7 @@ namespace Tbot {
 			}
 
 			if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
+				telegramMessenger.SendMessage($"`[{userInfo.PlayerName} ({serverData.Name})]` Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					Thread.Sleep(1000);
 					telegramMessenger.SendMessage($"The attack is composed by: {attack.Ships.ToString()}");
