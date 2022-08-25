@@ -515,8 +515,7 @@ namespace Tbot {
 			xaSem[Feature.SleepMode].WaitOne();
 		}
 
-		private static void OnSettingsChanged(object state) {
-
+		private static void OnSettingsChanged(object sender) {
 			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
 			xaSem[Feature.Expeditions].WaitOne();
@@ -2203,7 +2202,12 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
 						var time = GetDateTime();
 						fleets = UpdateFleets();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = Helpers.CalcRandomInterval((int) settings.AutoResearch.CheckIntervalMin, (int) settings.AutoResearch.CheckIntervalMax);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
@@ -3258,7 +3262,12 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
 					time = GetDateTime();
 					fleets = UpdateFleets();
-					long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					long interval;
+					try {
+						interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} catch {
+						interval = Helpers.CalcRandomInterval((int) settings.AutoMine.CheckIntervalMin, (int) settings.AutoMine.CheckIntervalMax);
+					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
 						timers.Remove(autoMineTimer);
@@ -3756,7 +3765,12 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");						
 						fleets = UpdateFleets();
 						var time = GetDateTime();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = Helpers.CalcRandomInterval((int) settings.AutoRepatriate.CheckIntervalMin, (int) settings.AutoRepatriate.CheckIntervalMax);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
@@ -4365,7 +4379,12 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Delaying...");
 						var time = GetDateTime();
 						fleets = UpdateFleets();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = Helpers.CalcRandomInterval((int) settings.Expeditions.CheckIntervalMin, (int) settings.Expeditions.CheckIntervalMax);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
@@ -4547,7 +4566,12 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Delaying...");
 						var time = GetDateTime();
 						fleets = UpdateFleets();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = Helpers.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
@@ -4715,7 +4739,13 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Delaying...");
 						var time = GetDateTime();
 						fleets = UpdateFleets();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						}
+						catch {
+							interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");

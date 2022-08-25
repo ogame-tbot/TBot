@@ -358,7 +358,8 @@
 		"API": "",
 		"ChatId": ""
 		"TelegramAutoPong": {
-			"Active": true
+			"Active": true,
+			"EveryHours":  1
 		}
 	}
 }
