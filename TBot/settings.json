@@ -39,7 +39,8 @@
 			"OnlyMoons": true,
 			"ForceUnsafe": true,
 			"DeutToLeave": 200000,
-			"Recall": true
+			"Recall": true,
+			"DefaultMission": "Harvest"
 		}
 	},
 	"Defender": {
@@ -356,5 +357,8 @@
 		"Active": false,
 		"API": "",
 		"ChatId": ""
+		"TelegramAutoPong": {
+			"Active": true
+		}
 	}
 }
