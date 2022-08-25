@@ -500,9 +500,7 @@ namespace Tbot.Includes {
 						else {
 							Tbot.Program.releaseNotStoppedFeature();
 						}
-					}
-
-					
+					}	
 				}
 			}
 		}

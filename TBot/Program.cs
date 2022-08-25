@@ -1184,6 +1184,7 @@ namespace Tbot {
 		public static void SpyCrash(Celestial fromCelestial, Coordinate target = null) {
 			decimal speed = Speeds.HundredPercent;
 			fromCelestial = UpdatePlanet(fromCelestial, UpdateTypes.Ships);
+			fromCelestial = UpdatePlanet(fromCelestial, UpdateTypes.Resources);
 			var payload = fromCelestial.Resources;
 			Random random = new Random();
 
