@@ -67,7 +67,7 @@ namespace Tbot.Includes {
 				"/help"
 			};
 
-			if (update.Type == UpdateType.Message) {
+			if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message) {
 				var message = update.Message;
 				var arg = "";
 				var test = "";
