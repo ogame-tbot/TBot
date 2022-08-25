@@ -356,9 +356,10 @@
 	"TelegramMessenger": {
 		"Active": false,
 		"API": "",
-		"ChatId": ""
+		"ChatId": "",
 		"TelegramAutoPong": {
-			"Active": true
+			"Active": true,
+			"EveryHours":  1
 		}
 	}
 }
