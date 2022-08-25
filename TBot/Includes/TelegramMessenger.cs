@@ -77,6 +77,9 @@ namespace Tbot.Includes {
 				Coordinate coord = new();
 
 				if (commands.Any(x => message.Text.ToLower().Contains(x))) {
+					//Handle /commands@botname in string if exist
+					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1) 
+						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 					
 					try {
 						Tbot.Program.WaitFeature();
