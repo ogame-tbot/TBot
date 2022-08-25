@@ -164,13 +164,13 @@ namespace Tbot.Includes {
 				case Buildables.Recycler:
 					baseCargo = 20000;
 					if (playerClass == CharacterClass.General)
-						bonus += 25;
+						bonus += 20;
 					break;
 				case Buildables.EspionageProbe:
 					baseCargo = probeCargo;
 					break;
 				case Buildables.Bomber:
-					baseCargo = 750;
+					baseCargo = 500;
 					break;
 				case Buildables.Destroyer:
 					baseCargo = 2000;
@@ -182,7 +182,7 @@ namespace Tbot.Includes {
 					baseCargo = 750;
 					break;
 				case Buildables.Reaper:
-					baseCargo = 7000;
+					baseCargo = 10000;
 					break;
 				case Buildables.Pathfinder:
 					baseCargo = 10000;
