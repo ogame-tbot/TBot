@@ -80,7 +80,7 @@ namespace Tbot.Includes {
 					//Handle /commands@botname in string if exist
 					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1) 
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
-					
+
 					try {
 						Tbot.Program.WaitFeature();
 

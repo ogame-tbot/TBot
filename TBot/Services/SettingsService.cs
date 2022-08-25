@@ -21,6 +21,8 @@ namespace Tbot.Services {
 		}
 	}
 
+	
+
 	public static class JsonNetAdapter {
 		public static ExpandoObject Transform(ExpandoObject data) {
 			var newExpando = new ExpandoObject();
