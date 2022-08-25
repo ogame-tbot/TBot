@@ -495,7 +495,6 @@ namespace Tbot {
 			xaSem[Feature.Harvest].WaitOne();
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
-			xaSem[Feature.SleepMode].WaitOne();
 		}
 
 		public static void releaseFeature() {
@@ -504,7 +503,6 @@ namespace Tbot {
 			xaSem[Feature.Harvest].Release();
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
-			xaSem[Feature.SleepMode].Release();
 		}
 
 		private static void OnSettingsChanged(object state) {
@@ -1246,7 +1244,7 @@ namespace Tbot {
 
 					interval += Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
-					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration);
+					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration*1000);
 
 					timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturn, null, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {TimeToGhost.ToString()}");
@@ -1603,18 +1601,11 @@ namespace Tbot {
 
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
 			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
-			
+			if (celestialsToFleetsave.Count == 0)
+				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
+
 			foreach (Celestial celestial in celestialsToFleetsave)
 				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
-
-			//reinit stopped features before sleep
-			InitializeColonize();
-			InitializeBrainAutoResearch();
-			InitializeBrainAutoMine();
-			InitializeExpeditions();
-			InitializeBrainRepatriate();
-			InitializeAutoFarm();
-			InitializeHarvest();
 
 			SleepNow(NextWakeUpTime);		
 		}
