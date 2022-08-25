@@ -495,6 +495,7 @@ namespace Tbot {
 			xaSem[Feature.Harvest].WaitOne();
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
+			xaSem[Feature.SleepMode].WaitOne();
 		}
 
 		public static void releaseFeature() {
@@ -503,7 +504,7 @@ namespace Tbot {
 			xaSem[Feature.Harvest].Release();
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
-
+			xaSem[Feature.SleepMode].Release();
 		}
 
 		private static void OnSettingsChanged(object state) {
