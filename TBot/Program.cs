@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Linq;
 using Tbot.Includes;
 using Tbot.Model;
@@ -20,7 +21,7 @@ namespace Tbot {
 		static volatile Server serverInfo;
 		static volatile ServerData serverData;
 		static volatile UserInfo userInfo;
-		static volatile List<Celestial> celestials;
+		public static volatile List<Celestial> celestials;
 		static volatile List<Fleet> fleets;
 		static volatile List<AttackerFleet> attacks;
 		static volatile Slots slots;
@@ -35,18 +36,17 @@ namespace Tbot {
 		static Dictionary<Feature, Semaphore> xaSem = new();
 		static long duration;
 		static DateTime NextWakeUpTime;
-		public static volatile Celestial CurrentMainCelestial;
+		public static volatile Celestial TelegramCurrentCelestial;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
 			isSleeping = false;
 
 			ReadSettings();
-			FileSystemWatcher settingsWatcher = new(Path.GetFullPath(AppContext.BaseDirectory));
-			settingsWatcher.Filter = "settings.json";
-			settingsWatcher.NotifyFilter = NotifyFilters.LastWrite;
-			settingsWatcher.Changed += new(OnSettingsChanged);
-			settingsWatcher.EnableRaisingEvents = true;
+
+			PhysicalFileProvider physicalFileProvider = new(Path.GetFullPath(AppContext.BaseDirectory));
+			var changeToken = physicalFileProvider.Watch("settings.json");
+			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
 				Universe = (string) settings.Credentials.Universe,
@@ -172,8 +172,9 @@ namespace Tbot {
 					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
 					xaSem[Feature.Harvest] = new Semaphore(1, 1);
 					xaSem[Feature.Colonize] = new Semaphore(1, 1);
-					xaSem[Feature.FleetScheduler] = new Semaphore(1, 3);
+					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
 					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
+					xaSem[Feature.TelegramAutoPong] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -189,6 +190,7 @@ namespace Tbot {
 					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
+					features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
 					celestials = GetPlanets();
@@ -284,6 +286,11 @@ namespace Tbot {
 						if (!currentValue)
 							InitializeSleepMode();
 						return true;
+					case Feature.TelegramAutoPong:
+						if (currentValue)
+							StopTelegramAutoPong();
+						return false;
+						
 					default:
 						return false;
 				}
@@ -401,6 +408,15 @@ namespace Tbot {
 							StopSleepMode();
 						return false;
 					}
+				case Feature.TelegramAutoPong:
+					if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
+						InitializeTelegramAutoPong();
+						return true;
+					} else {
+						if (currentValue)
+							StopTelegramAutoPong();
+						return false;
+					}
 				default:
 					return false;
 			}
@@ -419,54 +435,58 @@ namespace Tbot {
 			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
+			features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
 		}
 
 		private static void ReadSettings() {
 			settings = SettingsService.GetSettings();
 		}
 
-		private static void WriteSetting(Celestial celestial) {
-			string type = "";
-			if (celestial.Coordinate.Type == Celestials.Moon)
-				type = "Moon" ?? "Planet";
-
+		public static bool EditSettings(Celestial celestial = null, string recall = "") {
 			System.Threading.Thread.Sleep(500);
 			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
-			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
+			if (recall != "") {
+				jsonObj["SleepMode"]["AutoFleetSave"]["Recall"] = Convert.ToBoolean(recall);
+			}
 
-			jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-			jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
-			jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = (int) Celestials.Planet;
+			if (celestial != null) {
+				string type = "";
+				if (celestial.Coordinate.Type == Celestials.Moon)
+					type = "Moon" ?? "Planet";
 
-			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
+				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
 
-			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-			jsonObj["Brain"]["AutoRepatriate"]["Target"]["System"] = (int) celestial.Coordinate.System;
-			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = type;
+				jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+				jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
+				jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+				jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = "Planet";
 
-			jsonObj["Expeditions"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-			jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
-			jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
-			jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
+				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
+
+				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+				jsonObj["Brain"]["AutoRepatriate"]["Target"]["System"] = (int) celestial.Coordinate.System;
+				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = type;
+
+				jsonObj["Expeditions"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+				jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
+				jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
+				jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
+			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
 
-		}
-
-		private static void WriteSetting() {
-			settings = SettingsService.GetSettings();
+			return true;
 		}
 
 		public static void WaitFeature() {
@@ -495,10 +515,7 @@ namespace Tbot {
 			xaSem[Feature.SleepMode].WaitOne();
 		}
 
-		private static void OnSettingsChanged(object sender, FileSystemEventArgs e) {
-			if (e.ChangeType != WatcherChangeTypes.Changed) {
-				return;
-			}
+		private static void OnSettingsChanged(object state) {
 
 			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
@@ -507,6 +524,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
 			xaSem[Feature.SleepMode].WaitOne();
+			xaSem[Feature.TelegramAutoPong].WaitOne();
 
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
 			ReadSettings();
@@ -518,6 +536,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
 			xaSem[Feature.SleepMode].Release();
+			xaSem[Feature.TelegramAutoPong].Release();
 
 			InitializeSleepMode();
 			UpdateTitle();
@@ -823,18 +842,40 @@ namespace Tbot {
 			}
 		}
 
-		private static void InitializeDefender() {
+		public static void InitializeTelegramAutoPong() {
+			DateTime now = GetDateTime();
+			long everyHours = 0;
+			if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
+				everyHours = settings.TelegramMessenger.TelegramAutoPong.EveryHours;
+			}
+			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+			long nextpong = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+			
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPong...");
+			StopTelegramAutoPong(false);
+			timers.Add("TelegramAutoPong", new Timer(TelegramAutoPong, null, nextpong, Timeout.Infinite));
+		}
+
+		public static void StopTelegramAutoPong(bool echo = true) {
+			if (echo)
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPong...");
+			if (timers.TryGetValue("TelegramAutoPong", out Timer value))
+				value.Dispose();
+				timers.Remove("TelegramAutoPong");
+		}
+
+		public static void InitializeDefender() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing defender...");
 			StopDefender(false);
 			timers.Add("DefenderTimer", new Timer(Defender, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
-		private static void StopDefender(bool echo = true) {
+		public static void StopDefender(bool echo = true) {
 			if (echo)
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping defender...");
 			if (timers.TryGetValue("DefenderTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("DefenderTimer");
+				timers.Remove("DefenderTimer");
 		}
 
 		private static void InitializeBrainAutoCargo() {
@@ -848,7 +889,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autocargo...");
 			if (timers.TryGetValue("CapacityTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("CapacityTimer");
+				timers.Remove("CapacityTimer");
 		}
 
 		public static void InitializeBrainRepatriate() {
@@ -862,7 +903,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping repatriate...");
 			if (timers.TryGetValue("RepatriateTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("RepatriateTimer");
+				timers.Remove("RepatriateTimer");
 		}
 
 		public static void InitializeBrainAutoMine() {
@@ -880,7 +921,7 @@ namespace Tbot {
 			foreach (var celestial in celestials) {
 				if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out value))
 					value.Dispose();
-				timers.Remove($"AutoMineTimer-{celestial.ID.ToString()}");
+					timers.Remove($"AutoMineTimer-{celestial.ID.ToString()}");
 			}
 		}
 
@@ -895,7 +936,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping offer of the day...");
 			if (timers.TryGetValue("OfferOfTheDayTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("OfferOfTheDayTimer");
+				timers.Remove("OfferOfTheDayTimer");
 		}
 
 		private static void InitializeBrainAutoResearch() {
@@ -909,7 +950,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autoresearch...");
 			if (timers.TryGetValue("AutoResearchTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("AutoResearchTimer");
+				timers.Remove("AutoResearchTimer");
 		}
 
 		private static void InitializeAutoFarm() {
@@ -923,7 +964,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autofarm...");
 			if (timers.TryGetValue("AutoFarmTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("AutoFarmTimer");
+				timers.Remove("AutoFarmTimer");
 		}
 
 		public static void InitializeExpeditions() {
@@ -937,7 +978,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
 			if (timers.TryGetValue("ExpeditionsTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("ExpeditionsTimer");
+				timers.Remove("ExpeditionsTimer");
 		}
 
 		private static void InitializeHarvest() {
@@ -951,7 +992,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping harvest...");
 			if (timers.TryGetValue("HarvestTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("HarvestTimer");
+				timers.Remove("HarvestTimer");
 		}
 
 		private static void InitializeColonize() {
@@ -965,7 +1006,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping colonize...");
 			if (timers.TryGetValue("ColonizeTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("ColonizeTimer");
+				timers.Remove("ColonizeTimer");
 		}
 
 		private static void InitializeSleepMode() {
@@ -979,7 +1020,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping sleep mode...");
 			if (timers.TryGetValue("SleepModeTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("SleepModeTimer");
+				timers.Remove("SleepModeTimer");
 		}
 		
 		private static void InitializeFleetScheduler() {
@@ -994,47 +1035,37 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping fleet scheduler...");
 			if (timers.TryGetValue("FleetSchedulerTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("FleetSchedulerTimer");
+				timers.Remove("FleetSchedulerTimer");
 		}
 
-		public static void TelegramCelestial(Coordinate coord, string type, bool editsettings = false) {
-			celestials = UpdateCelestials();
 
-			CurrentMainCelestial = celestials
-				.Unique()
-				.Where(c => c.Coordinate.Galaxy == (int) coord.Galaxy)
-				.Where(c => c.Coordinate.System == (int) coord.System)
-				.Where(c => c.Coordinate.Position == (int) coord.Position)
-				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>(type))
-				.SingleOrDefault() ?? new() { ID = 0 };
+		public static void TelegramAutoPong(object state) {
+			xaSem[Feature.TelegramAutoPong].WaitOne();
+			DateTime time = GetDateTime();
+			DateTime newTime = time.AddMilliseconds(3600000);
+			timers.GetValueOrDefault("TelegramAutoPong").Change(3600000, Timeout.Infinite);
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Next check at {newTime.ToString()}");
+			telegramMessenger.SendMessage("[TBot] Alive");
+			xaSem[Feature.TelegramAutoPong].Release();
 
-			if (CurrentMainCelestial.ID == 0) {
-				telegramMessenger.SendMessage("Error! Could not update main celestial with wrong information. Verify coordinate.");
-				return;
-			}
-			if (editsettings) {
-				WriteSetting(CurrentMainCelestial);
-				telegramMessenger.SendMessage($"JSON settings updated to: {CurrentMainCelestial.Coordinate.ToString()}");
-			} else {
-				telegramMessenger.SendMessage($"Main celestial successfuly updated to {CurrentMainCelestial.Coordinate.ToString()}");
-			}
 			return;
 		}
 
-		public static void TelegramSwitch(decimal speed, Celestial attacked = null) {
+		public static bool TelegramSwitch(decimal speed, Celestial attacked = null, bool fromTelegram = false) {
 			Celestial celestial;
 
 			if (attacked == null) {
-				celestial = TelegramGetMainCelestial();	
+				celestial = TelegramGetCurrentCelestial();	
 			} else {
-				celestial = attacked;
+				celestial = attacked; //for autofleetsave func when under attack, last option if no other destination found.
 			}
 
 			if ( celestial.Coordinate.Type == Celestials.Planet) {
 				bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
 				if (!hasMoon) {
-					telegramMessenger.SendMessage($"This planet does not have a Moon dumbass!");
-					return;
+					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+						telegramMessenger.SendMessage($"This planet does not have a Moon! Switch impossible.");
+					return false;
 				}
 			}
 			
@@ -1053,60 +1084,81 @@ namespace Tbot {
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
-				telegramMessenger.SendMessage($"No ships on {celestial.Coordinate}, did you /celestial?");
-				return;
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from {celestial.Coordinate.ToString()}: No ships!");
+				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					telegramMessenger.SendMessage($"No ships on {celestial.Coordinate}, did you /celestial?");
+				return false;
 			}
 
 			var payload = celestial.Resources;
 			if (celestial.Resources.Deuterium == 0) {
-				telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel!");
-				return;
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from { celestial.Coordinate.ToString()}: there is no fuel!");
+				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel!");
+				return false;
 			}
 
 			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(celestial.Coordinate, dest, celestial.Ships, Missions.Deploy, speed, researches, serverData, userInfo.Class);
 			int fleetId = SendFleet(celestial, celestial.Ships, dest, Missions.Deploy, speed, payload, userInfo.Class, true);
 
 			if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
-				telegramMessenger.SendMessage($"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {dest.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {dest.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					telegramMessenger.SendMessage($"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {dest.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				return true;
 			}
-			else {
-				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Telegram switch failed to sent on {dest.ToString()}");
-				telegramMessenger.SendMessage($"Telegram switch failed to sent on {dest.ToString()}");
+
+			return false;
+		}
+
+		public static void TelegramSetCurrentCelestial(Coordinate coord, string type, bool editsettings = false) {
+			celestials = UpdateCelestials();
+
+			//check if no error in submitted celestial (belongs to the current player)
+			TelegramCurrentCelestial = celestials
+				.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) coord.Galaxy)
+				.Where(c => c.Coordinate.System == (int) coord.System)
+				.Where(c => c.Coordinate.Position == (int) coord.Position)
+				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>(type))
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			if (TelegramCurrentCelestial.ID == 0) {
+				telegramMessenger.SendMessage("Error! Wrong information. Verify coordinate.\n");
+				return;
+			}
+			if (editsettings) {
+				EditSettings(TelegramCurrentCelestial);
+				telegramMessenger.SendMessage($"JSON settings updated to: {TelegramCurrentCelestial.Coordinate.ToString()}\nWait few seconds for Bot to reload before sending commands.");
+			} else {
+				telegramMessenger.SendMessage($"Main celestial successfuly updated to {TelegramCurrentCelestial.Coordinate.ToString()}");
 			}
 			return;
 		}
 
-		private static Celestial TelegramGetMainCelestial() {
-			celestials = UpdateCelestials();
-			Celestial celestial;
-			celestial = celestials
-				.Unique()
-				.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-				.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-				.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-				.SingleOrDefault() ?? new() { ID = 0 };
+		public static Celestial TelegramGetCurrentCelestial() {
+			if (TelegramCurrentCelestial == null) {
+				Celestial celestial;
+				celestial = celestials
+					.Unique()
+					.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+					.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+					.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+					.SingleOrDefault() ?? new() { ID = 0 };
 
-			if (celestial.ID == 0) {
-				telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings.");
-				return new Celestial();
+				if (celestial.ID == 0) {
+					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings (Need /editsettings)");
+					return new Celestial();
+				}
+
+				TelegramCurrentCelestial = celestial;
 			}
 
-			if (CurrentMainCelestial == null) 
-				CurrentMainCelestial = celestial;
-
-			string check = celestial.Coordinate.ToString();
-			if (!check.Equals(CurrentMainCelestial.Coordinate.ToString())) {
-				telegramMessenger.SendMessage($"JSON data:{celestial.Coordinate.ToString()}\nCarefull, Your program current Main Celestial differ from the local settings one. Modify your JSON file (AutoMine.Transports) or /editsettings.");
-				celestial = CurrentMainCelestial;
-			}
-
-			return celestial;
+			return TelegramCurrentCelestial;
 		}
 
-		public static void TelegramGetInfo() {
-			Celestial celestial = TelegramGetMainCelestial();
-			if (celestial == null) { telegramMessenger.SendMessage($"Could not get Celestial, did you /update?"); return; }
+		public static void TelegramGetInfo(Celestial celestial) {
 
 			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
@@ -1128,7 +1180,59 @@ namespace Tbot {
 			return;
 		}
 
-		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None) {
+
+		public static void SpyCrash(Celestial fromCelestial, Coordinate target = null) {
+			decimal speed = Speeds.HundredPercent;
+			fromCelestial = UpdatePlanet(fromCelestial, UpdateTypes.Ships);
+			var payload = fromCelestial.Resources;
+			Random random = new Random();
+
+			if (fromCelestial.Ships.EspionageProbe == 0 || payload.Deuterium < 1) {
+				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No probes or no Fuel on {fromCelestial.Coordinate.ToString()}!");
+				telegramMessenger.SendMessage($"No probes or no Fuel on {fromCelestial.Coordinate.ToString()}!");
+				return;
+			}
+			// spycrash auto part
+			if (target == null) {
+				List<Coordinate> spycrash = new();
+				int playerid = userInfo.PlayerID;
+				int sys = 0;
+				for ( sys = fromCelestial.Coordinate.System - 2 ; sys <= fromCelestial.Coordinate.System + 2; sys++) {
+					GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(fromCelestial.Coordinate.Galaxy, sys);
+					foreach (var planet in galaxyInfo.Planets) {
+						try {
+							if (planet != null && !planet.Administrator && !planet.Inactive && !planet.StrongPlayer && !planet.Newbie && !planet.Banned && !planet.Vacation) {
+								if (planet.Player.ID != playerid) { //exclude player planet
+									spycrash.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet));
+								}
+							}
+						} catch (NullReferenceException) {
+							continue;
+						}
+					}
+				}
+
+				if (spycrash.Count() == 0) {
+					telegramMessenger.SendMessage($"No planet to spycrash on could be found (over system -2 -> +2)");
+					return;
+				} else {
+					target = spycrash[random.Next(spycrash.Count())];
+				}
+			}
+			var attackingShips = new Ships().Add(Buildables.EspionageProbe, 1);
+
+			int fleetId = SendFleet(fromCelestial, attackingShips, target, Missions.Attack, speed);
+
+			if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"EspionageProbe sent to crash on {target.ToString()}");
+
+				telegramMessenger.SendMessage($"EspionageProbe sent to crash on {target.ToString()}");
+			}
+			return;
+		}
+
+
+		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;
 
@@ -1159,23 +1263,27 @@ namespace Tbot {
 				}
 			}
 
+			if (fromTelegram) {
+				celestial = TelegramGetCurrentCelestial();
+			}
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
+				if (fromTelegram)
+					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fleet!");
 				return;
 			}
 
 			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 			Celestial destination = new() { ID = 0 };
 			if (!forceUnsafe)
-				forceUnsafe = (bool) settings.SleepMode.AutoFleetSave.ForceUnsafe;
+				forceUnsafe = (bool) settings.SleepMode.AutoFleetSave.ForceUnsafe; //not used anymore
 
-			bool recall = false;
-			if ((bool) settings.SleepMode.AutoFleetSave.Recall)
-				recall = true;
 
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
+				if (fromTelegram)
+					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fuel!");
 				return;
 			}
 
@@ -1202,12 +1310,18 @@ namespace Tbot {
 			int fleetId = 0;
 			bool AlreadySent = false; //permit to swith to Harvest mission if not enough fuel to Deploy if celestial far away
 
-			Missions mission = Missions.Deploy;
+			//Doing DefaultMission or telegram /ghostto mission
+			Missions mission;
+			if (!Missions.TryParse(settings.SleepMode.AutoFleetSave.DefaultMission, out mission)) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Error: Could not parse 'DefaultMission' from settings, value set to Harvest.");
+				mission = Missions.Harvest;
+			}
+
 			if (TelegramMission != Missions.None)
 				mission = TelegramMission;
 
 			List<FleetHypotesis> fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-			if (fleetHypotesis.Count() > 0) { 
+			if (fleetHypotesis.Count() > 0) {
 				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 					if (CheckFuel(fleet, celestial)) {
@@ -1221,38 +1335,22 @@ namespace Tbot {
 					}
 				}
 			}
-			if (!AlreadySent) { 
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Deploy possible doing Harvest..");
-				mission = Missions.Harvest;
+
+			//If /ghostto -> leaving function if failed
+			if (fromTelegram && !AlreadySent && mission == Missions.Harvest && fleetHypotesis.Count() == 0) {
+				telegramMessenger.SendMessage($"No debris field found for {mission}, try to /spycrash.");
+				return;
+			} else if (fromTelegram && !AlreadySent && fleetHypotesis.Count() >= 0) {
+				telegramMessenger.SendMessage($"Available fuel: {celestial.Resources.Deuterium}\nNo destination found for {mission}, try to reduce ghost time.");
+				return;
+			}
+
+			//Doing Deploy
+			if (!AlreadySent) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Harvest possible, checking Deploy..");
+				mission = Missions.Deploy;
 				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-
-				if (fleetHypotesis.Count() == 0 && !forceUnsafe ) {
-					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} no Deploy or Harvest possible and forceUnsafe disabled!");
-
-				}
-				else {  //fleetHypotesis.Count() == 0 && forceUnsafe enabled
-					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()} no Deploy or Harvest possible doing Unsafe..");
-					decimal speed = 100;
-					TelegramSwitch(speed, celestial);
-					/*
-					Need to modify this, going to 1,1,1 is bad, better Harvest near origin SS, Spy near origin SS, colonize near origin SS
-
-					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.Recycler > 0) {
-						mission = Missions.Harvest;
-						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-					}
-					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.EspionageProbe > 0) {
-						mission = Missions.Spy;
-						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-					}
-					if (fleetHypotesis.First().Destination.IsSame(new Coordinate(1, 1, 1, Celestials.Planet)) && celestial.Ships.ColonyShip > 0 && Helpers.CalcMaxPlanets(researches.Astrophysics) == celestials.Unique().Where(c => c.Coordinate.Type == Celestials.Planet).Count()) {
-						mission = Missions.Colonize;
-						fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
-					}
-					*/
-				}
-				if (fleetHypotesis.Count() > 0) {
-					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"No destination found mission type changed to {mission}");
+				if (fleetHypotesis.Count > 0) {
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 						if (CheckFuel(fleet, celestial)) {
@@ -1260,28 +1358,96 @@ namespace Tbot {
 
 							if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
 								possibleFleet = fleet;
+								AlreadySent = true;
 								break;
 							}
 						}
 					}
-				} else {
-					telegramMessenger.SendMessage($"Available fuel: {celestial.Resources.Deuterium}\nNo destination found, try to reduce ghost time.");
-					return;
+				}
+			}
+			//Doing colonize
+			if (!AlreadySent && celestial.Ships.ColonyShip > 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Moon/Planet to switch on, checking Colonize destination...");
+				mission = Missions.Colonize;
+				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				if (fleetHypotesis.Count > 0) {
+					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+						if (CheckFuel(fleet, celestial)) {
+							fleetId = SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, userInfo.Class);
+
+							if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+								possibleFleet = fleet;
+								AlreadySent = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			//Doing Spy
+			if (!AlreadySent && celestial.Ships.EspionageProbe > 0) {
+				mission = Missions.Spy;
+				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				if (fleetHypotesis.Count > 0) {
+					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+						Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+						if (CheckFuel(fleet, celestial)) {
+							fleetId = SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, userInfo.Class);
+
+							if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+								possibleFleet = fleet;
+								AlreadySent = true;
+								break;
+							}
+						}
+					}
 				}
 			}
 
-			if (recall && fleetId != 0 || fleetId != -1 || fleetId != -2) {
-				Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
-				DateTime time = GetDateTime();
-				var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
-				if (interval <= 0)
-					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-				DateTime newTime = time.AddMilliseconds(interval);
-				timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
-				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
-				telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission}, fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}, recalled at {newTime.ToString()}");
+			//Doing switch
+			bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
+			if (!AlreadySent && hasMoon) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Deploy possible (missing fuel?), checking for switch if has Moon");
+				//var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+				//Random randomSpeed = new Random();
+				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
+				decimal speed = 100;
+				AlreadySent = TelegramSwitch(speed, celestial);
 			}
 
+			if (!AlreadySent) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no Moon/Planet to switch on, and Unsafe disabled, you gonna get hit!");
+				if ((bool) settings.TelegramMessenger.Active){
+					telegramMessenger.SendMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found!, you gonna get hit!");
+				}
+				return;
+			}
+
+			
+			if ((bool) settings.SleepMode.AutoFleetSave.Recall && AlreadySent) {
+				if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+					Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+					DateTime time = GetDateTime();
+					var interval = ((minDuration / 2) * 1000) + Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+					if (interval <= 0)
+						interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					DateTime newTime = time.AddMilliseconds(interval);
+					timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
+					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}, recalled at {newTime.ToString()}");
+				}
+			}
+			else {
+				if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+					Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
+					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
+				}
+			}
+				
 		}
 
 		private static bool CheckFuel(FleetHypotesis fleetHypotesis, Celestial celestial) {
@@ -1324,80 +1490,69 @@ namespace Tbot {
 						}
 					}
 					break;
-				case Missions.Colonize:
-					for (int pos = 1; pos <= 15; pos++) {
-						if (pos == origin.Coordinate.Position)
-							continue;
-						galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
-						List<int> occupiedPos = new();
-						foreach (var planet in galaxyInfo.Planets) {
-							occupiedPos.Add(planet.Coordinate.Position);
-						}
-						if (occupiedPos.Any(op => op == pos))
-							continue;
-
-						possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos, Celestials.Planet));
+				case Missions.Colonize:					
+					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
+					int pos = 1;
+					foreach (var planet in galaxyInfo.Planets) {
+						if (planet == null)
+							possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
+						pos =+ 1;
 					}
-					foreach (var possibleDestination in possibleDestinations) {
-						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
 
-							FleetHypotesis fleetHypotesis = new() {
-								Origin = origin,
-								Destination = possibleDestination,
-								Ships = origin.Ships.GetMovableShips(),
-								Mission = mission,
-								Speed = currentSpeed,
-								Duration = fleetPrediction.Time,
-								Fuel = fleetPrediction.Fuel
-							};
-							if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
-								possibleFleets.Add(fleetHypotesis);
-								break;
-							}
-						}
-					}
-					break;
+					if (possibleDestinations.Count() > 0) {
+						foreach (var possibleDestination in possibleDestinations) {
+							foreach (var currentSpeed in validSpeeds) {
+								FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
 
-				case Missions.Harvest:
-					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, origin.Coordinate.System);
-					List<int> harvestablePos = new();
-					foreach (var planet in galaxyInfo.Planets ) {
-						if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
-							possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
-						}		
-					}
-					
-					if (possibleDestinations.Count == 0) {
-						int sys = 0;
-						for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
-							galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
-							harvestablePos = new();
-							foreach (var planet in galaxyInfo.Planets) {
-								if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
-									Console.WriteLine(planet.Debris.Resources.TotalResources);
-									possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+								FleetHypotesis fleetHypotesis = new() {
+									Origin = origin,
+									Destination = possibleDestination,
+									Ships = origin.Ships.GetMovableShips(),
+									Mission = mission,
+									Speed = currentSpeed,
+									Duration = fleetPrediction.Time,
+									Fuel = fleetPrediction.Fuel
+								};
+								if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+									possibleFleets.Add(fleetHypotesis);
+									break;
 								}
 							}
 						}
 					}
+					break;
+				
+				case Missions.Harvest:
+					int playerid = userInfo.PlayerID;
+					int sys = 0;
+					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
+						galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
+						foreach (var planet in galaxyInfo.Planets) {
+							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
+								possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+							}
+						}
+					}
+					
+					
+					if (possibleDestinations.Count() > 0) {
+						foreach (var possibleDestination in possibleDestinations) {
+							foreach (var currentSpeed in validSpeeds) {
+								FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
 
-					foreach (var possibleDestination in possibleDestinations) {
-						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
-
-							FleetHypotesis fleetHypotesis = new() {
-								Origin = origin,
-								Destination = possibleDestination,
-								Ships = origin.Ships.GetMovableShips(),
-								Mission = mission,
-								Speed = currentSpeed,
-								Duration = fleetPrediction.Time,
-								Fuel = fleetPrediction.Fuel
-							};
-							if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
-								possibleFleets.Add(fleetHypotesis);
-								break;
+								FleetHypotesis fleetHypotesis = new() {
+									Origin = origin,
+									Destination = possibleDestination,
+									Ships = origin.Ships.GetMovableShips(),
+									Mission = mission,
+									Speed = currentSpeed,
+									Duration = fleetPrediction.Time,
+									Fuel = fleetPrediction.Fuel
+								};
+								if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+									possibleFleets.Add(fleetHypotesis);
+									break;
+								}
 							}
 						}
 					}
@@ -1409,7 +1564,7 @@ namespace Tbot {
 						.Select(planet => planet.Coordinate)
 						.ToList();
 					
-					if (possibleDestinations.Count == 0 && forceUnsafe) {
+					if (possibleDestinations.Count == 0) {
 						possibleDestinations = celestials
 							.Where(planet => planet.ID != origin.ID)
 							.Select(planet => planet.Coordinate)
@@ -1439,28 +1594,11 @@ namespace Tbot {
 				default:
 					break;
 			}
-			if (possibleFleets.Count > 0) {
+			if (possibleFleets.Count() > 0) {
 				return possibleFleets;
 
 			} else {
 				return new List<FleetHypotesis>();
-				/*
-				if ( mission = Missions.Harvest ) {
-					mission = Missions.Transport;
-					FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, new Coordinate(), origin.Ships.GetMovableShips(), mission, Speeds.TenPercent, researches, serverData, userInfo.Class);
-					FleetHypotesis fleetHypotesis = new() {
-						Origin = origin,
-						Destination = new Coordinate(),
-						Ships = origin.Ships.GetMovableShips(),
-						Mission = mission,
-						Speed = Speeds.TenPercent,
-						Duration = fleetPrediction.Time,
-						Fuel = fleetPrediction.Fuel
-					};
-					possibleFleets.Add(fleetHypotesis);
-				}
-				return possibleFleets;
-				*/
 			}
 		}
 		
@@ -1710,11 +1848,19 @@ namespace Tbot {
 			}
 		}
 
+
+		public static bool TelegramIsUnderAttack() {
+			bool result = ogamedService.IsUnderAttack();
+
+			return result;
+		}
+
+
 		public static void WakeUpNow(object state) {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("TelegramSleepModeTimer");
-			telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Bot woke up!");
+				timers.Remove("TelegramSleepModeTimer");
+				telegramMessenger.SendMessage($"[{userInfo.PlayerName} ({serverData.Name})] Bot woke up!");
 
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -1744,6 +1890,30 @@ namespace Tbot {
 			}
 		}
 
+		private static void FakeActivity() {
+			//checking if under attack by making activity on planet/moon configured in settings (otherwise make acti on latest activated planet)
+			// And make activity on one more random planet to fake real player
+			Celestial celestial;
+			Celestial randomCelestial;
+			celestial = celestials
+				.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+				.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+				.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			Random random = new Random();
+			randomCelestial = celestials[random.Next(celestials.Count())];
+			ogamedService.GetDefences(randomCelestial);
+
+			if (celestial.ID != 0) {
+				ogamedService.GetDefences(celestial);
+			}
+
+			return;
+		}
+
 		private static void Defender(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
@@ -1756,6 +1926,7 @@ namespace Tbot {
 					return;
 				}
 
+				FakeActivity();
 				fleets = UpdateFleets();
 				bool isUnderAttack = ogamedService.IsUnderAttack();
 				DateTime time = GetDateTime();
@@ -1773,7 +1944,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
 				}
 				int interval = Helpers.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
-				if (interval <= 0)
+				if (interval <= 0)	
 					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
@@ -3081,7 +3252,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping AutoMine check for {celestial.ToString()}.");
 					if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out Timer value))
 						value.Dispose();
-					timers.Remove(autoMineTimer);
+						timers.Remove(autoMineTimer);
 				} else if (delay) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
 					time = GetDateTime();
@@ -3089,7 +3260,7 @@ namespace Tbot {
 					long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
-					timers.Remove(autoMineTimer);
+						timers.Remove(autoMineTimer);
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
@@ -3100,7 +3271,7 @@ namespace Tbot {
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
-					timers.Remove(autoMineTimer);
+						timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
@@ -3637,6 +3808,7 @@ namespace Tbot {
 					speed == Speeds.NinetyfivePercent
 				)
 			) {*/
+
 			if (!Helpers.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
 				return 0;
@@ -3771,9 +3943,13 @@ namespace Tbot {
 
 		public static void TelegramMesgAttacker(string message) {
 			attacks = ogamedService.GetAttacks();
+			List<int> playerid = new List<int>();
+
 			foreach (AttackerFleet attack in attacks) {
-				if (attack.AttackerID != 0) {
+				if (attack.AttackerID != 0 && !playerid.Any(s => s == attack.AttackerID)) {
 					var result = ogamedService.SendMessage(attack.AttackerID, message);
+					playerid.Add(attack.AttackerID);
+
 					if (result)
 						telegramMessenger.SendMessage($"Message succesfully sent to {attack.AttackerName}.");
 					else
@@ -3919,7 +4095,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Expeditions.Active) {
+				if ((bool) settings.Expeditions.Active || timers.TryGetValue("ExpeditionsTimer", out Timer value)) {
 					researches = UpdateResearches();
 					if (researches.Astrophysics == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
