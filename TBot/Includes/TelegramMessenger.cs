@@ -39,6 +39,7 @@ namespace Tbot.Includes {
 			List<string> commands = new List<string>()
 			{
 				"/ghostsleep",
+				"/ghostsleepexpe",
 				"/ghost",
 				"/ghostto",
 				"/switch",
@@ -131,6 +132,19 @@ namespace Tbot.Includes {
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
+								return;
+
+
+							case ("/ghostsleepexpe"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type (eg /ghostsleepexpe 5 harvest)");
+									return;
+								}
+								arg = message.Text.Split(' ')[1];
+								duration = Int32.Parse(arg) * 60 * 60; //second
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
 								return;
 
 
@@ -241,9 +255,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeBrainRepatriate();
-								Tbot.Program.AutoRepatriate(null);
-								Tbot.Program.StopBrainRepatriate();
+								Tbot.Program.TelegramCollect();
 								return;
 
 
@@ -444,7 +456,8 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - '/ghostsleep 5 Harvest' -> Wait for fleets to return, ghost on harvest and sleep for 5hours\n" +
+									"/ghostsleep - '/ghostsleep 5 Harvest' -> Wait fleets return, ghost harvest and sleep for 5hours\n" +
+									"/ghostsleepexpe - '/ghostsleepexpe 5 Harvest' -> Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition\n" +
 									"/ghost - '/ghost 4' -> Ghost fleet for 4 hours\n, let bot chose mission type" +
 									"/ghostto - '/ghostto 4 Harvest'\n" +
 									"/switch - '/switch 5' -> switch current celestial resources and fleets to its planet or moon at 50% speed\n" +

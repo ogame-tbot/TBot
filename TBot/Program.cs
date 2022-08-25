@@ -37,6 +37,7 @@ namespace Tbot {
 		static long duration;
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
+		public static volatile bool ExpeWhileSleeping = false;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -885,7 +886,8 @@ namespace Tbot {
 		public static void InitializeBrainRepatriate() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing repatriate...");
 			StopBrainRepatriate(false);
-			timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			if (!timers.TryGetValue("RepatriateTimer", out Timer value))
+				timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		public static void StopBrainRepatriate(bool echo = true) {
@@ -1037,6 +1039,12 @@ namespace Tbot {
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Next check at {newTime.ToString()}");
 			telegramMessenger.SendMessage("[TBot] Alive");
 			xaSem[Feature.TelegramAutoPong].Release();
+
+			return;
+		}
+
+		public static void TelegramCollect() {
+			timers.Add("TelegramCollect", new Timer(AutoRepatriate, null, 3000, Timeout.Infinite));
 
 			return;
 		}
@@ -1223,7 +1231,7 @@ namespace Tbot {
 		}
 
 
-		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false) {
+		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool SleepButExpe = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;
 
@@ -1237,11 +1245,16 @@ namespace Tbot {
 					StopColonize();
 					StopBrainAutoResearch();
 					StopBrainAutoMine();
-					StopExpeditions();
 					StopBrainRepatriate();
 					StopAutoFarm();
 					StopHarvest();
-
+					if (!SleepButExpe) {
+						StopExpeditions();
+					} else {
+						ExpeWhileSleeping = true;
+						if (!timers.TryGetValue("ExpeditionsTimer", out Timer expe)) InitializeExpeditions();
+					}
+					
 					interval += Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
 					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration*1000);
@@ -1251,6 +1264,28 @@ namespace Tbot {
 					telegramMessenger.SendMessage($"Waiting for fleets return, delaying ghosting at {TimeToGhost.ToString()}");
 
 					return;
+				}
+				else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2)) && SleepButExpe) {
+					ExpeWhileSleeping = true;
+					if (timers.TryGetValue("ExpeditionsTimer", out Timer expe2))
+						HandleExpeditions(null); //if interval 0, meaning expe fleet are already back, resend them now then ghost
+					else {
+						InitializeExpeditions();
+					}
+
+					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, sending expedition now and Ghosting.");
+					NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
+					GhostandSleepAfterFleetsReturn(null);
+
+					return;
+				}
+				else {
+					if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value3))) {
+						Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
+						NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
+						GhostandSleepAfterFleetsReturn(null);
+						return;
+					}
 				}
 			}
 
@@ -1593,11 +1628,15 @@ namespace Tbot {
 				return new List<FleetHypotesis>();
 			}
 		}
-		
+
+
 		public static void GhostandSleepAfterFleetsReturn(object state) {
 			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
 				value.Dispose();
 				timers.Remove("GhostSleepTimer");
+
+			if (ExpeWhileSleeping)
+				HandleExpeditions(null); //send expe before sending fleet to ghost
 
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
 			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
@@ -3611,7 +3650,7 @@ namespace Tbot {
 			}
 		}
 
-		public static void AutoRepatriate(object state) {
+		public static void AutoRepatriate(object state) {	
 			bool stop = false;
 			bool delay = false;
 			try {
@@ -3625,7 +3664,8 @@ namespace Tbot {
 					return;
 				}
 
-				if ( ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) || (timers.TryGetValue("RepatriateTimer", out Timer value)) ) {
+				if ( ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) || ( timers.TryGetValue("TelegramCollect", out Timer value) ) ){
+					Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Telegram collect initated..");
 					if (settings.Brain.AutoRepatriate.Target) {
 						fleets = UpdateFleets();
 						long TotalMet = 0;
@@ -3734,24 +3774,29 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!isSleeping) {
-					if (stop) {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
-					} else if (delay) {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");						
-						fleets = UpdateFleets();
-						var time = GetDateTime();
-						long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
-					} else 	{
-						var time = GetDateTime();
-						var interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
-						if (interval <= 0)
-							interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
+					if (timers.TryGetValue("TelegramCollect", out Timer val)) {
+						val.Dispose();
+						timers.Remove("TelegramCollect");
+					} else {
+						if (stop) {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping feature.");
+						} else if (delay) {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+							fleets = UpdateFleets();
+							var time = GetDateTime();
+							long interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+							var newTime = time.AddMilliseconds(interval);
+							timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
+						} else {
+							var time = GetDateTime();
+							var interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
+							if (interval <= 0)
+								interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+							var newTime = time.AddMilliseconds(interval);
+							timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
+						}
 					}
 					UpdateTitle();
 					xaSem[Feature.Brain].Release();
@@ -4074,7 +4119,7 @@ namespace Tbot {
 				DateTime time;
 				DateTime newTime;
 
-				if (isSleeping) {
+				if (isSleeping && !ExpeWhileSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Sleep Mode Active!");
 					xaSem[Feature.Expeditions].Release();
 					return;
