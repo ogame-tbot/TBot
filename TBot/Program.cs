@@ -490,29 +490,20 @@ namespace Tbot {
 		}
 
 		public static void WaitFeature() {
-			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
 			xaSem[Feature.Expeditions].WaitOne();
 			xaSem[Feature.Harvest].WaitOne();
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
-			xaSem[Feature.SleepMode].WaitOne();	
 		}
 
 		public static void releaseFeature() {
-			xaSem[Feature.Defender].Release();
 			xaSem[Feature.Brain].Release();
 			xaSem[Feature.Expeditions].Release();
 			xaSem[Feature.Harvest].Release();
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
-			xaSem[Feature.SleepMode].Release();
 
-		}
-
-		public static void releaseNotStoppedFeature() {
-			xaSem[Feature.Defender].WaitOne();
-			xaSem[Feature.SleepMode].WaitOne();
 		}
 
 		private static void OnSettingsChanged(object state) {

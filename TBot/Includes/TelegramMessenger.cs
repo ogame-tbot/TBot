@@ -35,7 +35,6 @@ namespace Tbot.Includes {
 		}
 
 		public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) {
-			bool IsSomeStoppedFeatures = false;
 
 			List<string> commands = new List<string>()
 			{
@@ -129,7 +128,6 @@ namespace Tbot.Includes {
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = Int32.Parse(arg) * 60 * 60; //second
-								IsSomeStoppedFeatures = true;
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
@@ -495,11 +493,8 @@ namespace Tbot.Includes {
 						return;
 
 					} finally {
-						if (!IsSomeStoppedFeatures)
-							Tbot.Program.releaseFeature();
-						else {
-							Tbot.Program.releaseNotStoppedFeature();
-						}
+						Tbot.Program.releaseFeature();
+
 					}	
 				}
 			}
