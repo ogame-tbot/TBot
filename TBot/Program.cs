@@ -1092,7 +1092,7 @@ namespace Tbot {
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from { celestial.Coordinate.ToString()}: there is no fuel!");
 				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
-					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel!");
+					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel.");
 				return false;
 			}
 
@@ -1122,7 +1122,7 @@ namespace Tbot {
 				.SingleOrDefault() ?? new() { ID = 0 };
 
 			if (TelegramCurrentCelestial.ID == 0) {
-				telegramMessenger.SendMessage("Error! Wrong information. Verify coordinate.\n");
+				telegramMessenger.SendMessage("Error\\! Wrong information. Verify coordinate.\n");
 				return;
 			}
 			if (editsettings) {
@@ -1146,7 +1146,11 @@ namespace Tbot {
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
+<<<<<<< HEAD
 					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings. Need /editsettings");
+=======
+					telegramMessenger.SendMessage("Error\\! Could not parse Celestial from JSON settings. Need /editsettings");
+>>>>>>> 9d8572a7cc32483441fd4730ec99d9d42706804a
 					return new Celestial();
 				}
 
@@ -1296,7 +1300,7 @@ namespace Tbot {
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
 				if (fromTelegram)
-					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fleet!");
+					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fleet\\!");
 				return;
 			}
 
@@ -1309,7 +1313,7 @@ namespace Tbot {
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
 				if (fromTelegram)
-					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fuel!");
+					telegramMessenger.SendMessage($"{celestial.ToString()}: there is no fuel\\!");
 				return;
 			}
 
@@ -1446,7 +1450,7 @@ namespace Tbot {
 			if (!AlreadySent) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no Moon/Planet to switch on, and Unsafe disabled, you gonna get hit!");
 				if ((bool) settings.TelegramMessenger.Active){
-					telegramMessenger.SendMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found!, you gonna get hit!");
+					telegramMessenger.SendMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found\\!, you gonna get hit\\!");
 				}
 				return;
 			}
@@ -1884,7 +1888,7 @@ namespace Tbot {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
 				timers.Remove("TelegramSleepModeTimer");
-				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Bot woke up!");
+				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Bot woke up\\!");
 
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -3771,7 +3775,7 @@ namespace Tbot {
 						}
 						celestials = newCelestials;
 						if ((bool) settings.TelegramMessenger.Active) {
-							telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+							telegramMessenger.SendMessage($"Resources sent\\!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping autorepatriate: unable to parse custom destination");
@@ -3972,7 +3976,7 @@ namespace Tbot {
 			fleets = UpdateFleets();
 			Fleet ToRecallFleet = fleets.SingleOrDefault(f => f.ID == fleetId) ?? new() { ID = 0 };
 			if ( ToRecallFleet.ID == 0) {
-				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Unable to recall fleet! Already recalled?");
+				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Unable to recall fleet\\! Already recalled?");
 				return;
 			}
 			RetireFleet(ToRecallFleet);
