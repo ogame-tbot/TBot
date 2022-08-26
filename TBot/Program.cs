@@ -3675,7 +3675,7 @@ namespace Tbot {
 				}
 
 				if ( ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) || ( timers.TryGetValue("TelegramCollect", out Timer value) ) ){
-					Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Telegram collect initated..");
+					//Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Telegram collect initated..");
 					if (settings.Brain.AutoRepatriate.Target) {
 						fleets = UpdateFleets();
 						long TotalMet = 0;
@@ -3770,7 +3770,9 @@ namespace Tbot {
 							newCelestials.Add(tempCelestial);
 						}
 						celestials = newCelestials;
-						telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+						if ((bool) settings.TelegramMessenger.Active) {
+							telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping autorepatriate: unable to parse custom destination");
 					}
