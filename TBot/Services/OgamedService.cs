@@ -746,7 +746,7 @@ namespace Tbot.Services {
 			request.AddParameter("metal", payload.Metal, ParameterType.GetOrPost);
 			request.AddParameter("crystal", payload.Crystal, ParameterType.GetOrPost);
 			request.AddParameter("deuterium", payload.Deuterium, ParameterType.GetOrPost);
-			//request.AddParameter("food", payload.Food, ParameterType.GetOrPost);
+			request.AddParameter("food", payload.Food, ParameterType.GetOrPost);
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
