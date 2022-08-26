@@ -88,7 +88,7 @@ namespace Tbot.Includes {
 
 							case ("/ghost"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need 1 value -> ghost duration (eg: /ghost 4)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need 1 value -> ghost duration `/ghost 4`");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -102,7 +102,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostto"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need ghost duration and destination type (eg: /ghostto 4 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need ghost duration and destination type `/ghostto 4 harvest`");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -124,7 +124,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type (eg /ghostsleep 5 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type `/ghostsleep 5 harvest`");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -137,7 +137,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleepexpe"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type (eg /ghostsleepexpe 5 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type `/ghostsleepexpe 5 harvest`");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -150,7 +150,7 @@ namespace Tbot.Includes {
 
 							case ("/switch"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need speed value (eg: 5 for 50%)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need speed value `5 for 50%`");
 									return;
 								}
 								test = message.Text.Split(' ')[1];
@@ -178,12 +178,12 @@ namespace Tbot.Includes {
 
 							case ("/recall"):
 								if (message.Text.Split(' ').Length < 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need true/false value! (enable/disable auto fleets recall)");
+									await botClient.SendTextMessageAsync(message.Chat, "enable/disable auto fleets recall `/recall true/false`");
 									return;
 								}
 
 								if (message.Text.Split(' ')[1] != "true" && message.Text.Split(' ')[1] != "false") {
-									await botClient.SendTextMessageAsync(message.Chat, "Need true/false value! (enable/disable auto fleets recall)");
+									await botClient.SendTextMessageAsync(message.Chat, "Value should be true or false.");
 									return;
 								}
 								string recall = message.Text.Split(' ')[1];
@@ -315,13 +315,13 @@ namespace Tbot.Includes {
 
 							case ("/celestial"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! (/celestial 2:56:8 moon/planet)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! `/celestial 2:56:8 moon/planet`");
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ( (!arg.Equals("moon")) && (!arg.Equals("planet")) ) {
-									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet (got {arg})");
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet `/celestial 2:41:9 moon/planet`");
 									return;
 								}
 
@@ -330,7 +330,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! (must be like 3:125:9)");
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like `3:125:9`");
 									return;
 								}
 
@@ -341,13 +341,13 @@ namespace Tbot.Includes {
 							
 							case ("/editsettings"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! (/editsettings 2:56:8 moon/planet)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! `/editsettings 2:56:8 moon/planet`");
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
-									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet (got {arg})");
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet `/editsettings 2:100:3 moon/planet`");
 									return;
 								}
 
@@ -356,7 +356,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! (must be like 3:125:9)");
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like `3:125:9`");
 									return;
 								}
 
@@ -367,7 +367,7 @@ namespace Tbot.Includes {
 
 							case ("/spycrash"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need 'auto' or coordinate (/spycrash auto/2:56:8)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need 'auto' or coordinate `/spycrash auto/2:56:8`");
 									return;
 								}
 
@@ -381,7 +381,7 @@ namespace Tbot.Includes {
 										coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 										target = new Coordinate() { Galaxy = coord.Galaxy, System = coord.System, Position = coord.Position, Type = Celestials.Planet };
 									} catch {
-										await botClient.SendTextMessageAsync(message.Chat, "Error while parsing value! (coord be like 3:125:9, or 'auto')");
+										await botClient.SendTextMessageAsync(message.Chat, "Error while parsing value! Coord must be like 3:125:9, or 'auto'"); 
 										return;
 									}
 								}
@@ -470,17 +470,17 @@ namespace Tbot.Includes {
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
 									"/stopautopong - stop telegram autopong\n" +
-									"/startautopong - start telegram autopong (send telegram message every rounded hours)\n" +
+									"/startautopong - start telegram autopong [Receive message every X hours]\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
 									"/msg - '/msg hello dude' -> Send 'hello dude' to current attacker\n" +
 									"/sleep - '/sleep 1' -> Stop bot, inactive for 1 hours\n" +
 									"/wakeup - Wakeup bot\n" +
 									"/cancel - '/cancel 65656' -> cancel ongoing fleet id 65656\n" +
 									"/getcelestials - return the coordinate list and type of all your celestials\n" +
-									"/attacked - check if you're (still) under attack\n" +
-									"/celestial - '/celestial 2:45:8 Moon' (Moon/Planet) Update program current celestial target\n" +
+									"/attacked - check if you're [still] under attack\n" +
+									"/celestial - '/celestial 2:45:8 Moon' [Moon/Planet] Update program current celestial target\n" +
 									"/getinfo - Get current celestial resources and ships\n" +
-									"/editsettings - '/editsettings 2:425:9 moon -> Edit JSON file to change: Expedition, Transport, Repatriate and AutoReseach (Origin/Target) celestial\n" + 
+									"/editsettings - '/editsettings 2:425:9 moon -> Edit JSON file to change: Expedition, Transport, Repatriate and AutoReseach [Origin/Target] celestial\n" + 
 									"/ping - Ping bot\n" +
 									"/help - Display this help"
 								);

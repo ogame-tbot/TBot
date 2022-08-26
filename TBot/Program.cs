@@ -1146,7 +1146,7 @@ namespace Tbot {
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
-					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings (Need /editsettings)");
+					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings. Need /editsettings");
 					return new Celestial();
 				}
 
@@ -1212,7 +1212,7 @@ namespace Tbot {
 				}
 
 				if (spycrash.Count() == 0) {
-					telegramMessenger.SendMessage($"No planet to spycrash on could be found (over system -2 -> +2)");
+					telegramMessenger.SendMessage($"No planet to spycrash on could be found over system -2 -> +2");
 					return;
 				} else {
 					target = spycrash[random.Next(spycrash.Count())];
@@ -1655,7 +1655,7 @@ namespace Tbot {
 			DateTime time = GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
-			telegramMessenger.SendMessage($"[{userInfo.PlayerName}({serverData.Name})] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
+			telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 
 			isSleeping = true;
@@ -1855,7 +1855,7 @@ namespace Tbot {
 					}
 
 					if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
-						telegramMessenger.SendMessage($"[{userInfo.PlayerName}({serverData.Name})] Going to sleep, Waking Up at {state.ToString()}");
+						telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
 					}
 					isSleeping = true;
 				}
