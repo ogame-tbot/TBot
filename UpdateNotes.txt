@@ -1,0 +1,3 @@
+Fix markdown issues by switch to html parse mode
+add /cancelghostsleep to cancel planned /ghostsleep or /ghostsleepexpe commands
+fix some minor bugs
