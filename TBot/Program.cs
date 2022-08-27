@@ -1071,6 +1071,92 @@ namespace Tbot {
 			return;
 		}
 
+		public static void TelegramJumGate(Celestial origin, Coordinate destination, string mode) {
+			if (origin.Coordinate.Type == Celestials.Planet) {
+				telegramMessenger.SendMessage($"Current Celestial is not a moon.");
+				return;
+			}
+
+			Celestial moondest = celestials.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) destination.Galaxy)
+				.Where(c => c.Coordinate.System == (int) destination.System)
+				.Where(c => c.Coordinate.Position == (int) destination.Position)
+				.Where(c => c.Coordinate.Type == Celestials.Moon)
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			if (moondest.ID == 0) {
+				telegramMessenger.SendMessage($"{destination.ToString()} -> Moon not found!");
+				return;
+			}
+
+			if (moondest.Coordinate.ToString().Equals(origin.Coordinate.ToString())) {
+				telegramMessenger.SendMessage($"Origin and destination are the same! did you /celestial?");
+				return;
+			}
+
+			origin = UpdatePlanet(origin, UpdateTypes.Resources);
+			origin = UpdatePlanet(origin, UpdateTypes.Ships);
+
+			if (origin.Ships.GetMovableShips().IsEmpty()) {
+				telegramMessenger.SendMessage($"No ships on {origin.Coordinate}, did you /celestial?");
+				return;
+			}
+
+			var payload = origin.Resources;
+			Ships ships = origin.Ships;
+			if (mode.Equals("auto")) {
+				long idealSmallCargo = Helpers.CalcShipNumberForPayload(payload, Buildables.SmallCargo, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+
+				if (idealSmallCargo <= origin.Ships.GetAmount(Buildables.SmallCargo)) {
+					ships.SetAmount(Buildables.SmallCargo, origin.Ships.GetAmount(Buildables.SmallCargo) - (long)idealSmallCargo);
+				}
+				else
+				{ 
+					long idealLargeCargo = Helpers.CalcShipNumberForPayload(payload, Buildables.LargeCargo, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+					if (idealLargeCargo <= origin.Ships.GetAmount(Buildables.LargeCargo)) {
+						ships.SetAmount(Buildables.LargeCargo, origin.Ships.GetAmount(Buildables.LargeCargo) - (long)idealLargeCargo);
+					} else {
+						ships.SetAmount(Buildables.SmallCargo, 0);
+						ships.SetAmount(Buildables.LargeCargo, 0);
+					}
+				}
+			}
+			bool result = ogamedService.JumpGate(origin, moondest, ships);
+			if (result) {
+				telegramMessenger.SendMessage($"JumGate Done!");
+			} else {
+				telegramMessenger.SendMessage($"JumGate Failed!");
+			}
+		}
+
+		public static void TelegramDeploy(Celestial celestial, Coordinate destination, decimal speed) {
+			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
+			
+			if (celestial.Ships.GetMovableShips().IsEmpty()) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: No ships!");
+				telegramMessenger.SendMessage($"No ships on {celestial.Coordinate}, did you /celestial?");
+				return;
+			}
+			var payload = celestial.Resources;
+			if (celestial.Resources.Deuterium == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: there is no fuel!");
+				telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel.");
+				return;
+			}
+
+			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(celestial.Coordinate, destination, celestial.Ships, Missions.Deploy, speed, researches, serverData, userInfo.Class);
+			int fleetId = SendFleet(celestial, celestial.Ships, destination, Missions.Deploy, speed, payload, userInfo.Class, true);
+
+			if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleet {fleetId} deployed from {celestial.Coordinate.Type} to {destination.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				telegramMessenger.SendMessage($"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {destination.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				return;
+			}
+
+			return;
+		}
+
 		public static bool TelegramSwitch(decimal speed, Celestial attacked = null, bool fromTelegram = false) {
 			Celestial celestial;
 
@@ -1251,7 +1337,6 @@ namespace Tbot {
 			}
 			return;
 		}
-
 
 		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool SleepButExpe = false) {
 			DateTime departureTime = GetDateTime();
@@ -3494,6 +3579,7 @@ namespace Tbot {
 						Buildables preferredShip = Buildables.SmallCargo;
 						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
+							preferredShip = Buildables.SmallCargo;
 							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);

@@ -65,6 +65,8 @@ namespace Tbot.Includes {
 				"/attacked",
 				"/getcelestials",
 				"/recall",
+				"/jumpgate",
+				"/deploy",
 				"/help"
 			};
 
@@ -162,6 +164,74 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Value must be 1 or 2 or 3 for 10%,20%,30% etc.");
+								return;
+
+
+							case ("/deploy"):
+								if (message.Text.Split(' ').Length != 4) {
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate, type and speed! <code>/celestial 2:56:8 moon/planet 1/3/5/7/10</code>", ParseMode.Html);
+
+									return;
+								}
+
+								try {
+									coord.Galaxy = Int32.Parse(message.Text.Split(' ')[1].Split(':')[0]);
+									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
+									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
+								} catch {
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								Celestials type;
+								arg = message.Text.ToLower().Split(' ')[2];
+								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
+									return;
+								}
+								arg = char.ToUpper(arg[0]) + arg.Substring(1);
+								if (Celestials.TryParse(arg, out type)) {
+									coord.Type = type;
+								}
+
+
+								test = message.Text.Split(' ')[3];
+								speed = decimal.Parse(test);
+
+								if (1 <= speed && speed <= 10) {
+									celestial = Tbot.Program.TelegramGetCurrentCelestial();
+									Tbot.Program.TelegramDeploy(celestial, coord, speed);
+									return;
+								}
+								await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Value must be 1 or 2 or 3 for 10%,20%,30% etc.");
+
+								
+								return;
+
+
+							case ("/jumpgate"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Need Moon dest. coord and full/auto value (auto: keep required cargo for resources): <code>/jumpgate 2:20:8 auto</code>", ParseMode.Html);
+									return;
+								}
+
+								try {
+									coord.Galaxy = Int32.Parse(message.Text.Split(' ')[1].Split(':')[0]);
+									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
+									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
+								} catch {
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								string mode = message.Text.ToLower().Split(' ')[2];
+								if (!mode.Equals("full") && !mode.Equals("auto")) {
+									await botClient.SendTextMessageAsync(message.Chat, "Value error! example: <code>/jumpgate 2:20:8 auto/full</code>", ParseMode.Html);
+									return;
+								}
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.TelegramJumGate(celestial, coord, mode);
 								return;
 
 
@@ -474,6 +544,8 @@ namespace Tbot.Includes {
 									"/ghost - Ghost fleet for 4 hours\n, let bot chose mission type: <code>/ghost 4</code>\n" +
 									"/ghostto - Ghost for specified time on specified mission. <code>/ghostto 4 Harvest</code>\n" +
 									"/switch - Switch current celestial resources and fleets to its planet or moon at 50% speed: <code>/switch 5</code>\n" +
+									"/deploy - Deploy to celestial with full ships and resources params [coord type speed]: <code>/delpoy 3:41:9 moon/planet 10</code>\n" +
+									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]: <code>/jumpgate 2:41:9 auto/full</code>\n" +
 									"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
 									"/spycrash - Create a debris field by crashing a probe on target planet\n" +
 									"/recall - Enable/disable fleet auto recall: <code>/recall true/false</code>\n" +
