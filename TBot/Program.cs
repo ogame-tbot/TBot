@@ -1168,7 +1168,7 @@ namespace Tbot {
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
-					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings. Need /editsettings");
+					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings. Need <code>/editsettings</code>");
 					return new Celestial();
 				}
 

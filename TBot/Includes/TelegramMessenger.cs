@@ -328,6 +328,7 @@ namespace Tbot.Includes {
 							case ("/celestial"):
 								if (message.Text.Split(' ').Length != 3) {
 									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! <code>/celestial 2:56:8 moon/planet</code>", ParseMode.Html);
+
 									return;
 								}
 
