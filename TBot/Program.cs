@@ -153,7 +153,7 @@ namespace Tbot {
 					if ((bool) settings.TelegramMessenger.Active) {
 						Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
 						telegramMessenger = new TelegramMessenger((string) settings.TelegramMessenger.API, (string) settings.TelegramMessenger.ChatId);
-						telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` TBot activated");
+						telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> TBot activated");
 						Thread.Sleep(2000);
 						telegramMessenger.TelegramBot();
 					}
@@ -961,8 +961,14 @@ namespace Tbot {
 
 		public static void InitializeExpeditions() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
-			StopExpeditions(false);
-			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			if (ExpeWhileSleeping) {
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Expedition already enabled via /ghostsleepexpe, keeping timer...");
+				ExpeWhileSleeping = false;
+			} else {
+				StopExpeditions(false);
+				timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			}
+			
 		}
 
 		public static void StopExpeditions(bool echo = true) {
@@ -970,7 +976,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping expeditions...");
 			if (timers.TryGetValue("ExpeditionsTimer", out Timer value))
 				value.Dispose();
-				timers.Remove("ExpeditionsTimer");
+				timers.Remove("ExpeditionsTimer");		
 		}
 
 		private static void InitializeHarvest() {
@@ -1036,8 +1042,8 @@ namespace Tbot {
 			DateTime time = GetDateTime();
 			DateTime newTime = time.AddMilliseconds(3600000);
 			timers.GetValueOrDefault("TelegramAutoPong").Change(3600000, Timeout.Infinite);
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Next check at {newTime.ToString()}");
 			telegramMessenger.SendMessage("[TBot] Alive");
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPong sent, Next pong at {newTime.ToString()}");
 			xaSem[Feature.TelegramAutoPong].Release();
 
 			return;
@@ -1045,6 +1051,108 @@ namespace Tbot {
 
 		public static void TelegramCollect() {
 			timers.Add("TelegramCollect", new Timer(AutoRepatriate, null, 3000, Timeout.Infinite));
+
+			return;
+		}
+
+		public static void TelegramCancelGhostSleep() {
+			if (!timers.TryGetValue("GhostSleepTimer", out Timer value)) {
+				telegramMessenger.SendMessage("No GhostSleep configured or too late to cancel (fleets already sent), Do a <code>/wakeup</code>");
+				return;
+			}
+			if (ExpeWhileSleeping)
+				ExpeWhileSleeping = false;
+
+			timers.TryGetValue("GhostSleepTimer", out Timer value2);
+			value2.Dispose();
+			timers.Remove("GhostSleepTimer");
+			telegramMessenger.SendMessage("Ghostsleep(expe) canceled!");
+
+			return;
+		}
+
+		public static void TelegramJumGate(Celestial origin, Coordinate destination, string mode) {
+			if (origin.Coordinate.Type == Celestials.Planet) {
+				telegramMessenger.SendMessage($"Current Celestial is not a moon.");
+				return;
+			}
+
+			Celestial moondest = celestials.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) destination.Galaxy)
+				.Where(c => c.Coordinate.System == (int) destination.System)
+				.Where(c => c.Coordinate.Position == (int) destination.Position)
+				.Where(c => c.Coordinate.Type == Celestials.Moon)
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			if (moondest.ID == 0) {
+				telegramMessenger.SendMessage($"{destination.ToString()} -> Moon not found!");
+				return;
+			}
+
+			if (moondest.Coordinate.ToString().Equals(origin.Coordinate.ToString())) {
+				telegramMessenger.SendMessage($"Origin and destination are the same! did you /celestial?");
+				return;
+			}
+
+			origin = UpdatePlanet(origin, UpdateTypes.Resources);
+			origin = UpdatePlanet(origin, UpdateTypes.Ships);
+
+			if (origin.Ships.GetMovableShips().IsEmpty()) {
+				telegramMessenger.SendMessage($"No ships on {origin.Coordinate}, did you /celestial?");
+				return;
+			}
+
+			var payload = origin.Resources;
+			Ships ships = origin.Ships;
+			if (mode.Equals("auto")) {
+				long idealSmallCargo = Helpers.CalcShipNumberForPayload(payload, Buildables.SmallCargo, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+
+				if (idealSmallCargo <= origin.Ships.GetAmount(Buildables.SmallCargo)) {
+					ships.SetAmount(Buildables.SmallCargo, origin.Ships.GetAmount(Buildables.SmallCargo) - (long)idealSmallCargo);
+				}
+				else
+				{ 
+					long idealLargeCargo = Helpers.CalcShipNumberForPayload(payload, Buildables.LargeCargo, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+					if (idealLargeCargo <= origin.Ships.GetAmount(Buildables.LargeCargo)) {
+						ships.SetAmount(Buildables.LargeCargo, origin.Ships.GetAmount(Buildables.LargeCargo) - (long)idealLargeCargo);
+					} else {
+						ships.SetAmount(Buildables.SmallCargo, 0);
+						ships.SetAmount(Buildables.LargeCargo, 0);
+					}
+				}
+			}
+			bool result = ogamedService.JumpGate(origin, moondest, ships);
+			if (result) {
+				telegramMessenger.SendMessage($"JumGate Done!");
+			} else {
+				telegramMessenger.SendMessage($"JumGate Failed!");
+			}
+		}
+
+		public static void TelegramDeploy(Celestial celestial, Coordinate destination, decimal speed) {
+			celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
+			
+			if (celestial.Ships.GetMovableShips().IsEmpty()) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: No ships!");
+				telegramMessenger.SendMessage($"No ships on {celestial.Coordinate}, did you /celestial?");
+				return;
+			}
+			var payload = celestial.Resources;
+			if (celestial.Resources.Deuterium == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: there is no fuel!");
+				telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel.");
+				return;
+			}
+
+			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(celestial.Coordinate, destination, celestial.Ships, Missions.Deploy, speed, researches, serverData, userInfo.Class);
+			int fleetId = SendFleet(celestial, celestial.Ships, destination, Missions.Deploy, speed, payload, userInfo.Class, true);
+
+			if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleet {fleetId} deployed from {celestial.Coordinate.Type} to {destination.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				telegramMessenger.SendMessage($"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {destination.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+				return;
+			}
 
 			return;
 		}
@@ -1092,7 +1200,7 @@ namespace Tbot {
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from { celestial.Coordinate.ToString()}: there is no fuel!");
 				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
-					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel!");
+					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel.");
 				return false;
 			}
 
@@ -1146,7 +1254,7 @@ namespace Tbot {
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
-					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings (Need /editsettings)");
+					telegramMessenger.SendMessage("Error! Could not parse Celestial from JSON settings. Need <code>/editsettings</code>");
 					return new Celestial();
 				}
 
@@ -1212,7 +1320,7 @@ namespace Tbot {
 				}
 
 				if (spycrash.Count() == 0) {
-					telegramMessenger.SendMessage($"No planet to spycrash on could be found (over system -2 -> +2)");
+					telegramMessenger.SendMessage($"No planet to spycrash on could be found over system -2 -> +2");
 					return;
 				} else {
 					target = spycrash[random.Next(spycrash.Count())];
@@ -1230,7 +1338,6 @@ namespace Tbot {
 			return;
 		}
 
-
 		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool SleepButExpe = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;
@@ -1238,7 +1345,12 @@ namespace Tbot {
 			if (WaitFleetsReturn) {
 
 				fleets = UpdateFleets();
-				long interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000;
+				long interval;
+				try {
+					interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+				} catch {
+					interval = 0;
+				}
 
 				if (interval > 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value))) {
 					//Stop features which are sending fleets
@@ -1280,7 +1392,7 @@ namespace Tbot {
 					return;
 				}
 				else {
-					if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value3))) {
+					if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value3)) && !SleepButExpe) {
 						Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
 						NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
 						GhostandSleepAfterFleetsReturn(null);
@@ -1655,7 +1767,7 @@ namespace Tbot {
 			DateTime time = GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
-			telegramMessenger.SendMessage($"[{userInfo.PlayerName}({serverData.Name})] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
+			telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 
 			isSleeping = true;
@@ -1855,7 +1967,7 @@ namespace Tbot {
 					}
 
 					if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
-						telegramMessenger.SendMessage($"[{userInfo.PlayerName}({serverData.Name})] Going to sleep, Waking Up at {state.ToString()}");
+						telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
 					}
 					isSleeping = true;
 				}
@@ -1884,7 +1996,7 @@ namespace Tbot {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
 				timers.Remove("TelegramSleepModeTimer");
-				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Bot woke up!");
+				telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Bot woke up!");
 
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -1896,8 +2008,8 @@ namespace Tbot {
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
 				if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
-					telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Waking up");
-					telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Going to sleep at {state.ToString()}");
+					telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Waking up");
+					telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Going to sleep at {state.ToString()}");
 				}
 				isSleeping = false;
 				InitializeFeatures();
@@ -3468,6 +3580,7 @@ namespace Tbot {
 						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
 							preferredShip = Buildables.SmallCargo;
+							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 						Ships ships = new();
@@ -3944,19 +4057,19 @@ namespace Tbot {
 				if (recalledFleet.ID == 0) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred.");
 					//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-					//	telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Unable to recall fleet: an unknon error has occurred.");
+					//	telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet: an unknon error has occurred.");
 					//}
 				}
 				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 				if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-					telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 				}
 				return;
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
 				//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				//	telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Unable to recall fleet: an exception has occurred.");
+				//	telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet: an exception has occurred.");
 				//}
 				return;
 			} finally {
@@ -3972,7 +4085,7 @@ namespace Tbot {
 			fleets = UpdateFleets();
 			Fleet ToRecallFleet = fleets.SingleOrDefault(f => f.ID == fleetId) ?? new() { ID = 0 };
 			if ( ToRecallFleet.ID == 0) {
-				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Unable to recall fleet! Already recalled?");
+				telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet! Already recalled?");
 				return;
 			}
 			RetireFleet(ToRecallFleet);
@@ -4042,7 +4155,7 @@ namespace Tbot {
 				if (attack.Ships != null && researches.EspionageTechnology >= 8) {
 					if (Helpers.IsSettingSet(settings.Defender.IgnoreProbes) && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
 						if (attack.MissionType == Missions.Spy)
-							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Espionage action skipped.");
+							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attacker sent only Probes! Espionage action skipped.");
 						else
 							Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: only Espionage Probes.");
 
@@ -4064,7 +4177,7 @@ namespace Tbot {
 			}
 
 			if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-				telegramMessenger.SendMessage($"`[{userInfo.PlayerName}@{serverData.Name}]` Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
+				telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					Thread.Sleep(1000);
 					telegramMessenger.SendMessage($"The attack is composed by: {attack.Ships.ToString()}");

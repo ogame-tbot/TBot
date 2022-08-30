@@ -958,5 +958,27 @@ namespace Tbot.Services {
 			} else
 				return JsonConvert.DeserializeObject<EspionageReport>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
+
+		public bool JumpGate(Celestial origin, Celestial destination, Ships ships) {
+			var request = new RestRequest {
+				Resource = $"/bot/moons/{origin.ID}/jump-gate",
+				Method = Method.POST,
+			};
+
+			request.AddParameter("moonDestination", destination.ID, ParameterType.GetOrPost);
+
+			foreach (PropertyInfo prop in ships.GetType().GetProperties()) {
+				long qty = (long) prop.GetValue(ships, null);
+				if (qty == 0)
+					continue;
+				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
+					request.AddParameter("ships", (int) buildable + "," + prop.GetValue(ships, null), ParameterType.GetOrPost);
+				}
+			}
+
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (!result.Status.Equals("ok")) { return false; } else { return true; }
+
+		}
 	}
 }

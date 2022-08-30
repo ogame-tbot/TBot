@@ -28,7 +28,7 @@ namespace Tbot.Includes {
 		public async void SendMessage(string message) {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Sending Telegram message...");
 			try {
-				await Client.SendTextMessageAsync(Channel, message, ParseMode.MarkdownV2);
+				await Client.SendTextMessageAsync(Channel, message, ParseMode.Html);
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
@@ -59,11 +59,14 @@ namespace Tbot.Includes {
 				"/getinfo",
 				"/celestial",
 				"/cancel",
+				"/cancelghostsleep",
 				"/editsettings",
 				"/spycrash",
 				"/attacked",
 				"/getcelestials",
 				"/recall",
+				"/jumpgate",
+				"/deploy",
 				"/help"
 			};
 
@@ -88,7 +91,7 @@ namespace Tbot.Includes {
 
 							case ("/ghost"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need 1 value -> ghost duration (eg: /ghost 4)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need 1 value -> ghost duration <code>/ghost 4</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -102,7 +105,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostto"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need ghost duration and destination type (eg: /ghostto 4 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need ghost duration and destination type <code>/ghostto 4 harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -124,7 +127,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type (eg /ghostsleep 5 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type <code>/ghostsleep 5 harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -137,7 +140,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleepexpe"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type (eg /ghostsleepexpe 5 harvest)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need time and destination type <code>/ghostsleepexpe 5 harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -150,7 +153,7 @@ namespace Tbot.Includes {
 
 							case ("/switch"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need speed value (eg: 5 for 50%)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need speed value <code>5 for 50%</code>", ParseMode.Html);
 									return;
 								}
 								test = message.Text.Split(' ')[1];
@@ -161,6 +164,74 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Value must be 1 or 2 or 3 for 10%,20%,30% etc.");
+								return;
+
+
+							case ("/deploy"):
+								if (message.Text.Split(' ').Length != 4) {
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate, type and speed! <code>/celestial 2:56:8 moon/planet 1/3/5/7/10</code>", ParseMode.Html);
+
+									return;
+								}
+
+								try {
+									coord.Galaxy = Int32.Parse(message.Text.Split(' ')[1].Split(':')[0]);
+									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
+									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
+								} catch {
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								Celestials type;
+								arg = message.Text.ToLower().Split(' ')[2];
+								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
+									return;
+								}
+								arg = char.ToUpper(arg[0]) + arg.Substring(1);
+								if (Celestials.TryParse(arg, out type)) {
+									coord.Type = type;
+								}
+
+
+								test = message.Text.Split(' ')[3];
+								speed = decimal.Parse(test);
+
+								if (1 <= speed && speed <= 10) {
+									celestial = Tbot.Program.TelegramGetCurrentCelestial();
+									Tbot.Program.TelegramDeploy(celestial, coord, speed);
+									return;
+								}
+								await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Value must be 1 or 2 or 3 for 10%,20%,30% etc.");
+
+								
+								return;
+
+
+							case ("/jumpgate"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Need Moon dest. coord and full/auto value (auto: keep required cargo for resources): <code>/jumpgate 2:20:8 auto</code>", ParseMode.Html);
+									return;
+								}
+
+								try {
+									coord.Galaxy = Int32.Parse(message.Text.Split(' ')[1].Split(':')[0]);
+									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
+									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
+								} catch {
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								string mode = message.Text.ToLower().Split(' ')[2];
+								if (!mode.Equals("full") && !mode.Equals("auto")) {
+									await botClient.SendTextMessageAsync(message.Chat, "Value error! example: <code>/jumpgate 2:20:8 auto/full</code>", ParseMode.Html);
+									return;
+								}
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.TelegramJumGate(celestial, coord, mode);
 								return;
 
 
@@ -176,14 +247,25 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/cancelghostsleep"):
+								if (message.Text.Split(' ').Length != 1) {
+									await botClient.SendTextMessageAsync(message.Chat, "No value needed!");
+									return;
+								}
+								
+
+								Tbot.Program.TelegramCancelGhostSleep();
+								return;
+
+
 							case ("/recall"):
 								if (message.Text.Split(' ').Length < 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need true/false value! (enable/disable auto fleets recall)");
+									await botClient.SendTextMessageAsync(message.Chat, "enable/disable auto fleets recall <code>/recall true/false</code>", ParseMode.Html);
 									return;
 								}
 
 								if (message.Text.Split(' ')[1] != "true" && message.Text.Split(' ')[1] != "false") {
-									await botClient.SendTextMessageAsync(message.Chat, "Need true/false value! (enable/disable auto fleets recall)");
+									await botClient.SendTextMessageAsync(message.Chat, "Value should be true or false.");
 									return;
 								}
 								string recall = message.Text.Split(' ')[1];
@@ -315,13 +397,14 @@ namespace Tbot.Includes {
 
 							case ("/celestial"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! (/celestial 2:56:8 moon/planet)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! <code>/celestial 2:56:8 moon/planet</code>", ParseMode.Html);
+
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ( (!arg.Equals("moon")) && (!arg.Equals("planet")) ) {
-									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet (got {arg})");
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
 									return;
 								}
 
@@ -330,7 +413,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! (must be like 3:125:9)");
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
@@ -341,13 +424,13 @@ namespace Tbot.Includes {
 							
 							case ("/editsettings"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! (/editsettings 2:56:8 moon/planet)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need coordinate and type! <code>/editsettings 2:56:8 moon/planet</code>", ParseMode.Html);
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
-									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet (got {arg})");
+									await botClient.SendTextMessageAsync(message.Chat, $"Need value moon or planet <code>/editsettings 2:100:3 moon/planet</code>", ParseMode.Html);
 									return;
 								}
 
@@ -356,7 +439,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! (must be like 3:125:9)");
+									await botClient.SendTextMessageAsync(message.Chat, "Error while parsing coordinate! Must be like <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
@@ -367,7 +450,7 @@ namespace Tbot.Includes {
 
 							case ("/spycrash"):
 								if (message.Text.Split(' ').Length != 2) {
-									await botClient.SendTextMessageAsync(message.Chat, "Need 'auto' or coordinate (/spycrash auto/2:56:8)");
+									await botClient.SendTextMessageAsync(message.Chat, "Need 'auto' or coordinate <code>/spycrash auto/2:56:8</code>", ParseMode.Html);
 									return;
 								}
 
@@ -381,7 +464,7 @@ namespace Tbot.Includes {
 										coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 										target = new Coordinate() { Galaxy = coord.Galaxy, System = coord.System, Position = coord.Position, Type = Celestials.Planet };
 									} catch {
-										await botClient.SendTextMessageAsync(message.Chat, "Error while parsing value! (coord be like 3:125:9, or 'auto')");
+										await botClient.SendTextMessageAsync(message.Chat, "Error while parsing value! Coord must be like 3:125:9, or 'auto'"); 
 										return;
 									}
 								}
@@ -456,13 +539,26 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - '/ghostsleep 5 Harvest' -> Wait fleets return, ghost harvest and sleep for 5hours\n" +
-									"/ghostsleepexpe - '/ghostsleepexpe 5 Harvest' -> Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition\n" +
-									"/ghost - '/ghost 4' -> Ghost fleet for 4 hours\n, let bot chose mission type" +
-									"/ghostto - '/ghostto 4 Harvest'\n" +
-									"/switch - '/switch 5' -> switch current celestial resources and fleets to its planet or moon at 50% speed\n" +
+									"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
+									"/ghost - Ghost fleet for 4 hours\n, let bot chose mission type: <code>/ghost 4</code>\n" +
+									"/ghostto - Ghost for specified time on specified mission. <code>/ghostto 4 Harvest</code>\n" +
+									"/switch - Switch current celestial resources and fleets to its planet or moon at 50% speed: <code>/switch 5</code>\n" +
+									"/deploy - Deploy to celestial with full ships and resources params [coord type speed]: <code>/delpoy 3:41:9 moon/planet 10</code>\n" +
+									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]: <code>/jumpgate 2:41:9 auto/full</code>\n" +
+									"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
 									"/spycrash - Create a debris field by crashing a probe on target planet\n" +
-									"/recall - '/recall true/false' -> enable/disable fleet auto recall\n" +
+									"/recall - Enable/disable fleet auto recall: <code>/recall true/false</code>\n" +
+									"/collect - Collect planets resources to JSON setting celestial\n" +
+									"/msg - <code>/msg hello dude</code> -> Send 'hello dude' to current attacker\n" +
+									"/sleep - Stop bot, inactive for 1 hours: <code>/sleep 1</code>\n" +
+									"/wakeup - Wakeup bot\n" +
+									"/cancel - Cancel ongoing fleet [id]: <code>/cancel 65656</code>\n" +
+									"/getcelestials - return the coordinate list and type of all your celestials\n" +
+									"/attacked - check if you're (still) under attack\n" +
+									"/celestial - Update program current celestial target: <code>/celestial 2:45:8 Moon</code> [Moon/Planet]\n" +
+									"/getinfo - Get current celestial resources and ships\n" +
+									"/editsettings - Edit JSON file to change: Expedition, Transport, Repatriate and AutoReseach [Origin/Target] celestial: <code>/editsettings 2:425:9 moon</code>\n" +
 									"/stopexpe - Stop sending expedition\n" +
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +
@@ -470,20 +566,10 @@ namespace Tbot.Includes {
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
 									"/stopautopong - stop telegram autopong\n" +
-									"/startautopong - start telegram autopong (send telegram message every rounded hours)\n" +
-									"/collect - Collect planets resources to JSON setting celestial\n" +
-									"/msg - '/msg hello dude' -> Send 'hello dude' to current attacker\n" +
-									"/sleep - '/sleep 1' -> Stop bot, inactive for 1 hours\n" +
-									"/wakeup - Wakeup bot\n" +
-									"/cancel - '/cancel 65656' -> cancel ongoing fleet id 65656\n" +
-									"/getcelestials - return the coordinate list and type of all your celestials\n" +
-									"/attacked - check if you're (still) under attack\n" +
-									"/celestial - '/celestial 2:45:8 Moon' (Moon/Planet) Update program current celestial target\n" +
-									"/getinfo - Get current celestial resources and ships\n" +
-									"/editsettings - '/editsettings 2:425:9 moon -> Edit JSON file to change: Expedition, Transport, Repatriate and AutoReseach (Origin/Target) celestial\n" + 
+									"/startautopong - start telegram autopong [Receive message every X hours]\n" +
 									"/ping - Ping bot\n" +
 									"/help - Display this help"
-								);
+								, ParseMode.Html);
 								return;
 							default:
 								return;
