@@ -175,7 +175,7 @@ namespace Tbot {
 					xaSem[Feature.Colonize] = new Semaphore(1, 1);
 					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
 					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
-					xaSem[Feature.TelegramAutoPong] = new Semaphore(1, 1);
+					xaSem[Feature.TelegramAutoPing] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -191,7 +191,7 @@ namespace Tbot {
 					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
+					features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
 					celestials = GetPlanets();
@@ -287,9 +287,9 @@ namespace Tbot {
 						if (!currentValue)
 							InitializeSleepMode();
 						return true;
-					case Feature.TelegramAutoPong:
+					case Feature.TelegramAutoPing:
 						if (currentValue)
-							StopTelegramAutoPong();
+							StopTelegramAutoPing();
 						return false;
 						
 					default:
@@ -409,13 +409,13 @@ namespace Tbot {
 							StopSleepMode();
 						return false;
 					}
-				case Feature.TelegramAutoPong:
-					if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
-						InitializeTelegramAutoPong();
+				case Feature.TelegramAutoPing:
+					if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+						InitializeTelegramAutoPing();
 						return true;
 					} else {
 						if (currentValue)
-							StopTelegramAutoPong();
+							StopTelegramAutoPing();
 						return false;
 					}
 				default:
@@ -436,7 +436,7 @@ namespace Tbot {
 			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
+			features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
 		}
 
 		private static void ReadSettings() {
@@ -515,7 +515,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
 			xaSem[Feature.SleepMode].WaitOne();
-			xaSem[Feature.TelegramAutoPong].WaitOne();
+			xaSem[Feature.TelegramAutoPing].WaitOne();
 
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
 			ReadSettings();
@@ -527,7 +527,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
 			xaSem[Feature.SleepMode].Release();
-			xaSem[Feature.TelegramAutoPong].Release();
+			xaSem[Feature.TelegramAutoPing].Release();
 
 			InitializeSleepMode();
 			UpdateTitle();
@@ -833,26 +833,26 @@ namespace Tbot {
 			}
 		}
 
-		public static void InitializeTelegramAutoPong() {
+		public static void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
-				everyHours = settings.TelegramMessenger.TelegramAutoPong.EveryHours;
+			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			}
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
-			long nextpong = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 			
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPong...");
-			StopTelegramAutoPong(false);
-			timers.Add("TelegramAutoPong", new Timer(TelegramAutoPong, null, nextpong, Timeout.Infinite));
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPing...");
+			StopTelegramAutoPing(false);
+			timers.Add("TelegramAutoPing", new Timer(TelegramAutoPing, null, nextping, Timeout.Infinite));
 		}
 
-		public static void StopTelegramAutoPong(bool echo = true) {
+		public static void StopTelegramAutoPing(bool echo = true) {
 			if (echo)
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPong...");
-			if (timers.TryGetValue("TelegramAutoPong", out Timer value))
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPing...");
+			if (timers.TryGetValue("TelegramAutoPing", out Timer value))
 				value.Dispose();
-				timers.Remove("TelegramAutoPong");
+				timers.Remove("TelegramAutoPing");
 		}
 
 		public static void InitializeDefender() {
@@ -1037,14 +1037,14 @@ namespace Tbot {
 		}
 
 
-		public static void TelegramAutoPong(object state) {
-			xaSem[Feature.TelegramAutoPong].WaitOne();
+		public static void TelegramAutoPing(object state) {
+			xaSem[Feature.TelegramAutoPing].WaitOne();
 			DateTime time = GetDateTime();
 			DateTime newTime = time.AddMilliseconds(3600000);
-			timers.GetValueOrDefault("TelegramAutoPong").Change(3600000, Timeout.Infinite);
-			telegramMessenger.SendMessage("[TBot] Alive");
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPong sent, Next pong at {newTime.ToString()}");
-			xaSem[Feature.TelegramAutoPong].Release();
+			timers.GetValueOrDefault("TelegramAutoPing").Change(3600000, Timeout.Infinite);
+			telegramMessenger.SendMessage("TBot is running");
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
+			xaSem[Feature.TelegramAutoPing].Release();
 
 			return;
 		}
