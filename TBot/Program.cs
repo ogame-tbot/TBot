@@ -1948,7 +1948,9 @@ namespace Tbot {
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
 							Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {newTime.ToString()}");
-							telegramMessenger.SendMessage($"Fleets active, Next check at {newTime.ToString()}");
+							if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active) {
+								telegramMessenger.SendMessage($"Fleets active, Next check at {newTime.ToString()}");
+							}
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
