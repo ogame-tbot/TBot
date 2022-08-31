@@ -1347,7 +1347,8 @@ namespace Tbot {
 				fleets = UpdateFleets();
 				long interval;
 				try {
-					interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					//interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = (fleets.Where(f => f.Origin.ToString() == celestial.Coordinate.ToString()).OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 				} catch {
 					interval = 0;
 				}
@@ -1379,9 +1380,7 @@ namespace Tbot {
 				}
 				else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2)) && SleepButExpe) {
 					ExpeWhileSleeping = true;
-					if (timers.TryGetValue("ExpeditionsTimer", out Timer expe2))
-						HandleExpeditions(null); //if interval 0, meaning expe fleet are already back, resend them now then ghost
-					else {
+					if (!timers.TryGetValue("ExpeditionsTimer", out Timer expe2)) { 
 						InitializeExpeditions();
 					}
 
@@ -1398,6 +1397,7 @@ namespace Tbot {
 						GhostandSleepAfterFleetsReturn(null);
 						return;
 					}
+					return;
 				}
 			}
 
