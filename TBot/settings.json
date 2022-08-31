@@ -357,7 +357,7 @@
 		"Active": false,
 		"API": "",
 		"ChatId": "",
-		"TelegramAutoPong": {
+		"TelegramAutoPing": {
 			"Active": true,
 			"EveryHours":  1
 		}

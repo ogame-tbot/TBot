@@ -37,7 +37,6 @@ namespace Tbot {
 		static long duration;
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
-		public static volatile bool ExpeWhileSleeping = false;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -175,7 +174,7 @@ namespace Tbot {
 					xaSem[Feature.Colonize] = new Semaphore(1, 1);
 					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
 					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
-					xaSem[Feature.TelegramAutoPong] = new Semaphore(1, 1);
+					xaSem[Feature.TelegramAutoPing] = new Semaphore(1, 1);
 
 					features = new();
 					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
@@ -191,7 +190,7 @@ namespace Tbot {
 					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
 					features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
+					features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
 					celestials = GetPlanets();
@@ -287,9 +286,9 @@ namespace Tbot {
 						if (!currentValue)
 							InitializeSleepMode();
 						return true;
-					case Feature.TelegramAutoPong:
+					case Feature.TelegramAutoPing:
 						if (currentValue)
-							StopTelegramAutoPong();
+							StopTelegramAutoPing();
 						return false;
 						
 					default:
@@ -409,13 +408,13 @@ namespace Tbot {
 							StopSleepMode();
 						return false;
 					}
-				case Feature.TelegramAutoPong:
-					if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
-						InitializeTelegramAutoPong();
+				case Feature.TelegramAutoPing:
+					if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+						InitializeTelegramAutoPing();
 						return true;
 					} else {
 						if (currentValue)
-							StopTelegramAutoPong();
+							StopTelegramAutoPing();
 						return false;
 					}
 				default:
@@ -436,7 +435,7 @@ namespace Tbot {
 			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
 			features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.TelegramAutoPong, false, HandleStartStopFeatures);
+			features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
 		}
 
 		private static void ReadSettings() {
@@ -515,7 +514,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
 			xaSem[Feature.SleepMode].WaitOne();
-			xaSem[Feature.TelegramAutoPong].WaitOne();
+			xaSem[Feature.TelegramAutoPing].WaitOne();
 
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
 			ReadSettings();
@@ -527,7 +526,7 @@ namespace Tbot {
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
 			xaSem[Feature.SleepMode].Release();
-			xaSem[Feature.TelegramAutoPong].Release();
+			xaSem[Feature.TelegramAutoPing].Release();
 
 			InitializeSleepMode();
 			UpdateTitle();
@@ -833,26 +832,26 @@ namespace Tbot {
 			}
 		}
 
-		public static void InitializeTelegramAutoPong() {
+		public static void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.TelegramAutoPong.Active) {
-				everyHours = settings.TelegramMessenger.TelegramAutoPong.EveryHours;
+			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			}
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
-			long nextpong = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 			
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPong...");
-			StopTelegramAutoPong(false);
-			timers.Add("TelegramAutoPong", new Timer(TelegramAutoPong, null, nextpong, Timeout.Infinite));
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPing...");
+			StopTelegramAutoPing(false);
+			timers.Add("TelegramAutoPing", new Timer(TelegramAutoPing, null, nextping, Timeout.Infinite));
 		}
 
-		public static void StopTelegramAutoPong(bool echo = true) {
+		public static void StopTelegramAutoPing(bool echo = true) {
 			if (echo)
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPong...");
-			if (timers.TryGetValue("TelegramAutoPong", out Timer value))
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPing...");
+			if (timers.TryGetValue("TelegramAutoPing", out Timer value))
 				value.Dispose();
-				timers.Remove("TelegramAutoPong");
+				timers.Remove("TelegramAutoPing");
 		}
 
 		public static void InitializeDefender() {
@@ -961,14 +960,8 @@ namespace Tbot {
 
 		public static void InitializeExpeditions() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
-			if (ExpeWhileSleeping) {
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Expedition already enabled via /ghostsleepexpe, keeping timer...");
-				ExpeWhileSleeping = false;
-			} else {
-				StopExpeditions(false);
-				timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-			}
-			
+			StopExpeditions(false);
+			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));	
 		}
 
 		public static void StopExpeditions(bool echo = true) {
@@ -1037,14 +1030,14 @@ namespace Tbot {
 		}
 
 
-		public static void TelegramAutoPong(object state) {
-			xaSem[Feature.TelegramAutoPong].WaitOne();
+		public static void TelegramAutoPing(object state) {
+			xaSem[Feature.TelegramAutoPing].WaitOne();
 			DateTime time = GetDateTime();
 			DateTime newTime = time.AddMilliseconds(3600000);
-			timers.GetValueOrDefault("TelegramAutoPong").Change(3600000, Timeout.Infinite);
-			telegramMessenger.SendMessage("[TBot] Alive");
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPong sent, Next pong at {newTime.ToString()}");
-			xaSem[Feature.TelegramAutoPong].Release();
+			timers.GetValueOrDefault("TelegramAutoPing").Change(3600000, Timeout.Infinite);
+			telegramMessenger.SendMessage("TBot is running");
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
+			xaSem[Feature.TelegramAutoPing].Release();
 
 			return;
 		}
@@ -1060,8 +1053,6 @@ namespace Tbot {
 				telegramMessenger.SendMessage("No GhostSleep configured or too late to cancel (fleets already sent), Do a <code>/wakeup</code>");
 				return;
 			}
-			if (ExpeWhileSleeping)
-				ExpeWhileSleeping = false;
 
 			timers.TryGetValue("GhostSleepTimer", out Timer value2);
 			value2.Dispose();
@@ -1347,8 +1338,7 @@ namespace Tbot {
 				fleets = UpdateFleets();
 				long interval;
 				try {
-					//interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
-					interval = (fleets.Where(f => f.Origin.ToString() == celestial.Coordinate.ToString()).OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = (fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 				} catch {
 					interval = 0;
 				}
@@ -1361,12 +1351,7 @@ namespace Tbot {
 					StopBrainRepatriate();
 					StopAutoFarm();
 					StopHarvest();
-					if (!SleepButExpe) {
-						StopExpeditions();
-					} else {
-						ExpeWhileSleeping = true;
-						if (!timers.TryGetValue("ExpeditionsTimer", out Timer expe)) InitializeExpeditions();
-					}
+					StopExpeditions();
 					
 					interval += Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
@@ -1379,25 +1364,16 @@ namespace Tbot {
 					return;
 				}
 				else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2)) && SleepButExpe) {
-					ExpeWhileSleeping = true;
-					if (!timers.TryGetValue("ExpeditionsTimer", out Timer expe2)) { 
-						InitializeExpeditions();
-					}
 
-					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, sending expedition now and Ghosting.");
+					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
 					NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
 					GhostandSleepAfterFleetsReturn(null);
 
 					return;
 				}
 				else {
-					if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value3)) && !SleepButExpe) {
-						Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
-						NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
-						GhostandSleepAfterFleetsReturn(null);
-						return;
-					}
-					return;
+					telegramMessenger.SendMessage($"GhostSleep already planned, try /cancelghostsleep");
+					return;	
 				}
 			}
 
@@ -1747,9 +1723,6 @@ namespace Tbot {
 				value.Dispose();
 				timers.Remove("GhostSleepTimer");
 
-			if (ExpeWhileSleeping)
-				HandleExpeditions(null); //send expe before sending fleet to ghost
-
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
 			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
 			if (celestialsToFleetsave.Count == 0)
@@ -1948,7 +1921,9 @@ namespace Tbot {
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
 							Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {newTime.ToString()}");
-							telegramMessenger.SendMessage($"Fleets active, Next check at {newTime.ToString()}");
+							if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active) {
+								telegramMessenger.SendMessage($"Fleets active, Next check at {newTime.ToString()}");
+							}
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, "Unable to parse WakeUp or GoToSleep time.");
@@ -4244,7 +4219,7 @@ namespace Tbot {
 				DateTime time;
 				DateTime newTime;
 
-				if (isSleeping && !ExpeWhileSleeping) {
+				if (isSleeping) {
 					Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Sleep Mode Active!");
 					xaSem[Feature.Expeditions].Release();
 					return;

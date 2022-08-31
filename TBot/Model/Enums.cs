@@ -275,6 +275,6 @@ namespace Tbot.Model {
 		BrainAutoResearch = 10,
 		Colonize = 11,
 		AutoFarm = 12,
-		TelegramAutoPong = 13
+		TelegramAutoPing = 13
 	}
 }
