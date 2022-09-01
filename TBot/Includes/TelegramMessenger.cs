@@ -124,7 +124,7 @@ namespace Tbot.Includes {
 
 								return;
 
-							
+
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
 									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
@@ -245,7 +245,7 @@ namespace Tbot.Includes {
 								Tbot.Program.TelegramRetireFleet(fleetId);
 								return;
 
-							
+
 							case ("/cancelghostsleep"):
 								if (message.Text.Split(' ').Length != 1) {
 									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
@@ -254,7 +254,6 @@ namespace Tbot.Includes {
 
 								Tbot.Program.TelegramCancelGhostSleep();
 								return;
-							
 
 
 							case ("/recall"):

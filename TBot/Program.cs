@@ -1588,10 +1588,10 @@ namespace Tbot {
 
 			switch (mission) {
 				case Missions.Spy:
-					if (origin.Ships.EspionageProbe == 0)
+					if (origin.Ships.EspionageProbe == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No espionageprobe available, skipping to next mission...");
 						break;
-
+					}
 					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
 					foreach (var currentSpeed in validSpeeds) {
 						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
@@ -1613,10 +1613,10 @@ namespace Tbot {
 					break;
 
 				case Missions.Colonize:
-					if (origin.Ships.ColonyShip == 0)
+					if (origin.Ships.ColonyShip == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No colony ship available, skipping to next mission...");
 						break;
-
+					}
 					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
 					int pos = 1;
 					foreach (var planet in galaxyInfo.Planets) {
@@ -1649,10 +1649,10 @@ namespace Tbot {
 					break;
 				
 				case Missions.Harvest:
-					if (origin.Ships.Recycler == 0)
+					if (origin.Ships.Recycler == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No recycler available, skipping to next mission...");
 						break;
-
+					}
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
