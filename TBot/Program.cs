@@ -1462,8 +1462,8 @@ namespace Tbot {
 
 			//Doing Deploy
 			if (!AlreadySent) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible, checking next mission..");
 				if (mission == Missions.Harvest) { mission = Missions.Deploy; } else { mission = Missions.Harvest; };
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Harvest possible, checking Deploy..");
 				mission = Missions.Deploy;
 				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
@@ -1483,7 +1483,7 @@ namespace Tbot {
 			}
 			//Doing colonize
 			if (!AlreadySent && celestial.Ships.ColonyShip > 0) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Moon/Planet to switch on, checking Colonize destination...");
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Colonize destination...");
 				mission = Missions.Colonize;
 				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
@@ -1503,6 +1503,7 @@ namespace Tbot {
 			}
 			//Doing Spy
 			if (!AlreadySent && celestial.Ships.EspionageProbe > 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Spy destination...");
 				mission = Missions.Spy;
 				fleetHypotesis = GetFleetSaveDestination(celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
@@ -1524,7 +1525,7 @@ namespace Tbot {
 			//Doing switch
 			bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
 			if (!AlreadySent && hasMoon) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no Deploy possible (missing fuel?), checking for switch if has Moon");
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible (missing fuel?), checking for switch if has Moon");
 				//var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 				//Random randomSpeed = new Random();
 				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
@@ -1533,7 +1534,7 @@ namespace Tbot {
 			}
 
 			if (!AlreadySent) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no Moon/Planet to switch on, and Unsafe disabled, you gonna get hit!");
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no suitable destination found, you gonna get hit!");
 				if ((bool) settings.TelegramMessenger.Active){
 					telegramMessenger.SendMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found!, you gonna get hit!");
 				}
