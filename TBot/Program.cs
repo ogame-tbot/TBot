@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -1607,9 +1608,13 @@ namespace Tbot {
 			List<Coordinate> possibleDestinations = new();
 			GalaxyInfo galaxyInfo = new();
 			origin = UpdatePlanet(origin, UpdateTypes.Resources);
+			origin = UpdatePlanet(origin, UpdateTypes.Ships);
 
 			switch (mission) {
 				case Missions.Spy:
+					if (origin.Ships.EspionageProbe == 0)
+						break;
+
 					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
 					foreach (var currentSpeed in validSpeeds) {
 						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
@@ -1629,7 +1634,11 @@ namespace Tbot {
 						}
 					}
 					break;
-				case Missions.Colonize:					
+
+				case Missions.Colonize:
+					if (origin.Ships.ColonyShip == 0)
+						break;
+
 					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
 					int pos = 1;
 					foreach (var planet in galaxyInfo.Planets) {
@@ -1662,6 +1671,9 @@ namespace Tbot {
 					break;
 				
 				case Missions.Harvest:
+					if (origin.Ships.Recycler == 0)
+						break;
+
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
@@ -1696,6 +1708,7 @@ namespace Tbot {
 						}
 					}
 					break;
+
 				case Missions.Deploy:
 					possibleDestinations = celestials
 						.Where(planet => planet.ID != origin.ID)
@@ -1730,9 +1743,11 @@ namespace Tbot {
 						}
 					}
 					break;
+
 				default:
 					break;
 			}
+
 			if (possibleFleets.Count() > 0) {
 				return possibleFleets;
 
