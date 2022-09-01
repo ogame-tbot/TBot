@@ -39,7 +39,7 @@ namespace Tbot.Includes {
 			List<string> commands = new List<string>()
 			{
 				"/ghostsleep",
-				"/ghostsleepexpe",
+				//"/ghostsleepexpe",
 				"/ghost",
 				"/ghostto",
 				"/switch",
@@ -124,26 +124,32 @@ namespace Tbot.Includes {
 
 								return;
 
-
+							
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
 									return;
 								}
-								test = message.Text.Split(' ')[2];
-								test = char.ToUpper(test[0]) + test.Substring(1);
-
-								if (!Missions.TryParse(test, out mission)) {
-									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
-									return;
-								}
-
 								arg = message.Text.Split(' ')[1];
 								duration = Int32.Parse(arg) * 60 * 60; //seconds
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true);
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
 								return;
+
+							/*
+							case ("/ghostsleepexpe"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hourd) and celestial type arguments required! Format: <code>/ghostsleepexpe 5 harvest</code>", ParseMode.Html);
+									return;
+								}
+								arg = message.Text.Split(' ')[1];
+								duration = Int32.Parse(arg) * 60 * 60; //seconds
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
+								return;
+							*/
 
 
 							case ("/switch"):
@@ -239,7 +245,7 @@ namespace Tbot.Includes {
 								Tbot.Program.TelegramRetireFleet(fleetId);
 								return;
 
-
+							
 							case ("/cancelghostsleep"):
 								if (message.Text.Split(' ').Length != 1) {
 									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
@@ -248,6 +254,7 @@ namespace Tbot.Includes {
 
 								Tbot.Program.TelegramCancelGhostSleep();
 								return;
+							
 
 
 							case ("/recall"):
@@ -531,26 +538,26 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
-									"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
-									"/ghost - Ghost fleet for 4 hours\n, let bot chose mission type: <code>/ghost 4</code>\n" +
-									"/ghostto - Ghost for specified time on specified mission. <code>/ghostto 4 Harvest</code>\n" +
-									"/switch - Switch current celestial resources and fleets to its planet or moon at 50% speed: <code>/switch 5</code>\n" +
-									"/deploy - Deploy to celestial with full ships and resources params [coord type speed]: <code>/delpoy 3:41:9 moon/planet 10</code>\n" +
-									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]: <code>/jumpgate 2:41:9 auto/full</code>\n" +
-									"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
-									"/spycrash - Create a debris field by crashing a probe on target planet\n" +
-									"/recall - Enable/disable fleet auto recall: <code>/recall true/false</code>\n" +
+									//"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
+									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4</code>\n" +
+									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
+									"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
+									"/deploy - Deploy to celestial with full ships and resources. Format: <code>/delpoy 3:41:9 moon/planet 10</code>\n" +
+									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>\n" +
+									//"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
+									"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/jumpgate 2:41:9/auto</code>\n" +
+									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
-									"/msg - <code>/msg hello dude</code> -> Send 'hello dude' to current attacker\n" +
-									"/sleep - Stop bot, inactive for 1 hours: <code>/sleep 1</code>\n" +
+									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
+									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 1</code>\n" +
 									"/wakeup - Wakeup bot\n" +
-									"/cancel - Cancel ongoing fleet [id]: <code>/cancel 65656</code>\n" +
-									"/getcelestials - return the coordinate list and type of all your celestials\n" +
+									"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
+									"/getcelestials - Return the list of your celestials\n" +
 									"/attacked - check if you're (still) under attack\n" +
-									"/celestial - Update program current celestial target: <code>/celestial 2:45:8 Moon</code> [Moon/Planet]\n" +
+									"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
 									"/getinfo - Get current celestial resources and ships\n" +
-									"/editsettings - Edit JSON file to change: Expedition, Transport, Repatriate and AutoReseach [Origin/Target] celestial: <code>/editsettings 2:425:9 moon</code>\n" +
+									"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
 									"/stopexpe - Stop sending expedition\n" +
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +

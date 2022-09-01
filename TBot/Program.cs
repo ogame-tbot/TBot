@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -961,7 +962,7 @@ namespace Tbot {
 		public static void InitializeExpeditions() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing expeditions...");
 			StopExpeditions(false);
-			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));	
+			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		public static void StopExpeditions(bool echo = true) {
@@ -1352,7 +1353,7 @@ namespace Tbot {
 					StopAutoFarm();
 					StopHarvest();
 					StopExpeditions();
-					
+
 					interval += Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
 					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration*1000);
@@ -1373,7 +1374,7 @@ namespace Tbot {
 				}
 				else {
 					telegramMessenger.SendMessage($"GhostSleep already planned, try /cancelghostsleep");
-					return;	
+					return;
 				}
 			}
 
@@ -1583,9 +1584,14 @@ namespace Tbot {
 			List<Coordinate> possibleDestinations = new();
 			GalaxyInfo galaxyInfo = new();
 			origin = UpdatePlanet(origin, UpdateTypes.Resources);
+			origin = UpdatePlanet(origin, UpdateTypes.Ships);
 
 			switch (mission) {
 				case Missions.Spy:
+					if (origin.Ships.EspionageProbe == 0)
+						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No espionageprobe available, skipping to next mission...");
+						break;
+
 					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
 					foreach (var currentSpeed in validSpeeds) {
 						FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, researches, serverData, userInfo.Class);
@@ -1605,7 +1611,12 @@ namespace Tbot {
 						}
 					}
 					break;
-				case Missions.Colonize:					
+
+				case Missions.Colonize:
+					if (origin.Ships.ColonyShip == 0)
+						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No colony ship available, skipping to next mission...");
+						break;
+
 					galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate);
 					int pos = 1;
 					foreach (var planet in galaxyInfo.Planets) {
@@ -1640,7 +1651,8 @@ namespace Tbot {
 				case Missions.Harvest:
 					if (origin.Ships.Recycler == 0)
 						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No recycler available, skipping to next mission...");
-					break;
+						break;
+
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
@@ -1675,6 +1687,7 @@ namespace Tbot {
 						}
 					}
 					break;
+
 				case Missions.Deploy:
 					possibleDestinations = celestials
 						.Where(planet => planet.ID != origin.ID)
@@ -1709,9 +1722,11 @@ namespace Tbot {
 						}
 					}
 					break;
+
 				default:
 					break;
 			}
+
 			if (possibleFleets.Count() > 0) {
 				return possibleFleets;
 
@@ -1724,7 +1739,7 @@ namespace Tbot {
 		public static void GhostandSleepAfterFleetsReturn(object state) {
 			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
 				value.Dispose();
-				timers.Remove("GhostSleepTimer");
+			timers.Remove("GhostSleepTimer");
 
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
 			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
@@ -1734,7 +1749,7 @@ namespace Tbot {
 			foreach (Celestial celestial in celestialsToFleetsave)
 				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
 
-			SleepNow(NextWakeUpTime);		
+			SleepNow(NextWakeUpTime);
 		}
 
 		public static void SleepNow(DateTime WakeUpTime) {
