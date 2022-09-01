@@ -38,8 +38,8 @@ namespace Tbot.Includes {
 
 			List<string> commands = new List<string>()
 			{
-				"/ghostsleep",
-				"/ghostsleepexpe",
+				//"/ghostsleep",
+				//"/ghostsleepexpe",
 				"/ghost",
 				"/ghostto",
 				"/switch",
@@ -59,7 +59,7 @@ namespace Tbot.Includes {
 				"/getinfo",
 				"/celestial",
 				"/cancel",
-				"/cancelghostsleep",
+				//"/cancelghostsleep",
 				"/editsettings",
 				"/spycrash",
 				"/attacked",
@@ -124,7 +124,7 @@ namespace Tbot.Includes {
 
 								return;
 
-
+							/*
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
 									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
@@ -149,6 +149,7 @@ namespace Tbot.Includes {
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
 								return;
+							*/
 
 
 							case ("/switch"):
@@ -244,7 +245,7 @@ namespace Tbot.Includes {
 								Tbot.Program.TelegramRetireFleet(fleetId);
 								return;
 
-
+							/*
 							case ("/cancelghostsleep"):
 								if (message.Text.Split(' ').Length != 1) {
 									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
@@ -253,6 +254,7 @@ namespace Tbot.Includes {
 
 								Tbot.Program.TelegramCancelGhostSleep();
 								return;
+							*/
 
 
 							case ("/recall"):
@@ -536,14 +538,14 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
-									"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
+									//"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
 									"/ghost - Ghost fleet for 4 hours\n, let bot chose mission type: <code>/ghost 4</code>\n" +
 									"/ghostto - Ghost for specified time on specified mission. <code>/ghostto 4 Harvest</code>\n" +
 									"/switch - Switch current celestial resources and fleets to its planet or moon at 50% speed: <code>/switch 5</code>\n" +
 									"/deploy - Deploy to celestial with full ships and resources params [coord type speed]: <code>/delpoy 3:41:9 moon/planet 10</code>\n" +
 									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]: <code>/jumpgate 2:41:9 auto/full</code>\n" +
-									"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
+									//"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
 									"/spycrash - Create a debris field by crashing a probe on target planet\n" +
 									"/recall - Enable/disable fleet auto recall: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
