@@ -1,8 +1,0 @@
-features:
-- Add /cancelghostsleep to cancel planned /ghostsleep or /ghostsleepexpe commands
-- Add /jumpgate to telegram commands (full: all ships / auto: keep minimum required cargo for moon resources)
-- Add /deploy to telegram commands (can be usefull after /jumpgate auto)
-
-Fixes:
-- Fix markdown issues by switch to html parse mode
-- Fix some minor bugs
