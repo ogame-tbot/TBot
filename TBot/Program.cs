@@ -1638,6 +1638,9 @@ namespace Tbot {
 					break;
 				
 				case Missions.Harvest:
+					if (origin.Ships.Recycler == 0)
+						Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"No recycler available, skipping to next mission...");
+					break;
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
