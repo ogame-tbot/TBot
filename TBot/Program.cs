@@ -1297,6 +1297,8 @@ namespace Tbot {
 				int playerid = userInfo.PlayerID;
 				int sys = 0;
 				for ( sys = fromCelestial.Coordinate.System - 2 ; sys <= fromCelestial.Coordinate.System + 2; sys++) {
+					if ( sys < 1 ) sys = 1;
+					if ( sys > 499 ) sys = 499;
 					GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(fromCelestial.Coordinate.Galaxy, sys);
 					foreach (var planet in galaxyInfo.Planets) {
 						try {
@@ -1657,6 +1659,8 @@ namespace Tbot {
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
+						if (sys < 1) sys = 1;
+						if (sys > 499) sys = 499;
 						galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 						foreach (var planet in galaxyInfo.Planets) {
 							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
