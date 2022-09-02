@@ -1058,7 +1058,7 @@ namespace Tbot {
 			timers.TryGetValue("GhostSleepTimer", out Timer value2);
 			value2.Dispose();
 			timers.Remove("GhostSleepTimer");
-			telegramMessenger.SendMessage("Ghostsleep(expe) canceled!");
+			telegramMessenger.SendMessage("Ghostsleep canceled!");
 
 			return;
 		}
@@ -1330,7 +1330,7 @@ namespace Tbot {
 			return;
 		}
 
-		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool SleepButExpe = false) {
+		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;
 
@@ -1364,7 +1364,7 @@ namespace Tbot {
 
 					return;
 				}
-				else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2)) && SleepButExpe) {
+				else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2))) {
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
 					NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
@@ -1372,7 +1372,7 @@ namespace Tbot {
 
 					return;
 				}
-				else {
+				else if ( timers.TryGetValue("GhostSleepTimer", out Timer value3) ){
 					telegramMessenger.SendMessage($"GhostSleep already planned, try /cancelghostsleep");
 					return;
 				}
@@ -4049,16 +4049,17 @@ namespace Tbot {
 				fleets = UpdateFleets();
 				Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = 0 };
 				if (recalledFleet.ID == 0) {
-					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred.");
+					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
 					//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
 					//	telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet: an unknon error has occurred.");
 					//}
+				} else {
+					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
+						telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					}
+					return;
 				}
-				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
-				if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
-					telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
-				}
-				return;
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
