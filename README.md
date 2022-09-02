@@ -74,6 +74,7 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
   * It will answer you a message containing your user ID and chat ID
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 * Send "/help" to the bot to get a list of the available commands. Here is a list:
+  * /ghostsleep - Wait for fleets to come back, ghost fleet for the specified amount of hours, then go to sleep and wake up at return\n, let bot chose mission type. Format: /ghostsleep 4
   * /ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: /ghost 4
   * /ghostto - Ghost for the specified amount of hours on the specified mission. Format: /ghostto 4 Harvest
   * /switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: /switch 5
