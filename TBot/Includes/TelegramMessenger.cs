@@ -573,7 +573,8 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
 									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
 									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4</code>\n" +
 									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
