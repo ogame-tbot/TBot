@@ -1753,7 +1753,7 @@ namespace Tbot {
 		public static void GhostandSleepAfterFleetsReturnAll(object state) {
 			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("GhostSleepTimer");
+				timers.Remove("GhostSleepTimer");
 
 			
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
@@ -1770,18 +1770,10 @@ namespace Tbot {
 		public static void GhostandSleepAfterFleetsReturn(object state) {
 			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("GhostSleepTimer");
+				timers.Remove("GhostSleepTimer");
 
 			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false);
-			/*
-			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
-			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
-			if (celestialsToFleetsave.Count == 0)
-				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
 
-			foreach (Celestial celestial in celestialsToFleetsave)
-				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
-			*/
 			SleepNow(NextWakeUpTime);
 		}
 

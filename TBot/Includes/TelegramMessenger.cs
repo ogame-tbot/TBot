@@ -127,28 +127,42 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								test = message.Text.Split(' ')[2];
+								test = char.ToUpper(test[0]) + test.Substring(1);
+
+								if (!Missions.TryParse(test, out mission)) {
+									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									return;
+								}
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true);
 								return;
 
 
 							case ("/ghostsleepall"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								test = message.Text.Split(' ')[2];
+								test = char.ToUpper(test[0]) + test.Substring(1);
+
+								if (!Missions.TryParse(test, out mission)) {
+									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									return;
+								}
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 							/*
