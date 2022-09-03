@@ -1379,7 +1379,10 @@ namespace Tbot {
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
 					NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
-					GhostandSleepAfterFleetsReturn(null);
+					if (saveall)
+						GhostandSleepAfterFleetsReturnAll(null);
+					else
+						GhostandSleepAfterFleetsReturn(null);
 
 					return;
 				}
