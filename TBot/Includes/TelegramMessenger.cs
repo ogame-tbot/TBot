@@ -134,7 +134,21 @@ namespace Tbot.Includes {
 								duration = Int32.Parse(arg) * 60 * 60; //seconds
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
+								return;
+
+
+							case ("/ghostsleepall"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
+									return;
+								}
+								arg = message.Text.Split(' ')[1];
+								duration = Int32.Parse(arg) * 60 * 60; //seconds
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
 								return;
 
 							/*
