@@ -1033,9 +1033,13 @@ namespace Tbot {
 
 		public static void TelegramAutoPing(object state) {
 			xaSem[Feature.TelegramAutoPing].WaitOne();
-			DateTime time = GetDateTime();
-			DateTime newTime = time.AddMilliseconds(3600000);
-			timers.GetValueOrDefault("TelegramAutoPing").Change(3600000, Timeout.Infinite);
+			DateTime now = GetDateTime();
+			long everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
+			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+
+			DateTime newTime = now.AddMilliseconds(nextping);
+			timers.GetValueOrDefault("TelegramAutoPing").Change(nextping, Timeout.Infinite);
 			telegramMessenger.SendMessage("TBot is running");
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
 			xaSem[Feature.TelegramAutoPing].Release();
