@@ -945,13 +945,13 @@ namespace Tbot {
 				timers.Remove("AutoResearchTimer");
 		}
 
-		private static void InitializeAutoFarm() {
+		public static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
 			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
-		private static void StopAutoFarm(bool echo = true) {
+		public static void StopAutoFarm(bool echo = true) {
 			if (echo)
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autofarm...");
 			if (timers.TryGetValue("AutoFarmTimer", out Timer value))

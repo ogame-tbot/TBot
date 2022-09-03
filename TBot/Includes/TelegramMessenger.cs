@@ -382,6 +382,28 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/stopautofarm"):
+								if (message.Text.Split(' ').Length != 1) {
+									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopAutoFarm();
+								await botClient.SendTextMessageAsync(message.Chat, "Autofarm stopped!");
+								return;
+
+
+							case ("/startautofarm"):
+								if (message.Text.Split(' ').Length != 1) {
+									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeAutoFarm();
+								await botClient.SendTextMessageAsync(message.Chat, "Autofarm started!");
+								return;
+
+
 							case ("/getinfo"):
 								if (message.Text.Split(' ').Length != 1) {
 									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
@@ -563,6 +585,8 @@ namespace Tbot.Includes {
 									"/stopdefender - stop defender\n" +
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
+									"/stopautofarm - stop autofarm\n" +
+									"/startautofarm - start autofarm\n" +
 									"/stopautoping - stop telegram autoping\n" +
 									"/startautoping - start telegram autoping [Receive message every X hours]\n" +
 									"/ping - Ping bot\n" +
