@@ -38,6 +38,7 @@ namespace Tbot {
 		static long duration;
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
+		public static volatile Celestial TelegramCurrentCelestialToSave;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -945,13 +946,13 @@ namespace Tbot {
 				timers.Remove("AutoResearchTimer");
 		}
 
-		private static void InitializeAutoFarm() {
+		public static void InitializeAutoFarm() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
 			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, Helpers.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
-		private static void StopAutoFarm(bool echo = true) {
+		public static void StopAutoFarm(bool echo = true) {
 			if (echo)
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autofarm...");
 			if (timers.TryGetValue("AutoFarmTimer", out Timer value))
@@ -1033,9 +1034,13 @@ namespace Tbot {
 
 		public static void TelegramAutoPing(object state) {
 			xaSem[Feature.TelegramAutoPing].WaitOne();
-			DateTime time = GetDateTime();
-			DateTime newTime = time.AddMilliseconds(3600000);
-			timers.GetValueOrDefault("TelegramAutoPing").Change(3600000, Timeout.Infinite);
+			DateTime now = GetDateTime();
+			long everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
+			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+
+			DateTime newTime = now.AddMilliseconds(nextping);
+			timers.GetValueOrDefault("TelegramAutoPing").Change(nextping, Timeout.Infinite);
 			telegramMessenger.SendMessage("TBot is running");
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
 			xaSem[Feature.TelegramAutoPing].Release();
@@ -1297,6 +1302,8 @@ namespace Tbot {
 				int playerid = userInfo.PlayerID;
 				int sys = 0;
 				for ( sys = fromCelestial.Coordinate.System - 2 ; sys <= fromCelestial.Coordinate.System + 2; sys++) {
+					if ( sys < 1 ) sys = 1;
+					if ( sys > 499 ) sys = 499;
 					GalaxyInfo galaxyInfo = ogamedService.GetGalaxyInfo(fromCelestial.Coordinate.Galaxy, sys);
 					foreach (var planet in galaxyInfo.Planets) {
 						try {
@@ -1330,7 +1337,7 @@ namespace Tbot {
 			return;
 		}
 
-		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false) {
+		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;
 
@@ -1358,7 +1365,11 @@ namespace Tbot {
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
 					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration*1000);
 
-					timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturn, null, interval, Timeout.Infinite));
+					if (saveall)
+						timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturnAll, null, interval, Timeout.Infinite));
+					else
+						timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturn, null, interval, Timeout.Infinite));
+
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {TimeToGhost.ToString()}");
 					telegramMessenger.SendMessage($"Waiting for fleets return, delaying ghosting at {TimeToGhost.ToString()}");
 
@@ -1368,7 +1379,10 @@ namespace Tbot {
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"No fleets active, Ghosting now.");
 					NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
-					GhostandSleepAfterFleetsReturn(null);
+					if (saveall)
+						GhostandSleepAfterFleetsReturnAll(null);
+					else
+						GhostandSleepAfterFleetsReturn(null);
 
 					return;
 				}
@@ -1524,7 +1538,7 @@ namespace Tbot {
 
 			//Doing switch
 			bool hasMoon = celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
-			if (!AlreadySent && hasMoon) {
+			if (!AlreadySent && hasMoon && !timers.TryGetValue("GhostSleepTimer", out Timer val)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible (missing fuel?), checking for switch if has Moon");
 				//var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 				//Random randomSpeed = new Random();
@@ -1657,6 +1671,8 @@ namespace Tbot {
 					int playerid = userInfo.PlayerID;
 					int sys = 0;
 					for ( sys = origin.Coordinate.System - 5 ; sys <= origin.Coordinate.System + 5; sys++) {
+						if (sys < 1) sys = 1;
+						if (sys > 499) sys = 499;
 						galaxyInfo = ogamedService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 						foreach (var planet in galaxyInfo.Planets) {
 							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
@@ -1737,11 +1753,12 @@ namespace Tbot {
 		}
 
 
-		public static void GhostandSleepAfterFleetsReturn(object state) {
+		public static void GhostandSleepAfterFleetsReturnAll(object state) {
 			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
 				value.Dispose();
-			timers.Remove("GhostSleepTimer");
+				timers.Remove("GhostSleepTimer");
 
+			
 			var celestialsToFleetsave = Tbot.Program.UpdateCelestials();
 			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
 			if (celestialsToFleetsave.Count == 0)
@@ -1749,6 +1766,16 @@ namespace Tbot {
 
 			foreach (Celestial celestial in celestialsToFleetsave)
 				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
+			
+			SleepNow(NextWakeUpTime);
+		}
+
+		public static void GhostandSleepAfterFleetsReturn(object state) {
+			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
+				value.Dispose();
+				timers.Remove("GhostSleepTimer");
+
+			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false);
 
 			SleepNow(NextWakeUpTime);
 		}
