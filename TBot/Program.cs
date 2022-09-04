@@ -43,10 +43,26 @@ namespace Tbot {
 			Helpers.SetTitle();
 			isSleeping = false;
 
+			CmdLineArgsService.DoParse(args);
+			if(CmdLineArgsService.printHelp) {
+				Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
+				Environment.Exit(0);
+			}
+
+			if(CmdLineArgsService.settingsPath.IsPresent) {
+				SettingsService.settingPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
+			}
+
+			if(CmdLineArgsService.logPath.IsPresent) {
+				Helpers.logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
+			}
+
+			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{SettingsService.settingPath}\"");
+			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 			ReadSettings();
 
-			PhysicalFileProvider physicalFileProvider = new(Path.GetFullPath(AppContext.BaseDirectory));
-			var changeToken = physicalFileProvider.Watch("settings.json");
+			PhysicalFileProvider physicalFileProvider = new(Path.GetDirectoryName(SettingsService.settingPath));
+			var changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath));
 			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
@@ -64,6 +80,8 @@ namespace Tbot {
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
 				ProxySettings proxy = new();
+				string cookiesPath = "";
+
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
 					string proxyType = ((string) settings.General.Proxy.Type).ToLower();
@@ -87,7 +105,13 @@ namespace Tbot {
 						Console.ReadLine();
 					}
 				}
-				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy);
+
+				if((string) settings.General.CookiesPath != "") {
+					// Cookies are defined relative to the settings file
+					cookiesPath = Path.Combine(Path.GetDirectoryName(SettingsService.settingPath), (string) settings.General.CookiesPath);
+				}
+
+				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Unable to start ogamed: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
@@ -836,7 +860,7 @@ namespace Tbot {
 		public static void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+			if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			}
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
@@ -1378,9 +1402,6 @@ namespace Tbot {
 				}
 			}
 
-			if (fromTelegram) {
-				celestial = TelegramGetCurrentCelestial();
-			}
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");

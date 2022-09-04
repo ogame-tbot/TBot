@@ -124,6 +124,32 @@ namespace Tbot.Includes {
 
 								return;
 
+							case ("/ghostmoons"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4 <mission></code>!");
+									return;
+								}
+
+								string duration_str = message.Text.Split(' ')[1];
+								string mission_str = message.Text.Split(' ')[2];
+								Missions mission_to_do;
+
+								if (!Missions.TryParse(mission_str, out mission_to_do)) {
+									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									return;
+								}
+								duration = Int32.Parse(arg) * 60 * 60;
+
+								List<Celestial> myMoons = Tbot.Program.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
+								string moonsDump = "";
+								foreach(Celestial moon in myMoons) {
+									Tbot.Program.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+									moonsDump += moon.Coordinate.ToString() + "sent in FleetSave" + "\n";
+								}
+								await botClient.SendTextMessageAsync(message.Chat, $"{moonsDump}");
+
+								return;
+
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
