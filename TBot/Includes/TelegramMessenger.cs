@@ -131,28 +131,30 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								string duration_str = message.Text.Split(' ')[1];
-								string mission_str = message.Text.Split(' ')[2];
+								arg = message.Text.Split(' ')[1];
+								test = message.Text.Split(' ')[2];
 								Missions mission_to_do;
 
-								if (!Missions.TryParse(mission_str, out mission_to_do)) {
+								if (!Missions.TryParse(test, out mission_to_do)) {
 									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
 								duration = Int32.Parse(arg) * 60 * 60;
 
 								List<Celestial> myMoons = Tbot.Program.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
-								string moonsDump = "";
 								if(myMoons.Count > 0) {
+									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										Tbot.Program.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
-										moonsDump += moon.Coordinate.ToString() + "sent in FleetSave" + "\n";
+										// Let's sleep a bit :)
+										fleetSaved++;
+										if(fleetSaved != myMoons.Count)
+											Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 									}
+									await botClient.SendTextMessageAsync(message.Chat, "Moons FleetSave done!");
 								} else {
-									moonsDump += "no moons found";
+									await botClient.SendTextMessageAsync(message.Chat, "No moons found");
 								}
-
-								await botClient.SendTextMessageAsync(message.Chat, $"{moonsDump}");
 
 								return;
 
