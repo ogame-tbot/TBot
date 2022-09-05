@@ -161,14 +161,42 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5</code>", ParseMode.Html);
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								test = message.Text.Split(' ')[2];
+								test = char.ToUpper(test[0]) + test.Substring(1);
+
+								if (!Missions.TryParse(test, out mission)) {
+									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									return;
+								}
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true);
+								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true);
+								return;
+
+
+							case ("/ghostsleepall"):
+								if (message.Text.Split(' ').Length != 3) {
+									await botClient.SendTextMessageAsync(message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
+									return;
+								}
+								arg = message.Text.Split(' ')[1];
+								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								test = message.Text.Split(' ')[2];
+								test = char.ToUpper(test[0]) + test.Substring(1);
+
+								if (!Missions.TryParse(test, out mission)) {
+									await botClient.SendTextMessageAsync(message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									return;
+								}
+
+								celestial = Tbot.Program.TelegramGetCurrentCelestial();
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 							/*
@@ -416,6 +444,28 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/stopautofarm"):
+								if (message.Text.Split(' ').Length != 1) {
+									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopAutoFarm();
+								await botClient.SendTextMessageAsync(message.Chat, "Autofarm stopped!");
+								return;
+
+
+							case ("/startautofarm"):
+								if (message.Text.Split(' ').Length != 1) {
+									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeAutoFarm();
+								await botClient.SendTextMessageAsync(message.Chat, "Autofarm started!");
+								return;
+
+
 							case ("/getinfo"):
 								if (message.Text.Split(' ').Length != 1) {
 									await botClient.SendTextMessageAsync(message.Chat, "No argument accepted with this command!");
@@ -571,7 +621,8 @@ namespace Tbot.Includes {
 									return;
 								}
 								await botClient.SendTextMessageAsync(message.Chat,
-									"/ghostsleep - Wait fleets return, ghost harvest and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
 									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
 									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4</code>\n" +
 									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
@@ -598,6 +649,8 @@ namespace Tbot.Includes {
 									"/stopdefender - stop defender\n" +
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
+									"/stopautofarm - stop autofarm\n" +
+									"/startautofarm - start autofarm\n" +
 									"/stopautoping - stop telegram autoping\n" +
 									"/startautoping - start telegram autoping [Receive message every X hours]\n" +
 									"/ping - Ping bot\n" +
