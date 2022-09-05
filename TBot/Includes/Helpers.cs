@@ -43,8 +43,9 @@ namespace Tbot.Includes {
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
 
+		public static string logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
 		public static void LogToFile(LogType type, LogSender sender, string message) {
-			string path = $"{Directory.GetCurrentDirectory()}/log";
+			string path = logPath;
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
@@ -57,7 +58,7 @@ namespace Tbot.Includes {
 		}
 
 		public static void LogToCSV(LogType type, LogSender sender, string message) {
-			string path = $"{Directory.GetCurrentDirectory()}/log";
+			string path = logPath;
 			DirectoryInfo dir = new(path);
 			if (!dir.Exists)
 				dir.Create();
@@ -2365,6 +2366,33 @@ namespace Tbot.Includes {
 
 		public static int CalcMaxCrawlers(Planet planet, CharacterClass userClass) {
 			return 8 * (planet.Buildings.MetalMine + planet.Buildings.CrystalMine + planet.Buildings.DeuteriumSynthesizer);
+		}
+	}
+
+
+	public class Optional<T> {
+		private T value;
+		public bool IsPresent { get; private set; } = false;
+
+		private Optional() { }
+
+		public static Optional<T> Empty() {
+			return new Optional<T>();
+		}
+
+		public static Optional<T> Of(T value) {
+			Optional<T> obj = new Optional<T>();
+			obj.Set(value);
+			return obj;
+		}
+
+		public void Set(T value) {
+			this.value = value;
+			IsPresent = true;
+		}
+
+		public T Get() {
+			return value;
 		}
 	}
 }
