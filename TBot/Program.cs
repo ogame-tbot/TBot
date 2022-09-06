@@ -487,7 +487,7 @@ namespace Tbot {
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
-
+			OnSettingsChanged(default);
 			return true;
 		}
 
@@ -4446,12 +4446,14 @@ namespace Tbot {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+												var list = Enumerable.Range(origin.Coordinate.System - range, origin.Coordinate.System + range).ToList();
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
-													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
+													System = rand.Next(list.Count),
 													Position = 16,
 													Type = Celestials.DeepSpace
 												};
+												list.Remove(destination.System);
 												if (destination.System <= 0)
 													destination.System = 499;
 												if (destination.System >= 500)
