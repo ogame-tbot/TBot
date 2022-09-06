@@ -40,6 +40,7 @@ namespace Tbot.Includes {
 			{
 				"/ghostsleep",
 				//"/ghostsleepexpe",
+				"/ghostsleepall",
 				"/ghost",
 				"/ghostto",
 				"/switch",
