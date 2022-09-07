@@ -2079,13 +2079,13 @@ namespace Tbot {
 				.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 				.SingleOrDefault() ?? new() { ID = 0 };
-
-			Random random = new Random();
-			randomCelestial = celestials[random.Next(celestials.Count())];
-			ogamedService.GetDefences(randomCelestial);
-
+			
 			if (celestial.ID != 0) {
-				ogamedService.GetDefences(celestial);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Defences);
+			}
+			randomCelestial = celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
+			if (randomCelestial.ID != 0) {
+				randomCelestial = UpdatePlanet(randomCelestial, UpdateTypes.Defences);
 			}
 
 			return;
@@ -2259,12 +2259,17 @@ namespace Tbot {
 					Buildables research;
 
 					if ((bool) settings.Brain.AutoResearch.PrioritizeAstrophysics || (bool) settings.Brain.AutoResearch.PrioritizePlasmaTechnology || (bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology || (bool) settings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork) {
-						celestials = UpdatePlanets(UpdateTypes.Buildings);
-						celestials = UpdatePlanets(UpdateTypes.Facilities);
-
-						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						List<Celestial> planets = new();
+						foreach (var p in celestials) {
+							if (p.Coordinate.Type == Celestials.Planet) {
+								var newPlanet = UpdatePlanet(p, UpdateTypes.Facilities);
+								newPlanet = UpdatePlanet(p, UpdateTypes.Buildings);
+								planets.Add(newPlanet);
+							}
+						}
+						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
-						var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						var astroDOIR = Helpers.CalcNextAstroDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
 
 						if (
@@ -2279,7 +2284,7 @@ namespace Tbot {
 							researches.IonTechnology >= 5
 						) {
 							research = Buildables.PlasmaTechnology;
-						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
+						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(planets.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
 							research = Buildables.EnergyTechnology;
 						} else if (
 							(bool) settings.Brain.AutoResearch.PrioritizeAstrophysics &&
@@ -2307,7 +2312,8 @@ namespace Tbot {
 						celestial.Facilities.ResearchLab >= 10 &&
 						researches.ComputerTechnology >= 8 &&
 						researches.HyperspaceTechnology >= 8 &&
-						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)
+						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork) &&
+						celestials.Any(c => c.Facilities != null)
 					) {
 						var cumulativeLabLevel = Helpers.CalcCumulativeLabLevel(celestials, researches);
 						var researchTime = Helpers.CalcProductionTime(research, Helpers.GetNextLevel(researches, research), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
