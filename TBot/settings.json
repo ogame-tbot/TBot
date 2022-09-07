@@ -11,7 +11,7 @@
 		}
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"Proxy": {
@@ -40,7 +40,7 @@
 			"ForceUnsafe": true,
 			"DeutToLeave": 200000,
 			"Recall": true,
-			"DefaultMission": "Deploy"
+			"DefaultMission": "Harvest"
 		}
 	},
 	"Defender": {
@@ -71,7 +71,8 @@
 			"Messages": [
 				"hey",
 				"hello",
-				"i'm online'"
+				"Tripa tripaloski",
+				"Tartu!"
 			]
 		},
 		"TelegramMessenger": {

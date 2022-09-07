@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -43,33 +44,17 @@ namespace Tbot {
 			Helpers.SetTitle();
 			isSleeping = false;
 
-			CmdLineArgsService.DoParse(args);
-			if(CmdLineArgsService.printHelp) {
-				Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
-				Environment.Exit(0);
-			}
-
-			if(CmdLineArgsService.settingsPath.IsPresent) {
-				SettingsService.settingPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
-			}
-
-			if(CmdLineArgsService.logPath.IsPresent) {
-				Helpers.logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
-			}
-
-			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{SettingsService.settingPath}\"");
-			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 			ReadSettings();
 
-			PhysicalFileProvider physicalFileProvider = new(Path.GetDirectoryName(SettingsService.settingPath));
-			var changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath));
+			PhysicalFileProvider physicalFileProvider = new(Path.GetFullPath(AppContext.BaseDirectory));
+			var changeToken = physicalFileProvider.Watch("settings.json");
 			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
-				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
+				Universe = (string) settings.Credentials.Universe,
 				Username = (string) settings.Credentials.Email,
 				Password = (string) settings.Credentials.Password,
-				Language = ((string) settings.Credentials.Language).ToLower(),
+				Language = (string) settings.Credentials.Language,
 				IsLobbyPioneers = (bool) settings.Credentials.LobbyPioneers,
 				BasicAuthUsername = (string) settings.Credentials.BasicAuth.Username,
 				BasicAuthPassword = (string) settings.Credentials.BasicAuth.Password
@@ -80,8 +65,6 @@ namespace Tbot {
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
 				ProxySettings proxy = new();
-				string cookiesPath = "";
-
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
 					string proxyType = ((string) settings.General.Proxy.Type).ToLower();
@@ -105,13 +88,7 @@ namespace Tbot {
 						Console.ReadLine();
 					}
 				}
-
-				if((string) settings.General.CookiesPath != "") {
-					// Cookies are defined relative to the settings file
-					cookiesPath = Path.Combine(Path.GetDirectoryName(SettingsService.settingPath), (string) settings.General.CookiesPath);
-				}
-
-				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
+				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy);
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Unable to start ogamed: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
@@ -469,7 +446,7 @@ namespace Tbot {
 
 		public static bool EditSettings(Celestial celestial = null, string recall = "") {
 			System.Threading.Thread.Sleep(500);
-			var file = File.ReadAllText(Path.GetFullPath(SettingsService.settingPath));
+			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -509,8 +486,8 @@ namespace Tbot {
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			File.WriteAllText(Path.GetFullPath(SettingsService.settingPath), output);
-
+			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
+			OnSettingsChanged(default);
 			return true;
 		}
 
@@ -860,7 +837,7 @@ namespace Tbot {
 		public static void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			}
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
@@ -1415,6 +1392,9 @@ namespace Tbot {
 				}
 			}
 
+			if (fromTelegram) {
+				celestial = TelegramGetCurrentCelestial();
+			}
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
@@ -2079,13 +2059,13 @@ namespace Tbot {
 				.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 				.SingleOrDefault() ?? new() { ID = 0 };
-			
+
+			Random random = new Random();
+			randomCelestial = celestials[random.Next(celestials.Count())];
+			ogamedService.GetDefences(randomCelestial);
+
 			if (celestial.ID != 0) {
-				celestial = UpdatePlanet(celestial, UpdateTypes.Defences);
-			}
-			randomCelestial = celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
-			if (randomCelestial.ID != 0) {
-				randomCelestial = UpdatePlanet(randomCelestial, UpdateTypes.Defences);
+				ogamedService.GetDefences(celestial);
 			}
 
 			return;
@@ -2259,17 +2239,12 @@ namespace Tbot {
 					Buildables research;
 
 					if ((bool) settings.Brain.AutoResearch.PrioritizeAstrophysics || (bool) settings.Brain.AutoResearch.PrioritizePlasmaTechnology || (bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology || (bool) settings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork) {
-						List<Celestial> planets = new();
-						foreach (var p in celestials) {
-							if (p.Coordinate.Type == Celestials.Planet) {
-								var newPlanet = UpdatePlanet(p, UpdateTypes.Facilities);
-								newPlanet = UpdatePlanet(p, UpdateTypes.Buildings);
-								planets.Add(newPlanet);
-							}
-						}
-						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						celestials = UpdatePlanets(UpdateTypes.Buildings);
+						celestials = UpdatePlanets(UpdateTypes.Facilities);
+
+						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
-						var astroDOIR = Helpers.CalcNextAstroDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
 
 						if (
@@ -2284,7 +2259,7 @@ namespace Tbot {
 							researches.IonTechnology >= 5
 						) {
 							research = Buildables.PlasmaTechnology;
-						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(planets.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
+						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
 							research = Buildables.EnergyTechnology;
 						} else if (
 							(bool) settings.Brain.AutoResearch.PrioritizeAstrophysics &&
@@ -2312,8 +2287,7 @@ namespace Tbot {
 						celestial.Facilities.ResearchLab >= 10 &&
 						researches.ComputerTechnology >= 8 &&
 						researches.HyperspaceTechnology >= 8 &&
-						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork) &&
-						celestials.Any(c => c.Facilities != null)
+						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)
 					) {
 						var cumulativeLabLevel = Helpers.CalcCumulativeLabLevel(celestials, researches);
 						var researchTime = Helpers.CalcProductionTime(research, Helpers.GetNextLevel(researches, research), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
@@ -4472,6 +4446,7 @@ namespace Tbot {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+												var list = Enumerable.Range(origin.Coordinate.System - range, origin.Coordinate.System + range).ToList();
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
 													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
