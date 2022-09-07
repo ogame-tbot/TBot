@@ -14,15 +14,14 @@ namespace Tbot.Services {
 	public static class SettingsService {
 		public static dynamic GetSettings() {
 			System.Threading.Thread.Sleep(500);
-
-			string file = File.ReadAllText(settingPath);
+			string file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
 		}
-
-		public static string settingPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
 	}
+
+	
 
 	public static class JsonNetAdapter {
 		public static ExpandoObject Transform(ExpandoObject data) {
