@@ -1,13 +1,10 @@
-using Tbot;
 using Tbot.Model;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Linq;
 using System.IO;
-using Tbot.Services;
 
 namespace Tbot.Includes {
 
@@ -1253,12 +1250,13 @@ namespace Tbot.Includes {
 		public static int CalcCumulativeLabLevel(List<Celestial> celestials, Researches researches) {
 			int output = 0;
 
-			if (celestials == null || celestials.Any(c => c.Facilities == null)) {
+			if (celestials == null) {
 				return 0;
 			}
 
 			output = celestials
 				.Where(c => c.Coordinate.Type == Celestials.Planet)
+				.Where(c => c.Facilities != null)
 				.OrderByDescending(c => c.Facilities.ResearchLab)
 				.Take(researches.IntergalacticResearchNetwork + 1)
 				.Sum(c => c.Facilities.ResearchLab);
