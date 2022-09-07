@@ -4449,12 +4449,10 @@ namespace Tbot {
 												var list = Enumerable.Range(origin.Coordinate.System - range, origin.Coordinate.System + range).ToList();
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
-													//System = rand.Next(list.Count),
 													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
 													Position = 16,
 													Type = Celestials.DeepSpace
 												};
-												list.Remove(destination.System);
 												if (destination.System <= 0)
 													destination.System = 499;
 												if (destination.System >= 500)
