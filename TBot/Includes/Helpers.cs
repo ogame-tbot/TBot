@@ -1,13 +1,10 @@
-using Tbot;
 using Tbot.Model;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Linq;
 using System.IO;
-using Tbot.Services;
 
 namespace Tbot.Includes {
 

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -67,10 +66,10 @@ namespace Tbot {
 			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
-				Universe = (string) settings.Credentials.Universe,
+				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
 				Username = (string) settings.Credentials.Email,
 				Password = (string) settings.Credentials.Password,
-				Language = (string) settings.Credentials.Language,
+				Language = ((string) settings.Credentials.Language).ToLower(),
 				IsLobbyPioneers = (bool) settings.Credentials.LobbyPioneers,
 				BasicAuthUsername = (string) settings.Credentials.BasicAuth.Username,
 				BasicAuthPassword = (string) settings.Credentials.BasicAuth.Password
@@ -470,7 +469,7 @@ namespace Tbot {
 
 		public static bool EditSettings(Celestial celestial = null, string recall = "") {
 			System.Threading.Thread.Sleep(500);
-			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
+			var file = File.ReadAllText(Path.GetFullPath(SettingsService.settingPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -510,7 +509,7 @@ namespace Tbot {
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
+			File.WriteAllText(Path.GetFullPath(SettingsService.settingPath), output);
 
 			return true;
 		}
