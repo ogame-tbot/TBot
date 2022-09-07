@@ -37,7 +37,7 @@ TBot has a wide variety of useful features. They all can be configured and custo
 Here follows a short explanation of each of them, read the [Wiki](https://github.com/ogame-tbot/TBot/wiki/Configuration-guide) for a more indepth explanation.
 
 * Defender: TBot checks periodically for incoming attacks
-  * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible
+  * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible. A favourite type of mission can be set in settings
   * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in settings.json
   * SpyAttacker: TBot automatically spies attacker with set number of probes
   * Alarm: TBot plays a nasty sound if under attack
@@ -61,6 +61,47 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings.json. The settings are quite self-explainatory.
+
+## Telegram
+You can control and get info for TBot through a Telegram Bot. In order to enable it, you need to follow theese steps:
+* Create a new Telegram bot
+  * Write "/new_bot" to [@botfather](https://t.me/botfather)
+  * Follow the instructions given by BotFather, assigning a name and an username for the bot (theese are not important, set them to whatever you like)
+  * BotFather will send you a message containing the API Key you need
+  * Insert the newly obtained API Key in settings.json under TelegramMessenger.API
+* Get your ChatID
+  * Write "/start" to [@getmyid_bot](https://t.me/getmyid_bot)
+  * It will answer you a message containing your user ID and chat ID
+  * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
+* Send "/help" to the bot to get a list of the available commands. Here is a list:
+  * /ghostsleep - Wait for fleets to come back, ghost fleet for the specified amount of hours, then go to sleep and wake up at return\n, let bot chose mission type. Format: /ghostsleep 4
+  * /ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: /ghost 4
+  * /ghostto - Ghost for the specified amount of hours on the specified mission. Format: /ghostto 4 Harvest
+  * /switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: /switch 5
+  * /deploy - Deploy to celestial with full ships and resources. Format: /delpoy 3:41:9 moon/planet 10
+  * /jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: /jumpgate 2:41:9 auto/full
+  * /spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: /jumpgate 2:41:9/auto
+  * /recall - Enable/disable fleet auto recall. Format: /recall true/false
+  * /collect - Collect planets resources to JSON setting celestial
+  * /msg - Send a message to current attacker. Format: /msg hello dude
+  * /sleep - Stop bot for the specified amount of hours. Format: /sleep 1
+  * /wakeup - Wakeup bot
+  * /cancel - Cancel fleet with specified ID. Format: /cancel 65656
+  * /getcelestials - Return the list of your celestials
+  * /attacked - check if you're (still) under attack
+  * /celestial - Update program current celestial target. Format: /celestial 2:45:8 Moon/Planet
+  * /getinfo - Get current celestial resources and ships
+  * /editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: /editsettings 2:425:9 Moon
+  * /stopexpe - Stop sending expedition
+  * /startexpe - Start sending expedition
+  * /startdefender - start defender
+  * /stopdefender - stop defender
+  * /stopautomine - stop brain automine
+  * /startautomine - start brain automine
+  * /stopautoping - stop telegram autoping
+  * /startautoping - start telegram autoping [Receive message every X hours]
+  * /ping - Ping bot
+  * /help - Display this help
 
 ## Settings Hot Reload
 
@@ -130,19 +171,6 @@ then press <Ctrl + a + d>  in order to detach the console.
 Once it is detached you may close the ssh instance and TBot will run fine. You can repeat the process in order to run another instance of TBot on the server, as long as you detach it every time after you run the command.
 
 The testing was done on the smallest LightSail instance has been running up to 4 instances of TBot (different accounts each), with no problems so far, however if you run a 5th instance, it can cause the server to run out of RAM and it'll crash.
-
-
-## Telegram
-TBot supports automated Telegram messaging. In order to enable it, you need to follow theese steps:
-* Create a new Telegram bot
-  * Write "/new_bot" to [@botfather](https://t.me/botfather)
-  * Follow the instructions given by BotFather, assigning a name and an username for the bot (theese are not important, set them to whatever you like)
-  * BotFather will send you a message containing the API Key you need
-  * Insert the newly obtained API Key in settings.json under TelegramMessenger.API
-* Get your ChatID
-  * Write "/start" to [@getmyid_bot](https://t.me/getmyid_bot)
-  * It will answer you a message containing your user ID and chat ID (WARNING: you need the USER ID)
-  * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 
 ## Captcha solving
 TBot implements an automatic captcha solving mechanism.

@@ -23,6 +23,7 @@
 			"LoginOnly": true
 		},
 		"CaptchaAPIKey": "",
+		"CookiesPath": "cookies.txt",
 		"CustomTitle": "",
 		"SlotsToLeaveFree": 1
 	},
