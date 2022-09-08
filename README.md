@@ -9,8 +9,9 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v9.0.2**!
-Keep in mind that none of the new LifeForm features are automated yet, but all the old ones work just fine on v9.
+TBot supports Ogame **v9.0.3**!
+Keep in mind that none of the new LifeForm features are automated yet, but the old ones work just fine on v9.
+Currently there is a bug preventing AutoFarm to work correctly on universes with LifeForms.
 
 Feel free to publish issues or pull requests
 
@@ -67,8 +68,9 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
 * Create a new Telegram bot
   * Write "/new_bot" to [@botfather](https://t.me/botfather)
   * Follow the instructions given by BotFather, assigning a name and an username for the bot (theese are not important, set them to whatever you like)
-  * BotFather will send you a message containing the API Key you need
+  * BotFather will send you a message containing the API Key you need and a link to your new bot
   * Insert the newly obtained API Key in settings.json under TelegramMessenger.API
+  * Click on the bot link and start the conversation
 * Get your ChatID
   * Write "/start" to [@getmyid_bot](https://t.me/getmyid_bot)
   * It will answer you a message containing your user ID and chat ID
@@ -77,6 +79,7 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
   * /ghostsleep - Wait for fleets to come back, ghost fleet for the specified amount of hours, then go to sleep and wake up at return\n, let bot chose mission type. Format: /ghostsleep 4
   * /ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: /ghost 4
   * /ghostto - Ghost for the specified amount of hours on the specified mission. Format: /ghostto 4 Harvest
+  * /ghostmoons - Ghost all you moons' flteets for the 'specified amount of hours on the specified mission. Format: /ghostmoons 4 Harvest
   * /switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: /switch 5
   * /deploy - Deploy to celestial with full ships and resources. Format: /delpoy 3:41:9 moon/planet 10
   * /jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: /jumpgate 2:41:9 auto/full
@@ -191,7 +194,7 @@ Feel free to fork and make pull requests or give suggestions posting an Issue or
 
 ## Building
 
-I write and build TBot with Visual Studio 2021 Community Edition, thus .NET 5 SDK is enough for command line compilation.
+I write and build TBot with Visual Studio 2022 Community Edition, thus .NET 5 SDK is enough for command line compilation.
 
 Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the build process.
   
@@ -199,4 +202,4 @@ Releases are automated by GitHub Actions, take a look at the [workflows](https:/
 
 TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
 
-MacOS ARM will be natively supported when .NET 6 will be officially released, for the time beeing the MacOS 64bit version works fine in emulation on M1.
+MacOS ARM will be natively supported in a future version, for the time beeing the MacOS 64bit version works fine in emulation on M1.

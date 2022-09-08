@@ -131,7 +131,7 @@
 			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
 			"DepositHours": 6,
-			"MaxDaysOfInvestmentReturn": 365,
+			"MaxDaysOfInvestmentReturn": 7,
 			"DeutToLeaveOnMoons": 1000000,
 			"CheckIntervalMin": 10,
 			"CheckIntervalMax": 20
@@ -253,7 +253,7 @@
 			}
 		},
 		"WaitForAllExpeditions": false,
-		"WaitForMajorityOfExpeditions": true,
+		"WaitForMajorityOfExpeditions": false,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1
