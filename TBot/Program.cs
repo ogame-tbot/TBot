@@ -3955,18 +3955,20 @@ namespace Tbot {
 								}
 								payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 
-								var fleetId = SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
-								if (fleetId == -1) {
-									stop = true;
-									return;
+								if (payload.TotalResources > 0) {
+									var fleetId = SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+									if (fleetId == -1) {
+										stop = true;
+										return;
+									}
+									if (fleetId == -2) {
+										delay = true;
+										return;
+									}
+									TotalMet += payload.Metal;
+									TotalCri += payload.Crystal;
+									TotalDeut += payload.Deuterium;
 								}
-								if (fleetId == -2) {
-									delay = true;
-									return;
-								}
-								TotalMet += payload.Metal;
-								TotalCri += payload.Crystal;
-								TotalDeut += payload.Deuterium;
 							}
 							else {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
@@ -3977,7 +3979,11 @@ namespace Tbot {
 						}
 						celestials = newCelestials;
 						if ((bool) settings.TelegramMessenger.Active) {
-							telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+							if ((TotalMet > 0) || (TotalCri > 0) || (TotalDeut > 0)) {
+								telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+							} else {
+								telegramMessenger.SendMessage("No resources sent");
+							}
 						}
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping autorepatriate: unable to parse custom destination");

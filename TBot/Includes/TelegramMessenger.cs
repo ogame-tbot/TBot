@@ -154,6 +154,7 @@ namespace Tbot.Includes {
 								if(myMoons.Count > 0) {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
+										SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
 										Tbot.Program.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
@@ -235,7 +236,7 @@ namespace Tbot.Includes {
 									Tbot.Program.TelegramSwitch(speed);
 									return;
 								}
-								SendMessage(botClient, message.Chat, $"{test} error: Spped argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
+								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
 								return;
 
 
