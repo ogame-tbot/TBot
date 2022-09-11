@@ -204,20 +204,23 @@ namespace Tbot {
 					xaSem[Feature.TelegramAutoPing] = new Semaphore(1, 1);
 
 					features = new();
-					features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.AutoFarm, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.FleetScheduler, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
-					features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
+					InitializeFeatures(new List<Feature>() {
+						Feature.Defender,
+						Feature.Brain,
+						Feature.BrainAutobuildCargo,
+						Feature.BrainAutoRepatriate,
+						Feature.BrainAutoMine,
+						Feature.BrainOfferOfTheDay,
+						Feature.BrainAutoResearch,
+						Feature.AutoFarm,
+						Feature.Expeditions,
+						Feature.Colonize, 
+						Feature.Harvest,
+						Feature.FleetScheduler,
+						Feature.SleepMode,
+						Feature.TelegramAutoPing
+					});
+					
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing data...");
 					celestials = GetPlanets();
@@ -449,20 +452,26 @@ namespace Tbot {
 			}
 		}
 
-		public static void InitializeFeatures() {
-			//features.AddOrUpdate(Feature.SleepMode, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.Defender, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.Brain, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.BrainAutobuildCargo, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.BrainAutoRepatriate, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.BrainAutoMine, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.BrainOfferOfTheDay, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.BrainAutoResearch, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.AutoFarm, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.Expeditions, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.Harvest, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.Colonize, false, HandleStartStopFeatures);
-			features.AddOrUpdate(Feature.TelegramAutoPing, false, HandleStartStopFeatures);
+		public static void InitializeFeatures(List<Feature> featuresToInitialize = null) {
+			if(featuresToInitialize == null) {
+				featuresToInitialize = new List<Feature>() {
+					Feature.Defender,
+					Feature.Brain,
+					Feature.BrainAutobuildCargo,
+					Feature.BrainAutoRepatriate,
+					Feature.BrainAutoMine,
+					Feature.BrainOfferOfTheDay,
+					Feature.BrainAutoResearch,
+					Feature.AutoFarm,
+					Feature.Expeditions,
+					Feature.Harvest,
+					Feature.Colonize,
+					Feature.TelegramAutoPing
+				};
+			}
+			foreach(Feature feat in featuresToInitialize) {
+				features.AddOrUpdate(feat, false, HandleStartStopFeatures);
+			}
 		}
 
 		private static void ReadSettings() {
