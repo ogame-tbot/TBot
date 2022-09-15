@@ -525,7 +525,7 @@ namespace Tbot {
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText(Path.GetFullPath(SettingsService.settingPath), output);
-
+			OnSettingsChanged(null);
 			return true;
 		}
 
