@@ -4525,12 +4525,16 @@ namespace Tbot {
 										}
 
 										Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"{expsToSendFromThisOrigin.ToString()} expeditions with {fleet.ToString()} will be sent from {origin.ToString()}");
+										List<int> syslist = new();
 										for (int i = 0; i < expsToSendFromThisOrigin; i++) {
 											Coordinate destination;
 											if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+												while (expsToSendFromThisOrigin > range * 2)
+													range += 1;
+
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
 													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
@@ -4541,6 +4545,9 @@ namespace Tbot {
 													destination.System = 499;
 												if (destination.System >= 500)
 													destination.System = 1;
+												while (syslist.Contains(destination.System))
+													destination.System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1);
+												syslist.Add(destination.System);
 											} else {
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
