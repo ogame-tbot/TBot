@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Tbot.Model {
 	public enum CharacterClass {
@@ -262,19 +260,20 @@ namespace Tbot.Model {
 	}
 
 	public enum Feature {
-		Defender = 0,
-		Brain = 1,
-		BrainAutobuildCargo = 2,
-		BrainAutoRepatriate = 3,
-		BrainAutoMine = 4,
-		BrainOfferOfTheDay = 5,
-		Expeditions = 6,
-		Harvest = 7,
-		FleetScheduler = 8,
-		SleepMode = 9,
-		BrainAutoResearch = 10,
-		Colonize = 11,
-		AutoFarm = 12,
-		TelegramAutoPing = 13
+		Null = 0,
+		Defender = 1,
+		Brain = 2,
+		BrainAutobuildCargo = 3,
+		BrainAutoRepatriate = 4,
+		BrainAutoMine = 5,
+		BrainOfferOfTheDay = 6,
+		Expeditions = 7,
+		Harvest = 8,
+		FleetScheduler = 9,
+		SleepMode = 10,
+		BrainAutoResearch = 11,
+		Colonize = 12,
+		AutoFarm = 13,
+		TelegramAutoPing = 14
 	}
 }

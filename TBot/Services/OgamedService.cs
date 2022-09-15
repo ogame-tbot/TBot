@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 
 
 namespace Tbot.Services {
@@ -15,8 +14,8 @@ namespace Tbot.Services {
 		private RestClient Client { get; set; }
 
 
-		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
-			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings);
+		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "") {
+			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, cookiesPath);
 			Url = $"http://{host}:{port}";
 			Client = new(Url) {
 				Timeout = 86400000,
@@ -27,9 +26,9 @@ namespace Tbot.Services {
 			}
 		}
 
-		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
+		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "cookies.txt") {
 			try {
-				string args = $"--universe=\"{credentials.Universe}\" --username={credentials.Username} --password={credentials.Password} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port} --cookies-filename=cookies.txt";
+				string args = $"--universe=\"{credentials.Universe}\" --username={credentials.Username} --password={credentials.Password} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port} --cookies-filename={cookiesPath}";
 				if (captchaKey != "")
 					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
@@ -50,6 +49,8 @@ namespace Tbot.Services {
 					args += $" --basic-auth-username={credentials.BasicAuthUsername}";
 					args += $" --basic-auth-password={credentials.BasicAuthPassword}";
 				}
+				if (cookiesPath.Length > 0)
+					args += $" --cookies-filename=\"{cookiesPath}\"";
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 					Process.Start("ogamed.exe", args);
 				else

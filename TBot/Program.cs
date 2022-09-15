@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -34,7 +33,7 @@ namespace Tbot {
 		static volatile float _nextDOIR;
 		static volatile Staff staff;
 		static volatile bool isSleeping;
-		static Dictionary<Feature, Semaphore> xaSem = new();
+		static ConcurrentDictionary<Feature, Semaphore> xaSem = new();
 		static long duration;
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
@@ -44,17 +43,33 @@ namespace Tbot {
 			Helpers.SetTitle();
 			isSleeping = false;
 
+			CmdLineArgsService.DoParse(args);
+			if(CmdLineArgsService.printHelp) {
+				Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
+				Environment.Exit(0);
+			}
+
+			if(CmdLineArgsService.settingsPath.IsPresent) {
+				SettingsService.settingPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
+			}
+
+			if(CmdLineArgsService.logPath.IsPresent) {
+				Helpers.logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
+			}
+
+			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{SettingsService.settingPath}\"");
+			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 			ReadSettings();
 
-			PhysicalFileProvider physicalFileProvider = new(Path.GetFullPath(AppContext.BaseDirectory));
-			var changeToken = physicalFileProvider.Watch("settings.json");
+			PhysicalFileProvider physicalFileProvider = new(Path.GetDirectoryName(SettingsService.settingPath));
+			var changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath));
 			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 
 			Credentials credentials = new() {
-				Universe = (string) settings.Credentials.Universe,
+				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
 				Username = (string) settings.Credentials.Email,
 				Password = (string) settings.Credentials.Password,
-				Language = (string) settings.Credentials.Language,
+				Language = ((string) settings.Credentials.Language).ToLower(),
 				IsLobbyPioneers = (bool) settings.Credentials.LobbyPioneers,
 				BasicAuthUsername = (string) settings.Credentials.BasicAuth.Username,
 				BasicAuthPassword = (string) settings.Credentials.BasicAuth.Password
@@ -65,6 +80,8 @@ namespace Tbot {
 				string port = (string) settings.General.Port ?? "8080";
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
 				ProxySettings proxy = new();
+				string cookiesPath = "cookies.txt";
+
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing proxy");
 					string proxyType = ((string) settings.General.Proxy.Type).ToLower();
@@ -88,7 +105,13 @@ namespace Tbot {
 						Console.ReadLine();
 					}
 				}
-				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy);
+
+				if(Helpers.IsSettingSet(settings.General.CookiesPath) && (string) settings.General.CookiesPath != "") {
+					// Cookies are defined relative to the settings file
+					cookiesPath = Path.Combine(Path.GetDirectoryName(SettingsService.settingPath), (string) settings.General.CookiesPath);
+				}
+
+				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Unable to start ogamed: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
@@ -117,6 +140,8 @@ namespace Tbot {
 				string challengeID = ogamedService.GetCaptchaChallengeID();
 				if (challengeID == "") {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
+					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Please check your credentials, language and universe name.");
+					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "If your credentials are correct try refreshing your IP address.");
 				}
 				else {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Trying to solve captcha...");
@@ -411,7 +436,7 @@ namespace Tbot {
 						return false;
 					}
 				case Feature.TelegramAutoPing:
-					if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+					if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 						InitializeTelegramAutoPing();
 						return true;
 					} else {
@@ -444,9 +469,9 @@ namespace Tbot {
 			settings = SettingsService.GetSettings();
 		}
 
-		public static bool EditSettings(Celestial celestial = null, string recall = "") {
+		public static bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "") {
 			System.Threading.Thread.Sleep(500);
-			var file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
+			var file = File.ReadAllText(Path.GetFullPath(SettingsService.settingPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -458,36 +483,46 @@ namespace Tbot {
 				string type = "";
 				if (celestial.Coordinate.Type == Celestials.Moon)
 					type = "Moon" ?? "Planet";
+				else
+					type = "Planet";
 
-				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-				jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
+				if (feature == Feature.BrainAutoMine || feature == Feature.Null) {
+					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
+				}
 
-				jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-				jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
-				jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-				jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = "Planet";
+				if (feature == Feature.BrainAutoResearch || feature == Feature.Null) {
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = "Planet";
 
-				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-				jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
+					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
+				}
 
-				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-				jsonObj["Brain"]["AutoRepatriate"]["Target"]["System"] = (int) celestial.Coordinate.System;
-				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-				jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = type;
+				if (feature == Feature.BrainAutoRepatriate || feature == Feature.Null) {
+					jsonObj["Brain"]["AutoRepatriate"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["AutoRepatriate"]["Target"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["AutoRepatriate"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["AutoRepatriate"]["Target"]["Type"] = type;
+				}
 
-				jsonObj["Expeditions"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-				jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
-				jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
-				jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
+				if (feature == Feature.Expeditions || feature == Feature.Null) {
+					jsonObj["Expeditions"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
+				}
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			File.WriteAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json", output);
-			OnSettingsChanged(default);
+			File.WriteAllText(Path.GetFullPath(SettingsService.settingPath), output);
+			OnSettingsChanged(null);
 			return true;
 		}
 
@@ -837,9 +872,10 @@ namespace Tbot {
 		public static void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+			if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
-			}
+			} else
+				return;
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
 			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 			
@@ -1214,7 +1250,7 @@ namespace Tbot {
 			return false;
 		}
 
-		public static void TelegramSetCurrentCelestial(Coordinate coord, string type, bool editsettings = false) {
+		public static void TelegramSetCurrentCelestial(Coordinate coord, string celestialType, Feature updateType = Feature.Null, bool editsettings = false) {
 			celestials = UpdateCelestials();
 
 			//check if no error in submitted celestial (belongs to the current player)
@@ -1223,7 +1259,7 @@ namespace Tbot {
 				.Where(c => c.Coordinate.Galaxy == (int) coord.Galaxy)
 				.Where(c => c.Coordinate.System == (int) coord.System)
 				.Where(c => c.Coordinate.Position == (int) coord.Position)
-				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>(type))
+				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>(celestialType))
 				.SingleOrDefault() ?? new() { ID = 0 };
 
 			if (TelegramCurrentCelestial.ID == 0) {
@@ -1231,7 +1267,7 @@ namespace Tbot {
 				return;
 			}
 			if (editsettings) {
-				EditSettings(TelegramCurrentCelestial);
+				EditSettings(TelegramCurrentCelestial, updateType);
 				telegramMessenger.SendMessage($"JSON settings updated to: {TelegramCurrentCelestial.Coordinate.ToString()}\nWait few seconds for Bot to reload before sending commands.");
 			} else {
 				telegramMessenger.SendMessage($"Main celestial successfuly updated to {TelegramCurrentCelestial.Coordinate.ToString()}");
@@ -1392,9 +1428,6 @@ namespace Tbot {
 				}
 			}
 
-			if (fromTelegram) {
-				celestial = TelegramGetCurrentCelestial();
-			}
 			celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
@@ -2059,13 +2092,13 @@ namespace Tbot {
 				.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 				.SingleOrDefault() ?? new() { ID = 0 };
-
-			Random random = new Random();
-			randomCelestial = celestials[random.Next(celestials.Count())];
-			ogamedService.GetDefences(randomCelestial);
-
+			
 			if (celestial.ID != 0) {
-				ogamedService.GetDefences(celestial);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Defences);
+			}
+			randomCelestial = celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
+			if (randomCelestial.ID != 0) {
+				randomCelestial = UpdatePlanet(randomCelestial, UpdateTypes.Defences);
 			}
 
 			return;
@@ -2239,12 +2272,17 @@ namespace Tbot {
 					Buildables research;
 
 					if ((bool) settings.Brain.AutoResearch.PrioritizeAstrophysics || (bool) settings.Brain.AutoResearch.PrioritizePlasmaTechnology || (bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology || (bool) settings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork) {
-						celestials = UpdatePlanets(UpdateTypes.Buildings);
-						celestials = UpdatePlanets(UpdateTypes.Facilities);
-
-						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						List<Celestial> planets = new();
+						foreach (var p in celestials) {
+							if (p.Coordinate.Type == Celestials.Planet) {
+								var newPlanet = UpdatePlanet(p, UpdateTypes.Facilities);
+								newPlanet = UpdatePlanet(p, UpdateTypes.Buildings);
+								planets.Add(newPlanet);
+							}
+						}
+						var plasmaDOIR = Helpers.CalcNextPlasmaTechDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
-						var astroDOIR = Helpers.CalcNextAstroDOIR(celestials.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+						var astroDOIR = Helpers.CalcNextAstroDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
 						Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
 
 						if (
@@ -2259,7 +2297,7 @@ namespace Tbot {
 							researches.IonTechnology >= 5
 						) {
 							research = Buildables.PlasmaTechnology;
-						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
+						} else if ((bool) settings.Brain.AutoResearch.PrioritizeEnergyTechnology && Helpers.ShouldResearchEnergyTech(planets.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), researches, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, userInfo.Class, staff.Geologist, staff.IsFull)) {
 							research = Buildables.EnergyTechnology;
 						} else if (
 							(bool) settings.Brain.AutoResearch.PrioritizeAstrophysics &&
@@ -2273,11 +2311,11 @@ namespace Tbot {
 						) {
 							research = Buildables.Astrophysics;
 						} else {
-							research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
+							research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanites, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots, userInfo.Class, staff.Geologist, staff.Admiral);
 						}
 					}
 					else {
-						research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanitesOnNewPlanets, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots);
+						research = Helpers.GetNextResearchToBuild(celestial as Planet, researches, (bool) settings.Brain.AutoMine.PrioritizeRobotsAndNanites, slots, (int) settings.Brain.AutoResearch.MaxEnergyTechnology, (int) settings.Brain.AutoResearch.MaxLaserTechnology, (int) settings.Brain.AutoResearch.MaxIonTechnology, (int) settings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) settings.Brain.AutoResearch.MaxPlasmaTechnology, (int) settings.Brain.AutoResearch.MaxCombustionDrive, (int) settings.Brain.AutoResearch.MaxImpulseDrive, (int) settings.Brain.AutoResearch.MaxHyperspaceDrive, (int) settings.Brain.AutoResearch.MaxEspionageTechnology, (int) settings.Brain.AutoResearch.MaxComputerTechnology, (int) settings.Brain.AutoResearch.MaxAstrophysics, (int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) settings.Brain.AutoResearch.MaxWeaponsTechnology, (int) settings.Brain.AutoResearch.MaxShieldingTechnology, (int) settings.Brain.AutoResearch.MaxArmourTechnology, (bool) settings.Brain.AutoResearch.OptimizeForStart, (bool) settings.Brain.AutoResearch.EnsureExpoSlots, userInfo.Class, staff.Geologist, staff.Admiral);
 					}
 
 					if (
@@ -2287,7 +2325,8 @@ namespace Tbot {
 						celestial.Facilities.ResearchLab >= 10 &&
 						researches.ComputerTechnology >= 8 &&
 						researches.HyperspaceTechnology >= 8 &&
-						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork)
+						(int) settings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= Helpers.GetNextLevel(researches, Buildables.IntergalacticResearchNetwork) &&
+						celestials.Any(c => c.Facilities != null)
 					) {
 						var cumulativeLabLevel = Helpers.CalcCumulativeLabLevel(celestials, researches);
 						var researchTime = Helpers.CalcProductionTime(research, Helpers.GetNextLevel(researches, research), serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, userInfo.Class == CharacterClass.Discoverer, staff.Technocrat);
@@ -3210,52 +3249,64 @@ namespace Tbot {
 			bool started = false;
 			bool stop = false;
 			bool delay = false;
+			bool delayProduction = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
-				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
-				if (celestial.Fields.Free == 0) {
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: not enough fields available.");
-					return;
-				}
-
-				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
-				if (celestial.Constructions.BuildingID != 0) {
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building in production.");
-					if (
-						celestial is Planet && (
-							celestial.Constructions.BuildingID == (int) Buildables.MetalMine ||
-							celestial.Constructions.BuildingID == (int) Buildables.CrystalMine ||
-							celestial.Constructions.BuildingID == (int) Buildables.DeuteriumSynthesizer
-						)
-					) {
-						var buildingBeingBuilt = (Buildables) celestial.Constructions.BuildingID;
-						celestial = UpdatePlanet(celestial, UpdateTypes.Buildings);
-						celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
-						celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
-						celestial = UpdatePlanet(celestial, UpdateTypes.Facilities);
-
-						var levelBeingBuilt = Helpers.GetNextLevel(celestial, buildingBeingBuilt);
-						var DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-						if (DOIR > _lastDOIR) {
-							_lastDOIR = DOIR;
-						}
-					}
-					return;
-				}
-
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
-				celestial = UpdatePlanet(celestial, UpdateTypes.Facilities);
+				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+				celestial = UpdatePlanet(celestial, UpdateTypes.ResourceSettings);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Buildings);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Facilities);				
+				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
+				if (
+					celestial.Coordinate.Type == Celestials.Planet &&
+					userInfo.Class == CharacterClass.Collector &&
+					celestial.Facilities.Shipyard >= 5 &&
+					researches.CombustionDrive >= 4 &&
+					researches.ArmourTechnology >= 4 &&
+					researches.LaserTechnology >= 4 &&
+					!celestial.Productions.Any(p => p.ID == (int) Buildables.Crawler) &&
+					celestial.Ships.Crawler < Helpers.CalcMaxCrawlers(celestial as Planet, userInfo.Class, staff.Geologist) &&
+					Helpers.CalcOptimalCrawlers(celestial as Planet, userInfo.Class, staff, researches, serverData) > celestial.Ships.Crawler
+				) {
+					buildable = Buildables.Crawler;
+					level = Helpers.CalcOptimalCrawlers(celestial as Planet, userInfo.Class, staff, researches, serverData);
+				}
+				else {
+					if (celestial.Fields.Free == 0) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: not enough fields available.");
+						return;
+					}
+					if (celestial.Constructions.BuildingID != 0) {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building in production.");
+						if (
+							celestial is Planet && (
+								celestial.Constructions.BuildingID == (int) Buildables.MetalMine ||
+								celestial.Constructions.BuildingID == (int) Buildables.CrystalMine ||
+								celestial.Constructions.BuildingID == (int) Buildables.DeuteriumSynthesizer
+							)
+						) {
+							var buildingBeingBuilt = (Buildables) celestial.Constructions.BuildingID;
 
-				if (celestial is Planet) {
-					celestial = UpdatePlanet(celestial, UpdateTypes.Buildings);
-					celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+							var levelBeingBuilt = Helpers.GetNextLevel(celestial, buildingBeingBuilt);
+							var DOIR = Helpers.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
+							if (DOIR > _lastDOIR) {
+								_lastDOIR = DOIR;
+							}
+						}
+						return;
+					}
 
-					buildable = Helpers.GetNextBuildingToBuild(celestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings);
-					level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
-				} else {
-					buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
-					level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+					if (celestial is Planet) {
+
+						buildable = Helpers.GetNextBuildingToBuild(celestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings);
+						level = Helpers.GetNextLevel(celestial as Planet, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+					} else {
+						buildable = Helpers.GetNextLunarFacilityToBuild(celestial as Moon, researches, maxLunarFacilities);
+						level = Helpers.GetNextLevel(celestial as Moon, buildable, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
+					}
 				}
 
 				if (buildable != Buildables.Null && level > 0) {
@@ -3279,12 +3330,13 @@ namespace Tbot {
 					
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
-						if (buildable == Buildables.SolarSatellite) {
-							if (celestial.Productions.Count()== 0) {
+						if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
+							if (!celestial.HasProduction()) {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {level.ToString()} x {buildable.ToString()} on {celestial.ToString()}");
 								result = ogamedService.BuildShips(celestial, buildable, level);
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: There is already a production ongoing.");
+								delayProduction = true;
 							}
 						} else {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
@@ -3298,7 +3350,7 @@ namespace Tbot {
 									_lastDOIR = DOIR;
 								}
 							}
-							if (buildable == Buildables.SolarSatellite) {
+							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 								if (celestial.Productions.First().ID == (int) buildable) {
 									started = true;
@@ -3328,7 +3380,7 @@ namespace Tbot {
 									}
 								}
 							}
-						} else if (buildable != Buildables.SolarSatellite)
+						} else if (buildable != Buildables.SolarSatellite && buildable != Buildables.Crawler)
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 					} else {
 						if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
@@ -3337,7 +3389,7 @@ namespace Tbot {
 								_nextDOIR = DOIR;
 							}
 						}
-						if (buildable == Buildables.SolarSatellite) {
+						if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {level.ToString()}x {buildable.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 
 						} else {
@@ -3415,6 +3467,23 @@ namespace Tbot {
 					if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out Timer value))
 						value.Dispose();
 						timers.Remove(autoMineTimer);
+				} else if (delayProduction) {
+					celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
+					celestial = UpdatePlanet(celestial, UpdateTypes.Facilities);
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					long interval;
+					try {
+						interval = Helpers.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, serverData, celestial.Facilities) * 1000 + Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					} catch {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+					}
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (delay) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
 					time = GetDateTime();
@@ -3423,7 +3492,7 @@ namespace Tbot {
 					try {
 						interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					} catch {
-						interval = Helpers.CalcRandomInterval((int) settings.AutoMine.CheckIntervalMin, (int) settings.AutoMine.CheckIntervalMax);
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3466,8 +3535,11 @@ namespace Tbot {
 					if (buildable == Buildables.SolarSatellite) {
 						celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 						celestial = UpdatePlanet(celestial, UpdateTypes.Facilities);
-						interval = Helpers.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, serverData, celestial.Facilities) * 1000;
-					}						
+						interval = Helpers.CalcProductionTime(buildable, level, serverData, celestial.Facilities) * 1000;
+					}
+					else if (buildable == Buildables.Crawler) {
+						interval = (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					}
 					else {
 						if (celestial.HasConstruction())
 							interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
@@ -4440,13 +4512,16 @@ namespace Tbot {
 										}
 
 										Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"{expsToSendFromThisOrigin.ToString()} expeditions with {fleet.ToString()} will be sent from {origin.ToString()}");
+										List<int> syslist = new();
 										for (int i = 0; i < expsToSendFromThisOrigin; i++) {
 											Coordinate destination;
 											if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
-												var list = Enumerable.Range(origin.Coordinate.System - range, origin.Coordinate.System + range).ToList();
+												while (expsToSendFromThisOrigin > range * 2)
+													range += 1;
+	
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
 													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
@@ -4457,6 +4532,9 @@ namespace Tbot {
 													destination.System = 499;
 												if (destination.System >= 500)
 													destination.System = 1;
+												while (syslist.Contains(destination.System))
+													destination.System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1);
+												syslist.Add(destination.System);
 											} else {
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,

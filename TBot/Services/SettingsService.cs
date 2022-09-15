@@ -1,27 +1,26 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Tbot.Includes;
 
 namespace Tbot.Services {
 	public static class SettingsService {
 		public static dynamic GetSettings() {
 			System.Threading.Thread.Sleep(500);
-			string file = File.ReadAllText($"{Path.GetFullPath(AppContext.BaseDirectory)}/settings.json");
+
+			string file = File.ReadAllText(settingPath);
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
 		}
-	}
 
-	
+		public static string settingPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
+	}
 
 	public static class JsonNetAdapter {
 		public static ExpandoObject Transform(ExpandoObject data) {

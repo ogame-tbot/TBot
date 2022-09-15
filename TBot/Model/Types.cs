@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Tbot.Model {
 	public class Credentials {
@@ -83,6 +83,17 @@ namespace Tbot.Model {
 		public float FusionReactor { get; set; }
 		public float SolarSatellite { get; set; }
 		public float Crawler { get; set; }
+		public float Ratio {
+			get {
+				var ratios = new float[] { MetalMine / 100, CrystalMine / 100, DeuteriumSynthesizer / 100 };
+				return ratios.AsQueryable().Average();
+			}
+		}
+		public float CrawlerRatio {
+			get {
+				return Crawler / 100;
+			}
+		}
 	}
 
 	public class Celestial {

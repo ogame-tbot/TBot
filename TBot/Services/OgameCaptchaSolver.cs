@@ -1,11 +1,9 @@
 using RestSharp;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Security.Cryptography;
 
 namespace Tbot.Services {
@@ -46,7 +44,7 @@ namespace Tbot.Services {
 
 		private static RestClient SetupRestClient(string userAgent = "") {
 			RestClient client = new() {
-				UserAgent = userAgent != "" ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
+				UserAgent = userAgent != "" ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
 			};
 			client.AddDefaultHeader("Accept", "gzip, deflate, br");
 			client.Timeout = 30000;
