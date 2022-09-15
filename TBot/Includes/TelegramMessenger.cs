@@ -350,7 +350,7 @@ namespace Tbot.Includes {
 								int sleepingtime = Int32.Parse(arg);
 
 								DateTime timeNow = Tbot.Program.GetDateTime();
-								DateTime WakeUpTime = timeNow.AddHours(sleepingtime);
+								DateTime WakeUpTime = timeNow.AddMinutes(sleepingtime);
 	
 								Tbot.Program.SleepNow(WakeUpTime);
 								return;
@@ -668,7 +668,7 @@ namespace Tbot.Includes {
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
-									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 1</code>\n" +
+									"/sleep - Stop bot for the specified amount of minutes Format: <code>/sleep 60</code>\n" +
 									"/wakeup - Wakeup bot\n" +
 									"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
 									"/getcelestials - Return the list of your celestials\n" +
