@@ -3268,6 +3268,8 @@ namespace Tbot {
 					researches.ArmourTechnology >= 4 &&
 					researches.LaserTechnology >= 4 &&
 					!celestial.Productions.Any(p => p.ID == (int) Buildables.Crawler) &&
+					celestial.Constructions.BuildingID != (int) Buildables.Shipyard &&
+					celestial.Constructions.BuildingID != (int) Buildables.NaniteFactory &&
 					celestial.Ships.Crawler < Helpers.CalcMaxCrawlers(celestial as Planet, userInfo.Class, staff.Geologist) &&
 					Helpers.CalcOptimalCrawlers(celestial as Planet, userInfo.Class, staff, researches, serverData) > celestial.Ships.Crawler
 				) {
