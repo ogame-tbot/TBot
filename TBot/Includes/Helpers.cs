@@ -2402,8 +2402,8 @@ namespace Tbot.Includes {
 
 			var dic = new Dictionary<int, float>();
 			for (int i = (int) planet.Ships.Crawler; i <= maxCrawlers; i++) {
-				long currentProd = CalcPlanetHourlyProduction(planet, serverData.Speed, 1, researches, userClass, staff.Geologist, staff.IsFull, (int) planet.Ships.Crawler, planet.ResourceSettings.CrawlerRatio == 0 ? 1 : planet.ResourceSettings.CrawlerRatio).ConvertedDeuterium * 24;
-				long nextProd = CalcPlanetHourlyProduction(planet, serverData.Speed, 1, researches, userClass, staff.Geologist, staff.IsFull, i, planet.ResourceSettings.CrawlerRatio == 0 ? 1 : planet.ResourceSettings.CrawlerRatio).ConvertedDeuterium * 24;
+				long currentProd = CalcPlanetHourlyProduction(planet, serverData.Speed, 1, researches, userClass, staff.Geologist, staff.IsFull, (int) planet.Ships.Crawler, 1.5F).ConvertedDeuterium * 24;
+				long nextProd = CalcPlanetHourlyProduction(planet, serverData.Speed, 1, researches, userClass, staff.Geologist, staff.IsFull, i, 1.5F).ConvertedDeuterium * 24;
 				if (nextProd > currentProd) {
 					long cost = CalcPrice(Buildables.Crawler, i - (int) planet.Ships.Crawler).ConvertedDeuterium;
 					dic.Add(i, (float) cost / (float) (nextProd - currentProd));
