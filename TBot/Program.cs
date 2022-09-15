@@ -3354,17 +3354,23 @@ namespace Tbot {
 							}
 							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
-								if (celestial.Productions.First().ID == (int) buildable) {
-									started = true;
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{celestial.Productions.First().Nbr.ToString()}x {buildable.ToString()} succesfully started.");
-								} else {
-									celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
-									if (celestial.Resources.Energy >= 0) {
+								try {
+									if (celestial.Productions.First().ID == (int) buildable) {
 										started = true;
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{celestial.Productions.First().Nbr.ToString()}x {buildable.ToString()} succesfully started.");
 									} else {
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
+										celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+										if (celestial.Resources.Energy >= 0) {
+											started = true;
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
+										} else {
+											Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
+										}
 									}
+								}
+								catch {
+									started = true;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Unable to determine if the production has started.");
 								}
 							} else {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
