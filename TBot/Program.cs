@@ -110,6 +110,9 @@ namespace Tbot {
 					// Cookies are defined relative to the settings file
 					cookiesPath = Path.Combine(Path.GetDirectoryName(SettingsService.settingPath), (string) settings.General.CookiesPath);
 				}
+				else {
+					cookiesPath = "cookies.txt";
+				}
 
 				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
 			} catch (Exception e) {
@@ -3252,6 +3255,7 @@ namespace Tbot {
 			bool delayProduction = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
+				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourceSettings);
@@ -3261,6 +3265,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 				if (
+					(!Helpers.IsSettingSet(settings.Brain.AutoMine.BuildCrawlers) || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
 					userInfo.Class == CharacterClass.Collector &&
 					celestial.Facilities.Shipyard >= 5 &&
