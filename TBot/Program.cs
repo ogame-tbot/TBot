@@ -4004,7 +4004,8 @@ namespace Tbot {
 							newCelestials.Add(tempCelestial);
 						}
 						celestials = newCelestials;
-						if ((bool) settings.TelegramMessenger.Active) {
+						//send notif only if sent via telegram
+						if ((bool) settings.TelegramMessenger.Active && timers.TryGetValue("TelegramCollect", out Timer value1)) {
 							telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 						}
 					} else {
