@@ -38,6 +38,8 @@ namespace Tbot {
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
 		public static volatile Celestial TelegramCurrentCelestialToSave;
+		public static PhysicalFileProvider physicalFileProvider;
+		public static IDisposable changeToken;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -61,10 +63,9 @@ namespace Tbot {
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 			ReadSettings();
 
-			PhysicalFileProvider physicalFileProvider = new(Path.GetDirectoryName(SettingsService.settingPath));
-			var changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath));
-			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
-
+			PhysicalFileProvider physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(SettingsService.settingPath));
+			changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath)).RegisterChangeCallback(OnSettingsChanged, null);
+			
 			Credentials credentials = new() {
 				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
 				Username = (string) settings.Credentials.Email,
@@ -525,7 +526,7 @@ namespace Tbot {
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 			File.WriteAllText(Path.GetFullPath(SettingsService.settingPath), output);
-			OnSettingsChanged(null);
+
 			return true;
 		}
 
@@ -546,7 +547,7 @@ namespace Tbot {
 		}
 
 		private static void OnSettingsChanged(object state) {
-
+			
 			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
 			xaSem[Feature.Expeditions].WaitOne();
@@ -570,6 +571,10 @@ namespace Tbot {
 
 			InitializeSleepMode();
 			UpdateTitle();
+
+			changeToken.Dispose();
+			physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(SettingsService.settingPath));
+			changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath)).RegisterChangeCallback(OnSettingsChanged, null);
 		}
 
 		public static DateTime GetDateTime() {
