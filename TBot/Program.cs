@@ -1072,7 +1072,6 @@ namespace Tbot {
 
 		public static void TelegramGetFleets() {
 			fleets = UpdateFleets().Where(f => !f.ReturnFlight).ToList();
-			List<int> ids = new();
 			string message = "";
 			foreach (Fleet fleet in fleets) {
 				message += $"{fleet.ID} -> Origin: {fleet.Origin.ToString()}, Dest: {fleet.Destination.ToString()}, Type: {fleet.Mission}, ArrivalTime: {fleet.ArrivalTime.ToString()}\n";
