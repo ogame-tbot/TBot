@@ -347,14 +347,14 @@ namespace Tbot.Includes {
 
 							case ("/sleep"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Mission argument required!");
+									SendMessage(botClient, message.Chat, "Time argument required!");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								int sleepingtime = Int32.Parse(arg);
+								duration = Helpers.ParseDurationFromString(arg);
 
 								DateTime timeNow = Tbot.Program.GetDateTime();
-								DateTime WakeUpTime = timeNow.AddHours(sleepingtime);
+								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 	
 								Tbot.Program.SleepNow(WakeUpTime);
 								return;
@@ -672,7 +672,7 @@ namespace Tbot.Includes {
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
-									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 1</code>\n" +
+									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
 									"/wakeup - Wakeup bot\n" +
 									"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
 									"/getcelestials - Return the list of your celestials\n" +

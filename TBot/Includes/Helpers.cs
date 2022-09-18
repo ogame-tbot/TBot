@@ -99,9 +99,16 @@ namespace Tbot.Includes {
 				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value) : 0;
 
 				duration = (hours * 60 * 60) + (mins * 60) + secs;
+			} else {
+				throw new Exception($"Invalid string {timeString}");
 			}
 
 			return duration;
+		}
+
+		public static string TimeSpanToString(TimeSpan delta) {
+
+			return string.Format("{0} days {1:00}:{2:00}:{3:00}", delta.Days, delta.Hours, delta.Minutes, delta.Seconds);
 		}
 
 		public static int CalcRandomInterval(IntervalType type) {

@@ -36,6 +36,7 @@ namespace Tbot {
 		static ConcurrentDictionary<Feature, Semaphore> xaSem = new();
 		static long duration;
 		static DateTime NextWakeUpTime;
+		static DateTime startTime = DateTime.UtcNow;
 		public static volatile Celestial TelegramCurrentCelestial;
 		public static volatile Celestial TelegramCurrentCelestialToSave;
 
@@ -1083,13 +1084,14 @@ namespace Tbot {
 		public static void TelegramAutoPing(object state) {
 			xaSem[Feature.TelegramAutoPing].WaitOne();
 			DateTime now = GetDateTime();
+			TimeSpan upTime = DateTime.UtcNow - startTime;
 			long everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
 			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 
 			DateTime newTime = now.AddMilliseconds(nextping);
 			timers.GetValueOrDefault("TelegramAutoPing").Change(nextping, Timeout.Infinite);
-			telegramMessenger.SendMessage("TBot is running");
+			telegramMessenger.SendMessage($"TBot is running since {Helpers.TimeSpanToString(upTime)}");
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
 			xaSem[Feature.TelegramAutoPing].Release();
 
@@ -4192,8 +4194,8 @@ namespace Tbot {
 				ogamedService.CancelFleet(fleet);
 				Thread.Sleep((int) IntervalType.AFewSeconds);
 				fleets = UpdateFleets();
-				Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = 0 };
-				if (recalledFleet.ID == 0) {
+				Fleet recalledFleet = fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
+				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
 					//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
 					//	telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet: an unknon error has occurred.");
