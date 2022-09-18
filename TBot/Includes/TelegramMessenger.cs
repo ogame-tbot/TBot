@@ -100,12 +100,12 @@ namespace Tbot.Includes {
 
 							case ("/ghost"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4</code>", ParseMode.Html);
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4</code>", ParseMode.Html);
+									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
+									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Int32.Parse(arg) * 60 * 60; //second
+								duration = Helpers.ParseDurationFromString(arg);
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
@@ -115,7 +115,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostto"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4 harvest</code>", ParseMode.Html);
+									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -127,7 +127,7 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-								duration = Int32.Parse(arg) * 60 * 60; //second
+								duration = Helpers.ParseDurationFromString(arg);
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, mission, true);
@@ -136,7 +136,7 @@ namespace Tbot.Includes {
 
 							case ("/ghostmoons"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4 <mission></code>!");
+									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4h3m or 3m50s or 1h <mission></code>!");
 									return;
 								}
 
@@ -148,7 +148,7 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-								duration = Int32.Parse(arg) * 60 * 60;
+								duration = Helpers.ParseDurationFromString(arg);
 
 								List<Celestial> myMoons = Tbot.Program.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
 								if(myMoons.Count > 0) {
@@ -171,11 +171,11 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
+									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								duration = Helpers.ParseDurationFromString(arg);
 								test = message.Text.Split(' ')[2];
 								test = char.ToUpper(test[0]) + test.Substring(1);
 
@@ -192,11 +192,11 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleepall"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 5 Harvest</code>", ParseMode.Html);
+									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								duration = Helpers.ParseDurationFromString(arg);
 								test = message.Text.Split(' ')[2];
 								test = char.ToUpper(test[0]) + test.Substring(1);
 
@@ -216,7 +216,7 @@ namespace Tbot.Includes {
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Int32.Parse(arg) * 60 * 60; //seconds
+								duration = Helpers.ParseDurationFromString(arg);
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
@@ -658,12 +658,12 @@ namespace Tbot.Includes {
 									return;
 								}
 								SendMessage(botClient, message.Chat,
-									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
-									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
+									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
+									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
 									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
-									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4</code>\n" +
-									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
-									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
+									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4h3m or 3m50s</code>\n" +
+									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
+									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>\n" +
 									"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
 									"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
 									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>\n" +
