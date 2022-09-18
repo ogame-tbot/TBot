@@ -110,6 +110,9 @@ namespace Tbot {
 					// Cookies are defined relative to the settings file
 					cookiesPath = Path.Combine(Path.GetDirectoryName(SettingsService.settingPath), (string) settings.General.CookiesPath);
 				}
+				else {
+					cookiesPath = "cookies.txt";
+				}
 
 				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
 			} catch (Exception e) {
@@ -3261,6 +3264,7 @@ namespace Tbot {
 			bool delayProduction = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
+				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourceSettings);
@@ -3270,6 +3274,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 				if (
+					(!Helpers.IsSettingSet(settings.Brain.AutoMine.BuildCrawlers) || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
 					userInfo.Class == CharacterClass.Collector &&
 					celestial.Facilities.Shipyard >= 5 &&
@@ -3277,6 +3282,8 @@ namespace Tbot {
 					researches.ArmourTechnology >= 4 &&
 					researches.LaserTechnology >= 4 &&
 					!celestial.Productions.Any(p => p.ID == (int) Buildables.Crawler) &&
+					celestial.Constructions.BuildingID != (int) Buildables.Shipyard &&
+					celestial.Constructions.BuildingID != (int) Buildables.NaniteFactory &&
 					celestial.Ships.Crawler < Helpers.CalcMaxCrawlers(celestial as Planet, userInfo.Class, staff.Geologist) &&
 					Helpers.CalcOptimalCrawlers(celestial as Planet, userInfo.Class, staff, researches, serverData) > celestial.Ships.Crawler
 				) {
@@ -3361,17 +3368,23 @@ namespace Tbot {
 							}
 							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
-								if (celestial.Productions.First().ID == (int) buildable) {
-									started = true;
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{celestial.Productions.First().Nbr.ToString()}x {buildable.ToString()} succesfully started.");
-								} else {
-									celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
-									if (celestial.Resources.Energy >= 0) {
+								try {
+									if (celestial.Productions.First().ID == (int) buildable) {
 										started = true;
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{celestial.Productions.First().Nbr.ToString()}x {buildable.ToString()} succesfully started.");
 									} else {
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
+										celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+										if (celestial.Resources.Energy >= 0) {
+											started = true;
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"{level.ToString()}x {buildable.ToString()} succesfully built");
+										} else {
+											Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Unable to start {level.ToString()}x {buildable.ToString()} construction: an unknown error has occurred");
+										}
 									}
+								}
+								catch {
+									started = true;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Unable to determine if the production has started.");
 								}
 							} else {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);

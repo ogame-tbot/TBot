@@ -9,9 +9,10 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v9.0.3**!
-Keep in mind that none of the new LifeForm features are automated yet, but the old ones work just fine on v9.
-Currently there is a bug preventing AutoFarm to work correctly on universes with LifeForms.
+TBot supports Ogame **v9.0.4**!
+LifeForm is NOT offically supported at the moment.
+All non-LF features should work fine on LF servers.
+However, none of the new features is automated and there may be bugs.
 
 Feel free to publish issues or pull requests
 

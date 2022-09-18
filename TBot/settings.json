@@ -130,6 +130,7 @@
 			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
+			"BuildCrawlers": true,
 			"DepositHours": 6,
 			"MaxDaysOfInvestmentReturn": 7,
 			"DeutToLeaveOnMoons": 1000000,
