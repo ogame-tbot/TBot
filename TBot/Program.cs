@@ -4076,15 +4076,15 @@ namespace Tbot {
 
 			if (!ships.HasMovableFleet()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: there are no ships to send");
-				return 0;
+				return (int)SendFleetCode.GenericError;
 			}
 			if (origin.Coordinate.IsSame(destination)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 			if (destination.Galaxy <= 0 || destination.Galaxy > serverData.Galaxies || destination.System <= 0 || destination.System > 500 || destination.Position <= 0 || destination.Position > 17) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 
 			/*
@@ -4105,7 +4105,7 @@ namespace Tbot {
 
 			if (!Helpers.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}			
 			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, userInfo.Class);
 			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"Calculated flight time (one-way): {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
@@ -4121,13 +4121,13 @@ namespace Tbot {
 			origin = UpdatePlanet(origin, UpdateTypes.Resources);
 			if (origin.Resources.Deuterium < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 
 			// TODO: Fix ugly workaround.
 			if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 
 			if (
@@ -4140,7 +4140,7 @@ namespace Tbot {
 
 				if (Helpers.ShouldSleep(time, goToSleep, wakeUp)) {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: bed time has passed");
-					return -1;
+					return (int) SendFleetCode.AfterSleepTime;
 				}
 
 				if (goToSleep >= wakeUp) {
@@ -4160,7 +4160,7 @@ namespace Tbot {
 
 				if (returnTime >= goToSleep && returnTime <= wakeUp) {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
-					return -1;
+					return (int) SendFleetCode.AfterSleepTime;
 				}
 			}
 			slots = UpdateSlots();
@@ -4177,11 +4177,11 @@ namespace Tbot {
 				} catch (Exception e) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to send fleet: an exception has occurred: {e.Message}");
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
-					return 0;
+					return (int) SendFleetCode.GenericError;
 				}
 			} else {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
-				return -2;
+				return (int) SendFleetCode.NotEnoughSlots;
 			}
 		}
 
