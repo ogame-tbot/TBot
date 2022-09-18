@@ -196,7 +196,8 @@ namespace Tbot.Includes {
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true);
+								Tbot.Program.telegramMission = mission;
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Tbot.Program.telegramMission, true);
 								return;
 
 
@@ -214,9 +215,9 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-
+								Tbot.Program.telegramMission = mission;
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Tbot.Program.telegramMission, true, true);
 								return;
 
 

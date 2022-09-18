@@ -38,6 +38,7 @@ namespace Tbot {
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
 		public static volatile Celestial TelegramCurrentCelestialToSave;
+		public static volatile Missions telegramMission;
 		public static PhysicalFileProvider physicalFileProvider;
 		public static IDisposable changeToken;
 
@@ -1116,6 +1117,7 @@ namespace Tbot {
 			timers.TryGetValue("GhostSleepTimer", out Timer value2);
 			value2.Dispose();
 			timers.Remove("GhostSleepTimer");
+			Tbot.Program.telegramMission = Missions.None;
 			telegramMessenger.SendMessage("Ghostsleep canceled!");
 
 			return;
@@ -1816,7 +1818,7 @@ namespace Tbot {
 				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
 
 			foreach (Celestial celestial in celestialsToFleetsave)
-				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
+				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Tbot.Program.telegramMission, true);
 			
 			SleepNow(NextWakeUpTime);
 		}
@@ -1826,7 +1828,7 @@ namespace Tbot {
 				value.Dispose();
 				timers.Remove("GhostSleepTimer");
 
-			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false);
+			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false, Tbot.Program.telegramMission, true);
 
 			SleepNow(NextWakeUpTime);
 		}
