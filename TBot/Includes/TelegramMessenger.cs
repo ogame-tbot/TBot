@@ -47,7 +47,7 @@ namespace Tbot.Includes {
 			List<string> commands = new List<string>()
 			{
 				"/ghostsleep",
-				//"/ghostsleepexpe",
+				"/ghostsleepall",
 				"/ghost",
 				"/ghostto",
 				"/ghostmoons",
@@ -76,6 +76,7 @@ namespace Tbot.Includes {
 				"/recall",
 				"/jumpgate",
 				"/deploy",
+				"/getfleets",
 				"/help"
 			};
 
@@ -97,6 +98,16 @@ namespace Tbot.Includes {
 						Tbot.Program.WaitFeature();
 
 						switch (message.Text.ToLower().Split(' ')[0]) {
+
+							case ("/getfleets"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+								Tbot.Program.TelegramGetFleets();
+
+								return;
+
 
 							case ("/ghost"):
 								if (message.Text.Split(' ').Length != 2) {
@@ -185,7 +196,8 @@ namespace Tbot.Includes {
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true);
+								Tbot.Program.telegramMission = mission;
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Tbot.Program.telegramMission, true);
 								return;
 
 
@@ -203,24 +215,10 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-
+								Tbot.Program.telegramMission = mission;
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Tbot.Program.telegramMission, true, true);
 								return;
-
-							/*
-							case ("/ghostsleepexpe"):
-								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hourd) and celestial type arguments required! Format: <code>/ghostsleepexpe 5 harvest</code>", ParseMode.Html);
-									return;
-								}
-								arg = message.Text.Split(' ')[1];
-								duration = Int32.Parse(arg) * 60 * 60; //seconds
-
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Missions.None, true, true);
-								return;
-							*/
 
 
 							case ("/switch"):
@@ -353,7 +351,7 @@ namespace Tbot.Includes {
 								int sleepingtime = Int32.Parse(arg);
 
 								DateTime timeNow = Tbot.Program.GetDateTime();
-								DateTime WakeUpTime = timeNow.AddHours(sleepingtime);
+								DateTime WakeUpTime = timeNow.AddMinutes(sleepingtime);
 	
 								Tbot.Program.SleepNow(WakeUpTime);
 								return;
@@ -657,9 +655,9 @@ namespace Tbot.Includes {
 									return;
 								}
 								SendMessage(botClient, message.Chat,
+									"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
 									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
 									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleep 5 Harvest</code>\n" +
-									//"/ghostsleepexpe - Wait fleets return, ghost harvest, sleep for 5hours, but keep sending expedition: <code>/ghostsleepexpe 5 Harvest</code>\n" +
 									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4</code>\n" +
 									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
 									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4 Harvest</code>\n" +
@@ -671,7 +669,7 @@ namespace Tbot.Includes {
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
-									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 1</code>\n" +
+									"/sleep - Stop bot for the specified amount of minutes Format: <code>/sleep 60</code>\n" +
 									"/wakeup - Wakeup bot\n" +
 									"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
 									"/getcelestials - Return the list of your celestials\n" +
