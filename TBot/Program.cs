@@ -3718,6 +3718,9 @@ namespace Tbot {
 									resources.Deuterium > destination.ResourcesProduction.Deuterium.StorageCapacity
 								) {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
+									if ((bool) settings.TelegramMessenger.Active) {
+										telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{missingResources.Metal} Metal\n{missingResources.Crystal} Crystal\n{missingResources.Deuterium} Deuterium");
+									}
 									return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
@@ -3725,6 +3728,9 @@ namespace Tbot {
 								}
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
+								if ((bool) settings.TelegramMessenger.Active) {
+									telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{missingResources.Metal} Metal\n{missingResources.Crystal} Crystal\n{missingResources.Deuterium} Deuterium");
+								}
 								return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 							}
 						} else {
@@ -3906,7 +3912,7 @@ namespace Tbot {
 						);
 						List<Celestial> newCelestials = celestials.ToList();
 						List<Celestial> celestialsToExclude = Helpers.ParseCelestialsList(settings.Brain.AutoRepatriate.Exclude, celestials);
-
+						Celestial tempCelestial = null;
 						foreach (Celestial celestial in (bool) settings.Brain.AutoRepatriate.RandomOrder ? celestials.Shuffle().ToList() : celestials.OrderBy(c => Helpers.CalcDistance(c.Coordinate, destinationCoordinate, serverData)).ToList()) {
 							if (celestialsToExclude.Has(celestial)) {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: celestial in exclude list.");
@@ -3917,7 +3923,7 @@ namespace Tbot {
 								continue;
 							}
 
-							var tempCelestial = UpdatePlanet(celestial, UpdateTypes.Fast);
+							tempCelestial = UpdatePlanet(celestial, UpdateTypes.Fast);
 
 							fleets = UpdateFleets();
 							if ((bool) settings.Brain.AutoRepatriate.SkipIfIncomingTransport && Helpers.IsThereTransportTowardsCelestial(celestial, fleets) && (!timers.TryGetValue("TelegramCollect", out Timer value2))) {
@@ -3977,7 +3983,10 @@ namespace Tbot {
 								TotalMet += payload.Metal;
 								TotalCri += payload.Crystal;
 								TotalDeut += payload.Deuterium;
+								if ((bool) settings.TelegramMessenger.Active) {
+									telegramMessenger.SendMessage($"AutoRepatriate sent!:\nFrom {tempCelestial.ToString()} To {destinationCoordinate.ToString()} \n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 								}
+							}
 							else {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
 							}
@@ -3986,9 +3995,7 @@ namespace Tbot {
 							newCelestials.Add(tempCelestial);
 						}
 						celestials = newCelestials;
-						if ((bool) settings.TelegramMessenger.Active) {
-							telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
-						}
+
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping autorepatriate: unable to parse custom destination");
 					}
@@ -4561,6 +4568,9 @@ namespace Tbot {
 													delay = true;
 													return;
 												}
+												if ((bool) settings.TelegramMessenger.Active) {
+													telegramMessenger.SendMessage($"AutoExpedition sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{fleet.ToString()}");
+												}
 												Thread.Sleep((int) IntervalType.AFewSeconds);
 											} else {
 												Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Unable to send expeditions: no expedition slots available.");
@@ -4795,6 +4805,17 @@ namespace Tbot {
 							long pathfindersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Pathfinder);
 							Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
 							fleetId = SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+							if (fleetId == -1) {
+								stop = true;
+								return;
+							}
+							if (fleetId == -2) {
+								delay = true;
+								return;
+							}
+							if ((bool) settings.TelegramMessenger.Active) {
+								telegramMessenger.SendMessage($"AutoHarvest sent!:\n {pathfindersToSend.ToString()}Pathfinder \nFrom {origin.ToString()} To {destination.ToString()} \n{debris.Resources.Metal} Metal\n{debris.Resources.Crystal} Crystal\n{debris.Resources.Deuterium} Deuterium");
+							}
 						} else {
 							if ((bool) settings.AutoHarvest.DF.ByOriginOnly)
 								origin = DFOrigin;
@@ -4803,6 +4824,17 @@ namespace Tbot {
 								long recyclersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Recycler);
 								Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {recyclersToSend.ToString()} {Buildables.Recycler.ToString()}");
 								fleetId = SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
+								if (fleetId == -1) {
+									stop = true;
+									return;
+								}
+								if (fleetId == -2) {
+									delay = true;
+									return;
+								}
+								if ((bool) settings.TelegramMessenger.Active) {
+									telegramMessenger.SendMessage($"AutoHarvest sent!:\n {recyclersToSend.ToString()}Recycler \nFrom {origin.ToString()} To {destination.ToString()} \n{debris.Resources.Metal} Metal\n{debris.Resources.Crystal} Crystal\n{debris.Resources.Deuterium} Deuterium");
+								}
 							}
 						}
 						if (fleetId == -1) {
