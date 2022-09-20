@@ -267,12 +267,6 @@
 				"System": 63,
 				"Position": 8,
 				"Type": "Moon"
-			},
-			{
-				"Galaxy": 5,
-				"System": 64,
-				"Position": 8,
-				"Type": "Moon"
 			}
 		]
 	},
@@ -322,13 +316,30 @@
 		"CheckIntervalMax": 60
 	},
 	"AutoHarvest": {
-		"Active": false,
-		"HarvestOwnDF": true,
-		"HarvestDeepSpace": true,
-		"MinimumResourcesOwnDF": 300,
-		"MinimumResourcesDeepSpace": 50000,
-		"CheckIntervalMin": 30,
-		"CheckIntervalMax": 60
+		"DF": {
+			"Active": true,
+			"ByOriginOnly": false,
+			"MinimumResources": 1,
+			"Origin": {
+				"Galaxy": 1,
+				"System": 1,
+				"Position": 1,
+				"Type": "Planet"
+			}
+		},
+		"DeepSpace": {
+			"Active": true,
+			"ByOriginOnly": true,
+			"MinimumResources": 25000,
+			"Origin": {
+				"Galaxy": 1,
+				"System": 1,
+				"Position": 1,
+				"Type": "Planet"
+			}
+		},
+		"CheckIntervalMin": 15,
+		"CheckIntervalMax": 30
 	},
 	"AutoColonize": {
 		"Active": true,
