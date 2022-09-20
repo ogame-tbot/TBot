@@ -127,6 +127,9 @@
 					"Type": "Planet"
 				}
 			],
+			"TelegramMessenger": {
+				"Active": true
+			},
 			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
@@ -226,6 +229,9 @@
 					"Type": "Planet"
 				}
 			],
+			"TelegramMessenger": {
+				"Active": true
+			},
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},
@@ -264,11 +270,14 @@
 		"Origin": [
 			{
 				"Galaxy": 5,
-				"System": 63,
-				"Position": 8,
-				"Type": "Moon"
+				"System": 6,
+				"Position": 7,
+				"Type": "Planet"
 			}
-		]
+		],
+		"TelegramMessenger": {
+			"Active": true
+			}
 	},
 	"AutoFarm": {
 		"Active": true,
@@ -312,6 +321,9 @@
 		"MinLootFuelRatio": 0.5,
 		"PreferedResource": "",
 		"SlotsToLeaveFree": 1,
+		"TelegramMessenger": {
+			"Active": true
+		},
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
@@ -337,6 +349,9 @@
 				"Position": 1,
 				"Type": "Planet"
 			}
+		},
+		"TelegramMessenger": {
+			"Active": true
 		},
 		"CheckIntervalMin": 15,
 		"CheckIntervalMax": 30

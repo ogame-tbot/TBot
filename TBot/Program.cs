@@ -3426,6 +3426,9 @@ namespace Tbot {
 									delay = true;
 									return;
 								}
+								if ((bool) settings.AutoMine.TelegramMessenger.Active) {
+									telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {celestial.ToString()} For {buildable.ToString()}, L{level.ToString()} \n{xCostBuildable.Metal} Metal\n{xCostBuildable.Crystal} Crystal\n{xCostBuildable.Deuterium} Deuterium");
+								}
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 							}
@@ -3718,9 +3721,6 @@ namespace Tbot {
 									resources.Deuterium > destination.ResourcesProduction.Deuterium.StorageCapacity
 								) {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
-									if ((bool) settings.TelegramMessenger.Active) {
-										telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{missingResources.Metal} Metal\n{missingResources.Crystal} Crystal\n{missingResources.Deuterium} Deuterium");
-									}
 									return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 								} else {
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping transport: it is quicker to wait for production.");
@@ -3728,9 +3728,6 @@ namespace Tbot {
 								}
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
-								if ((bool) settings.TelegramMessenger.Active) {
-									telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{missingResources.Metal} Metal\n{missingResources.Crystal} Crystal\n{missingResources.Deuterium} Deuterium");
-								}
 								return SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, userInfo.Class);
 							}
 						} else {
@@ -3983,7 +3980,7 @@ namespace Tbot {
 								TotalMet += payload.Metal;
 								TotalCri += payload.Crystal;
 								TotalDeut += payload.Deuterium;
-								if ((bool) settings.TelegramMessenger.Active) {
+								if ((bool) settings.AutoRepatriate.TelegramMessenger.Active) {
 									telegramMessenger.SendMessage($"AutoRepatriate sent!:\nFrom {tempCelestial.ToString()} To {destinationCoordinate.ToString()} \n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 								}
 							}
@@ -4568,7 +4565,7 @@ namespace Tbot {
 													delay = true;
 													return;
 												}
-												if ((bool) settings.TelegramMessenger.Active) {
+												if ((bool) settings.Expeditions.TelegramMessenger.Active) {
 													telegramMessenger.SendMessage($"AutoExpedition sent!:\nFrom {origin.ToString()} To {destination.ToString()} \n{fleet.ToString()}");
 												}
 												Thread.Sleep((int) IntervalType.AFewSeconds);
@@ -4813,7 +4810,7 @@ namespace Tbot {
 								delay = true;
 								return;
 							}
-							if ((bool) settings.TelegramMessenger.Active) {
+							if ((bool) settings.AutoHarvest.TelegramMessenger.Active) {
 								telegramMessenger.SendMessage($"AutoHarvest sent!:\n {pathfindersToSend.ToString()}Pathfinder \nFrom {origin.ToString()} To {destination.ToString()} \n{debris.Resources.Metal} Metal\n{debris.Resources.Crystal} Crystal\n{debris.Resources.Deuterium} Deuterium");
 							}
 						} else {
@@ -4832,7 +4829,7 @@ namespace Tbot {
 									delay = true;
 									return;
 								}
-								if ((bool) settings.TelegramMessenger.Active) {
+								if ((bool) settings.AutoHarvest.TelegramMessenger.Active) {
 									telegramMessenger.SendMessage($"AutoHarvest sent!:\n {recyclersToSend.ToString()}Recycler \nFrom {origin.ToString()} To {destination.ToString()} \n{debris.Resources.Metal} Metal\n{debris.Resources.Crystal} Crystal\n{debris.Resources.Deuterium} Deuterium");
 								}
 							}
