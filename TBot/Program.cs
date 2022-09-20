@@ -3426,8 +3426,8 @@ namespace Tbot {
 									delay = true;
 									return;
 								}
-								if ((bool) settings.AutoMine.TelegramMessenger.Active) {
-									telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {celestial.ToString()} For {buildable.ToString()}, L{level.ToString()} \n{xCostBuildable.Metal} Metal\n{xCostBuildable.Crystal} Crystal\n{xCostBuildable.Deuterium} Deuterium");
+								if (fleetId>0 && (bool) settings.Brain.AutoMine.TelegramMessenger.Active) {
+									telegramMessenger.SendMessage($"AutoMine sent!:\nFrom {origin.ToString()} To {celestial.ToString()} For {buildable.ToString()}, Lv{level.ToString()} \n{xCostBuildable.Metal} Metal\n{xCostBuildable.Crystal} Crystal\n{xCostBuildable.Deuterium} Deuterium");
 								}
 							} else {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
