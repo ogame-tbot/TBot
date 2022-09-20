@@ -39,6 +39,9 @@ namespace Tbot {
 		static DateTime startTime = DateTime.UtcNow;
 		public static volatile Celestial TelegramCurrentCelestial;
 		public static volatile Celestial TelegramCurrentCelestialToSave;
+		public static volatile Missions telegramMission;
+		public static PhysicalFileProvider physicalFileProvider;
+		public static IDisposable changeToken;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -62,9 +65,8 @@ namespace Tbot {
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 			ReadSettings();
 
-			PhysicalFileProvider physicalFileProvider = new(Path.GetDirectoryName(SettingsService.settingPath));
-			var changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath));
-			changeToken.RegisterChangeCallback(OnSettingsChanged, default);
+			PhysicalFileProvider physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(SettingsService.settingPath));
+			changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath)).RegisterChangeCallback(OnSettingsChanged, null);
 
 			Credentials credentials = new() {
 				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
@@ -580,6 +582,10 @@ namespace Tbot {
 
 			InitializeSleepMode();
 			UpdateTitle();
+
+			changeToken.Dispose();
+			physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(SettingsService.settingPath));
+			changeToken = physicalFileProvider.Watch(Path.GetFileName(SettingsService.settingPath)).RegisterChangeCallback(OnSettingsChanged, null);
 		}
 
 		public static DateTime GetDateTime() {
@@ -1080,6 +1086,15 @@ namespace Tbot {
 				timers.Remove("FleetSchedulerTimer");
 		}
 
+		public static void TelegramGetFleets() {
+			fleets = UpdateFleets().Where(f => !f.ReturnFlight).ToList();
+			string message = "";
+			foreach (Fleet fleet in fleets) {
+				message += $"{fleet.ID} -> Origin: {fleet.Origin.ToString()}, Dest: {fleet.Destination.ToString()}, Type: {fleet.Mission}, ArrivalTime: {fleet.ArrivalTime.ToString()}\n\n";
+			}
+			telegramMessenger.SendMessage(message);
+
+		}
 
 		public static void TelegramAutoPing(object state) {
 			xaSem[Feature.TelegramAutoPing].WaitOne();
@@ -1113,6 +1128,7 @@ namespace Tbot {
 			timers.TryGetValue("GhostSleepTimer", out Timer value2);
 			value2.Dispose();
 			timers.Remove("GhostSleepTimer");
+			Tbot.Program.telegramMission = Missions.None;
 			telegramMessenger.SendMessage("Ghostsleep canceled!");
 
 			return;
@@ -1638,9 +1654,10 @@ namespace Tbot {
 					fleetId != (int) SendFleetCode.AfterSleepTime ||
 					fleetId != (int) SendFleetCode.NotEnoughSlots) {
 					Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
+					DateTime returntime = (DateTime)fleet.BackTime;
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
 					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
-						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
+						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration.ToString()}, returned at {returntime.ToString()} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
 				}
 			}
 				
@@ -1830,7 +1847,7 @@ namespace Tbot {
 				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
 
 			foreach (Celestial celestial in celestialsToFleetsave)
-				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false);
+				Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Tbot.Program.telegramMission, true);
 			
 			SleepNow(NextWakeUpTime);
 		}
@@ -1840,7 +1857,7 @@ namespace Tbot {
 				value.Dispose();
 				timers.Remove("GhostSleepTimer");
 
-			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false);
+			Tbot.Program.AutoFleetSave(TelegramCurrentCelestialToSave, false, duration, false, false, Tbot.Program.telegramMission, true);
 
 			SleepNow(NextWakeUpTime);
 		}
@@ -4020,7 +4037,8 @@ namespace Tbot {
 							newCelestials.Add(tempCelestial);
 						}
 						celestials = newCelestials;
-						if ((bool) settings.TelegramMessenger.Active) {
+						//send notif only if sent via telegram
+						if ((bool) settings.TelegramMessenger.Active && timers.TryGetValue("TelegramCollect", out Timer value1)) {
 							if ((TotalMet > 0) || (TotalCri > 0) || (TotalDeut > 0)) {
 								telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 							} else {
@@ -4560,12 +4578,16 @@ namespace Tbot {
 										}
 
 										Helpers.WriteLog(LogType.Info, LogSender.Expeditions, $"{expsToSendFromThisOrigin.ToString()} expeditions with {fleet.ToString()} will be sent from {origin.ToString()}");
+										List<int> syslist = new();
 										for (int i = 0; i < expsToSendFromThisOrigin; i++) {
 											Coordinate destination;
 											if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+												while (expsToSendFromThisOrigin > range * 2)
+													range += 1;
+
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
 													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
@@ -4576,6 +4598,9 @@ namespace Tbot {
 													destination.System = 499;
 												if (destination.System >= 500)
 													destination.System = 1;
+												while (syslist.Contains(destination.System))
+													destination.System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1);
+												syslist.Add(destination.System);
 											} else {
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
