@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading;
 using System.Linq;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Tbot.Includes {
 
@@ -16,19 +17,21 @@ namespace Tbot.Includes {
 		}
 
 		public static void LogToConsole(LogType type, LogSender sender, string message) {
+			ConsoleColor consoleColor = sender switch {
+				LogSender.Brain => ConsoleColor.Blue,
+				LogSender.Defender => ConsoleColor.DarkGreen,
+				LogSender.Expeditions => ConsoleColor.Cyan,
+				LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
+				LogSender.Harvest => ConsoleColor.Green,
+				LogSender.Colonize => ConsoleColor.DarkRed,
+				LogSender.AutoFarm => ConsoleColor.DarkCyan,
+				LogSender.SleepMode => ConsoleColor.DarkBlue,
+				LogSender.Tbot => ConsoleColor.DarkYellow,
+				LogSender.OGameD => ConsoleColor.DarkCyan,
+				_ => ConsoleColor.Gray
+			};
 			Console.ForegroundColor = type == LogType.Info
-				? sender switch {
-					LogSender.Brain => ConsoleColor.Blue,
-					LogSender.Defender => ConsoleColor.DarkGreen,
-					LogSender.Expeditions => ConsoleColor.Cyan,
-					LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
-					LogSender.Harvest => ConsoleColor.Green,
-					LogSender.Colonize => ConsoleColor.DarkRed,
-					LogSender.AutoFarm => ConsoleColor.DarkCyan,
-					LogSender.SleepMode => ConsoleColor.DarkBlue,
-					LogSender.Tbot => ConsoleColor.DarkYellow,
-					_ => ConsoleColor.Gray
-				}
+				? consoleColor
 				: type switch {
 					LogType.Error => ConsoleColor.Red,
 					LogType.Warning => ConsoleColor.Yellow,
@@ -81,6 +84,31 @@ namespace Tbot.Includes {
 			Thread.Sleep(1000);
 			Console.Beep();
 			return;
+		}
+
+		public static long ParseDurationFromString(string timeString) {
+			long duration = 0;
+			string regExp = "^(\\d{1,2})?[h|H]?(\\d{1,2})?[m|M]?(\\d{1,2})?[s|S]?";
+
+			Regex re = new Regex(regExp);
+			Match m = re.Match(timeString);
+
+			if (m.Groups.Count == 4) {
+				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value) : 0;
+				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value) : 0;
+				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value) : 0;
+
+				duration = (hours * 60 * 60) + (mins * 60) + secs;
+			} else {
+				throw new Exception($"Invalid string {timeString}");
+			}
+
+			return duration;
+		}
+
+		public static string TimeSpanToString(TimeSpan delta) {
+
+			return string.Format("{0} days {1:00}:{2:00}:{3:00}", delta.Days, delta.Hours, delta.Minutes, delta.Seconds);
 		}
 
 		public static int CalcRandomInterval(IntervalType type) {
