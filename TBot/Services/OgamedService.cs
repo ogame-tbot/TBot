@@ -448,6 +448,18 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Model.Buildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
+		public LFBuildings GetLFBuildings(Celestial celestial) {
+			var request = new RestRequest {
+				Resource = $"/bot/planets/{celestial.ID}/LFbuildings",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
 		public Facilities GetFacilities(Celestial celestial) {
 			var request = new RestRequest {
 				Resource = $"/bot/planets/{celestial.ID}/facilities",
@@ -692,6 +704,18 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Constructions>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
+		public Constructions GetLFConstructions(Celestial celestial) {
+			var request = new RestRequest {
+				Resource = $"/bot/planets/{celestial.ID}/LFconstructions",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Constructions>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
 		public bool CancelConstruction(Celestial celestial) {
 			try {
 				var request = new RestRequest {
@@ -815,6 +839,20 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
+		public bool BuildConstruction(Celestial celestial, LFBuildables buildable) {
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/planets/{celestial.ID}/build/building/{(int) buildable}",
+					Method = Method.POST,
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
 		public bool BuildTechnology(Celestial celestial, Buildables buildable) {
 			try {
 				var request = new RestRequest { Resource = $"/bot/planets/{celestial.ID}/build/technology/{(int) buildable}", Method = Method.POST };
@@ -869,6 +907,30 @@ namespace Tbot.Services {
 		}
 
 		public Model.Resources GetPrice(Buildables buildable, long levelOrQuantity) {
+			var request = new RestRequest {
+				Resource = $"/bot/price/{(int) buildable}/{levelOrQuantity}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.LFBuildings GetRequirements(LFBuildables buildable) { //works but returns LFbuildings as ID, lazy to do the mapping ID -> LFbuilding class to be able to use properties reflection
+			var request = new RestRequest {
+				Resource = $"bot/requirements/{(int) buildable}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.Resources GetPrice(LFBuildables buildable, long levelOrQuantity) {
 			var request = new RestRequest {
 				Resource = $"/bot/price/{(int) buildable}/{levelOrQuantity}",
 				Method = Method.GET,

@@ -108,6 +108,9 @@ namespace Tbot.Model {
 		public Ships Ships { get; set; }
 		public Defences Defences { get; set; }
 		public Buildings Buildings { get; set; }
+		public LFTypes LFtype { get; set; }
+		public LFBuildings LFBuildings { get; set; }
+		public LFBuildings Requirements { get; set; }
 		public Facilities Facilities { get; set; }
 		public List<Production> Productions { get; set; }
 		public Constructions Constructions { get; set; }
@@ -154,6 +157,16 @@ namespace Tbot.Model {
 					if (prop.Name == building.ToString()) {
 						output = (int) prop.GetValue(Facilities);
 					}
+				}
+			}
+			return output;
+		}
+
+		public int GetLevel(LFBuildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in LFBuildings.GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(LFBuildings);
 				}
 			}
 			return output;
@@ -282,17 +295,19 @@ namespace Tbot.Model {
 	}
 
 	public class Resources {
-		public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long food = 0, long energy = 0, long darkmatter = 0) {
+		public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long energy = 0, long food = 0, long population = 0, long darkmatter = 0) {
 			Metal = metal;
 			Crystal = crystal;
 			Deuterium = deuterium;
-			Food = food;
 			Energy = energy;
+			Food = food;
+			Population = population;
 			Darkmatter = darkmatter;
 		}
 		public long Metal { get; set; }
 		public long Crystal { get; set; }
 		public long Deuterium { get; set; }
+		public long Population { get; set; }
 		public long Food { get; set; }
 		public long Energy { get; set; }
 		public long Darkmatter { get; set; }
@@ -364,6 +379,13 @@ namespace Tbot.Model {
 
 			return output;
 		}
+
+		public bool IsBuildable(Resources cost) {
+			if (Metal >= cost.Metal && Crystal >= cost.Crystal && Deuterium >= cost.Deuterium && Population >= cost.Population)
+				return true;
+			else
+				return false;
+		}
 	}
 
 	public class Buildings {
@@ -402,6 +424,84 @@ namespace Tbot.Model {
 	}
 
 	public class Supplies : Buildings { }
+
+	public class LFBuildings {
+		//humans
+		public int ResidentialSector { get; set; } = 0;
+		public int BiosphereFarm { get; set; } = 0;
+		public int ResearchCentre { get; set; }
+		public int AcademyOfSciences { get; set; }
+		public int NeuroCalibrationCentre { get; set; }
+		public int HighEnergySmelting { get; set; }
+		public int FoodSilo { get; set; }
+		public int FusionPoweredProduction { get; set; }
+		public int Skyscraper { get; set; }
+		public int BiotechLab { get; set; }
+		public int Metropolis { get; set; }
+		public int PlanetaryShield { get; set; }
+
+		//Rocktal
+		public int MeditationEnclave { get; set; } = 0;
+		public int CrystalFarm { get; set; } = 0;
+		public int RuneTechnologium { get; set; }
+		public int RuneForge { get; set; }
+		public int Oriktorium { get; set; }
+		public int MagmaForge { get; set; }
+		public int DisruptionChamber { get; set; }
+		public int Megalith { get; set; }
+		public int CrystalRefinery { get; set; }
+		public int DeuteriumSynthesiser { get; set; }
+		public int MineralResearchCentre { get; set; }
+		public int MetalRecyclingPlant { get; set; }
+
+		//Mechas
+		public int AssemblyLine { get; set; } = 0;
+		public int FusionCellFactory { get; set; } = 0;
+		public int RoboticsResearchCentre { get; set; }
+		public int UpdateNetwork { get; set; }
+		public int QuantumComputerCentre { get; set; }
+		public int AutomatisedAssemblyCentre { get; set; }
+		public int HighPerformanceTransformer { get; set; }
+		public int MicrochipAssemblyLine { get; set; }
+		public int ProductionAssemblyHall { get; set; }
+		public int HighPerformanceSynthesiser { get; set; }
+		public int ChipMassProduction { get; set; }
+		public int NanoRepairBots { get; set; }
+
+		//Kaelesh
+		public int Sanctuary { get; set; } = 0;
+		public int AntimatterCondenser { get; set; } = 0;
+		public int VortexChamber { get; set; }
+		public int HallsOfRealisation { get; set; }
+		public int ForumOfTranscendence { get; set; }
+		public int AntimatterConvector { get; set; }
+		public int CloningLaboratory { get; set; }
+		public int ChrysalisAccelerator { get; set; }
+		public int BioModifier { get; set; }
+		public int PsionicModulator { get; set; }
+		public int ShipManufacturingHall { get; set; }
+		public int SupraRefractor { get; set; }
+
+		public int GetLevel(LFBuildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(this);
+				}
+			}
+			return output;
+		}
+
+		public LFBuildings SetLevel(LFBuildables buildable, int level) {
+			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
+				if (prop.Name == buildable.ToString()) {
+					prop.SetValue(this, level);
+				}
+			}
+
+			return this;
+		}
+	}
 
 	public class Facilities {
 		public int RoboticsFactory { get; set; }
@@ -727,6 +827,8 @@ namespace Tbot.Model {
 		public int BuildingCountdown { get; set; }
 		public int ResearchID { get; set; }
 		public int ResearchCountdown { get; set; }
+		public int LFBuildingID { get; set; }
+		public int LFBuildingCountdown { get; set; }
 	}
 
 	public class Techs {
@@ -858,6 +960,25 @@ namespace Tbot.Model {
 		public long CurrentProduction { get; set; }
 	}
 
+	public class Food {
+		public long Available { get; set; }
+		public long StorageCapacity { get; set; }
+		public long Overproduction { get; set; }
+		public long ConsumedIn { get; set; }
+		public long TimeTillFoodRunsOut { get; set; }
+	}
+
+	public class Population {
+		public long Available { get; set; }
+		public long T2Lifeforms { get; set; }
+		public long T3Lifeforms { get; set; }
+		public long LivingSpace { get; set; }
+		public long Satisfied { get; set; }
+		public long Hungry { get; set; }
+		public long GrowthRate { get; set; }
+		public long BunkerSpace { get; set; }
+	}
+
 	public class Energy {
 		public long Available { get; set; }
 		public long CurrentProduction { get; set; }
@@ -873,6 +994,8 @@ namespace Tbot.Model {
 	public class ResourcesProduction {
 		public Resource Metal { get; set; }
 		public Resource Crystal { get; set; }
+		public Food Food { get; set; }
+		public Population Population { get; set; }
 		public Resource Deuterium { get; set; }
 		public Energy Energy { get; set; }
 		public Darkmatter Darkmatter { get; set; }

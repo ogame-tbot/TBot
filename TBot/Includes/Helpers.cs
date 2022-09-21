@@ -1455,6 +1455,18 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public static int GetNextLevel(Celestial planet, LFBuildables buildable) {
+			int output = 0;
+			if (planet is Planet) {
+				foreach (PropertyInfo prop in planet.LFBuildings.GetType().GetProperties()) {
+					if (prop.Name == buildable.ToString()) {
+						output = (int) prop.GetValue(planet.LFBuildings) + 1;
+					}
+				}
+			}
+			return output;
+		}
+
 		public static long CalcDepositCapacity(int level) {
 			return 5000 * (long) (2.5 * Math.Pow(Math.E, (20 * level / 33)));
 		}
@@ -1756,6 +1768,294 @@ namespace Tbot.Includes {
 			};
 		}
 
+		public static LFTypes GetLFtype(Celestial celestial) {
+			if ((int) celestial.LFBuildings.GetType().GetProperty("ResidentialSector").GetValue(celestial.LFBuildings) > 0)
+				return LFTypes.Humans;
+			else if ((int) celestial.LFBuildings.GetType().GetProperty("MeditationEnclave").GetValue(celestial.LFBuildings) > 0)
+				return LFTypes.Rocktal;
+			else if ((int) celestial.LFBuildings.GetType().GetProperty("AssemblyLine").GetValue(celestial.LFBuildings) > 0)
+				return LFTypes.Mechas;
+			else if ((int) celestial.LFBuildings.GetType().GetProperty("Sanctuary").GetValue(celestial.LFBuildings) > 0)
+				return LFTypes.Kaelesh;
+			else
+				return LFTypes.None;
+		}
+
+		private static Dictionary<string, int> GetLFBuildingRequirements(LFBuildables buildable) {
+			var rez = new Dictionary<string, int>();
+			//Humans
+			if (buildable == LFBuildables.ResearchCentre) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 } };
+				return rez;
+			} else if (buildable == LFBuildables.AcademyOfSciences) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 } };
+				return rez;
+			} else if (buildable == LFBuildables.NeuroCalibrationCentre) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 }, { "Skyscraper", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.HighEnergySmelting) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.FoodSilo) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 }, { "HighEnergySmelting", 3 } };
+				return rez;
+			} else if (buildable == LFBuildables.FusionPoweredProduction) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.Skyscraper) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.BiotechLab) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 2 } };
+				return rez;
+			} else if (buildable == LFBuildables.Metropolis) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 }, { "Skyscraper", 5 }, { "NeuroCalibrationCentre", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.PlanetaryShield) {
+				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 5 }, { "Skyscraper", 5 }, { "HighEnergySmelting", 3 }, { "Metropolis", 5 }, { "FoodSilo", 4 }, { "NeuroCalibrationCentre", 5 } };
+				return rez;
+			}
+			//Rocktal
+			else if (buildable == LFBuildables.RuneTechnologium) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 } };
+				return rez;
+			} else if (buildable == LFBuildables.RuneForge) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 } };
+				return rez;
+			} else if (buildable == LFBuildables.Oriktorium) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.MagmaForge) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "ResearchCentre", 5 }, { "RuneTechnologium", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.DisruptionChamber) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 } };
+				return rez;
+			} else if (buildable == LFBuildables.Megalith) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.CrystalRefinery) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.DeuteriumSynthesiser) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "FusionPoweredProduction", 1 }, { "Megalith", 2 } };
+				return rez;
+			} else if (buildable == LFBuildables.MineralResearchCentre) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 6 }, { "Oriktorium", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.MetalRecyclingPlant) {
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 }, { "RuneForge", 1 }, { "Megalith", 5 }, { "CrystalRefinery", 6 }, { "Oriktorium", 5 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 }, { "DisruptionChamber", 4 }, { "MineralResearchCentre", 5 } };
+				return rez;
+			}
+			//Mechas
+			else if (buildable == LFBuildables.RoboticsResearchCentre) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 20 }, { "FusionCellFactory", 17 } };
+				return rez;
+			} else if (buildable == LFBuildables.UpdateNetwork) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 } };
+				return rez;
+			} else if (buildable == LFBuildables.QuantumComputerCentre) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.AutomatisedAssemblyCentre) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 17 }, { "FusionCellFactory", 20 }, { "RoboticsResearchCentre", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.HighPerformanceTransformer) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 17 }, { "FusionCellFactory", 20 }, { "RoboticsResearchCentre", 5 }, { "AutomatisedAssemblyCentre", 3 } };
+				return rez;
+			} else if (buildable == LFBuildables.MicrochipAssemblyLine) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.ProductionAssemblyHall) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.HighPerformanceSynthesiser) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwor", 1 }, { "MicrochipAssemblyLine", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.ChipMassProduction) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 1 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.NanoRepairBots) {
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "FusionCellFactory", 20 }, { "RuneForge", 1 }, { "MicrochipAssemblyLine", 5 }, { "RoboticsResearchCentre", 5 }, { "HighPerformanceTransformer", 4 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 5 }, { "ChipMassProduction", 11 } };
+				return rez;
+			}
+			//Kaelesh
+			else if (buildable == LFBuildables.VortexChamber) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 } };
+				return rez;
+			} else if (buildable == LFBuildables.HallsOfRealisation) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 } };
+				return rez;
+			} else if (buildable == LFBuildables.ForumOfTranscendence) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 }, { "BioModifier", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.AntimatterConvector) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 } };
+				return rez;
+			} else if (buildable == LFBuildables.CloningLaboratory) {
+				rez = new Dictionary<string, int> { { "{Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 } };
+				return rez;
+			} else if (buildable == LFBuildables.ChrysalisAccelerator) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.BioModifier) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.PsionicModulator) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.ShipManufacturingHall) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 }, { "BioModifier", 6 }, { "ForumOfTranscendence", 1 }, { "QuantumComputerCentre", 1 } };
+				return rez;
+			} else if (buildable == LFBuildables.SupraRefractor) {
+				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 }, { "CloningLaboratory", 4 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 5 }, { "BioModifier", 6 }, { "ShipManufacturingHall", 5 }, { "ForumOfTranscendence", 5 } };
+				return rez;
+			} else {
+				return new Dictionary<string, int>();
+			}
+
+
+		}
+
+		public static bool isUnlocked(Celestial celestial, LFBuildables buildable) {
+			var LFproperties = celestial.LFBuildings.GetType();
+			var reqlist = GetLFBuildingRequirements(buildable);
+
+			bool isEmpty;
+			using (var dictionaryEnum = reqlist.GetEnumerator()) {
+				isEmpty = !dictionaryEnum.MoveNext();
+			}
+			if (isEmpty)
+				return false;
+
+			foreach (var item in reqlist) {
+				var prop = LFproperties.GetProperty(item.Key);
+				if ((int) prop.GetValue(celestial.LFBuildings) < item.Value)
+					return false;
+			}
+			return true;
+		}
+
+		public static LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxBuildings) {
+			LFBuildables nextLFbuild = LFBuildables.Null;
+			if (planet as Planet is not Planet || planet.LFtype == LFTypes.None)
+				return nextLFbuild;
+
+			LFBuildables T2 = LFBuildables.Null;
+			LFBuildables T3 = LFBuildables.Null;
+			var T2lifeformNextlvl = 0;
+			var T3lifeformNextlvl = 0;
+			if (ShouldBuildLFBasics(planet, maxBuildings)) {
+				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
+					if (planet.LFtype == LFTypes.Humans) {
+						nextLFbuild = LFBuildables.ResidentialSector;
+					} else if (planet.LFtype == LFTypes.Rocktal) {
+						nextLFbuild = LFBuildables.MeditationEnclave;
+					} else if (planet.LFtype == LFTypes.Mechas) {
+						nextLFbuild = LFBuildables.AssemblyLine;
+					} else if (planet.LFtype == LFTypes.Kaelesh) {
+						nextLFbuild = LFBuildables.Sanctuary;
+					}
+				} else if ((planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Population.Hungry > 0) {
+					if (planet.LFtype == LFTypes.Humans) {
+						nextLFbuild = LFBuildables.BiosphereFarm;
+					} else if (planet.LFtype == LFTypes.Rocktal) {
+						nextLFbuild = LFBuildables.CrystalFarm;
+					} else if (planet.LFtype == LFTypes.Mechas) {
+						nextLFbuild = LFBuildables.FusionCellFactory;
+					} else if (planet.LFtype == LFTypes.Kaelesh) {
+						nextLFbuild = LFBuildables.AntimatterCondenser;
+					}
+				}
+			}
+
+			var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
+			Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
+
+			//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
+			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxBuildings);
+			if (LessExpensiveLFbuild != LFBuildables.Null)
+				nextLFbuild = LessExpensiveLFbuild;
+
+			//Check if can build T2 or T3 Lifeorms
+			if (planet.LFtype == LFTypes.Humans) {
+				T2 = LFBuildables.AcademyOfSciences;
+				T3 = LFBuildables.NeuroCalibrationCentre;
+			} else if (planet.LFtype == LFTypes.Rocktal) {
+				T2 = LFBuildables.RuneForge;
+				T3 = LFBuildables.Oriktorium;
+			} else if (planet.LFtype == LFTypes.Mechas) {
+				T2 = LFBuildables.UpdateNetwork;
+				T3 = LFBuildables.QuantumComputerCentre;
+			} else if (planet.LFtype == LFTypes.Kaelesh) {
+				T2 = LFBuildables.HallsOfRealisation;
+				T3 = LFBuildables.ForumOfTranscendence;
+			}
+
+			if (T2 != LFBuildables.Null && isUnlocked(planet, T2)) {
+				T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
+				Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
+				if (planet.ResourcesProduction.Population.Available >= T2cost.Population) {
+					nextLFbuild = T2;
+				}
+			}
+
+			if (T3 != LFBuildables.Null && isUnlocked(planet, T3)) {
+				T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
+				Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
+				if (planet.ResourcesProduction.Population.Available >= T3cost.Population) {
+					nextLFbuild = T3;
+				}
+			}
+
+			return nextLFbuild;
+		}
+
+		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, LFBuildings maxBuildings) {
+			if (lftype == LFTypes.Humans) {
+				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
+					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxBuildings.ResearchCentre)
+						continue;
+					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
+						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
+						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+							return (LFBuildables) nextbuildable;
+					}
+				}
+			} else if (lftype == LFTypes.Rocktal) {
+				foreach (LFBuildables nextbuildable in Enum.GetValues<RocktalBuildables>()) {
+					if ((LFBuildables) nextbuildable == LFBuildables.RuneTechnologium && planet.LFBuildings.RuneTechnologium >= maxBuildings.RuneTechnologium)
+						continue;
+					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
+						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
+						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+							return (LFBuildables) nextbuildable;
+					}
+				}
+			} else if (lftype == LFTypes.Mechas) {
+				foreach (MechasBuildables nextbuildable in Enum.GetValues<MechasBuildables>()) {
+					if ((LFBuildables) nextbuildable == LFBuildables.RoboticsResearchCentre && planet.LFBuildings.RoboticsResearchCentre >= maxBuildings.RoboticsResearchCentre)
+						continue;
+					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
+						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
+						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+							return (LFBuildables) nextbuildable;
+					}
+				}
+			} else if (lftype == LFTypes.Kaelesh) {
+				foreach (KaeleshBuildables nextbuildable in Enum.GetValues<KaeleshBuildables>()) {
+					if ((LFBuildables) nextbuildable == LFBuildables.VortexChamber && planet.LFBuildings.VortexChamber >= maxBuildings.VortexChamber)
+						continue;
+					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
+						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
+						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+							return (LFBuildables) nextbuildable;
+					}
+				}
+			}
+			return LFBuildables.Null;
+		}
+
 		public static Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1) {
 			Buildables buildableToBuild = Buildables.Null;
 			if (ShouldBuildTerraformer(planet, researches, maxFacilities.Terraformer))
@@ -1977,6 +2277,27 @@ namespace Tbot.Includes {
 				return true;
 			else
 				return false;
+		}
+
+		private static bool ShouldBuildLFBasics(Celestial celestial, LFBuildings maxBuildings) {
+			if (celestial.LFtype == LFTypes.Humans) {
+				if (celestial.LFBuildings.ResidentialSector >= maxBuildings.ResidentialSector && celestial.LFBuildings.BiosphereFarm >= maxBuildings.BiosphereFarm) {
+					return false;
+				}
+			} else if (celestial.LFtype == LFTypes.Rocktal) {
+				if (celestial.LFBuildings.MeditationEnclave >= maxBuildings.MeditationEnclave && celestial.LFBuildings.CrystalFarm >= maxBuildings.CrystalFarm) {
+					return false;
+				}
+			} else if (celestial.LFtype == LFTypes.Mechas) {
+				if (celestial.LFBuildings.AssemblyLine >= maxBuildings.AssemblyLine && celestial.LFBuildings.FusionCellFactory >= maxBuildings.FusionCellFactory) {
+					return false;
+				}
+			} else if (celestial.LFtype == LFTypes.Kaelesh) {
+				if (celestial.LFBuildings.Sanctuary >= maxBuildings.Sanctuary && celestial.LFBuildings.AntimatterCondenser >= maxBuildings.AntimatterCondenser) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		public static bool ShouldBuildSpaceDock(Planet celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, float maxDaysOfInvestmentReturn = 36500, bool force = false) {
