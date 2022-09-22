@@ -404,7 +404,7 @@ namespace Tbot {
 						return false;
 					}
 				case Feature.Harvest:
-					if ((bool) settings.AutoHarvest.Active) {
+					if ((bool) settings.AutoHarvest.DF.Active || (bool) settings.AutoHarvest.DeepSpace.Active) {
 						InitializeHarvest();
 						return true;
 					} else {
@@ -4645,6 +4645,8 @@ namespace Tbot {
 		private static void HandleHarvest(object state) {
 			bool stop = false;
 			bool delay = false;
+			Celestial DFOrigin = null;
+			Celestial DeepSpaceOrigin = null;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Harvest].WaitOne();
@@ -4655,13 +4657,37 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.AutoHarvest.Active) {
+				if ((bool) settings.AutoHarvest.DF.Active || (bool) settings.AutoHarvest.DeepSpace.Active) {
 					Helpers.WriteLog(LogType.Info, LogSender.Harvest, "Detecting harvest targets");
 
 					List<Celestial> newCelestials = celestials.ToList();
 					var dic = new Dictionary<Coordinate, Celestial>();
 
 					fleets = UpdateFleets();
+
+					if ((bool) settings.AutoHarvest.DF.Active)
+						DFOrigin = celestials.Unique().Single(planet => planet.HasCoords(new(
+								(int) settings.AutoHarvest.DF.Origin.Galaxy,
+								(int) settings.AutoHarvest.DF.Origin.System,
+								(int) settings.AutoHarvest.DF.Origin.Position,
+								Enum.Parse<Celestials>(settings.AutoHarvest.DF.Origin.Type.ToString()))));
+
+					if ((bool) settings.AutoHarvest.DeepSpace.Active)
+						DeepSpaceOrigin = celestials.Unique().Single(planet => planet.HasCoords(new(
+								(int) settings.AutoHarvest.DeepSpace.Origin.Galaxy,
+								(int) settings.AutoHarvest.DeepSpace.Origin.System,
+								(int) settings.AutoHarvest.DeepSpace.Origin.Position,
+								Enum.Parse<Celestials>(settings.AutoHarvest.DeepSpace.Origin.Type.ToString()))));
+
+					if ((bool) settings.AutoHarvest.DF.Active) {
+						DFOrigin = UpdatePlanet(DFOrigin, UpdateTypes.Fast) as Planet;
+						DFOrigin = UpdatePlanet(DFOrigin, UpdateTypes.Ships) as Planet;
+					}
+					if ((bool) settings.AutoHarvest.DeepSpace.Active && (!(bool) settings.AutoHarvest.DF.Active || !DFOrigin.Coordinate.IsSame(DeepSpaceOrigin.Coordinate))) {
+						DeepSpaceOrigin = UpdatePlanet(DFOrigin, UpdateTypes.Fast) as Planet;
+						DeepSpaceOrigin = UpdatePlanet(DFOrigin, UpdateTypes.Ships) as Planet;
+					}
+
 
 					foreach (Planet planet in celestials.Where(c => c is Planet)) {
 						Planet tempCelestial = UpdatePlanet(planet, UpdateTypes.Fast) as Planet;
@@ -4676,49 +4702,62 @@ namespace Tbot {
 							moon = UpdatePlanet(moon, UpdateTypes.Ships) as Moon;
 						}
 
-						if ((bool) settings.AutoHarvest.HarvestOwnDF) {
+
+						if ((bool) settings.AutoHarvest.DF.Active) {
 							Coordinate dest = new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris);
 							if (dic.Keys.Any(d => d.IsSame(dest)))
 								continue;
 							if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 								continue;
 							tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Debris) as Planet;
-							if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesOwnDF) {
+							Celestial originCelesital;
+							if ((bool) settings.AutoHarvest.DeepSpace.ByOriginOnly)
+								originCelesital = DFOrigin;
+							else
+								originCelesital = tempCelestial;
+
+							if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources>0 && tempCelestial.Debris.Resources.TotalResources >= (long) settings.AutoHarvest.DF.MinimumResources) {
 								if (moon.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
 									dic.Add(dest, moon);
 								else if (moon.Ships.Recycler > 0)
 									dic.Add(dest, moon);
-								else if (tempCelestial.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
+								else if (originCelesital.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
 									dic.Add(dest, tempCelestial);
-								else if (tempCelestial.Ships.Recycler > 0)
+								else if (originCelesital.Ships.Recycler > 0)
 									dic.Add(dest, tempCelestial);
 								else
 									Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Skipping harvest in {dest.ToString()}: not enough recyclers.");
 							}
 						}
 
-						if ((bool) settings.AutoHarvest.HarvestDeepSpace) {
+						if ((bool) settings.AutoHarvest.DeepSpace.Active) {
 							List<Coordinate> destinations = new List<Coordinate>();
-							if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
-								int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
 
-								for (int i = -range; i <= range + 1; i++) {
-									Coordinate destination = new Coordinate {
-										Galaxy = tempCelestial.Coordinate.Galaxy,
-										System = tempCelestial.Coordinate.System + i,
-										Position = 16,
-										Type = Celestials.DeepSpace
-									};
-									if (destination.System <= 0)
-										destination.System = 499;
-									if (destination.System >= 500)
-										destination.System = 1;
+							if (!(bool) settings.AutoHarvest.DeepSpace.ByOriginOnly ||
+								((bool) settings.AutoHarvest.DeepSpace.ByOriginOnly && planet.Coordinate.IsSame(DeepSpaceOrigin.Coordinate)))
+							{
+								if ((bool) settings.Expeditions.SplitExpeditionsBetweenSystems.Active) {
+									int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
 
-									destinations.Add(destination);
+									for (int i = -range; i <= range + 1; i++) {
+										Coordinate destination = new Coordinate {
+											Galaxy = tempCelestial.Coordinate.Galaxy,
+											System = tempCelestial.Coordinate.System + i,
+											Position = 16,
+											Type = Celestials.DeepSpace
+										};
+										if (destination.System <= 0)
+											destination.System = 499;
+										if (destination.System >= 500)
+											destination.System = 1;
+
+										destinations.Add(destination);
+									}
+								} else {
+									destinations.Add(new(tempCelestial.Coordinate.Galaxy, tempCelestial.Coordinate.System, 16, Celestials.DeepSpace));
 								}
-							} else {
-								destinations.Add(new(tempCelestial.Coordinate.Galaxy, tempCelestial.Coordinate.System, 16, Celestials.DeepSpace));
 							}
+
 
 							foreach (Coordinate dest in destinations) {
 								if (dic.Keys.Any(d => d.IsSame(dest)))
@@ -4726,7 +4765,7 @@ namespace Tbot {
 								if (fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 									continue;
 								ExpeditionDebris expoDebris = ogamedService.GetGalaxyInfo(dest).ExpeditionDebris;
-								if (expoDebris != null && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.MinimumResourcesDeepSpace) {
+								if (expoDebris != null && expoDebris.Resources.TotalResources > 0 && expoDebris.Resources.TotalResources >= (long) settings.AutoHarvest.DeepSpace.MinimumResources) {
 									if (moon.Ships.Pathfinder >= expoDebris.PathfindersNeeded)
 										dic.Add(dest, moon);
 									else if (moon.Ships.Pathfinder > 0)
@@ -4753,11 +4792,15 @@ namespace Tbot {
 						var fleetId = 0;
 						Celestial origin = dic[destination];
 						if (destination.Position == 16) {
+							if ((bool) settings.AutoHarvest.DeepSpace.ByOriginOnly)
+								origin = DeepSpaceOrigin;
 							ExpeditionDebris debris = ogamedService.GetGalaxyInfo(destination).ExpeditionDebris;
 							long pathfindersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Pathfinder);
 							Helpers.WriteLog(LogType.Info, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
 							fleetId = SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 						} else {
+							if ((bool) settings.AutoHarvest.DF.ByOriginOnly)
+								origin = DFOrigin;
 							if (celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet)))) {
 								Debris debris = (celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
 								long recyclersToSend = Math.Min(Helpers.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, researches.HyperspaceTechnology, userInfo.Class), origin.Ships.Recycler);
