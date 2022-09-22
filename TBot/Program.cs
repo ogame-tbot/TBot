@@ -38,7 +38,7 @@ namespace Tbot {
 		static DateTime NextWakeUpTime;
 		public static volatile Celestial TelegramCurrentCelestial;
 		public static volatile Celestial TelegramCurrentCelestialToSave;
-
+		static int exploCursorSystem = 0;
 		static void Main(string[] args) {
 			Helpers.SetTitle();
 			isSleeping = false;
@@ -4531,9 +4531,13 @@ namespace Tbot {
 												var rand = new Random();
 
 												int range = (int) settings.Expeditions.SplitExpeditionsBetweenSystems.Range;
+
+												if (exploCursorSystem > (range*2+1))
+													exploCursorSystem = 0;
+
 												destination = new Coordinate {
 													Galaxy = origin.Coordinate.Galaxy,
-													System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1),
+													System = (origin.Coordinate.System - range + exploCursorSystem),
 													Position = 16,
 													Type = Celestials.DeepSpace
 												};
@@ -4555,7 +4559,7 @@ namespace Tbot {
 												payload.Deuterium = (long) settings.Expeditions.FuelToCarry;
 											}
 											if (slots.ExpFree > 0) {
-												var fleetId = SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
+												var fleetId = 1;//SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
 												if (fleetId == -1) {
 													stop = true;
 													return;
@@ -4564,6 +4568,7 @@ namespace Tbot {
 													delay = true;
 													return;
 												}
+												exploCursorSystem++;
 												Thread.Sleep((int) IntervalType.AFewSeconds);
 											} else {
 												Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Unable to send expeditions: no expedition slots available.");

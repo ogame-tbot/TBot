@@ -237,17 +237,17 @@
 	},
 	"Expeditions": {
 		"Active": true,
-		"PrimaryShip": "LargeCargo",
-		"MinPrimaryToSend": 1000,
-		"PrimaryToKeep": 10000,
-		"SecondaryShip": "Null",
-		"MinSecondaryToSend": 0,
-		"SecondaryToPrimaryRatio": 2,
+		"PrimaryShip": "SmallCargo",
+		"MinPrimaryToSend": 1750,
+		"PrimaryToKeep": 0,
+		"SecondaryShip": "LightFighter",
+		"MinSecondaryToSend": 1000,
+		"SecondaryToPrimaryRatio": 0.571428571,
 		"ManualShips": {
 			"Active": false,
 			"Ships": {
-				"LargeCargo": 1300,
-				"LightFighter": 26000,
+				"LargeCargo": 600,
+				"LightFighter": 1200,
 				"Reaper": 1,
 				"Pathfinder": 1,
 				"EspionageProbe": 1
