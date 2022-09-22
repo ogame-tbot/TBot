@@ -162,8 +162,6 @@ namespace Tbot.Model {
 	//Used only with Helpers.GetLessExpensiveLFBuilding()
 	public enum HumansBuildables {
 		ResearchCentre = 11103,
-		AcademyOfSciences = 11104,
-		NeuroCalibrationCentre = 11105,
 		HighEnergySmelting = 11106,
 		FoodSilo = 11107,
 		FusionPoweredProduction = 11108,
@@ -175,8 +173,6 @@ namespace Tbot.Model {
 
 	public enum RocktalBuildables {
 		RuneTechnologium = 12103,
-		RuneForge = 12104,
-		Oriktorium = 12105,
 		MagmaForge = 12106,
 		DisruptionChamber = 12107,
 		Megalith = 12108,
@@ -188,8 +184,6 @@ namespace Tbot.Model {
 
 	public enum MechasBuildables {
 		RoboticsResearchCentre = 13103,
-		UpdateNetwork = 12304,
-		QuantumComputerCentre = 13105,
 		AutomatisedAssemblyCentre = 13106,
 		HighPerformanceTransformer = 13107,
 		MicrochipAssemblyLine = 13108,
@@ -201,8 +195,6 @@ namespace Tbot.Model {
 
 	public enum KaeleshBuildables {
 		VortexChamber = 14103,
-		HallsOfRealisation = 14104,
-		ForumOfTranscendence = 14105,
 		AntimatterConvector = 14106,
 		CloningLaboratory = 14107,
 		ChrysalisAccelerator = 14108,
@@ -332,6 +324,7 @@ namespace Tbot.Model {
 		Defences,
 		Productions,
 		Constructions,
+		LFConstructions,
 		ResourceSettings,
 		ResourcesProduction,
 		Debris

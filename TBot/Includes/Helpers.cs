@@ -496,7 +496,7 @@ namespace Tbot.Includes {
 				return 1;
 			} else {
 				return (int) fuelConsumption;
-			}				
+			}
 		}
 
 		public static long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass) {
@@ -515,7 +515,7 @@ namespace Tbot.Includes {
 			double v = (double) slowestShipSpeed;
 			double a = (double) fleetSpeed;
 			double d = (double) distance;
-			long output =  (long) Math.Round((((double) 35000 / s ) * Math.Sqrt(d * (double) 10 / v) + (double) 10) / a);
+			long output = (long) Math.Round((((double) 35000 / s) * Math.Sqrt(d * (double) 10 / v) + (double) 10) / a);
 			return output;
 		}
 
@@ -538,7 +538,7 @@ namespace Tbot.Includes {
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
 					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
 					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, playerClass);
-					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 *  Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
+					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 * Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
 					tempFuel += thisFuel;
 				}
 			}
@@ -817,7 +817,7 @@ namespace Tbot.Includes {
 			if (playerClass == CharacterClass.Collector) {
 				prod += (long) Math.Round(prod * 0.1);
 			}
-			
+
 			return prod;
 		}
 
@@ -1317,7 +1317,7 @@ namespace Tbot.Includes {
 				case Buildables.LunarBase:
 				case Buildables.SensorPhalanx:
 				case Buildables.JumpGate:
-					output = (double) structuralIntegrity / ((double)2500 * ((double) 1 + (double) facilities.RoboticsFactory) * (double) speed * (double) Math.Pow(2, facilities.NaniteFactory));
+					output = (double) structuralIntegrity / ((double) 2500 * ((double) 1 + (double) facilities.RoboticsFactory) * (double) speed * (double) Math.Pow(2, facilities.NaniteFactory));
 					break;
 
 				case Buildables.RocketLauncher:
@@ -1382,7 +1382,7 @@ namespace Tbot.Includes {
 				default:
 					break;
 			}
-			
+
 			return (long) Math.Round(output * 3600, 0, MidpointRounding.ToPositiveInfinity);
 		}
 
@@ -1870,10 +1870,10 @@ namespace Tbot.Includes {
 				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
 				return rez;
 			} else if (buildable == LFBuildables.HighPerformanceSynthesiser) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwor", 1 }, { "MicrochipAssemblyLine", 1 } };
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
 				return rez;
 			} else if (buildable == LFBuildables.ChipMassProduction) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 1 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 1 } };
+				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 1 } };
 				return rez;
 			} else if (buildable == LFBuildables.NanoRepairBots) {
 				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "FusionCellFactory", 20 }, { "RuneForge", 1 }, { "MicrochipAssemblyLine", 5 }, { "RoboticsResearchCentre", 5 }, { "HighPerformanceTransformer", 4 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 5 }, { "ChipMassProduction", 11 } };
@@ -1893,7 +1893,7 @@ namespace Tbot.Includes {
 				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 } };
 				return rez;
 			} else if (buildable == LFBuildables.CloningLaboratory) {
-				rez = new Dictionary<string, int> { { "{Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 } };
+				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 } };
 				return rez;
 			} else if (buildable == LFBuildables.ChrysalisAccelerator) {
 				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 } };
@@ -1926,7 +1926,7 @@ namespace Tbot.Includes {
 				isEmpty = !dictionaryEnum.MoveNext();
 			}
 			if (isEmpty)
-				return false;
+				return true; //nextBuilding do not need requirement (base building)
 
 			foreach (var item in reqlist) {
 				var prop = LFproperties.GetProperty(item.Key);
@@ -1936,16 +1936,16 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public static LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxBuildings) {
+		public static LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20) {
 			LFBuildables nextLFbuild = LFBuildables.Null;
-			if (planet as Planet is not Planet || planet.LFtype == LFTypes.None)
+			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
 
 			LFBuildables T2 = LFBuildables.Null;
 			LFBuildables T3 = LFBuildables.Null;
 			var T2lifeformNextlvl = 0;
 			var T3lifeformNextlvl = 0;
-			if (ShouldBuildLFBasics(planet, maxBuildings)) {
+			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
 				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.ResidentialSector;
@@ -1973,7 +1973,7 @@ namespace Tbot.Includes {
 			Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
 
 			//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxBuildings);
+			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
 			if (LessExpensiveLFbuild != LFBuildables.Null)
 				nextLFbuild = LessExpensiveLFbuild;
 
@@ -1995,7 +1995,7 @@ namespace Tbot.Includes {
 			if (T2 != LFBuildables.Null && isUnlocked(planet, T2)) {
 				T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
 				Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
-				if (planet.ResourcesProduction.Population.Available >= T2cost.Population) {
+				if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
 					nextLFbuild = T2;
 				}
 			}
@@ -2003,7 +2003,7 @@ namespace Tbot.Includes {
 			if (T3 != LFBuildables.Null && isUnlocked(planet, T3)) {
 				T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
 				Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
-				if (planet.ResourcesProduction.Population.Available >= T3cost.Population) {
+				if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
 					nextLFbuild = T3;
 				}
 			}
@@ -2011,10 +2011,10 @@ namespace Tbot.Includes {
 			return nextLFbuild;
 		}
 
-		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, LFBuildings maxBuildings) {
+		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 20) {
 			if (lftype == LFTypes.Humans) {
 				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxBuildings.ResearchCentre)
+					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
@@ -2023,8 +2023,8 @@ namespace Tbot.Includes {
 					}
 				}
 			} else if (lftype == LFTypes.Rocktal) {
-				foreach (LFBuildables nextbuildable in Enum.GetValues<RocktalBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.RuneTechnologium && planet.LFBuildings.RuneTechnologium >= maxBuildings.RuneTechnologium)
+				foreach (RocktalBuildables nextbuildable in Enum.GetValues<RocktalBuildables>()) {
+					if ((LFBuildables) nextbuildable == LFBuildables.RuneTechnologium && planet.LFBuildings.RuneTechnologium >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
@@ -2034,7 +2034,7 @@ namespace Tbot.Includes {
 				}
 			} else if (lftype == LFTypes.Mechas) {
 				foreach (MechasBuildables nextbuildable in Enum.GetValues<MechasBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.RoboticsResearchCentre && planet.LFBuildings.RoboticsResearchCentre >= maxBuildings.RoboticsResearchCentre)
+					if ((LFBuildables) nextbuildable == LFBuildables.RoboticsResearchCentre && planet.LFBuildings.RoboticsResearchCentre >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
@@ -2044,7 +2044,7 @@ namespace Tbot.Includes {
 				}
 			} else if (lftype == LFTypes.Kaelesh) {
 				foreach (KaeleshBuildables nextbuildable in Enum.GetValues<KaeleshBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.VortexChamber && planet.LFBuildings.VortexChamber >= maxBuildings.VortexChamber)
+					if ((LFBuildables) nextbuildable == LFBuildables.VortexChamber && planet.LFBuildings.VortexChamber >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
@@ -2279,21 +2279,21 @@ namespace Tbot.Includes {
 				return false;
 		}
 
-		private static bool ShouldBuildLFBasics(Celestial celestial, LFBuildings maxBuildings) {
+		private static bool ShouldBuildLFBasics(Celestial celestial, int maxPopuFactory = 100, int maxFoodFactory = 100) {
 			if (celestial.LFtype == LFTypes.Humans) {
-				if (celestial.LFBuildings.ResidentialSector >= maxBuildings.ResidentialSector && celestial.LFBuildings.BiosphereFarm >= maxBuildings.BiosphereFarm) {
+				if ((int) celestial.LFBuildings.ResidentialSector >= maxPopuFactory && (int) celestial.LFBuildings.BiosphereFarm >= maxFoodFactory) {
 					return false;
 				}
 			} else if (celestial.LFtype == LFTypes.Rocktal) {
-				if (celestial.LFBuildings.MeditationEnclave >= maxBuildings.MeditationEnclave && celestial.LFBuildings.CrystalFarm >= maxBuildings.CrystalFarm) {
+				if ((int) celestial.LFBuildings.MeditationEnclave >= maxPopuFactory && (int) celestial.LFBuildings.CrystalFarm >= (int) maxFoodFactory) {
 					return false;
 				}
 			} else if (celestial.LFtype == LFTypes.Mechas) {
-				if (celestial.LFBuildings.AssemblyLine >= maxBuildings.AssemblyLine && celestial.LFBuildings.FusionCellFactory >= maxBuildings.FusionCellFactory) {
+				if ((int) celestial.LFBuildings.AssemblyLine >= maxPopuFactory && (int) celestial.LFBuildings.FusionCellFactory >= (int) maxFoodFactory) {
 					return false;
 				}
 			} else if (celestial.LFtype == LFTypes.Kaelesh) {
-				if (celestial.LFBuildings.Sanctuary >= maxBuildings.Sanctuary && celestial.LFBuildings.AntimatterCondenser >= maxBuildings.AntimatterCondenser) {
+				if ((int) celestial.LFBuildings.Sanctuary >= maxPopuFactory && (int) celestial.LFBuildings.AntimatterCondenser >= (int) maxFoodFactory) {
 					return false;
 				}
 			}
@@ -2728,14 +2728,14 @@ namespace Tbot.Includes {
 				if (nextProd > currentProd) {
 					long cost = CalcPrice(Buildables.Crawler, i - (int) planet.Ships.Crawler).ConvertedDeuterium;
 					dic.Add(i, (float) cost / (float) (nextProd - currentProd));
-				}				
+				}
 			}
 			var nextDOIR = CalcNextDaysOfInvestmentReturn(planet, researches, serverData.Speed, 1, userClass, staff.Geologist, staff.IsFull);
 			var dic2 = dic.Where(e => e.Value <= nextDOIR);
 			if (dic2.Count() == 0) {
 				return 0;
 			}
-			
+
 			return dic2.OrderBy(e => e.Value).FirstOrDefault().Key - (int) planet.Ships.Crawler;
 		}
 	}

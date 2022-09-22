@@ -168,7 +168,7 @@ namespace Tbot.Services {
 				request.AddParameter("challenge_id", challengeID, ParameterType.GetOrPost);
 				request.AddParameter("answer", answer, ParameterType.GetOrPost);
 				Client.Execute(request);
-			} catch {}
+			} catch { }
 		}
 
 		public string GetOgamedIP() {
@@ -196,8 +196,7 @@ namespace Tbot.Services {
 			try {
 				var result = JsonConvert.DeserializeObject<dynamic>(Client.Execute(request).Content);
 				return result.ip;
-			}
-			catch {
+			} catch {
 				return "";
 			}
 		}
@@ -825,10 +824,10 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		public bool BuildConstruction(Celestial celestial, Buildables buildable) {
+		public bool BuildCancelable(Celestial celestial, LFBuildables buildable) {
 			try {
 				var request = new RestRequest {
-					Resource = $"/bot/planets/{celestial.ID}/build/building/{(int) buildable}",
+					Resource = $"/bot/planets/{celestial.ID}/build/cancelable/{(int) buildable}",
 					Method = Method.POST,
 				};
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
@@ -839,7 +838,7 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		public bool BuildConstruction(Celestial celestial, LFBuildables buildable) {
+		public bool BuildConstruction(Celestial celestial, Buildables buildable) {
 			try {
 				var request = new RestRequest {
 					Resource = $"/bot/planets/{celestial.ID}/build/building/{(int) buildable}",

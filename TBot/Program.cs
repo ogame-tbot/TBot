@@ -789,6 +789,9 @@ namespace Tbot {
 					case UpdateTypes.Constructions:
 						planet.Constructions = ogamedService.GetConstructions(planet);
 						break;
+					case UpdateTypes.LFConstructions:
+						planet.Constructions = ogamedService.GetLFConstructions(planet);
+						break;
 					case UpdateTypes.ResourceSettings:
 						if (planet is Planet) {
 							planet.ResourceSettings = ogamedService.GetResourceSettings(planet as Planet);
@@ -981,14 +984,14 @@ namespace Tbot {
 		}
 
 		public static void InitializeBrainLifeformAutoMine() {
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing automine...");
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform automine...");
 			StopBrainLifeformAutoMine(false);
 			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public static void StopBrainLifeformAutoMine(bool echo = true) {
 			if (echo)
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping automine...");
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform automine...");
 			if (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("LifeformAutoMineTimer");
@@ -3603,44 +3606,23 @@ namespace Tbot {
 					if (state == null) {
 						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateTypes.Buildings);
-							if ((int) settings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine){
+							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+
+							if ((int) settings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine) {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()} did not reached required CrystalMine level. SKipping..");
 								continue;
 							}
-							if (celestial.LFtype == LFTypes.Humans) {
-								maxLFBuildings = new() {
-									ResidentialSector = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding,
-									BiosphereFarm = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding,
-									ResearchCentre = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding
-								};
-							} else if (celestial.LFtype == LFTypes.Rocktal) {
-								maxLFBuildings = new() {
-									MeditationEnclave = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding,
-									CrystalFarm = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding,
-									RuneTechnologium = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding
-								};
-							} else if (celestial.LFtype == LFTypes.Mechas) {
-								maxLFBuildings = new() {
-									AssemblyLine = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding,
-									FusionCellFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding,
-									RoboticsResearchCentre = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding
-								};
-							} else if (celestial.LFtype == LFTypes.Kaelesh) {
-								maxLFBuildings = new() {
-									Sanctuary = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding,
-									AntimatterCondenser = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding,
-									VortexChamber = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding
-								};
-							}
+							int maxTechFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+							int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+							int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
-							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
-							var nextLFBuilding = Helpers.GetNextLFBuildingToBuild(cel, maxLFBuildings);
+							var nextLFBuilding = Helpers.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
 							if (nextLFBuilding != LFBuildables.Null) {
-								var lv = Helpers.GetNextLevel(cel, nextLFBuilding);
+								var lv = Helpers.GetNextLevel(celestial, nextLFBuilding);
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextLFBuilding.ToString()} lv {lv.ToString()}.");
 
-								celestialsToMine.Add(cel);
+								celestialsToMine.Add(celestial);
 							} else {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: No Next Lifeform building to build found.");
 							}
@@ -3650,7 +3632,7 @@ namespace Tbot {
 					}
 
 					foreach (Celestial celestial in celestialsToMine) {
-						LifeformAutoMineCelestial(celestial, maxLFBuildings, autoMinerSettings);
+						LifeformAutoMineCelestial(celestial);
 					}
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: feature disabled");
@@ -3666,7 +3648,7 @@ namespace Tbot {
 			}
 		}
 
-		private static void LifeformAutoMineCelestial(Celestial celestial, LFBuildings maxBuildings, AutoMinerSettings autoMinerSettings) {
+		private static void LifeformAutoMineCelestial(Celestial celestial) {
 			int fleetId = 0;
 			LFBuildables buildable = LFBuildables.Null;
 			int level = 0;
@@ -3680,8 +3662,9 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running Lifeform AutoMine on {celestial.ToString()}");
 				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+				celestial = UpdatePlanet(celestial, UpdateTypes.LFConstructions);
 
 				if (celestial.Constructions.LFBuildingID != 0) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform building in production.");
@@ -3691,10 +3674,10 @@ namespace Tbot {
 				}
 
 				if (celestial is Planet) {
-					buildable = Helpers.GetNextLFBuildingToBuild(celestial as Planet, maxBuildings);
-					level = Helpers.GetNextLevel(celestial as Planet, buildable);
+					buildable = Helpers.GetNextLFBuildingToBuild(celestial);
 
-					if (buildable != LFBuildables.Null && level > 0) {
+					if (buildable != LFBuildables.Null) {
+						level = Helpers.GetNextLevel(celestial, buildable);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
 
 						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
@@ -3702,11 +3685,11 @@ namespace Tbot {
 						if (celestial.Resources.IsBuildable(xCostBuildable)) {
 							bool result = false;
 							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
-							result = ogamedService.BuildConstruction(celestial, buildable);
+							result = ogamedService.BuildCancelable(celestial, buildable);
 
 							if (result) {
-								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
-								if (celestial.Constructions.BuildingID == (int) buildable) {
+								celestial = UpdatePlanet(celestial, UpdateTypes.LFConstructions);
+								if (celestial.Constructions.LFBuildingID == (int) buildable) {
 									started = true;
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
 								} else {
@@ -3723,7 +3706,7 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 							}
 						} else {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources} - Available: {celestial.Resources.LFBuildingCostResources}");
 
 							if ((bool) settings.Brain.LifeformAutoMine.Transports.Active) {
 								fleets = UpdateFleets();
@@ -3802,7 +3785,7 @@ namespace Tbot {
 
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
 					interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 
@@ -3812,7 +3795,7 @@ namespace Tbot {
 
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
 		}

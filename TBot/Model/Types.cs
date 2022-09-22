@@ -279,9 +279,11 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
-		public int SpeedResearch { get {
-			return Speed * ResearchDurationDivisor;
-		} }
+		public int SpeedResearch {
+			get {
+				return Speed * ResearchDurationDivisor;
+			}
+		}
 	}
 
 	public class UserInfo {
@@ -333,10 +335,15 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
-		
+
 		public string TransportableResources {
 			get {
 				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")}";
+			}
+		}
+		public string LFBuildingCostResources {
+			get {
+				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} P: {Population.ToString("N0")}";
 			}
 		}
 
@@ -402,7 +409,7 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
-		
+
 		public int GetLevel(Buildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -420,7 +427,7 @@ namespace Tbot.Model {
 				}
 			}
 			return this;
-		}		
+		}
 	}
 
 	public class Supplies : Buildings { }
@@ -1048,8 +1055,8 @@ namespace Tbot.Model {
 		public int? DeuteriumSynthesizer { get; set; }
 		public int? SolarPlant { get; set; }
 		public int? FusionReactor { get; set; }
-		public int? SolarSatellite{ get; set; }
-		public int? MetalStorage{ get; set; }
+		public int? SolarSatellite { get; set; }
+		public int? MetalStorage { get; set; }
 		public int? CrystalStorage { get; set; }
 		public int? DeuteriumTank { get; set; }
 
