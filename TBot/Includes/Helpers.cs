@@ -106,6 +106,11 @@ namespace Tbot.Includes {
 			return duration;
 		}
 
+		public static string TimeSpanToString(TimeSpan delta) {
+
+			return string.Format("{0} days {1:00}:{2:00}:{3:00}", delta.Days, delta.Hours, delta.Minutes, delta.Seconds);
+		}
+
 		public static int CalcRandomInterval(IntervalType type) {
 			var rand = new Random();
 			return type switch {
