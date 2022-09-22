@@ -237,12 +237,12 @@
 	},
 	"Expeditions": {
 		"Active": true,
-		"PrimaryShip": "SmallCargo",
-		"MinPrimaryToSend": 1750,
+		"PrimaryShip": "LargeCargo",
+		"MinPrimaryToSend": 500,
 		"PrimaryToKeep": 0,
 		"SecondaryShip": "LightFighter",
 		"MinSecondaryToSend": 1000,
-		"SecondaryToPrimaryRatio": 0.571428571,
+		"SecondaryToPrimaryRatio": 2,
 		"ManualShips": {
 			"Active": false,
 			"Ships": {
@@ -256,11 +256,11 @@
 		"WaitForAllExpeditions": false,
 		"WaitForMajorityOfExpeditions": false,
 		"SplitExpeditionsBetweenSystems": {
-			"Active": false,
+			"Active": true,
 			"Range": 1
 		},
-		"RandomizeOrder": true,
 		"FuelToCarry": 20000,
+		"RandomizeOrder": true,
 		"Origin": [
 			{
 				"Galaxy": 5,

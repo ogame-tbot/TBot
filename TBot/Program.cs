@@ -4559,7 +4559,7 @@ namespace Tbot {
 												payload.Deuterium = (long) settings.Expeditions.FuelToCarry;
 											}
 											if (slots.ExpFree > 0) {
-												var fleetId = 1;//SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
+												var fleetId = SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
 												if (fleetId == -1) {
 													stop = true;
 													return;
