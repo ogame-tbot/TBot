@@ -3738,7 +3738,7 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 							}
 						} else {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources} - Available: {celestial.Resources.LFBuildingCostResources}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
 
 							if ((bool) settings.Brain.LifeformAutoMine.Transports.Active) {
 								fleets = UpdateFleets();
