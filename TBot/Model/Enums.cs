@@ -363,6 +363,7 @@ namespace Tbot.Model {
 
 	public enum LogSender {
 		Tbot,
+		OGameD,
 		Defender,
 		Brain,
 		Expeditions,
@@ -391,5 +392,11 @@ namespace Tbot.Model {
 		AutoFarm = 13,
 		TelegramAutoPing = 14,
 		BrainLifeformAutoMine = 15
+	}
+
+	public enum SendFleetCode : int {
+		GenericError = 0,
+		AfterSleepTime = -1,
+		NotEnoughSlots = -2
 	}
 }

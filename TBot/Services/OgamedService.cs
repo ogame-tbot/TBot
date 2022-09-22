@@ -2,6 +2,7 @@ using RestSharp;
 using System;
 using System.Collections.Generic;
 using Tbot.Model;
+using Tbot.Includes;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
@@ -12,7 +13,7 @@ namespace Tbot.Services {
 	class OgamedService {
 		private string Url { get; set; }
 		private RestClient Client { get; set; }
-
+		private Process ogamedProcess { get; set; } = null;
 
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "") {
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, cookiesPath);
@@ -51,18 +52,31 @@ namespace Tbot.Services {
 				}
 				if (cookiesPath.Length > 0)
 					args += $" --cookies-filename=\"{cookiesPath}\"";
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-					Process.Start("ogamed.exe", args);
-				else
-					Process.Start("ogamed", args);
+
+				Process ogameProc = new Process();
+				ogameProc.StartInfo.FileName = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
+				ogameProc.StartInfo.Arguments = args;
+				ogameProc.EnableRaisingEvents = true;
+				ogameProc.Exited += handle_ogamedProcess_Exited;
+
+				ogameProc.Start();
+				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
+				ogamedProcess = ogameProc;
 			} catch {
 				Environment.Exit(0);
 			}
 		}
 
+		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
+			Helpers.WriteLog(LogType.Error, LogSender.OGameD, $"OgameD Exited {e.ToString()}");
+			Environment.Exit(0);
+		}
+
 		public void KillOgamedExecultable() {
-			foreach (var process in Process.GetProcessesByName("ogamed")) {
-				process.Kill();
+			if (ogamedProcess != null) {
+				ogamedProcess.Close();
+				ogamedProcess.Kill();
+				ogamedProcess = null;
 			}
 		}
 
