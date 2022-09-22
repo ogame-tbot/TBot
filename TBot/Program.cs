@@ -1438,7 +1438,9 @@ namespace Tbot {
 
 			int fleetId = SendFleet(fromCelestial, attackingShips, target, Missions.Attack, speed);
 
-			if (fleetId != 0 || fleetId != -1 || fleetId != -2) {
+			if (fleetId != (int) SendFleetCode.GenericError ||
+				fleetId != (int) SendFleetCode.AfterSleepTime ||
+				fleetId != (int) SendFleetCode.NotEnoughSlots) {
 				Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"EspionageProbe sent to crash on {target.ToString()}");
 
 				telegramMessenger.SendMessage($"EspionageProbe sent to crash on {target.ToString()}");
@@ -1686,7 +1688,9 @@ namespace Tbot {
 						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}, recalled at {newTime.ToString()}");
 				}
 			} else {
-				if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+				if (fleetId != (int) SendFleetCode.GenericError ||
+					fleetId != (int) SendFleetCode.AfterSleepTime ||
+					fleetId != (int) SendFleetCode.NotEnoughSlots) {
 					Fleet fleet = fleets.Single(fleet => fleet.ID == fleetId);
 					DateTime returntime = (DateTime) fleet.BackTime;
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
@@ -3110,7 +3114,8 @@ namespace Tbot {
 
 								if (fleetId > (int)SendFleetCode.GenericError) {
 									freeSlots--;
-								} else if (fleetId == (int)SendFleetCode.AfterSleepTime) {
+								}
+								else if (fleetId == (int)SendFleetCode.AfterSleepTime) {
 									stop = true;
 									return;
 								}
@@ -3493,11 +3498,12 @@ namespace Tbot {
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
 								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
-								if (fleetId == (int)SendFleetCode.AfterSleepTime) {
+
+								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
 									return;
 								}
-								if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
+								if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
 									delay = true;
 									return;
 								}
@@ -4267,7 +4273,8 @@ namespace Tbot {
 									TotalCri += payload.Crystal;
 									TotalDeut += payload.Deuterium;
 								}
-							} else {
+							} 
+							else {
 								Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
 							}
 
@@ -4333,7 +4340,7 @@ namespace Tbot {
 
 			if (!ships.HasMovableFleet()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: there are no ships to send");
-				return (int) SendFleetCode.GenericError;
+				return (int)SendFleetCode.GenericError;
 			}
 			if (origin.Coordinate.IsSame(destination)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
@@ -4362,8 +4369,8 @@ namespace Tbot {
 
 			if (!Helpers.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
-				return 0;
-			}
+				return (int) SendFleetCode.GenericError;
+			}			
 			FleetPrediction fleetPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, userInfo.Class);
 			Helpers.WriteLog(LogType.Debug, LogSender.FleetScheduler, $"Calculated flight time (one-way): {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
 
@@ -4378,13 +4385,13 @@ namespace Tbot {
 			origin = UpdatePlanet(origin, UpdateTypes.Resources);
 			if (origin.Resources.Deuterium < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 
 			// TODO: Fix ugly workaround.
 			if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
-				return 0;
+				return (int) SendFleetCode.GenericError;
 			}
 
 			if (
@@ -4481,7 +4488,7 @@ namespace Tbot {
 		public static void TelegramRetireFleet(int fleetId) {
 			fleets = UpdateFleets();
 			Fleet ToRecallFleet = fleets.SingleOrDefault(f => f.ID == fleetId) ?? new() { ID = (int) SendFleetCode.GenericError };
-			if (ToRecallFleet.ID == (int) SendFleetCode.GenericError) {
+			if ( ToRecallFleet.ID == (int) SendFleetCode.GenericError) {
 				telegramMessenger.SendMessage($"<code>[{userInfo.PlayerName}@{serverData.Name}]</code> Unable to recall fleet! Already recalled?");
 				return;
 			}
@@ -4851,11 +4858,12 @@ namespace Tbot {
 											}
 											if (slots.ExpFree > 0) {
 												var fleetId = SendFleet(origin, fleet, destination, Missions.Expedition, Speeds.HundredPercent, payload);
-												if (fleetId == (int)SendFleetCode.AfterSleepTime) {
+
+												if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 													stop = true;
 													return;
 												}
-												if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
+												if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
 													delay = true;
 													return;
 												}
@@ -5060,11 +5068,12 @@ namespace Tbot {
 								fleetId = SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 							}
 						}
-						if (fleetId == (int)SendFleetCode.AfterSleepTime) {
+
+						if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 							stop = true;
 							return;
 						}
-						if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
+						if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
 							delay = true;
 							return;
 						}
@@ -5190,11 +5199,12 @@ namespace Tbot {
 									foreach (var target in filteredTargets) {
 										Ships ships = new() { ColonyShip = 1 };
 										var fleetId = SendFleet(origin, ships, target, Missions.Colonize, Speeds.HundredPercent);
-										if (fleetId == (int)SendFleetCode.AfterSleepTime) {
+
+										if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 											stop = true;
 											return;
 										}
-										if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
+										if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
 											delay = true;
 											return;
 										}
