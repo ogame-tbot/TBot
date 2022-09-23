@@ -429,7 +429,7 @@ namespace Tbot.Includes {
 								}
 
 								Tbot.Program.InitializeBrainAutoMine();
-								SendMessage(botClient, message.Chat, "AutoMine stopped!");
+								SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
 
 
