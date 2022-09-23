@@ -110,7 +110,6 @@ namespace Tbot.Model {
 		public Buildings Buildings { get; set; }
 		public LFTypes LFtype { get; set; }
 		public LFBuildings LFBuildings { get; set; }
-		public LFBuildings Requirements { get; set; }
 		public Facilities Facilities { get; set; }
 		public List<Production> Productions { get; set; }
 		public Constructions Constructions { get; set; }
