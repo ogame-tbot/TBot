@@ -144,7 +144,7 @@
 			"MaxBaseFoodBuilding": 62,
 			"MaxBaseTechBuilding": 6,
 			"Transports": {
-				"Active": true,
+				"Active": true
 			},
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
