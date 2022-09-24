@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.VisualBasic;
 
 namespace Tbot.Model {
 	public class Credentials {
@@ -267,8 +270,8 @@ namespace Tbot.Model {
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
 		public int SpeedResearch { get {
-			return Speed * ResearchDurationDivisor;
-		} }
+				return Speed * ResearchDurationDivisor;
+			} }
 	}
 
 	public class UserInfo {
@@ -318,7 +321,7 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} E: {Energy.ToString("N0")} DM: {Darkmatter.ToString("N0")}";
 		}
-		
+
 		public string TransportableResources {
 			get {
 				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")}";
@@ -364,6 +367,24 @@ namespace Tbot.Model {
 
 			return output;
 		}
+
+		static public Resources FromString(String arg) {
+			Resources output = new();
+
+			Regex re = new Regex("([M|m|C|c|D|d]):(\\d*)");
+			MatchCollection ms = re.Matches(arg);
+			foreach (Match m in ms) {
+				if (m.Groups[1].Value.ToLower().Contains('m')) {
+					output.Metal = Int32.Parse(m.Groups[2].Value);
+				} else if (m.Groups[1].Value.ToLower().Contains('c')) {
+					output.Crystal = Int32.Parse(m.Groups[2].Value);
+				} else if (m.Groups[1].Value.ToLower().Contains('d')) {
+					output.Deuterium = Int32.Parse(m.Groups[2].Value);
+				}
+			}
+
+			return output;
+		}
 	}
 
 	public class Buildings {
@@ -380,7 +401,7 @@ namespace Tbot.Model {
 		public override string ToString() {
 			return $"M: {MetalMine.ToString()} C: {CrystalMine.ToString()} D: {DeuteriumSynthesizer.ToString()} S: {SolarPlant.ToString("")} F: {FusionReactor.ToString("")}";
 		}
-		
+
 		public int GetLevel(Buildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
@@ -398,7 +419,7 @@ namespace Tbot.Model {
 				}
 			}
 			return this;
-		}		
+		}
 	}
 
 	public class Supplies : Buildings { }
@@ -925,8 +946,8 @@ namespace Tbot.Model {
 		public int? DeuteriumSynthesizer { get; set; }
 		public int? SolarPlant { get; set; }
 		public int? FusionReactor { get; set; }
-		public int? SolarSatellite{ get; set; }
-		public int? MetalStorage{ get; set; }
+		public int? SolarSatellite { get; set; }
+		public int? MetalStorage { get; set; }
 		public int? CrystalStorage { get; set; }
 		public int? DeuteriumTank { get; set; }
 
@@ -1098,6 +1119,45 @@ namespace Tbot.Model {
 		}
 		public override string ToString() {
 			return $"[{GetCelestialCode()}:{Celestial.Coordinate.Galaxy}:{Celestial.Coordinate.System}:{Celestial.Coordinate.Position}]";
+		}
+	}
+
+
+	public class AuctionResourceMultiplier {
+		public float Metal { get; set; }
+		public float Crystal { get; set; }
+		public float Deuterium { get; set; }
+		public int Honor { get; set; }
+	}
+	public class Auction {
+		public bool HasFinished { get; set; }
+        public int Endtime { get; set; }
+		public int NumBids { get; set; }
+		public int CurrentBid { get; set; }
+		public int AlreadyBid { get; set; }
+		public int MinimumBid { get; set; }
+		public int DeficitBid { get; set; }
+		public string HighestBidder { get; set; }
+		public int HighestBidderUserID { get; set; }
+		public string CurrentItem { get; set; }
+		public string CurrentItemLong { get; set; }
+		public int Inventory { get; set; }
+		public string Token { get; set; }
+		public AuctionResourceMultiplier ResourceMultiplier { get; set; }
+		public Dictionary<string, dynamic> Resources { get; set; }
+
+		public string toString() {
+			// TODO CurrentItemLong is too long, but can be parsed with a RegExp. Just too lazy to do it now :)
+			if(HasFinished) {
+				return	$"Item: {CurrentItem} sold for {CurrentBid} to {HighestBidder}.\n" +
+						$"NumBids: {NumBids}.";
+			} else {
+				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
+				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
+						$"CurrentBid: {CurrentBid} by \"{HighestBidderUserID}\". \n" +
+						$"AlreadyBid: {AlreadyBid} would require a MinimumBid of \"{MinimumBid}\"\n" +
+						$"NumBids: {NumBids}.";
+			}
 		}
 	}
 }

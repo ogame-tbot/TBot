@@ -182,7 +182,7 @@ namespace Tbot.Services {
 				request.AddParameter("challenge_id", challengeID, ParameterType.GetOrPost);
 				request.AddParameter("answer", answer, ParameterType.GetOrPost);
 				Client.Execute(request);
-			} catch {}
+			} catch { }
 		}
 
 		public string GetOgamedIP() {
@@ -210,8 +210,7 @@ namespace Tbot.Services {
 			try {
 				var result = JsonConvert.DeserializeObject<dynamic>(Client.Execute(request).Content);
 				return result.ip;
-			}
-			catch {
+			} catch {
 				return "";
 			}
 		}
@@ -892,6 +891,40 @@ namespace Tbot.Services {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
 				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.Auction GetCurrentAuction() {
+			var request = new RestRequest {
+				Resource = "/bot/get-auction",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error occurred: Status {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.Auction>(JsonConvert.SerializeObject(result.Result));
+		}
+
+		public Tuple<bool, String> DoAuction(Celestial celestial, Resources resources) {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/do-auction",
+					Method = Method.POST,
+				};
+				var resStr = $"{resources.Metal}:{resources.Crystal}:{resources.Deuterium}";
+				request.AddParameter($"{celestial.ID}", resStr, ParameterType.GetOrPost);
+
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok") {
+					return Tuple.Create(false, result.Message);
+				} else {
+
+					return Tuple.Create(true, result.Message);
+				}
+					
+			} catch(Exception e) {
+				return Tuple.Create(false, e.Message);
+			}
 		}
 
 		public bool SendMessage(int playerID, string message) {

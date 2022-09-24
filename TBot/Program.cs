@@ -1096,6 +1096,23 @@ namespace Tbot {
 
 		}
 
+		public static void TelegramGetCurrentAuction() {
+			var auction = ogamedService.GetCurrentAuction();
+
+			telegramMessenger.SendMessage(auction.toString());
+		}
+
+		public static void TelegramBidAuction(Celestial celestial, Resources res) {
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Bidding auction with {celestial.ToString()} {res.ToString()}");
+			var result = ogamedService.DoAuction(celestial, res);
+			if(result.Item1) {
+				telegramMessenger.SendMessage(	$"Auction done with Resources of Planet {celestial.Name} ID:{celestial.ID} \n" +
+												$"M:{res.Metal} C:{res.Crystal} D:{res.Deuterium}");
+			} else {
+				telegramMessenger.SendMessage($"BidAuction failed. \"{result.Item2}\"");
+			}
+		}
+
 		public static void TelegramAutoPing(object state) {
 			xaSem[Feature.TelegramAutoPing].WaitOne();
 			DateTime now = GetDateTime();
