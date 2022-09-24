@@ -301,11 +301,17 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
+<<<<<<< HEAD
+		public int SpeedResearch { get {
+				return Speed * ResearchDurationDivisor;
+			} }
+=======
 		public int SpeedResearch {
 			get {
 				return Speed * ResearchDurationDivisor;
 			}
 		}
+>>>>>>> a0ee8b3587c5066f13c41b93a127dd9a3262d1ce
 	}
 
 	public class UserInfo {
@@ -409,13 +415,7 @@ namespace Tbot.Model {
 			return output;
 		}
 
-		public bool IsBuildable(Resources cost) {
-			if (Metal >= cost.Metal && Crystal >= cost.Crystal && Deuterium >= cost.Deuterium && Population >= cost.Population)
-				return true;
-			else
-				return false;
-		}
-
+<<<<<<< HEAD
 		static public Resources FromString(String arg) {
 			Resources output = new();
 
@@ -432,6 +432,13 @@ namespace Tbot.Model {
 			}
 
 			return output;
+=======
+		public bool IsBuildable(Resources cost) {
+			if (Metal >= cost.Metal && Crystal >= cost.Crystal && Deuterium >= cost.Deuterium && Population >= cost.Population)
+				return true;
+			else
+				return false;
+>>>>>>> a0ee8b3587c5066f13c41b93a127dd9a3262d1ce
 		}
 	}
 
@@ -1413,7 +1420,7 @@ namespace Tbot.Model {
 			} else {
 				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
-						$"CurrentBid: {CurrentBid} by \"{HighestBidder}\" (ID:{HighestBidderUserID}). \n" +
+						$"CurrentBid: {CurrentBid} by \"{HighestBidderUserID}\". \n" +
 						$"AlreadyBid: {AlreadyBid} would require a MinimumBid of \"{MinimumBid}\"\n" +
 						$"NumBids: {NumBids}.";
 			}
