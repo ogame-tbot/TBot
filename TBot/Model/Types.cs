@@ -172,6 +172,16 @@ namespace Tbot.Model {
 			return output;
 		}
 
+		public int GetLevel(LFTechno techno) {
+			int output = 0;
+			foreach (PropertyInfo prop in LFTechs.GetType().GetProperties()) {
+				if (prop.Name == techno.ToString()) {
+					output = (int) prop.GetValue(LFTechs);
+				}
+			}
+			return output;
+		}
+
 		public LFTypes SetLFType() {
 			if ((bool) LFBuildings.GetType().GetProperty("None").GetValue(LFBuildings))
 				this.LFtype = LFTypes.None;

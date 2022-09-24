@@ -214,6 +214,7 @@ namespace Tbot {
 						Feature.BrainAutoRepatriate,
 						Feature.BrainAutoMine,
 						Feature.BrainLifeformAutoMine,
+						Feature.BrainLifeformAutoResearch,
 						Feature.BrainOfferOfTheDay,
 						Feature.BrainAutoResearch,
 						Feature.AutoFarm,
@@ -290,6 +291,10 @@ namespace Tbot {
 					case Feature.BrainLifeformAutoMine:
 						if (currentValue)
 							StopBrainLifeformAutoMine();
+						return false;
+					case Feature.BrainLifeformAutoResearch:
+						if (currentValue)
+							StopBrainLifeformAutoResearch();
 						return false;
 					case Feature.BrainOfferOfTheDay:
 						if (currentValue)
@@ -381,6 +386,15 @@ namespace Tbot {
 					} else {
 						if (currentValue)
 							StopBrainLifeformAutoMine();
+						return false;
+					}
+				case Feature.BrainLifeformAutoResearch:
+					if ((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) {
+						InitializeBrainLifeformAutoResearch();
+						return true;
+					} else {
+						if (currentValue)
+							StopBrainLifeformAutoResearch();
 						return false;
 					}
 				case Feature.BrainOfferOfTheDay:
@@ -477,6 +491,7 @@ namespace Tbot {
 					Feature.BrainAutoRepatriate,
 					Feature.BrainAutoMine,
 					Feature.BrainLifeformAutoMine,
+					Feature.BrainLifeformAutoResearch,
 					Feature.BrainOfferOfTheDay,
 					Feature.BrainAutoResearch,
 					Feature.AutoFarm,
@@ -994,14 +1009,14 @@ namespace Tbot {
 		}
 
 		public static void InitializeBrainLifeformAutoMine() {
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform automine...");
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform autoMine...");
 			StopBrainLifeformAutoMine(false);
 			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public static void StopBrainLifeformAutoMine(bool echo = true) {
 			if (echo)
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform automine...");
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform autoMine...");
 			if (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("LifeformAutoMineTimer");
@@ -1009,6 +1024,25 @@ namespace Tbot {
 				if (timers.TryGetValue($"LifeformAutoMineTimer-{celestial.ID.ToString()}", out value))
 					value.Dispose();
 				timers.Remove($"LifeformAutoMineTimer-{celestial.ID.ToString()}");
+			}
+		}
+
+		public static void InitializeBrainLifeformAutoResearch() {
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform autoResearch...");
+			StopBrainLifeformAutoResearch(false);
+			timers.Add("LifeformAutoResearchTimer", new Timer(LifeformAutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+		}
+
+		public static void StopBrainLifeformAutoResearch(bool echo = true) {
+			if (echo)
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform autoResearch...");
+			if (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("LifeformAutoResearchTimer");
+			foreach (var celestial in celestials) {
+				if (timers.TryGetValue($"LifeformAutoResearchTimer-{celestial.ID.ToString()}", out value))
+					value.Dispose();
+				timers.Remove($"LifeformAutoResearchTimer-{celestial.ID.ToString()}");
 			}
 		}
 
@@ -3616,6 +3650,229 @@ namespace Tbot {
 			}
 		}
 
+		private static void LifeformAutoResearch(object state) {
+			try {
+				// Wait for the thread semaphore to avoid the concurrency with itself
+				xaSem[Feature.Brain].WaitOne();
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running Lifeform autoresearch...");
+
+				if (isSleeping) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+					xaSem[Feature.Brain].Release();
+					return;
+				}
+
+				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) || (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))) {
+					AutoMinerSettings autoMinerSettings = new() {
+						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
+					};
+
+					List<Celestial> celestialsToMine = new();
+					LFBuildings maxLFBuildings = new();
+					if (state == null) {
+						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
+							var cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+							cel = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+							cel = UpdatePlanet(celestial, UpdateTypes.Resources);
+
+							if (cel.LFtype == LFTypes.None) {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: No Lifeform active on this planet.");
+								continue;
+							}
+							var nextLFTechToBuild = Helpers.GetNextLFTechToBuild(cel);
+							if (nextLFTechToBuild != LFTechno.None) {
+								var level = Helpers.GetNextLevel(cel, nextLFTechToBuild);
+								Resources nextLFTechCost = ogamedService.GetPrice(nextLFTechToBuild, level);
+								var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost);
+								if (isLessCostLFTechToBuild != LFTechno.None) {
+									level = Helpers.GetNextLevel(cel, isLessCostLFTechToBuild);
+									nextLFTechToBuild = isLessCostLFTechToBuild;
+								}
+
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Lifeform Research: {nextLFTechToBuild.ToString()} lv {level.ToString()}.");
+								celestialsToMine.Add(celestial);
+							} else {
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: No Next Lifeform technology to build found.");
+							}
+
+						}
+					} else {
+						celestialsToMine.Add(state as Celestial);
+					}
+					foreach (Celestial celestial in celestialsToMine) {
+						LifeformAutoResearchCelestial(celestial);
+					}
+				} else {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: feature disabled");
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"Lifeform AutoMine Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			} finally {
+				if (!isSleeping) {
+					UpdateTitle();
+					xaSem[Feature.Brain].Release();
+				}
+			}
+		}
+
+		private static void LifeformAutoResearchCelestial(Celestial celestial) {
+			int fleetId = (int) SendFleetCode.GenericError;
+			LFTechno buildable = LFTechno.None;
+			int level = 0;
+			bool started = false;
+			bool stop = false;
+			bool delay = false;
+			bool delayProduction = false;
+			long delayTime = 0;
+			long interval = 0;
+			try {
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running Lifeform AutoResearch on {celestial.ToString()}");
+				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+
+				if (celestial.Constructions.LFTechID != 0) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform research in production.");
+					delayProduction = true;
+					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					return;
+				}
+
+				if (celestial is Planet) {
+					buildable = Helpers.GetNextLFTechToBuild(celestial);
+
+					if (buildable != LFTechno.None) {
+						level = Helpers.GetNextLevel(celestial, buildable);
+						Resources nextLFTechCost = ogamedService.GetPrice(buildable, level);
+						var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost);
+						if (isLessCostLFTechToBuild != LFTechno.None) {
+							level = Helpers.GetNextLevel(celestial, isLessCostLFTechToBuild);
+							buildable = isLessCostLFTechToBuild;
+						}
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best Lifeform Research for {celestial.ToString()}: {buildable.ToString()}");
+
+						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
+
+						if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
+							bool result = false;
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Lifeform Research {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+							result = ogamedService.BuildCancelable(celestial, (LFTechno)buildable);
+
+							if (result) {
+								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+								if (celestial.Constructions.LFTechID == (int) buildable) {
+									started = true;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Lifeform Research succesfully started.");
+								} else {
+									celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+									if (celestial.GetLevel(buildable) != level)
+										Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start Lifeform Research construction: an unknown error has occurred");
+									else {
+										started = true;
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, "Lifeform Research succesfully started.");
+									}
+								}
+
+							} else {
+								Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start Lifeform Research: a network error has occurred");
+							}
+						} else {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
+
+							if ((bool) settings.Brain.LifeformAutoResearch.Transports.Active) {
+								fleets = UpdateFleets();
+								if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
+									Celestial origin = celestials
+											.Unique()
+											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+											.SingleOrDefault() ?? new() { ID = 0 };
+									fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
+									if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+										stop = true;
+										return;
+									}
+									if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+										delay = true;
+										return;
+									}
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
+								}
+							}
+						}
+					} else {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. Check max Lifeform base building max level in settings file?");
+						stop = true;
+					}
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"LifeformAutoResearch Celestial Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			} finally {
+				var time = GetDateTime();
+				string autoMineTimer = $"LifeformAutoResearchTimer-{celestial.ID.ToString()}";
+				DateTime newTime;
+				if (stop) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping Lifeform AutoResearch check for {celestial.ToString()}.");
+					if (timers.TryGetValue($"LifeformAutoResearchTimer-{celestial.ID.ToString()}", out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+				} else if (delayProduction) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(delayTime);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, delayTime, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform Research check for {celestial.ToString()} at {newTime.ToString()}");
+				} else if (delay) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					fleets = UpdateFleets();
+					try {
+						interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} catch {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+					}
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
+
+				} else if (started) {
+					interval = ((long) celestial.Constructions.LFTechCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					if (interval == long.MaxValue || interval == long.MinValue)
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
+				} else {
+					interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
+				}
+			}
+		}
+
 		private static void LifeformAutoMine(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
@@ -3650,7 +3907,7 @@ namespace Tbot {
 							int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
 							var nextLFBuilding = Helpers.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
-							if (nextLFBuilding != LFBuildables.Null) {
+							if (nextLFBuilding != LFBuildables.None) {
 								var lv = Helpers.GetNextLevel(celestial, nextLFBuilding);
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextLFBuilding.ToString()} lv {lv.ToString()}.");
 
@@ -3682,7 +3939,7 @@ namespace Tbot {
 
 		private static void LifeformAutoMineCelestial(Celestial celestial) {
 			int fleetId = (int) SendFleetCode.GenericError;
-			LFBuildables buildable = LFBuildables.Null;
+			LFBuildables buildable = LFBuildables.None;
 			int level = 0;
 			bool started = false;
 			bool stop = false;
@@ -3709,7 +3966,7 @@ namespace Tbot {
 				if (celestial is Planet) {
 					buildable = Helpers.GetNextLFBuildingToBuild(celestial);
 
-					if (buildable != LFBuildables.Null) {
+					if (buildable != LFBuildables.None) {
 						level = Helpers.GetNextLevel(celestial, buildable);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
 
@@ -3771,7 +4028,7 @@ namespace Tbot {
 					}
 				}
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"LifeformAutoMine Celestial Exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				var time = GetDateTime();
@@ -3808,9 +4065,9 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else if (started) {
-					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.LFBuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					if (interval == long.MaxValue || interval == long.MinValue)
-						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3820,7 +4077,7 @@ namespace Tbot {
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
-					interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+					interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();

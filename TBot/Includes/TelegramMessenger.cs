@@ -64,6 +64,8 @@ namespace Tbot.Includes {
 				"/startautomine",
 				"/stoplifeformautomine",
 				"/startlifeformautomine",
+				"/stoplifeformautoresearch",
+				"/startlifeformautoresearch",
 				"/stopdefender",
 				"/startdefender",
 				"/msg",
@@ -463,6 +465,28 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/stoplifeformautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopBrainLifeformAutoResearch();
+								SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
+								return;
+
+
+							case ("/startlifeformautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeBrainLifeformAutoResearch();
+								SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
+								return;
+
+
 							case ("/stopdefender"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -719,6 +743,8 @@ namespace Tbot.Includes {
 									"/startautomine - start brain automine\n" +
 									"/stoplifeformautomine - stop brain Lifeform automine\n" +
 									"/startlifeformautomine - start brain Lifeform automine\n" +
+									"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
+									"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
 									"/stopautofarm - stop autofarm\n" +
 									"/startautofarm - start autofarm\n" +
 									"/stopautoping - stop telegram autoping\n" +
