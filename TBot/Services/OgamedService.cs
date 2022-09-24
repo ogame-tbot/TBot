@@ -470,7 +470,6 @@ namespace Tbot.Services {
 			if (result.Status != "ok") {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
-				Console.WriteLine(result.Result.ToString());
 				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
