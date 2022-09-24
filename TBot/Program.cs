@@ -3676,7 +3676,7 @@ namespace Tbot {
 							cel = UpdatePlanet(celestial, UpdateTypes.Resources);
 
 							if (cel.LFtype == LFTypes.None) {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: No Lifeform active on this planet.");
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {cel.ToString()}: No Lifeform active on this planet.");
 								continue;
 							}
 							var nextLFTechToBuild = Helpers.GetNextLFTechToBuild(cel);
@@ -3829,7 +3829,7 @@ namespace Tbot {
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 					newTime = time.AddMilliseconds(delayTime);
-					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, delayTime, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, delayTime, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform Research check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (delay) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
@@ -4074,7 +4074,7 @@ namespace Tbot {
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
 					interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
@@ -4084,7 +4084,7 @@ namespace Tbot {
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
