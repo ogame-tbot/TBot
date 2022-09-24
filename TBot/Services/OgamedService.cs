@@ -719,7 +719,7 @@ namespace Tbot.Services {
 
 		public Constructions GetLFConstructions(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = $"/bot/planets/{celestial.ID}/LFconstructions",
+				Resource = $"/bot/planets/{celestial.ID}/constructions",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
