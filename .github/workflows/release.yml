@@ -27,7 +27,7 @@ jobs:
     - name: Setup GO
       uses: actions/setup-go@v2
       with:
-        go-version: '~1.17.0'
+        go-version: '~1.18.0'
       
     - name: Build TBot win64
       run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
