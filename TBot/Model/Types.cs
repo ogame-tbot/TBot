@@ -111,6 +111,9 @@ namespace Tbot.Model {
 		public Ships Ships { get; set; }
 		public Defences Defences { get; set; }
 		public Buildings Buildings { get; set; }
+		public LFTypes LFtype { get; set; }
+		public LFBuildings LFBuildings { get; set; }
+		public LFTechs LFTechs { get; set; }
 		public Facilities Facilities { get; set; }
 		public List<Production> Productions { get; set; }
 		public Constructions Constructions { get; set; }
@@ -160,6 +163,35 @@ namespace Tbot.Model {
 				}
 			}
 			return output;
+		}
+
+		public int GetLevel(LFBuildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in LFBuildings.GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(LFBuildings);
+				}
+			}
+			return output;
+		}
+
+		public LFTypes SetLFType() {
+			if ((bool) LFBuildings.GetType().GetProperty("None").GetValue(LFBuildings))
+				this.LFtype = LFTypes.None;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Humans").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Humans;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Rocktal").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Rocktal;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Mechas").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Mechas;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Kaelesh").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Kaelesh;
+
+			return this.LFtype;
 		}
 	}
 
@@ -269,9 +301,11 @@ namespace Tbot.Model {
 		public int ResearchDurationDivisor { get; set; }
 		public int DarkMatterNewAcount { get; set; }
 		public int CargoHyperspaceTechMultiplier { get; set; }
-		public int SpeedResearch { get {
+		public int SpeedResearch {
+			get {
 				return Speed * ResearchDurationDivisor;
-			} }
+			}
+		}
 	}
 
 	public class UserInfo {
@@ -285,17 +319,19 @@ namespace Tbot.Model {
 	}
 
 	public class Resources {
-		public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long food = 0, long energy = 0, long darkmatter = 0) {
+		public Resources(long metal = 0, long crystal = 0, long deuterium = 0, long energy = 0, long food = 0, long population = 0, long darkmatter = 0) {
 			Metal = metal;
 			Crystal = crystal;
 			Deuterium = deuterium;
-			Food = food;
 			Energy = energy;
+			Food = food;
+			Population = population;
 			Darkmatter = darkmatter;
 		}
 		public long Metal { get; set; }
 		public long Crystal { get; set; }
 		public long Deuterium { get; set; }
+		public long Population { get; set; }
 		public long Food { get; set; }
 		public long Energy { get; set; }
 		public long Darkmatter { get; set; }
@@ -325,6 +361,11 @@ namespace Tbot.Model {
 		public string TransportableResources {
 			get {
 				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")}";
+			}
+		}
+		public string LFBuildingCostResources {
+			get {
+				return $"M: {Metal.ToString("N0")} C: {Crystal.ToString("N0")} D: {Deuterium.ToString("N0")} P: {Population.ToString("N0")}";
 			}
 		}
 
@@ -366,6 +407,13 @@ namespace Tbot.Model {
 				output.Deuterium = 0;
 
 			return output;
+		}
+
+		public bool IsBuildable(Resources cost) {
+			if (Metal >= cost.Metal && Crystal >= cost.Crystal && Deuterium >= cost.Deuterium && Population >= cost.Population)
+				return true;
+			else
+				return false;
 		}
 
 		static public Resources FromString(String arg) {
@@ -423,6 +471,192 @@ namespace Tbot.Model {
 	}
 
 	public class Supplies : Buildings { }
+
+	public class LFBuildings {
+		public bool None { get; set; }
+
+		//humans
+		public bool Humans { get; set; }
+		public int ResidentialSector { get; set; }
+		public int BiosphereFarm { get; set; }
+		public int ResearchCentre { get; set; }
+		public int AcademyOfSciences { get; set; }
+		public int NeuroCalibrationCentre { get; set; }
+		public int HighEnergySmelting { get; set; }
+		public int FoodSilo { get; set; }
+		public int FusionPoweredProduction { get; set; }
+		public int Skyscraper { get; set; }
+		public int BiotechLab { get; set; }
+		public int Metropolis { get; set; }
+		public int PlanetaryShield { get; set; }
+
+		//Rocktal
+		public bool Rocktal { get; set; }
+		public int MeditationEnclave { get; set; }
+		public int CrystalFarm { get; set; }
+		public int RuneTechnologium { get; set; }
+		public int RuneForge { get; set; }
+		public int Oriktorium { get; set; }
+		public int MagmaForge { get; set; }
+		public int DisruptionChamber { get; set; }
+		public int Megalith { get; set; }
+		public int CrystalRefinery { get; set; }
+		public int DeuteriumSynthesiser { get; set; }
+		public int MineralResearchCentre { get; set; }
+		public int MetalRecyclingPlant { get; set; }
+
+		//Mechas
+		public bool Mechas { get; set; }
+		public int AssemblyLine { get; set; }
+		public int FusionCellFactory { get; set; }
+		public int RoboticsResearchCentre { get; set; }
+		public int UpdateNetwork { get; set; }
+		public int QuantumComputerCentre { get; set; }
+		public int AutomatisedAssemblyCentre { get; set; }
+		public int HighPerformanceTransformer { get; set; }
+		public int MicrochipAssemblyLine { get; set; }
+		public int ProductionAssemblyHall { get; set; }
+		public int HighPerformanceSynthesiser { get; set; }
+		public int ChipMassProduction { get; set; }
+		public int NanoRepairBots { get; set; }
+
+		//Kaelesh
+		public bool Kaelesh { get; set; }
+		public int Sanctuary { get; set; }
+		public int AntimatterCondenser { get; set; }
+		public int VortexChamber { get; set; }
+		public int HallsOfRealisation { get; set; }
+		public int ForumOfTranscendence { get; set; }
+		public int AntimatterConvector { get; set; }
+		public int CloningLaboratory { get; set; }
+		public int ChrysalisAccelerator { get; set; }
+		public int BioModifier { get; set; }
+		public int PsionicModulator { get; set; }
+		public int ShipManufacturingHall { get; set; }
+		public int SupraRefractor { get; set; }
+
+		public int GetLevel(LFBuildables building) {
+			int output = 0;
+			foreach (PropertyInfo prop in GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(this);
+				}
+			}
+			return output;
+		}
+
+		public LFBuildings SetLevel(LFBuildables buildable, int level) {
+			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
+				if (prop.Name == buildable.ToString()) {
+					prop.SetValue(this, level);
+				}
+			}
+
+			return this;
+		}
+	}
+
+	public class LFTechs {
+		//Humans
+		public int intIntergalacticEnvoys { get; set; }
+		public int HighPerformanceExtractors { get; set; }
+		public int FusionDrives { get; set; }
+		public int StealthFieldGenerator { get; set; }
+		public int OrbitalDen { get; set; }
+		public int ResearchAI { get; set; }
+		public int HighPerformanceTerraformer { get; set; }
+		public int EnhancedProductionTechnologies { get; set; }
+		public int LightFighterMkII { get; set; }
+		public int CruiserMkII { get; set; }
+		public int ImprovedLabTechnology { get; set; }
+		public int PlasmaTerraformer { get; set; }
+		public int LowTemperatureDrives { get; set; }
+		public int BomberMkII { get; set; }
+		public int DestroyerMkII { get; set; }
+		public int BattlecruiserMkII { get; set; }
+		public int RobotAssistants { get; set; }
+		public int Supercomputer { get; set; }
+
+		//Rocktal
+		public int VolcanicBatteries { get; set; }
+		public int AcousticScanning { get; set; }
+		public int HighEnergyPumpSystems { get; set; }
+		public int CargoHoldExpansionCivilianShips { get; set; }
+		public int MagmaPoweredProduction { get; set; }
+		public int GeothermalPowerPlants { get; set; }
+		public int DepthSounding { get; set; }
+		public int IonCrystalEnhancementHeavyFighter { get; set; }
+		public int ImprovedStellarator { get; set; }
+		public int HardenedDiamondDrillHeads { get; set; }
+		public int SeismicMiningTechnology { get; set; }
+		public int MagmaPoweredPumpSystems { get; set; }
+		public int IonCrystalModules { get; set; }
+		public int OptimisedSiloConstructionMethod { get; set; }
+		public int DiamondEnergyTransmitter { get; set; }
+		public int ObsidianShieldReinforcement { get; set; }
+		public int RuneShields { get; set; }
+		public int RocktalCollectorEnhancement { get; set; }
+
+		//Mechas
+		public int CatalyserTechnology { get; set; }
+		public int PlasmaDrive { get; set; }
+		public int EfficiencyModule { get; set; }
+		public int DepotAI { get; set; }
+		public int GeneralOverhaulLightFighter { get; set; }
+		public int AutomatedTransportLines { get; set; }
+		public int ImprovedDroneAI { get; set; }
+		public int ExperimentalRecyclingTechnology { get; set; }
+		public int GeneralOverhaulCruiser { get; set; }
+		public int SlingshotAutopilot { get; set; }
+		public int HighTemperatureSuperconductors { get; set; }
+		public int GeneralOverhaulBattleship { get; set; }
+		public int ArtificialSwarmIntelligence { get; set; }
+		public int GeneralOverhaulBattlecruiser { get; set; }
+		public int GeneralOverhaulBomber { get; set; }
+		public int GeneralOverhaulDestroyer { get; set; }
+		public int ExperimentalWeaponsTechnology { get; set; }
+		public int MechanGeneralEnhancement { get; set; }
+
+		//Kaelesh
+		public int HeatRecovery { get; set; }
+		public int SulphideProcess { get; set; }
+		public int PsionicNetwork { get; set; }
+		public int TelekineticTractorBeam { get; set; }
+		public int EnhancedSensorTechnology { get; set; }
+		public int NeuromodalCompressor { get; set; }
+		public int NeuroInterface { get; set; }
+		public int InterplanetaryAnalysisNetwork { get; set; }
+		public int OverclockingHeavyFighter { get; set; }
+		public int TelekineticDrive { get; set; }
+		public int SixthSense { get; set; }
+		public int Psychoharmoniser { get; set; }
+		public int EfficientSwarmIntelligence { get; set; }
+		public int OverclockingLargeCargo { get; set; }
+		public int GravitationSensors { get; set; }
+		public int OverclockingBattleship { get; set; }
+		public int PsionicShieldMatrix { get; set; }
+		public int KaeleshDiscovererEnhancement { get; set; }
+
+		public int GetLevel(LFTechs building) {
+			int output = 0;
+			foreach (PropertyInfo prop in GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					output = (int) prop.GetValue(this);
+				}
+			}
+			return output;
+		}
+
+		public LFTechs SetLevel(LFTechs buildable, int level) {
+			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
+				if (prop.Name == buildable.ToString()) {
+					prop.SetValue(this, level);
+				}
+			}
+
+			return this;
+		}
+	}
 
 	public class Facilities {
 		public int RoboticsFactory { get; set; }
@@ -748,6 +982,10 @@ namespace Tbot.Model {
 		public int BuildingCountdown { get; set; }
 		public int ResearchID { get; set; }
 		public int ResearchCountdown { get; set; }
+		public int LFBuildingID { get; set; }
+		public int LFBuildingCountdown { get; set; }
+		public int LFTechID { get; set; }
+		public int LFTechCountdown { get; set; }
 	}
 
 	public class Techs {
@@ -879,6 +1117,25 @@ namespace Tbot.Model {
 		public long CurrentProduction { get; set; }
 	}
 
+	public class Food {
+		public long Available { get; set; }
+		public long StorageCapacity { get; set; }
+		public long Overproduction { get; set; }
+		public long ConsumedIn { get; set; }
+		public long TimeTillFoodRunsOut { get; set; }
+	}
+
+	public class Population {
+		public long Available { get; set; }
+		public long T2Lifeforms { get; set; }
+		public long T3Lifeforms { get; set; }
+		public long LivingSpace { get; set; }
+		public long Satisfied { get; set; }
+		public long Hungry { get; set; }
+		public long GrowthRate { get; set; }
+		public long BunkerSpace { get; set; }
+	}
+
 	public class Energy {
 		public long Available { get; set; }
 		public long CurrentProduction { get; set; }
@@ -894,6 +1151,8 @@ namespace Tbot.Model {
 	public class ResourcesProduction {
 		public Resource Metal { get; set; }
 		public Resource Crystal { get; set; }
+		public Food Food { get; set; }
+		public Population Population { get; set; }
 		public Resource Deuterium { get; set; }
 		public Energy Energy { get; set; }
 		public Darkmatter Darkmatter { get; set; }
