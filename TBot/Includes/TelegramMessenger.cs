@@ -49,7 +49,6 @@ namespace Tbot.Includes {
 				"/ghostsleep",
 				"/ghostsleepall",
 				"/ghost",
-				"/ghostto",
 				"/ghostmoons",
 				"/switch",
 				"/sleep",
@@ -59,6 +58,8 @@ namespace Tbot.Includes {
 				"/startautoping",
 				"stopexpe",
 				"startexpe",
+				"/stopautoresearch",
+				"/startautoresearch",
 				"/stopautomine",
 				"/startautomine",
 				"/stoplifeformautomine",
@@ -112,21 +113,6 @@ namespace Tbot.Includes {
 
 
 							case ("/ghost"):
-								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
-									return;
-								}
-								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
-
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
-
-								return;
-
-
-							case ("/ghostto"):
 								if (message.Text.Split(' ').Length != 3) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
@@ -411,6 +397,28 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/stopautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopBrainAutoResearch();
+								SendMessage(botClient, message.Chat, "AutoResearch stopped!");
+								return;
+
+
+							case ("/startautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeBrainAutoResearch();
+								SendMessage(botClient, message.Chat, "AutoResearch started!");
+								return;
+
+
 							case ("/stopautomine"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -683,8 +691,7 @@ namespace Tbot.Includes {
 									"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
 									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
 									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>\n" +
-									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4h3m or 3m50s</code>\n" +
-									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
+									"/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
 									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>\n" +
 									"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
 									"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
@@ -706,6 +713,8 @@ namespace Tbot.Includes {
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +
 									"/stopdefender - stop defender\n" +
+									"/stopautoresearch - stop brain autoresearch\n" +
+									"/startautoresearch - start brain autoresearch\n" +
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
 									"/stoplifeformautomine - stop brain Lifeform automine\n" +

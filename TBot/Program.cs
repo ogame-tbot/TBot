@@ -1026,13 +1026,13 @@ namespace Tbot {
 			timers.Remove("OfferOfTheDayTimer");
 		}
 
-		private static void InitializeBrainAutoResearch() {
+		public static void InitializeBrainAutoResearch() {
 			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing autoresearch...");
 			StopBrainAutoResearch(false);
 			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, Helpers.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
-		private static void StopBrainAutoResearch(bool echo = true) {
+		public static void StopBrainAutoResearch(bool echo = true) {
 			if (echo)
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping autoresearch...");
 			if (timers.TryGetValue("AutoResearchTimer", out Timer value))
@@ -2310,7 +2310,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoResearch.Active) {
+				if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoResearch.Active || timers.TryGetValue("AutoResearchTimer", out Timer value)) {
 					researches = ogamedService.GetResearches();
 					Planet celestial;
 					var parseSucceded = celestials
