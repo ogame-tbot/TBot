@@ -2071,6 +2071,12 @@ namespace Tbot.Includes {
 			return LFBuildables.Null;
 		}
 
+		public static LFTechno GetNextLFTechToBuild(Celestial planet) {
+			//TODO
+
+			return LFTechno.None;
+		}
+
 		public static Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1) {
 			Buildables buildableToBuild = Buildables.Null;
 			if (ShouldBuildTerraformer(planet, researches, maxFacilities.Terraformer))
