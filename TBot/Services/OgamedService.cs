@@ -463,7 +463,19 @@ namespace Tbot.Services {
 
 		public LFBuildings GetLFBuildings(Celestial celestial) {
 			var request = new RestRequest {
-				Resource = $"/bot/planets/{celestial.ID}/LFbuildings",
+				Resource = $"/bot/planets/{celestial.ID}/lifeform-buildings",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public LFTechs GetLFTechs(Celestial celestial) {
+			var request = new RestRequest {
+				Resource = $"/bot/planets/{celestial.ID}/lifeform-techs",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);

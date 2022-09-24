@@ -782,8 +782,10 @@ namespace Tbot {
 						break;
 					case UpdateTypes.LFBuildings:
 						planet.LFBuildings = ogamedService.GetLFBuildings(planet);
-						//planet.LFtype = Helpers.GetLFtype(planet);
 						planet.LFtype = planet.SetLFType();
+						break;
+					case UpdateTypes.LFTechs:
+						planet.LFTechs = ogamedService.GetLFTechs(planet);
 						break;
 					case UpdateTypes.Ships:
 						planet.Ships = ogamedService.GetShips(planet);
@@ -3694,6 +3696,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFBuildingID != 0) {

@@ -319,6 +319,7 @@ namespace Tbot.Model {
 		Resources,
 		Buildings,
 		LFBuildings,
+		LFTechs,
 		Ships,
 		Facilities,
 		Defences,

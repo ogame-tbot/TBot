@@ -1796,21 +1796,6 @@ namespace Tbot.Includes {
 			};
 		}
 
-		/*
-		public static LFTypes GetLFtype(Celestial celestial) {
-			if ((int) celestial.LFBuildings.GetType().GetProperty("ResidentialSector").GetValue(celestial.LFBuildings) > 0)
-				return LFTypes.Humans;
-			else if ((int) celestial.LFBuildings.GetType().GetProperty("MeditationEnclave").GetValue(celestial.LFBuildings) > 0)
-				return LFTypes.Rocktal;
-			else if ((int) celestial.LFBuildings.GetType().GetProperty("AssemblyLine").GetValue(celestial.LFBuildings) > 0)
-				return LFTypes.Mechas;
-			else if ((int) celestial.LFBuildings.GetType().GetProperty("Sanctuary").GetValue(celestial.LFBuildings) > 0)
-				return LFTypes.Kaelesh;
-			else
-				return LFTypes.None;
-		}
-		*/
-
 		private static Dictionary<string, int> GetLFBuildingRequirements(LFBuildables buildable) {
 			var rez = new Dictionary<string, int>();
 			//Humans
@@ -1874,7 +1859,7 @@ namespace Tbot.Includes {
 				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 6 }, { "Oriktorium", 1 } };
 				return rez;
 			} else if (buildable == LFBuildables.MetalRecyclingPlant) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 }, { "RuneForge", 1 }, { "Megalith", 5 }, { "CrystalRefinery", 6 }, { "Oriktorium", 5 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 }, { "DisruptionChamber", 4 }, { "MineralResearchCentre", 5 } };
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 }, { "RuneForge", 1 }, { "Megalith", 5 }, { "CrystalRefinery", 6 }, { "Oriktorium", 5 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 }, { "DisruptionChamber", 4 }, { "MineralResearchCentre", 5 } };
 				return rez;
 			}
 			//Mechas
