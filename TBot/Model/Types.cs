@@ -183,20 +183,7 @@ namespace Tbot.Model {
 		}
 
 		public LFTypes SetLFType() {
-			LFTypes LFtype = LFTypes.None;
-
-			if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("humans")) {
-				LFtype = LFTypes.Humans;
-			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("rocktal")) {
-				LFtype = LFTypes.Rocktal;
-			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("mechas")) {
-				LFtype = LFTypes.Mechas;
-			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("kaelesh")) {
-				LFtype = LFTypes.Kaelesh;
-			} else {
-				LFtype = LFTypes.None;
-			}
-
+			LFTypes LFtype = (LFTypes)LFBuildings.GetType().GetProperty("LifeformType").GetValue(LFBuildings);
 			return LFtype;
 		}
 	}
@@ -461,7 +448,7 @@ namespace Tbot.Model {
 	public class Supplies : Buildings { }
 
 	public class LFBuildings {
-		public string LFtype { get; set; }
+		public int LifeformType { get; set; }
 
 		//humans
 		public int ResidentialSector { get; set; }
