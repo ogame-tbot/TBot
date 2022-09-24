@@ -800,9 +800,6 @@ namespace Tbot {
 					case UpdateTypes.Constructions:
 						planet.Constructions = ogamedService.GetConstructions(planet);
 						break;
-					case UpdateTypes.LFConstructions:
-						planet.Constructions = ogamedService.GetLFConstructions(planet);
-						break;
 					case UpdateTypes.ResourceSettings:
 						if (planet is Planet) {
 							planet.ResourceSettings = ogamedService.GetResourceSettings(planet as Planet);
@@ -3697,7 +3694,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-				celestial = UpdatePlanet(celestial, UpdateTypes.LFConstructions);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFBuildingID != 0) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform building in production.");
@@ -3721,7 +3718,7 @@ namespace Tbot {
 							result = ogamedService.BuildCancelable(celestial, buildable);
 
 							if (result) {
-								celestial = UpdatePlanet(celestial, UpdateTypes.LFConstructions);
+								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 								if (celestial.Constructions.LFBuildingID == (int) buildable) {
 									started = true;
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");

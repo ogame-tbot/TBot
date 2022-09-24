@@ -324,7 +324,6 @@ namespace Tbot.Model {
 		Defences,
 		Productions,
 		Constructions,
-		LFConstructions,
 		ResourceSettings,
 		ResourcesProduction,
 		Debris
