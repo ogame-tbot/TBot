@@ -183,22 +183,21 @@ namespace Tbot.Model {
 		}
 
 		public LFTypes SetLFType() {
-			if ((bool) LFBuildings.GetType().GetProperty("None").GetValue(LFBuildings))
-				this.LFtype = LFTypes.None;
+			LFTypes LFtype = LFTypes.None;
 
-			if ((bool) LFBuildings.GetType().GetProperty("Humans").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Humans;
+			if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("humans")) {
+				LFtype = LFTypes.Humans;
+			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("rocktal")) {
+				LFtype = LFTypes.Rocktal;
+			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("mechas")) {
+				LFtype = LFTypes.Mechas;
+			} else if (LFBuildings.GetType().GetProperty("LFtype").GetValue(LFBuildings).Equals("kaelesh")) {
+				LFtype = LFTypes.Kaelesh;
+			} else {
+				LFtype = LFTypes.None;
+			}
 
-			if ((bool) LFBuildings.GetType().GetProperty("Rocktal").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Rocktal;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Mechas").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Mechas;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Kaelesh").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Kaelesh;
-
-			return this.LFtype;
+			return LFtype;
 		}
 	}
 
@@ -462,10 +461,9 @@ namespace Tbot.Model {
 	public class Supplies : Buildings { }
 
 	public class LFBuildings {
-		public bool None { get; set; }
+		public string LFtype { get; set; }
 
 		//humans
-		public bool Humans { get; set; }
 		public int ResidentialSector { get; set; }
 		public int BiosphereFarm { get; set; }
 		public int ResearchCentre { get; set; }
@@ -480,7 +478,6 @@ namespace Tbot.Model {
 		public int PlanetaryShield { get; set; }
 
 		//Rocktal
-		public bool Rocktal { get; set; }
 		public int MeditationEnclave { get; set; }
 		public int CrystalFarm { get; set; }
 		public int RuneTechnologium { get; set; }
@@ -495,7 +492,6 @@ namespace Tbot.Model {
 		public int MetalRecyclingPlant { get; set; }
 
 		//Mechas
-		public bool Mechas { get; set; }
 		public int AssemblyLine { get; set; }
 		public int FusionCellFactory { get; set; }
 		public int RoboticsResearchCentre { get; set; }
@@ -510,7 +506,6 @@ namespace Tbot.Model {
 		public int NanoRepairBots { get; set; }
 
 		//Kaelesh
-		public bool Kaelesh { get; set; }
 		public int Sanctuary { get; set; }
 		public int AntimatterCondenser { get; set; }
 		public int VortexChamber { get; set; }
