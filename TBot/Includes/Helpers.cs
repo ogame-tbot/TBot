@@ -1796,6 +1796,7 @@ namespace Tbot.Includes {
 			};
 		}
 
+		/*
 		public static LFTypes GetLFtype(Celestial celestial) {
 			if ((int) celestial.LFBuildings.GetType().GetProperty("ResidentialSector").GetValue(celestial.LFBuildings) > 0)
 				return LFTypes.Humans;
@@ -1808,6 +1809,7 @@ namespace Tbot.Includes {
 			else
 				return LFTypes.None;
 		}
+		*/
 
 		private static Dictionary<string, int> GetLFBuildingRequirements(LFBuildables buildable) {
 			var rez = new Dictionary<string, int>();

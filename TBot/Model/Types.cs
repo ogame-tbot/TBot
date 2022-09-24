@@ -170,6 +170,25 @@ namespace Tbot.Model {
 			}
 			return output;
 		}
+
+		public LFTypes SetLFType() {
+			if ((bool) LFBuildings.GetType().GetProperty("None").GetValue(LFBuildings))
+				this.LFtype = LFTypes.None;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Humans").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Humans;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Rocktal").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Rocktal;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Mechas").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Mechas;
+
+			if ((bool) LFBuildings.GetType().GetProperty("Kaelesh").GetValue(LFBuildings))
+				this.LFtype = LFTypes.Kaelesh;
+
+			return this.LFtype;
+		}
 	}
 
 	public class Moon : Celestial {
@@ -432,9 +451,12 @@ namespace Tbot.Model {
 	public class Supplies : Buildings { }
 
 	public class LFBuildings {
+		public bool None { get; set; }
+
 		//humans
-		public int ResidentialSector { get; set; } = 0;
-		public int BiosphereFarm { get; set; } = 0;
+		public bool Humans { get; set; }
+		public int ResidentialSector { get; set; }
+		public int BiosphereFarm { get; set; }
 		public int ResearchCentre { get; set; }
 		public int AcademyOfSciences { get; set; }
 		public int NeuroCalibrationCentre { get; set; }
@@ -447,8 +469,9 @@ namespace Tbot.Model {
 		public int PlanetaryShield { get; set; }
 
 		//Rocktal
-		public int MeditationEnclave { get; set; } = 0;
-		public int CrystalFarm { get; set; } = 0;
+		public bool Rocktal { get; set; }
+		public int MeditationEnclave { get; set; }
+		public int CrystalFarm { get; set; }
 		public int RuneTechnologium { get; set; }
 		public int RuneForge { get; set; }
 		public int Oriktorium { get; set; }
@@ -461,8 +484,9 @@ namespace Tbot.Model {
 		public int MetalRecyclingPlant { get; set; }
 
 		//Mechas
-		public int AssemblyLine { get; set; } = 0;
-		public int FusionCellFactory { get; set; } = 0;
+		public bool Mechas { get; set; }
+		public int AssemblyLine { get; set; }
+		public int FusionCellFactory { get; set; }
 		public int RoboticsResearchCentre { get; set; }
 		public int UpdateNetwork { get; set; }
 		public int QuantumComputerCentre { get; set; }
@@ -475,8 +499,9 @@ namespace Tbot.Model {
 		public int NanoRepairBots { get; set; }
 
 		//Kaelesh
-		public int Sanctuary { get; set; } = 0;
-		public int AntimatterCondenser { get; set; } = 0;
+		public bool Kaelesh { get; set; }
+		public int Sanctuary { get; set; }
+		public int AntimatterCondenser { get; set; }
 		public int VortexChamber { get; set; }
 		public int HallsOfRealisation { get; set; }
 		public int ForumOfTranscendence { get; set; }

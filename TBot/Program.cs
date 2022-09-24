@@ -782,7 +782,8 @@ namespace Tbot {
 						break;
 					case UpdateTypes.LFBuildings:
 						planet.LFBuildings = ogamedService.GetLFBuildings(planet);
-						planet.LFtype = Helpers.GetLFtype(planet);
+						//planet.LFtype = Helpers.GetLFtype(planet);
+						planet.LFtype = planet.SetLFType();
 						break;
 					case UpdateTypes.Ships:
 						planet.Ships = ogamedService.GetShips(planet);
