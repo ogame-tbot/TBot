@@ -22,8 +22,8 @@ namespace Tbot.Includes {
 			Client = new TelegramBotClient(Api);
 			Channel = channel;
 		}
-		
-		
+
+
 		public async void SendMessage(string message, ParseMode parseMode = ParseMode.Html) {
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Sending Telegram message...");
 			try {
@@ -49,7 +49,6 @@ namespace Tbot.Includes {
 				"/ghostsleep",
 				"/ghostsleepall",
 				"/ghost",
-				"/ghostto",
 				"/ghostmoons",
 				"/switch",
 				"/sleep",
@@ -59,8 +58,12 @@ namespace Tbot.Includes {
 				"/startautoping",
 				"stopexpe",
 				"startexpe",
+				"/stopautoresearch",
+				"/startautoresearch",
 				"/stopautomine",
 				"/startautomine",
+				"/stoplifeformautomine",
+				"/startlifeformautomine",
 				"/stopdefender",
 				"/startdefender",
 				"/msg",
@@ -91,7 +94,7 @@ namespace Tbot.Includes {
 
 				if (commands.Any(x => message.Text.ToLower().Contains(x))) {
 					//Handle /commands@botname in string if exist
-					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1) 
+					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1)
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 
 					try {
@@ -110,21 +113,6 @@ namespace Tbot.Includes {
 
 
 							case ("/ghost"):
-								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
-									return;
-								}
-								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
-
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
-
-								return;
-
-
-							case ("/ghostto"):
 								if (message.Text.Split(' ').Length != 3) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
@@ -162,14 +150,14 @@ namespace Tbot.Includes {
 								duration = Helpers.ParseDurationFromString(arg);
 
 								List<Celestial> myMoons = Tbot.Program.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
-								if(myMoons.Count > 0) {
+								if (myMoons.Count > 0) {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
 										Tbot.Program.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
-										if(fleetSaved != myMoons.Count)
+										if (fleetSaved != myMoons.Count)
 											Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 									}
 									SendMessage(botClient, message.Chat, "Moons FleetSave done!");
@@ -274,7 +262,7 @@ namespace Tbot.Includes {
 									return;
 								}
 								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
-								
+
 								return;
 
 
@@ -320,7 +308,7 @@ namespace Tbot.Includes {
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
-								}								
+								}
 
 								Tbot.Program.TelegramCancelGhostSleep();
 								return;
@@ -337,7 +325,7 @@ namespace Tbot.Includes {
 									return;
 								}
 								string recall = message.Text.Split(' ')[1];
-							 
+
 								if (Tbot.Program.EditSettings(null, Feature.Null, recall))
 									SendMessage(botClient, message.Chat, $"Recall value updated to {recall}.");
 								return;
@@ -353,11 +341,11 @@ namespace Tbot.Includes {
 
 								DateTime timeNow = Tbot.Program.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
-	
+
 								Tbot.Program.SleepNow(WakeUpTime);
 								return;
 
-							
+
 							case ("/wakeup"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -366,7 +354,7 @@ namespace Tbot.Includes {
 								Tbot.Program.WakeUpNow(null);
 								return;
 
-							
+
 							case ("/msg"):
 								if (message.Text.Split(' ').Length < 2) {
 									SendMessage(botClient, message.Chat, "Need message argument!");
@@ -376,7 +364,7 @@ namespace Tbot.Includes {
 								Tbot.Program.TelegramMesgAttacker(arg);
 								return;
 
-							
+
 							case ("/stopexpe"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -387,7 +375,7 @@ namespace Tbot.Includes {
 								SendMessage(botClient, message.Chat, "Expeditions stopped!");
 								return;
 
-							
+
 							case ("/startexpe"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -406,6 +394,28 @@ namespace Tbot.Includes {
 								}
 
 								Tbot.Program.TelegramCollect();
+								return;
+
+
+							case ("/stopautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopBrainAutoResearch();
+								SendMessage(botClient, message.Chat, "AutoResearch stopped!");
+								return;
+
+
+							case ("/startautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeBrainAutoResearch();
+								SendMessage(botClient, message.Chat, "AutoResearch started!");
 								return;
 
 
@@ -429,6 +439,29 @@ namespace Tbot.Includes {
 								Tbot.Program.InitializeBrainAutoMine();
 								SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
+
+
+							case ("/stoplifeformautomine"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopBrainLifeformAutoMine();
+								SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
+								return;
+
+
+							case ("/startlifeformautomine"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeBrainLifeformAutoMine();
+								SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
+								return;
+
 
 							case ("/stopdefender"):
 								if (message.Text.Split(' ').Length != 1) {
@@ -493,7 +526,7 @@ namespace Tbot.Includes {
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
-								if ( (!arg.Equals("moon")) && (!arg.Equals("planet")) ) {
+								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
 									SendMessage(botClient, message.Chat, $"Celestial type argument required! Format: <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
 									return;
 								}
@@ -511,7 +544,7 @@ namespace Tbot.Includes {
 								Tbot.Program.TelegramSetCurrentCelestial(coord, arg);
 								return;
 
-							
+
 							case ("/editsettings"):
 								if (message.Text.Split(' ').Length < 3) {
 									SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/editsettings 2:56:8 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
@@ -536,12 +569,11 @@ namespace Tbot.Includes {
 
 								Feature updateType = Feature.Null;
 								if (message.Text.ToLower().Split(' ').Length > 3) {
-									arg = message.Text.ToLower().Split(' ')[3];									
+									arg = message.Text.ToLower().Split(' ')[3];
 									if ((!arg.Equals("AutoMine")) && (!arg.Equals("AutoResearch")) && (!arg.Equals("AutoRepatriate")) && (!arg.Equals("Expeditions"))) {
 										SendMessage(botClient, message.Chat, $"Update type argument not valid! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
 										return;
-									}
-									else {
+									} else {
 										switch (arg) {
 											case "AutoMine":
 												updateType = Feature.BrainAutoMine;
@@ -559,7 +591,7 @@ namespace Tbot.Includes {
 												break;
 										}
 									}
-								}								
+								}
 
 								Tbot.Program.TelegramSetCurrentCelestial(coord, celestialType, updateType, true);
 								return;
@@ -581,12 +613,12 @@ namespace Tbot.Includes {
 										coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 										target = new Coordinate() { Galaxy = coord.Galaxy, System = coord.System, Position = coord.Position, Type = Celestials.Planet };
 									} catch {
-										SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>, or <code>auto</code>", ParseMode.Html); 
+										SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>, or <code>auto</code>", ParseMode.Html);
 										return;
 									}
 								}
 								Celestial origin = Tbot.Program.TelegramGetCurrentCelestial();
-								
+
 								Tbot.Program.SpyCrash(origin, target);
 								return;
 
@@ -597,7 +629,7 @@ namespace Tbot.Includes {
 									return;
 								}
 								bool isUnderAttack = Tbot.Program.TelegramIsUnderAttack();
-									
+
 								if (isUnderAttack) {
 									SendMessage(botClient, message.Chat, "Yes! You're still under attack!");
 								} else {
@@ -613,10 +645,10 @@ namespace Tbot.Includes {
 								}
 								List<Celestial> myCelestials = Tbot.Program.celestials.ToList();
 								string listCoords = "";
-								foreach (Coordinate coordinate in myCelestials.Select(p => p.Coordinate)){
+								foreach (Coordinate coordinate in myCelestials.Select(p => p.Coordinate)) {
 									listCoords += coordinate.ToString() + "\n";
 								}
-									SendMessage(botClient, message.Chat, $"{listCoords}");
+								SendMessage(botClient, message.Chat, $"{listCoords}");
 
 								return;
 
@@ -659,8 +691,7 @@ namespace Tbot.Includes {
 									"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
 									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
 									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>\n" +
-									"/ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: <code>/ghost 4h3m or 3m50s</code>\n" +
-									"/ghostto - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
+									"/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
 									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>\n" +
 									"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
 									"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
@@ -682,8 +713,12 @@ namespace Tbot.Includes {
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +
 									"/stopdefender - stop defender\n" +
+									"/stopautoresearch - stop brain autoresearch\n" +
+									"/startautoresearch - start brain autoresearch\n" +
 									"/stopautomine - stop brain automine\n" +
 									"/startautomine - start brain automine\n" +
+									"/stoplifeformautomine - stop brain Lifeform automine\n" +
+									"/startlifeformautomine - start brain Lifeform automine\n" +
 									"/stopautofarm - stop autofarm\n" +
 									"/startautofarm - start autofarm\n" +
 									"/stopautoping - stop telegram autoping\n" +
@@ -715,7 +750,7 @@ namespace Tbot.Includes {
 					} finally {
 						Tbot.Program.releaseFeature();
 
-					}	
+					}
 				}
 			}
 		}
@@ -727,7 +762,7 @@ namespace Tbot.Includes {
 		}
 
 		public async void TelegramBot() {
-			
+
 			var cts = new CancellationTokenSource();
 			var cancellationToken = cts.Token;
 
@@ -735,7 +770,7 @@ namespace Tbot.Includes {
 				AllowedUpdates = Array.Empty<UpdateType>(),
 				ThrowPendingUpdates = true
 			};
-			
+
 			await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cts.Token);
 		}
 	}

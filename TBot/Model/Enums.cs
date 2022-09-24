@@ -91,6 +91,202 @@ namespace Tbot.Model {
 		GravitonTechnology = 199
 	}
 
+	public enum LFTypes {
+		None = 0,
+		Humans = 1,
+		Rocktal = 2,
+		Mechas = 3,
+		Kaelesh = 4
+	}
+
+	public enum LFBuildables {
+		Null = 0,
+		//Humans
+		ResidentialSector = 11101,
+		BiosphereFarm = 11102,
+		ResearchCentre = 11103,
+		AcademyOfSciences = 11104,
+		NeuroCalibrationCentre = 11105,
+		HighEnergySmelting = 11106,
+		FoodSilo = 11107,
+		FusionPoweredProduction = 11108,
+		Skyscraper = 11109,
+		BiotechLab = 11110,
+		Metropolis = 11111,
+		PlanetaryShield = 11112,
+
+		//Rocktal
+		MeditationEnclave = 12101,
+		CrystalFarm = 12102,
+		RuneTechnologium = 12103,
+		RuneForge = 12104,
+		Oriktorium = 12105,
+		MagmaForge = 12106,
+		DisruptionChamber = 12107,
+		Megalith = 12108,
+		CrystalRefinery = 12109,
+		DeuteriumSynthesiser = 12110,
+		MineralResearchCentre = 12111,
+		MetalRecyclingPlant = 12112,
+
+		//Mechas
+		AssemblyLine = 13101,
+		FusionCellFactory = 13102,
+		RoboticsResearchCentre = 13103,
+		UpdateNetwork = 12304,
+		QuantumComputerCentre = 13105,
+		AutomatisedAssemblyCentre = 13106,
+		HighPerformanceTransformer = 13107,
+		MicrochipAssemblyLine = 13108,
+		ProductionAssemblyHall = 13109,
+		HighPerformanceSynthesiser = 13110,
+		ChipMassProduction = 13111,
+		NanoRepairBots = 13112,
+
+		//Kaelesh
+		Sanctuary = 14101,
+		AntimatterCondenser = 14102,
+		VortexChamber = 14103,
+		HallsOfRealisation = 14104,
+		ForumOfTranscendence = 14105,
+		AntimatterConvector = 14106,
+		CloningLaboratory = 14107,
+		ChrysalisAccelerator = 14108,
+		BioModifier = 14109,
+		PsionicModulator = 14110,
+		ShipManufacturingHall = 14111,
+		SupraRefractor = 14112
+
+	}
+
+	//Used only with Helpers.GetLessExpensiveLFBuilding()
+	public enum HumansBuildables {
+		ResearchCentre = 11103,
+		HighEnergySmelting = 11106,
+		FoodSilo = 11107,
+		FusionPoweredProduction = 11108,
+		Skyscraper = 11109,
+		BiotechLab = 11110,
+		Metropolis = 11111,
+		PlanetaryShield = 11112
+	}
+
+	public enum RocktalBuildables {
+		RuneTechnologium = 12103,
+		MagmaForge = 12106,
+		DisruptionChamber = 12107,
+		Megalith = 12108,
+		CrystalRefinery = 12109,
+		DeuteriumSynthesiser = 12110,
+		MineralResearchCentre = 12111,
+		MetalRecyclingPlant = 12112
+	}
+
+	public enum MechasBuildables {
+		RoboticsResearchCentre = 13103,
+		AutomatisedAssemblyCentre = 13106,
+		HighPerformanceTransformer = 13107,
+		MicrochipAssemblyLine = 13108,
+		ProductionAssemblyHall = 13109,
+		HighPerformanceSynthesiser = 13110,
+		ChipMassProduction = 13111,
+		NanoRepairBots = 13112
+	}
+
+	public enum KaeleshBuildables {
+		VortexChamber = 14103,
+		AntimatterConvector = 14106,
+		CloningLaboratory = 14107,
+		ChrysalisAccelerator = 14108,
+		BioModifier = 14109,
+		PsionicModulator = 14110,
+		ShipManufacturingHall = 14111,
+		SupraRefractor = 14112
+	}
+
+	public enum LFTechno {
+		None = 0,
+		//Humans
+		IntergalacticEnvoys = 11201,
+		HighPerformanceExtractors = 11202,
+		FusionDrives = 11203,
+		StealthFieldGenerator = 11204,
+		OrbitalDen = 11205,
+		ResearchAI = 11206,
+		HighPerformanceTerraformer = 11207,
+		EnhancedProductionTechnologies = 11208,
+		LightFighterMkII = 11209,
+		CruiserMkII = 11210,
+		ImprovedLabTechnology = 11211,
+		PlasmaTerraformer = 11212,
+		LowTemperatureDrives = 11213,
+		BomberMkII = 11214,
+		DestroyerMkII = 11215,
+		BattlecruiserMkII = 11216,
+		RobotAssistants = 11217,
+		Supercomputer = 11218,
+
+		//Rocktal
+		VolcanicBatteries = 12201,
+		AcousticScanning = 12202,
+		HighEnergyPumpSystems = 12203,
+		CargoHoldExpansionCivilianShips = 12204,
+		MagmaPoweredProduction = 12205,
+		GeothermalPowerPlants = 12206,
+		DepthSounding = 12207,
+		IonCrystalEnhancementHeavyFighter = 12208,
+		ImprovedStellarator = 12209,
+		HardenedDiamondDrillHeads = 12210,
+		SeismicMiningTechnology = 12211,
+		MagmaPoweredPumpSystems = 12212,
+		IonCrystalModules = 12213,
+		OptimisedSiloConstructionMethod = 12214,
+		DiamondEnergyTransmitter = 12215,
+		ObsidianShieldReinforcement = 12216,
+		RuneShields = 12217,
+		RocktalCollectorEnhancement = 12218,
+
+		//Mechas
+		CatalyserTechnology = 13201,
+		PlasmaDrive = 13202,
+		EfficiencyModule = 13203,
+		DepotAI = 13204,
+		GeneralOverhaulLightFighter = 13205,
+		AutomatedTransportLines = 13206,
+		ImprovedDroneAI = 13207,
+		ExperimentalRecyclingTechnology = 13208,
+		GeneralOverhaulCruiser = 13209,
+		SlingshotAutopilot = 13210,
+		HighTemperatureSuperconductors = 13211,
+		GeneralOverhaulBattleship = 13212,
+		ArtificialSwarmIntelligence = 13213,
+		GeneralOverhaulBattlecruiser = 13214,
+		GeneralOverhaulBomber = 13215,
+		GeneralOverhaulDestroyer = 13216,
+		ExperimentalWeaponsTechnology = 13217,
+		MechanGeneralEnhancement = 13218,
+
+		//Kaelesh
+		HeatRecovery = 14201,
+		SulphideProcess = 14202,
+		PsionicNetwork = 14203,
+		TelekineticTractorBeam = 14204,
+		EnhancedSensorTechnology = 14205,
+		NeuromodalCompressor = 14206,
+		NeuroInterface = 14207,
+		InterplanetaryAnalysisNetwork = 14208,
+		OverclockingHeavyFighter = 14209,
+		TelekineticDrive = 14210,
+		SixthSense = 14211,
+		Psychoharmoniser = 14212,
+		EfficientSwarmIntelligence = 14213,
+		OverclockingLargeCargo = 14214,
+		GravitationSensors = 14215,
+		OverclockingBattleship = 14216,
+		PsionicShieldMatrix = 14217,
+		KaeleshDiscovererEnhancement = 14218
+	}
+
 	public enum Missions {
 		None = 0,
 		Attack = 1,
@@ -205,6 +401,8 @@ namespace Tbot.Model {
 		Full,
 		Resources,
 		Buildings,
+		LFBuildings,
+		LFTechs,
 		Ships,
 		Facilities,
 		Defences,
@@ -275,10 +473,11 @@ namespace Tbot.Model {
 		BrainAutoResearch = 11,
 		Colonize = 12,
 		AutoFarm = 13,
-		TelegramAutoPing = 14
+		TelegramAutoPing = 14,
+		BrainLifeformAutoMine = 15
 	}
 
-	public enum SendFleetCode:int {
+	public enum SendFleetCode : int {
 		GenericError = 0,
 		AfterSleepTime = -1,
 		NotEnoughSlots = -2

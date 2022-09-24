@@ -182,7 +182,7 @@ namespace Tbot.Services {
 				request.AddParameter("challenge_id", challengeID, ParameterType.GetOrPost);
 				request.AddParameter("answer", answer, ParameterType.GetOrPost);
 				Client.Execute(request);
-			} catch {}
+			} catch { }
 		}
 
 		public string GetOgamedIP() {
@@ -210,8 +210,7 @@ namespace Tbot.Services {
 			try {
 				var result = JsonConvert.DeserializeObject<dynamic>(Client.Execute(request).Content);
 				return result.ip;
-			}
-			catch {
+			} catch {
 				return "";
 			}
 		}
@@ -462,6 +461,30 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Model.Buildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
+		public LFBuildings GetLFBuildings(Celestial celestial) {
+			var request = new RestRequest {
+				Resource = $"/bot/planets/{celestial.ID}/lifeform-buildings",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public LFTechs GetLFTechs(Celestial celestial) {
+			var request = new RestRequest {
+				Resource = $"/bot/planets/{celestial.ID}/lifeform-techs",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
 		public Facilities GetFacilities(Celestial celestial) {
 			var request = new RestRequest {
 				Resource = $"/bot/planets/{celestial.ID}/facilities",
@@ -703,6 +726,7 @@ namespace Tbot.Services {
 			if (result.Status != "ok") {
 				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
 			} else
+				Console.WriteLine(result.Result.ToString());
 				return JsonConvert.DeserializeObject<Constructions>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
@@ -815,6 +839,20 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
+		public bool BuildCancelable(Celestial celestial, LFBuildables buildable) {
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/planets/{celestial.ID}/build/cancelable/{(int) buildable}",
+					Method = Method.POST,
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
 		public bool BuildConstruction(Celestial celestial, Buildables buildable) {
 			try {
 				var request = new RestRequest {
@@ -883,6 +921,30 @@ namespace Tbot.Services {
 		}
 
 		public Model.Resources GetPrice(Buildables buildable, long levelOrQuantity) {
+			var request = new RestRequest {
+				Resource = $"/bot/price/{(int) buildable}/{levelOrQuantity}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.LFBuildings GetRequirements(LFBuildables buildable) { //works but returns LFbuildings as ID, lazy to do the mapping ID -> LFbuilding class to be able to use properties reflection
+			var request = new RestRequest {
+				Resource = $"bot/requirements/{(int) buildable}",
+				Method = Method.GET,
+			};
+			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+			if (result.Status != "ok") {
+				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+			} else
+				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+		}
+
+		public Model.Resources GetPrice(LFBuildables buildable, long levelOrQuantity) {
 			var request = new RestRequest {
 				Resource = $"/bot/price/{(int) buildable}/{levelOrQuantity}",
 				Method = Method.GET,
