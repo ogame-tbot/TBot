@@ -1948,7 +1948,7 @@ namespace Tbot {
 			DateTime time = GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
-			telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
+			telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 
 			isSleeping = true;
@@ -3536,8 +3536,8 @@ namespace Tbot {
 										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
+										.SingleOrDefault() ?? new() { ID = 0 };	
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable, buildable);
 
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
@@ -4214,7 +4214,7 @@ namespace Tbot {
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -4245,6 +4245,25 @@ namespace Tbot {
 							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+						if (preferredShip == Buildables.SmallCargo && idealShips < 3 && buildable != Buildables.Null) {
+							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Less than 3 SmallCargo is needed, Will try sending resource for next level also..");
+							int level = Helpers.GetNextLevel(destination, buildable);
+							Resources nextCostBuildable = Helpers.CalcPrice(buildable, level);
+							Resources nextCostBuildable2 = Helpers.CalcPrice(buildable, level+1);
+							missingResources.Sum(nextCostBuildable).Sum(nextCostBuildable2);
+							if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+								missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+								missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+								missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+							}
+							if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
+								idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+							} else {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+								return 0;
+							}
+						}
+
 						Ships ships = new();
 						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
 							ships.Add(preferredShip, idealShips);
