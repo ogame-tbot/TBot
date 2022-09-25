@@ -1995,14 +1995,15 @@ namespace Tbot.Includes {
 					}
 				}
 			}
-
-			var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
-			Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
-
-			//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
-			if (LessExpensiveLFbuild != LFBuildables.None)
-				nextLFbuild = LessExpensiveLFbuild;
+			//force building of food instead of another less expensive building if people are dying
+			if ((planet.ResourcesProduction.Population.Hungry == 0)) {
+				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
+				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
+				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
+				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				if (LessExpensiveLFbuild != LFBuildables.None)
+					nextLFbuild = LessExpensiveLFbuild;
+			}
 
 			//Check if can build T2 or T3 Lifeorms
 			if (planet.LFtype == LFTypes.Humans) {
