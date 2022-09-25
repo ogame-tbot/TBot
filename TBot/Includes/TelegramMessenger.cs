@@ -82,6 +82,7 @@ namespace Tbot.Includes {
 				"/getfleets",
 				"/getcurrentauction",
 				"/bidauction",
+				"/subscribeauction",
 				"/help"
 			};
 
@@ -92,6 +93,7 @@ namespace Tbot.Includes {
 				decimal speed;
 				long duration;
 				Celestial celestial;
+				int celestialID = 0;
 				List<Celestial> myCelestials;
 				Resources resources;
 				Coordinate coord = new();
@@ -126,25 +128,37 @@ namespace Tbot.Includes {
 
 								return;
 
-							case ("/bidauction"):
-								if (message.Text.Split(' ').Length < 3) {
-									SendMessage(botClient, message.Chat, "To bid auction must format: <code>/bidauction 33651579 M:1000 C:1000 D:1000 </code>", ParseMode.Html);
-									return;
-								}
+							case ("/subscribeauction"):
+								// If there is no auction in progress, then we will trigger a timer when next auction will be in place
+								Tbot.Program.TelegramSubscribeToNextAuction();
 
+								return;
+
+							case ("/bidauction"):
 								args = message.Text.Split(' ');
-								// First string has to be a valid celestialID
-								try {
-									myCelestials = Tbot.Program.celestials.ToList();
-									celestial = myCelestials.Single(celestial => celestial.ID == Int32.Parse(args[1]));
-									// If above has not thrown InvalidOperationException, then remaining can be any resource
-									resources = Resources.FromString(String.Join(' ', args.Skip(2)));
-									if(resources.TotalResources > 0)
-										Tbot.Program.TelegramBidAuction(celestial, resources);
-									else
-										SendMessage(botClient, message.Chat, "Cannot bid to auction with 0 resources set!");
-								} catch (Exception e) {
-									SendMessage(botClient, message.Chat, $"Error parsing bid auction command \"{e.Message}\"");
+								if(args.Length == 1) {
+									// Bid minimum amount
+									Tbot.Program.TelegramBidAuctionMinimum();
+								}
+								else if (args.Length < 3) {
+									SendMessage(botClient, message.Chat,
+										"To bid auction must format: <code>/bidauction 33651579 M:1000 C:1000 D:1000 </code> \n" +
+										"Or <code>/bidauction</code> to bid minimum amount to take auction", ParseMode.Html);
+									return;
+								} else {
+									// First string has to be a valid celestialID
+									try {
+										myCelestials = Tbot.Program.celestials.ToList();
+										celestial = myCelestials.Single(celestial => celestial.ID == Int32.Parse(args[1]));
+										// If above has not thrown InvalidOperationException, then remaining can be any resource
+										resources = Resources.FromString(String.Join(' ', args.Skip(2)));
+										if (resources.TotalResources > 0)
+											Tbot.Program.TelegramBidAuction(celestial, resources);
+										else
+											SendMessage(botClient, message.Chat, "Cannot bid to auction with 0 resources set!");
+									} catch (Exception e) {
+										SendMessage(botClient, message.Chat, $"Error parsing bid auction command \"{e.Message}\"");
+									}
 								}
 	
 								return;
@@ -561,13 +575,45 @@ namespace Tbot.Includes {
 
 
 							case ("/getinfo"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								args = message.Text.Split(' ');
+								if (args.Length == 1) {
+									celestial = Tbot.Program.TelegramGetCurrentCelestial();
+									Tbot.Program.TelegramGetInfo(celestial);
+									
 									return;
+								} else if((args.Length == 2)) {
+									myCelestials = Tbot.Program.celestials.ToList();
+									// Try celestial ID first
+									try {
+										celestialID = Int32.Parse(args[1]);
+										celestial = myCelestials.Single(c => c.ID == celestialID);
+										Tbot.Program.TelegramGetInfo(celestial);
+
+									} catch (Exception e) {
+										SendMessage(botClient, message.Chat,
+											$"Invalid arguments specified for Format <code>/getinfo 321312132</code>\n" +
+											$"Error:{e.Message}");
+									}
+									return;
+								} else if((args.Length == 3)) {
+									myCelestials = Tbot.Program.celestials.ToList();
+									// Try format Galaxy:System:Position (Moon|Planet)
+									try {
+										coord = Coordinate.FromString(String.Join(' ', args.Skip(1)));
+										celestial = myCelestials.Single(c => c.Coordinate.IsSame(coord));
+										Tbot.Program.TelegramGetInfo(celestial);
+										
+									} catch (Exception e) {
+										SendMessage(botClient, message.Chat,
+											$"Invalid arguments specified for Format <code>/getinfo 2:48:5 Moon/Planet</code>\n" +
+											$"Error:{e.Message}");
+									}									
+								}
+								else {
+									SendMessage(botClient, message.Chat, "Invalid number of argument specified for current command");
 								}
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.TelegramGetInfo(celestial);
+								
 								return;
 
 
@@ -699,7 +745,7 @@ namespace Tbot.Includes {
 								myCelestials = Tbot.Program.celestials.ToList();
 								string celestialStr = "";
 								foreach(Celestial c in myCelestials) {
-									celestialStr += $"{c.Name} {c.Coordinate.ToString()} {c.ID}\n";
+									celestialStr += $"{c.Name.PadRight(16, ' ')} {c.Coordinate.ToString().PadRight(16)} {c.ID}\n";
 								}
 								SendMessage(botClient, message.Chat, celestialStr);
 
@@ -744,6 +790,7 @@ namespace Tbot.Includes {
 									"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
 									"/getcurrentauction - Get current Auction\n" +
 									"/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>\n" +
+									"/subscribeauction - Get a notification when next auction will start\n" +
 									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
 									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>\n" +
 									"/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>\n" +
@@ -762,7 +809,7 @@ namespace Tbot.Includes {
 									"/getcelestials - Return the list of your celestials\n" +
 									"/attacked - check if you're (still) under attack\n" +
 									"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
-									"/getinfo - Get current celestial resources and ships\n" +
+									"/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>\n" +
 									"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
 									"/stopexpe - Stop sending expedition\n" +
 									"/startexpe - Start sending expedition\n" +

@@ -88,15 +88,15 @@ namespace Tbot.Includes {
 
 		public static long ParseDurationFromString(string timeString) {
 			long duration = 0;
-			string regExp = "^(\\d{1,2})?[h|H]?(\\d{1,2})?[m|M]?(\\d{1,2})?[s|S]?";
+			string regExp = "^(\\d{1,2}[h|H])?(\\d{1,2}[m|M])?(\\d{1,2}[s|S])?";
 
 			Regex re = new Regex(regExp);
 			Match m = re.Match(timeString);
 
 			if (m.Groups.Count == 4) {
-				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value) : 0;
-				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value) : 0;
-				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value) : 0;
+				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value.Remove(m.Groups[1].Value.Length - 1)) : 0;
+				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value.Remove(m.Groups[2].Value.Length - 1)) : 0;
+				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value.Remove(m.Groups[3].Value.Length - 1)) : 0;
 
 				duration = (hours * 60 * 60) + (mins * 60) + secs;
 			} else {
@@ -115,6 +115,7 @@ namespace Tbot.Includes {
 			var rand = new Random();
 			return type switch {
 				IntervalType.LessThanASecond => rand.Next(500, 1000),
+				IntervalType.LessThanFiveSeconds => rand.Next(1000, 5000),
 				IntervalType.AFewSeconds => rand.Next(5000, 15000),
 				IntervalType.SomeSeconds => rand.Next(20000, 50000),
 				IntervalType.AMinuteOrTwo => rand.Next(40000, 140000),

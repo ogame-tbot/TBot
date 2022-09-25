@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.VisualBasic;
+using Newtonsoft.Json;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Tbot.Model {
 	public class Credentials {
@@ -38,6 +41,27 @@ namespace Tbot.Model {
 
 		public override string ToString() {
 			return $"[{GetCelestialCode()}:{Galaxy}:{System}:{Position}]";
+		}
+
+		static public Coordinate FromString(String arg) {
+			Coordinate output = new();
+			Regex re = new Regex("(\\d{1}):(\\d{1,3}):(\\d{1,2}) (moon|planet|Moon|Planet)");
+			Match m = re.Match(arg);
+			if(m.Success){
+				output.Galaxy = Int32.Parse(m.Groups[1].Value);
+				output.System = Int32.Parse(m.Groups[2].Value);
+				output.Position = Int32.Parse(m.Groups[3].Value);
+
+				if (m.Groups[4].Value.ToLower().Contains("moon")) {
+					output.Type = Celestials.Moon;
+				} else {
+					output.Type = Celestials.Planet;
+				}
+			} else {
+				throw new Exception($"Invalid Coordinate from {arg}");
+			}
+
+			return output;
 		}
 
 		private string GetCelestialCode() {
@@ -422,7 +446,9 @@ namespace Tbot.Model {
 			Regex re = new Regex("([M|m|C|c|D|d]):(\\d*)");
 			MatchCollection ms = re.Matches(arg);
 			foreach (Match m in ms) {
-				if (m.Groups[1].Value.ToLower().Contains('m')) {
+				if(m.Success == false) {
+				}
+				else if (m.Groups[1].Value.ToLower().Contains('m')) {
 					output.Metal = Int32.Parse(m.Groups[2].Value);
 				} else if (m.Groups[1].Value.ToLower().Contains('c')) {
 					output.Crystal = Int32.Parse(m.Groups[2].Value);
@@ -1383,11 +1409,53 @@ namespace Tbot.Model {
 
 
 	public class AuctionResourceMultiplier {
-		public float Metal { get; set; }
-		public float Crystal { get; set; }
-		public float Deuterium { get; set; }
-		public int Honor { get; set; }
+		public float Metal { get; set; } = 1.0f;
+		public float Crystal { get; set; } = 1.5f;
+		public float Deuterium { get; set; } = 3.0f;
+		public int Honor { get; set; } = 100;
 	}
+
+	public class AuctionOutput {
+		public long metal { get; set; } = 0;
+
+		public long crystal { get; set; } = 0;
+
+		public long deuterium { get; set; } = 0;
+
+		public long TotalResources {
+			get {
+				return metal + crystal + deuterium;
+			}
+		}
+
+		public override string ToString() {
+			return $"M:{metal} C:{crystal} D:{deuterium}";
+		}
+	}
+	public class AuctionInput : AuctionOutput {
+		public bool isMoon { get; set; } = false;
+		public string name { get; set; } = "";
+		public int otherPlanetId { get; set; }
+		public AuctionOutput output { get; set; } = new();
+
+		public override string ToString() {
+			string output = "[";
+			if (isMoon)
+				output += "M";
+			else
+				output += "P";
+			output += $" \"{name}\" Output:{output.ToString()}";
+			return output;
+		}
+	}
+	public class AuctionResourcesValue {
+		public string imageFileName { get; set; }
+		public AuctionInput input { get; set; }
+		public override string ToString() {
+			return $"ImageFN:\"{imageFileName}\" Input:{input.ToString()}";
+		}
+	}
+
 	public class Auction {
 		public bool HasFinished { get; set; }
         public int Endtime { get; set; }
@@ -1403,19 +1471,36 @@ namespace Tbot.Model {
 		public int Inventory { get; set; }
 		public string Token { get; set; }
 		public AuctionResourceMultiplier ResourceMultiplier { get; set; }
-		public Dictionary<string, dynamic> Resources { get; set; }
+		public Dictionary<string, AuctionResourcesValue> Resources { get; set; }
 
-		public string toString() {
-			// TODO CurrentItemLong is too long, but can be parsed with a RegExp. Just too lazy to do it now :)
+		public long TotalResourcesOffered {
+			get {
+				long sum = 0;
+				foreach (var item in Resources) {
+					sum += item.Value.input.output.TotalResources;
+				}
+
+				return sum;
+			}
+		}
+
+		public override string ToString() {
+			// TODO CurrentItemLong is too long, but can be parsed with a RegExp. Moreover it has unicode characters.
+			// Just too lazy to do anything else :)
 			if(HasFinished) {
+				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 				return	$"Item: {CurrentItem} sold for {CurrentBid} to {HighestBidder}.\n" +
-						$"NumBids: {NumBids}.";
+						$"Next Auction in {timeStr} \n" +
+						$"Number of Bids: {NumBids}.";
 			} else {
+				// When in action, only minutes are worth.Lets keep seconds though
 				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
 						$"CurrentBid: {CurrentBid} by \"{HighestBidder}\" (ID:{HighestBidderUserID}). \n" +
-						$"AlreadyBid: {AlreadyBid} would require a MinimumBid of \"{MinimumBid}\"\n" +
-						$"NumBids: {NumBids}.";
+						$"AlreadyBid: {AlreadyBid} MinimumBid: {MinimumBid}. \n" +
+						$"To enter we must bid \"{MinimumBid - AlreadyBid}\"\n" +
+						$"Resource Multiplier: M:{ResourceMultiplier.Metal} C:{ResourceMultiplier.Crystal} D:{ResourceMultiplier.Deuterium}\n" +
+						$"Number of Bids: {NumBids}.";
 			}
 		}
 	}
