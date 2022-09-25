@@ -1139,28 +1139,21 @@ namespace Tbot {
 		public static void TelegramGetCurrentAuction() {
 			Auction auction;
 			try {
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Getting current auction...");
 				auction = ogamedService.GetCurrentAuction();
 				string outStr = "";
-				//if (auction.TotalResourcesOffered > 0) {
-					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "AUCTION: iterating...");
+				if (auction.TotalResourcesOffered > 0) {
 					outStr += "Offerings: \n";
 					// Find from which planet we have put resources
 					foreach (var item in auction.Resources) {
 						string planetIdString = item.Key;
 						AuctionResourcesValue value = item.Value;
 
-						Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"AUCTION: iterating for {planetIdString}");
-						Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"AUCTION: {value.input.output != null}");
-						Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"AUCTION: {value.input.name != null}");
-						if (value.input.output.TotalResources > 0) {
-							outStr += $"\t\"{value.input.name}\" ID:{planetIdString} {value.input.output.ToString()} \n";
+						if (value.output.TotalResources > 0) {
+							outStr += $"\t\"{value.Name}\" ID:{planetIdString} {value.output.ToString()} \n";
 						}
 					}
-				//}
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Before ToString...");
+				}
 				outStr += auction.ToString();
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "After ToString...");
 				telegramMessenger.SendMessage(outStr);
 			} catch (Exception e) {
 				telegramMessenger.SendMessage($"Error {e.Message}");
@@ -1215,26 +1208,26 @@ namespace Tbot {
 					long minBidRequired = auction.MinimumBid - auction.AlreadyBid;
 
 					Celestial celestial = null;
-					//foreach(Celestial c in celestials.ToList()) {
-					//	c = UpdatePlanet(c, UpdateTypes.Resources);
-					//	Resources cRes = c.Resources;
-					//	long auctionPoints = (long) Math.Round(
-					//			(cRes.Metal / auction.ResourceMultiplier.Metal) +
-					//			(cRes.Crystal / auction.ResourceMultiplier.Crystal) +
-					//			(cRes.Deuterium / auction.ResourceMultiplier.Deuterium)
-					//	);
-					//	if(auctionPoints > minBidRequired) {
-					//		telegramMessenger.SendMessage($"Found celestial! {celestial.ToString()}");
-					//		celestial = c;
-					//		break;
-					//	}
-					//	else {
-					//		telegramMessenger.SendMessage(
-					//			$"Not enough auction points {auctionPoints} < {minBidRequired} \n" +
-					//			$"for {celestial.ToString()}");
-					//		Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
-					//	}
-					//}
+					foreach(Celestial c in celestials.ToList()) {
+						c = UpdatePlanet(c, UpdateTypes.Resources);
+						Resources cRes = c.Resources;
+						long auctionPoints = (long) Math.Round(
+								(cRes.Metal / auction.ResourceMultiplier.Metal) +
+								(cRes.Crystal / auction.ResourceMultiplier.Crystal) +
+								(cRes.Deuterium / auction.ResourceMultiplier.Deuterium)
+						);
+						if(auctionPoints > minBidRequired) {
+							telegramMessenger.SendMessage($"Found celestial! {celestial.ToString()}");
+							celestial = c;
+							break;
+						}
+						else {
+							telegramMessenger.SendMessage(
+								$"Not enough auction points {auctionPoints} < {minBidRequired} \n" +
+								$"for {celestial.ToString()}");
+							Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
+						}
+					}
 
 					if(celestial == null) {
 						telegramMessenger.SendMessage(

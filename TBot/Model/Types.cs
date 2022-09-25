@@ -1414,45 +1414,48 @@ namespace Tbot.Model {
 		public float Deuterium { get; set; } = 3.0f;
 		public int Honor { get; set; } = 100;
 	}
+	public class AuctionInputOutput {
+		[JsonProperty("metal")]
+		public long Metal { get; set; } = 10;
 
-	public class AuctionOutput {
-		public long metal { get; set; } = 0;
+		[JsonProperty("crystal")]
+		public long Crystal { get; set; } = 10;
 
-		public long crystal { get; set; } = 0;
-
-		public long deuterium { get; set; } = 0;
+		[JsonProperty("deuterium")]
+		public long Deuterium { get; set; } = 10;
 
 		public long TotalResources {
 			get {
-				return metal + crystal + deuterium;
+				return Metal + Crystal + Deuterium;
 			}
 		}
 
 		public override string ToString() {
-			return $"M:{metal} C:{crystal} D:{deuterium}";
+			return $"M:{Metal} C:{Crystal} D:{Deuterium}";
 		}
 	}
-	public class AuctionInput : AuctionOutput {
-		public bool isMoon { get; set; } = false;
-		public string name { get; set; } = "";
-		public int otherPlanetId { get; set; }
-		public AuctionOutput output { get; set; } = new();
 
-		public override string ToString() {
-			string output = "[";
-			if (isMoon)
-				output += "M";
-			else
-				output += "P";
-			output += $" \"{name}\" Output:{output.ToString()}";
-			return output;
-		}
-	}
 	public class AuctionResourcesValue {
 		public string imageFileName { get; set; }
-		public AuctionInput input { get; set; }
+		public AuctionInputOutput input { get; set; }
+		public AuctionInputOutput output { get; set; }
+		public bool isMoon { get; set; }
+
+		[JsonProperty("name")]
+		public string Name { get; set; }
+		public int otherPlanetId { get; set; } = 0;
+
 		public override string ToString() {
-			return $"ImageFN:\"{imageFileName}\" Input:{input.ToString()}";
+			string outStr = "[";
+			if (isMoon)
+				outStr += "M";
+			else
+				outStr += "P";
+			outStr +=
+				$" \"{Name}\" {otherPlanetId} " +
+				$"Input: M:{input.Metal} C:{input.Crystal} D:{input.Deuterium} " +
+				$"Output: M:{output.Metal} C:{output.Crystal} D:{output.Deuterium}]";
+			return outStr;
 		}
 	}
 
@@ -1477,7 +1480,7 @@ namespace Tbot.Model {
 			get {
 				long sum = 0;
 				foreach (var item in Resources) {
-					sum += item.Value.input.output.TotalResources;
+					sum += item.Value.output.TotalResources;
 				}
 
 				return sum;
