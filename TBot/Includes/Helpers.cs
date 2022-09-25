@@ -2001,7 +2001,8 @@ namespace Tbot.Includes {
 				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
 				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
 				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
-				if (LessExpensiveLFbuild != LFBuildables.None)
+				// Prevent chosing food building because less expensive whereas it is not needed
+				if (LessExpensiveLFbuild != LFBuildables.None && LessExpensiveLFbuild != LFBuildables.BiosphereFarm && LessExpensiveLFbuild != LFBuildables.CrystalFarm && LessExpensiveLFbuild != LFBuildables.FusionCellFactory && LessExpensiveLFbuild != LFBuildables.AntimatterCondenser)
 					nextLFbuild = LessExpensiveLFbuild;
 			}
 
