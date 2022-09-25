@@ -1968,6 +1968,20 @@ namespace Tbot.Includes {
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
 
+			//Early game, force increasing of population growthrate if availabe food = x2 population
+			if (planet.ResourcesProduction.Population.Available < (planet.ResourcesProduction.Population.Satisfied / 2)) {
+				if (planet.LFtype == LFTypes.Humans) {
+					nextLFbuild = LFBuildables.ResidentialSector;
+				} else if (planet.LFtype == LFTypes.Rocktal) {
+					nextLFbuild = LFBuildables.MeditationEnclave;
+				} else if (planet.LFtype == LFTypes.Mechas) {
+					nextLFbuild = LFBuildables.AssemblyLine;
+				} else if (planet.LFtype == LFTypes.Kaelesh) {
+					nextLFbuild = LFBuildables.Sanctuary;
+				}
+				return nextLFbuild;
+			}
+
 			LFBuildables T2 = LFBuildables.None;
 			LFBuildables T3 = LFBuildables.None;
 			var T2lifeformNextlvl = 0;
@@ -1995,7 +2009,7 @@ namespace Tbot.Includes {
 					}
 				}
 			}
-			//force building of food instead of another less expensive building if people are dying
+			//prevent looking for another less expensive building if people are dying
 			if ((planet.ResourcesProduction.Population.Hungry == 0)) {
 				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
 				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
