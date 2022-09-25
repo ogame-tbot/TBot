@@ -529,7 +529,7 @@ namespace Tbot.Model {
 
 	public class LFTechs {
 		//Humans
-		public int intIntergalacticEnvoys { get; set; }
+		public int IntergalacticEnvoys { get; set; }
 		public int HighPerformanceExtractors { get; set; }
 		public int FusionDrives { get; set; }
 		public int StealthFieldGenerator { get; set; }

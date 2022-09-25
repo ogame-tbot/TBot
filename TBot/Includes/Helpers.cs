@@ -2090,6 +2090,9 @@ namespace Tbot.Includes {
 			//Threfore, for the moment, up only techs that are minimum level 1
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
+					//skip intergalactic envoys tech cuz we dont care
+					if (prop.Name == "IntergalacticEnvoys" || nextLFTech == LFTechno.IntergalacticEnvoys)
+						continue;
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == nextLFTech.ToString()) {
 						return nextLFTech;
 					}
@@ -2104,6 +2107,8 @@ namespace Tbot.Includes {
 			LFTechno nextLFtech = LFTechno.None;
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
+					if (prop.Name == "IntergalacticEnvoys" || next == LFTechno.IntergalacticEnvoys)
+						continue;
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == next.ToString()) {
 						nextLFtech = next;
 						var nextLFtechlvl = Helpers.GetNextLevel(celestial, nextLFtech);
