@@ -1209,7 +1209,7 @@ namespace Tbot {
 
 					Celestial celestial = null;
 					foreach(Celestial c in celestials.ToList()) {
-						c = UpdatePlanet(c, UpdateTypes.Resources);
+						var currCelestial = UpdatePlanet(c, UpdateTypes.Resources);
 						Resources cRes = c.Resources;
 						long auctionPoints = (long) Math.Round(
 								(cRes.Metal / auction.ResourceMultiplier.Metal) +
