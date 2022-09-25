@@ -54,10 +54,11 @@ namespace Tbot.Includes {
 				"/sleep",
 				"/wakeup",
 				"/collect",
+				"/minexpecargo",
 				"/stopautoping",
 				"/startautoping",
-				"stopexpe",
-				"startexpe",
+				"/stopexpe",
+				"/startexpe",
 				"/stopautoresearch",
 				"/startautoresearch",
 				"/stopautomine",
@@ -364,6 +365,23 @@ namespace Tbot.Includes {
 								}
 								arg = message.Text.Split(new[] { ' ' }, 2).Last();
 								Tbot.Program.TelegramMesgAttacker(arg);
+								return;
+
+
+							case ("/minexpecargo"):
+								if (message.Text.Split(' ').Length < 2) {
+									SendMessage(botClient, message.Chat, "Need minimum cargo number argument!");
+									return;
+								}
+								if (!Int32.TryParse(message.Text.Split(' ')[1], out int value)) {
+									SendMessage(botClient, message.Chat, "argument must be an integer!");
+									return;
+								}
+
+								arg = message.Text.Split(' ')[1];
+								int cargo = Int32.Parse(arg);
+								if (Tbot.Program.EditSettings(null, Feature.Null, string.Empty, cargo))
+									SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
 								return;
 
 
@@ -733,6 +751,7 @@ namespace Tbot.Includes {
 									"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
 									"/getinfo - Get current celestial resources and ships\n" +
 									"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
+									"/minexpecargo - Modify MinPrimaryToSend value inside JSON settings\n" +
 									"/stopexpe - Stop sending expedition\n" +
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +

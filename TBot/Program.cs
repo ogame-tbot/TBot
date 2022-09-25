@@ -510,7 +510,7 @@ namespace Tbot {
 			settings = SettingsService.GetSettings();
 		}
 
-		public static bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "") {
+		public static bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
 			System.Threading.Thread.Sleep(500);
 			var file = File.ReadAllText(Path.GetFullPath(SettingsService.settingPath));
 			var jsonObj = new JObject();
@@ -518,6 +518,10 @@ namespace Tbot {
 
 			if (recall != "") {
 				jsonObj["SleepMode"]["AutoFleetSave"]["Recall"] = Convert.ToBoolean(recall);
+			}
+
+			if (cargo > 0) {
+				jsonObj["Expeditions"]["MinPrimaryToSend"] = (int) cargo;
 			}
 
 			if (celestial != null) {
