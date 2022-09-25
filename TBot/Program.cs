@@ -4249,7 +4249,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Less than 3 SmallCargo is needed, Will try sending resource for next level also..");
 							int level = Helpers.GetNextLevel(destination, buildable);
 							Resources nextCostBuildable = Helpers.CalcPrice(buildable, level+1);
-							missingResources.Sum(nextCostBuildable);
+							missingResources = missingResources.Sum(nextCostBuildable);
 							if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
 								missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
 								missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
