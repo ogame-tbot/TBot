@@ -5040,7 +5040,7 @@ namespace Tbot {
 											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
 												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
 											}
-
+											Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)}");
 											fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
