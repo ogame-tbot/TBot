@@ -1974,7 +1974,7 @@ namespace Tbot.Includes {
 			var T3lifeformNextlvl = 0;
 			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
 				//if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
-				if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied < 0.90)) {
+				if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied < 0.86)) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.ResidentialSector;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -1989,7 +1989,7 @@ namespace Tbot.Includes {
 						return nextLFbuild;
 					}
 
-				} else if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied > 0.90) || planet.ResourcesProduction.Population.Hungry > 0) {
+				} else if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied > 0.86) || planet.ResourcesProduction.Population.Hungry > 0) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.BiosphereFarm;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
