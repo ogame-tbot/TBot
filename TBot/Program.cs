@@ -1156,7 +1156,7 @@ namespace Tbot {
 				outStr += auction.ToString();
 				telegramMessenger.SendMessage(outStr);
 			} catch (Exception e) {
-				telegramMessenger.SendMessage($"Error {e.Message}");
+				telegramMessenger.SendMessage($"Error on GetCurrentAuction {e.Message}");
 				return;
 			}
 		}
@@ -1208,25 +1208,31 @@ namespace Tbot {
 					long minBidRequired = auction.MinimumBid - auction.AlreadyBid;
 
 					Celestial celestial = null;
-					foreach(Celestial c in celestials.ToList()) {
-						var currCelestial = UpdatePlanet(c, UpdateTypes.Resources);
-						Resources cRes = c.Resources;
+
+					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Finding input for Minimum Bid into Auction...");
+					foreach (var item in auction.Resources) {
+						var planetIdStr = item.Key;
+						var planetResources = item.Value;
+
 						long auctionPoints = (long) Math.Round(
-								(cRes.Metal / auction.ResourceMultiplier.Metal) +
-								(cRes.Crystal / auction.ResourceMultiplier.Crystal) +
-								(cRes.Deuterium / auction.ResourceMultiplier.Deuterium)
+								(planetResources.input.Metal / auction.ResourceMultiplier.Metal) +
+								(planetResources.input.Crystal / auction.ResourceMultiplier.Crystal) +
+								(planetResources.input.Deuterium / auction.ResourceMultiplier.Deuterium)
 						);
-						if(auctionPoints > minBidRequired) {
-							telegramMessenger.SendMessage($"Found celestial! {celestial.ToString()}");
-							celestial = c;
+						if (auctionPoints > minBidRequired) {
+							telegramMessenger.SendMessage($"Found celestial! \"{planetResources.Name}\". ID: {planetIdStr}");
+							celestial = new Celestial();
+							celestial.ID = Int32.Parse(planetIdStr);
+							celestial.Name = planetResources.Name;
+							celestial.Resources = new Resources();
+							celestial.Resources.Metal = planetResources.input.Metal;
+							celestial.Resources.Crystal = planetResources.input.Crystal;
+							celestial.Resources.Deuterium = planetResources.input.Deuterium;
+
+							Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} > {minBidRequired}. Proceeding! :)");
 							break;
-						}
-						else {
-							telegramMessenger.SendMessage(
-								$"Not enough auction points {auctionPoints} < {minBidRequired} \n" +
-								$"for {celestial.ToString()}");
-							Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
-						}
+						} else
+							Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} < {minBidRequired}. Discarding");
 					}
 
 					if(celestial == null) {
@@ -1235,8 +1241,7 @@ namespace Tbot {
 							$"Resource Multiplier: M:{auction.ResourceMultiplier.Metal} C:{auction.ResourceMultiplier.Crystal} D:{auction.ResourceMultiplier.Deuterium}.\n" +
 							$"Doing nothing...");
 					} else {
-						celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
-						Resources res = new();
+						Resources res = new Resources();
 
 						// Prioritize Metal then crystal then deuterium
 						int resIndex = 0;
@@ -1249,8 +1254,8 @@ namespace Tbot {
 									res.Metal = metalNeeded;
 								} else {
 									res.Metal = celestial.Resources.Metal;
-									minBidRequired -= (long) Math.Round(res.Metal * auction.ResourceMultiplier.Metal);
 								}
+								minBidRequired -= (long) Math.Round(res.Metal * auction.ResourceMultiplier.Metal);
 							}
 
 							if (resIndex == 1) {
@@ -1260,8 +1265,8 @@ namespace Tbot {
 									res.Crystal = crystalNeeded;
 								} else {
 									res.Crystal = celestial.Resources.Crystal;
-									minBidRequired -= (long) Math.Round(res.Crystal * auction.ResourceMultiplier.Crystal);
 								}
+								minBidRequired -= (long) Math.Round(res.Crystal * auction.ResourceMultiplier.Crystal);
 							}
 
 							if (resIndex == 2) {
@@ -1271,8 +1276,8 @@ namespace Tbot {
 									res.Deuterium = deuteriumNeeded;
 								} else {
 									res.Deuterium = celestial.Resources.Deuterium;
-									minBidRequired -= (long) Math.Round(res.Deuterium * auction.ResourceMultiplier.Deuterium);
 								}
+								minBidRequired -= (long) Math.Round(res.Deuterium * auction.ResourceMultiplier.Deuterium);
 							}
 
 							resIndex++;
@@ -1280,6 +1285,7 @@ namespace Tbot {
 
 						if(minBidRequired > 0) {
 							telegramMessenger.SendMessage("Cannot bid. Try again");
+							Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Planet \"{celestial.Name}\" minimum bidding failed. Remaining {minBidRequired}. Doing nothing");
 						}
 						else {
 							telegramMessenger.SendMessage(
@@ -1296,7 +1302,7 @@ namespace Tbot {
 		}
 
 		public static void TelegramBidAuction(Celestial celestial, Resources res) {
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Bidding auction with {celestial.ToString()} {res.ToString()}");
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Bidding auction with {celestial.Name} {res.ToString()}");
 			var result = ogamedService.DoAuction(celestial, res);
 			if(result.Item1) {
 				telegramMessenger.SendMessage(	$"Auction done with Resources of Planet {celestial.Name} ID:{celestial.ID} \n" +

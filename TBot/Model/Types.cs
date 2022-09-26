@@ -1443,6 +1443,7 @@ namespace Tbot.Model {
 
 		[JsonProperty("name")]
 		public string Name { get; set; }
+
 		public int otherPlanetId { get; set; } = 0;
 
 		public override string ToString() {

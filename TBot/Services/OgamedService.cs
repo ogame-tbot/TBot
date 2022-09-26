@@ -965,7 +965,9 @@ namespace Tbot.Services {
 			if (result.Status != "ok") {
 				throw new Exception($"An error occurred: Status {result.Status} - Message: {result.Message}");
 			} else
-				return JsonConvert.DeserializeObject<Model.Auction>(JsonConvert.SerializeObject(result.Result));
+				return JsonConvert.DeserializeObject<Model.Auction>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings {
+					NullValueHandling = NullValueHandling.Ignore,
+				});
 		}
 
 		public Tuple<bool, String> DoAuction(Celestial celestial, Resources resources) {
