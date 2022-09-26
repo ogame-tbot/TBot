@@ -3914,8 +3914,6 @@ namespace Tbot {
 					if (state == null) {
 						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateTypes.Buildings);
-							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 
 							if ((int) settings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine) {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()} did not reached required CrystalMine level. SKipping..");
@@ -3925,6 +3923,8 @@ namespace Tbot {
 							int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
 							int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
+							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 							var nextLFBuilding = Helpers.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
 							if (nextLFBuilding != LFBuildables.None) {
 								var lv = Helpers.GetNextLevel(celestial, nextLFBuilding);

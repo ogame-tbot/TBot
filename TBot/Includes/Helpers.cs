@@ -2004,6 +2004,9 @@ namespace Tbot.Includes {
 						return nextLFbuild;
 					}
 				}
+			} else {
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings, Skipping..");
+				return nextLFbuild;
 			}
 			
 			var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
