@@ -133,7 +133,7 @@ namespace Tbot.Model {
 		AssemblyLine = 13101,
 		FusionCellFactory = 13102,
 		RoboticsResearchCentre = 13103,
-		UpdateNetwork = 12304,
+		UpdateNetwork = 13104,
 		QuantumComputerCentre = 13105,
 		AutomatisedAssemblyCentre = 13106,
 		HighPerformanceTransformer = 13107,

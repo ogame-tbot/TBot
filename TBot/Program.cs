@@ -3972,7 +3972,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+				//celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFBuildingID != 0) {
@@ -3988,7 +3988,6 @@ namespace Tbot {
 					if (buildable != LFBuildables.None) {
 						level = Helpers.GetNextLevel(celestial, buildable);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
-
 						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
 
 						if (celestial.Resources.IsBuildable(xCostBuildable)) {
