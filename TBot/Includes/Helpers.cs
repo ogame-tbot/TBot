@@ -1999,8 +1999,8 @@ namespace Tbot.Includes {
 					} else if (planet.LFtype == LFTypes.Kaelesh) {
 						nextLFbuild = LFBuildables.AntimatterCondenser;
 					}
-					//Forced build food if people are dying
-					if ((planet.ResourcesProduction.Population.Hungry > 0)) {
+					//Forced build food if people are dying or livingspace higher than food (people gonna die)
+					if ((planet.ResourcesProduction.Population.Hungry > 0 || planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied)) {
 						return nextLFbuild;
 					}
 				}
