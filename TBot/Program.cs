@@ -3866,8 +3866,8 @@ namespace Tbot {
 				} else {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						fleets = UpdateFleets();
-						Fleet transportfleet = fleets.Where(fleet => fleet.Mission == Missions.Transport).Where(fleet => fleet.Destination == celestial.Coordinate).FirstOrDefault();
-						interval = (long) transportfleet.ArriveIn * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
@@ -4089,8 +4089,8 @@ namespace Tbot {
 				} else {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						fleets = UpdateFleets();
-						Fleet transportfleet = fleets.Where(fleet => fleet.Mission == Missions.Transport).Where(fleet => fleet.Destination == celestial.Coordinate).FirstOrDefault();
-						interval = (long) transportfleet.ArriveIn * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
