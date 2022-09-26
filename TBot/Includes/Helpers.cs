@@ -88,15 +88,15 @@ namespace Tbot.Includes {
 
 		public static long ParseDurationFromString(string timeString) {
 			long duration = 0;
-			string regExp = "^(\\d{1,2})?[h|H]?(\\d{1,2})?[m|M]?(\\d{1,2})?[s|S]?";
+			string regExp = "^(\\d{1,2}[h|H])?(\\d{1,2}[m|M])?(\\d{1,2}[s|S])?";
 
 			Regex re = new Regex(regExp);
 			Match m = re.Match(timeString);
 
 			if (m.Groups.Count == 4) {
-				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value) : 0;
-				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value) : 0;
-				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value) : 0;
+				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value.Remove(m.Groups[1].Value.Length - 1)) : 0;
+				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value.Remove(m.Groups[2].Value.Length - 1)) : 0;
+				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value.Remove(m.Groups[3].Value.Length - 1)) : 0;
 
 				duration = (hours * 60 * 60) + (mins * 60) + secs;
 			} else {
@@ -1968,26 +1968,13 @@ namespace Tbot.Includes {
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
 
-			//Early game, force increasing of population growthrate if availabe food = x2 population
-			if (planet.ResourcesProduction.Population.Available < (planet.ResourcesProduction.Population.Satisfied / 2)) {
-				if (planet.LFtype == LFTypes.Humans) {
-					nextLFbuild = LFBuildables.ResidentialSector;
-				} else if (planet.LFtype == LFTypes.Rocktal) {
-					nextLFbuild = LFBuildables.MeditationEnclave;
-				} else if (planet.LFtype == LFTypes.Mechas) {
-					nextLFbuild = LFBuildables.AssemblyLine;
-				} else if (planet.LFtype == LFTypes.Kaelesh) {
-					nextLFbuild = LFBuildables.Sanctuary;
-				}
-				return nextLFbuild;
-			}
-
 			LFBuildables T2 = LFBuildables.None;
 			LFBuildables T3 = LFBuildables.None;
 			var T2lifeformNextlvl = 0;
 			var T3lifeformNextlvl = 0;
 			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
-				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
+				//if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
+				if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied < 0.90)) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.ResidentialSector;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -1997,7 +1984,12 @@ namespace Tbot.Includes {
 					} else if (planet.LFtype == LFTypes.Kaelesh) {
 						nextLFbuild = LFBuildables.Sanctuary;
 					}
-				} else if ((planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Population.Hungry > 0) {
+					//Force building population if max population reached
+					if (planet.ResourcesProduction.Population.Available == planet.ResourcesProduction.Population.LivingSpace) {
+						return nextLFbuild;
+					}
+
+				} else if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied > 0.90) || planet.ResourcesProduction.Population.Hungry > 0) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.BiosphereFarm;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -2007,18 +1999,20 @@ namespace Tbot.Includes {
 					} else if (planet.LFtype == LFTypes.Kaelesh) {
 						nextLFbuild = LFBuildables.AntimatterCondenser;
 					}
+					//Forced build food if people are dying
+					if ((planet.ResourcesProduction.Population.Hungry > 0)) {
+						return nextLFbuild;
+					}
 				}
 			}
-			//prevent looking for another less expensive building if people are dying
-			if ((planet.ResourcesProduction.Population.Hungry == 0)) {
-				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
-				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
-				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
-				// Prevent chosing food building because less expensive whereas it is not needed
-				if (LessExpensiveLFbuild != LFBuildables.None && LessExpensiveLFbuild != LFBuildables.BiosphereFarm && LessExpensiveLFbuild != LFBuildables.CrystalFarm && LessExpensiveLFbuild != LFBuildables.FusionCellFactory && LessExpensiveLFbuild != LFBuildables.AntimatterCondenser)
-					nextLFbuild = LessExpensiveLFbuild;
-			}
+			
+			var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
+			Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
+			//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
+			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+			// Prevent chosing food building because less expensive whereas it is not needed
+			if (LessExpensiveLFbuild != LFBuildables.None && LessExpensiveLFbuild != LFBuildables.BiosphereFarm && LessExpensiveLFbuild != LFBuildables.CrystalFarm && LessExpensiveLFbuild != LFBuildables.FusionCellFactory && LessExpensiveLFbuild != LFBuildables.AntimatterCondenser)
+				nextLFbuild = LessExpensiveLFbuild;
 
 			//Check if can build T2 or T3 Lifeorms
 			if (planet.LFtype == LFTypes.Humans) {

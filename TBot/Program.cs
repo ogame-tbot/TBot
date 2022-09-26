@@ -3864,7 +3864,13 @@ namespace Tbot {
 					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
-					interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						Fleet transportfleet = fleets.Where(fleet => fleet.Mission == Missions.Transport).Where(fleet => fleet.Destination == celestial.Coordinate).FirstOrDefault();
+						interval = (long) transportfleet.ArriveIn * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4081,7 +4087,13 @@ namespace Tbot {
 					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
-					interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						Fleet transportfleet = fleets.Where(fleet => fleet.Mission == Missions.Transport).Where(fleet => fleet.Destination == celestial.Coordinate).FirstOrDefault();
+						interval = (long) transportfleet.ArriveIn * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4245,21 +4257,25 @@ namespace Tbot {
 							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-						if (preferredShip == Buildables.SmallCargo && idealShips < 3 && buildable != Buildables.Null) {
+						if (preferredShip == Buildables.SmallCargo && idealShips <= 2 && buildable != Buildables.Null) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Less than 3 SmallCargo is needed, Will try sending resource for next level also..");
 							int level = Helpers.GetNextLevel(destination, buildable);
 							Resources nextCostBuildable = Helpers.CalcPrice(buildable, level+1);
-							missingResources = missingResources.Sum(nextCostBuildable);
-							if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
-								missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-								missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-								missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-							}
-							if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
-								idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+							if (nextCostBuildable.TotalResources < 1000000) {
+								missingResources = missingResources.Sum(nextCostBuildable);
+								if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+									missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+									missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+									missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+								}
+								if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
+									idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin for level+2. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+									return 0;
+								}
 							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-								return 0;
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: level+2 resources cost too expensive (high level building maybe not wanted), sending with less than 2 small cargo.");
 							}
 						}
 
@@ -4934,7 +4950,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Expeditions.Active || timers.TryGetValue("ExpeditionsTimer", out Timer value)) {
+				if ((bool) settings.Expeditions.Active && timers.TryGetValue("ExpeditionsTimer", out Timer value)) {
 					researches = UpdateResearches();
 					if (researches.Astrophysics == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
