@@ -3634,6 +3634,15 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
+					
 					if (interval == long.MaxValue || interval == long.MinValue)
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 
