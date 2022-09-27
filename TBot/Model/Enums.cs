@@ -385,6 +385,7 @@ namespace Tbot.Model {
 
 	public enum IntervalType {
 		LessThanASecond,
+		LessThanFiveSeconds,
 		AFewSeconds,
 		SomeSeconds,
 		AMinuteOrTwo,
@@ -475,7 +476,8 @@ namespace Tbot.Model {
 		AutoFarm = 13,
 		TelegramAutoPing = 14,
 		BrainLifeformAutoMine = 15,
-		BrainLifeformAutoResearch = 16
+		BrainLifeformAutoResearch = 16,
+    		TelegramAuction = 17
 	}
 
 	public enum SendFleetCode : int {

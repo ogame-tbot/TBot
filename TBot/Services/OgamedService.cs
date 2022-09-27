@@ -969,16 +969,40 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
-		public Model.LFBuildings GetRequirements(LFBuildables buildable) { //works but returns LFbuildings as ID, lazy to do the mapping ID -> LFbuilding class to be able to use properties reflection
+    		public Model.Auction GetCurrentAuction() {
 			var request = new RestRequest {
-				Resource = $"bot/requirements/{(int) buildable}",
+				Resource = "/bot/get-auction",
 				Method = Method.GET,
 			};
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (result.Status != "ok") {
-				throw new Exception($"An error has occurred: Status: {result.Status} - Message: {result.Message}");
+				throw new Exception($"An error occurred: Status {result.Status} - Message: {result.Message}");
 			} else
-				return JsonConvert.DeserializeObject<Model.LFBuildings>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+				return JsonConvert.DeserializeObject<Model.Auction>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings {
+					NullValueHandling = NullValueHandling.Ignore,
+				});
+		}
+
+		public Tuple<bool, String> DoAuction(Celestial celestial, Resources resources) {
+			try {
+				var request = new RestRequest {
+					Resource = "/bot/do-auction",
+					Method = Method.POST,
+				};
+				var resStr = $"{resources.Metal}:{resources.Crystal}:{resources.Deuterium}";
+				request.AddParameter($"{celestial.ID}", resStr, ParameterType.GetOrPost);
+
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok") {
+					return Tuple.Create(false, result.Message);
+				} else {
+
+					return Tuple.Create(true, result.Message);
+				}
+
+			} catch(Exception e) {
+				return Tuple.Create(false, e.Message);
+			}
 		}
 
 		public bool SendMessage(int playerID, string message) {

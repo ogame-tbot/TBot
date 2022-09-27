@@ -2,6 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.VisualBasic;
+using Newtonsoft.Json;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Tbot.Model {
 	public class Credentials {
@@ -35,6 +41,27 @@ namespace Tbot.Model {
 
 		public override string ToString() {
 			return $"[{GetCelestialCode()}:{Galaxy}:{System}:{Position}]";
+		}
+
+		static public Coordinate FromString(String arg) {
+			Coordinate output = new();
+			Regex re = new Regex("(\\d{1}):(\\d{1,3}):(\\d{1,2}) (moon|planet|Moon|Planet)");
+			Match m = re.Match(arg);
+			if(m.Success){
+				output.Galaxy = Int32.Parse(m.Groups[1].Value);
+				output.System = Int32.Parse(m.Groups[2].Value);
+				output.Position = Int32.Parse(m.Groups[3].Value);
+
+				if (m.Groups[4].Value.ToLower().Contains("moon")) {
+					output.Type = Celestials.Moon;
+				} else {
+					output.Type = Celestials.Planet;
+				}
+			} else {
+				throw new Exception($"Invalid Coordinate from {arg}");
+			}
+
+			return output;
 		}
 
 		private string GetCelestialCode() {
@@ -407,6 +434,26 @@ namespace Tbot.Model {
 				return true;
 			else
 				return false;
+		}
+
+		static public Resources FromString(String arg) {
+			Resources output = new();
+
+			Regex re = new Regex("([M|m|C|c|D|d]):(\\d*)");
+			MatchCollection ms = re.Matches(arg);
+			foreach (Match m in ms) {
+				if(m.Success == false) {
+				}
+				else if (m.Groups[1].Value.ToLower().Contains('m')) {
+					output.Metal = Int32.Parse(m.Groups[2].Value);
+				} else if (m.Groups[1].Value.ToLower().Contains('c')) {
+					output.Crystal = Int32.Parse(m.Groups[2].Value);
+				} else if (m.Groups[1].Value.ToLower().Contains('d')) {
+					output.Deuterium = Int32.Parse(m.Groups[2].Value);
+				}
+			}
+
+			return output;
 		}
 	}
 
@@ -1349,6 +1396,108 @@ namespace Tbot.Model {
 		}
 		public override string ToString() {
 			return $"[{GetCelestialCode()}:{Celestial.Coordinate.Galaxy}:{Celestial.Coordinate.System}:{Celestial.Coordinate.Position}]";
+		}
+	}
+
+
+	public class AuctionResourceMultiplier {
+		public float Metal { get; set; } = 1.0f;
+		public float Crystal { get; set; } = 1.5f;
+		public float Deuterium { get; set; } = 3.0f;
+		public int Honor { get; set; } = 100;
+	}
+	public class AuctionInputOutput {
+		[JsonProperty("metal")]
+		public long Metal { get; set; } = 10;
+
+		[JsonProperty("crystal")]
+		public long Crystal { get; set; } = 10;
+
+		[JsonProperty("deuterium")]
+		public long Deuterium { get; set; } = 10;
+
+		public long TotalResources {
+			get {
+				return Metal + Crystal + Deuterium;
+			}
+		}
+
+		public override string ToString() {
+			return $"M:{Metal} C:{Crystal} D:{Deuterium}";
+		}
+	}
+
+	public class AuctionResourcesValue {
+		public string imageFileName { get; set; }
+		public AuctionInputOutput input { get; set; }
+		public AuctionInputOutput output { get; set; }
+		public bool isMoon { get; set; }
+
+		[JsonProperty("name")]
+		public string Name { get; set; }
+
+		public int otherPlanetId { get; set; } = 0;
+
+		public override string ToString() {
+			string outStr = "[";
+			if (isMoon)
+				outStr += "M";
+			else
+				outStr += "P";
+			outStr +=
+				$" \"{Name}\" {otherPlanetId} " +
+				$"Input: M:{input.Metal} C:{input.Crystal} D:{input.Deuterium} " +
+				$"Output: M:{output.Metal} C:{output.Crystal} D:{output.Deuterium}]";
+			return outStr;
+		}
+	}
+
+	public class Auction {
+		public bool HasFinished { get; set; }
+        public int Endtime { get; set; }
+		public int NumBids { get; set; }
+		public int CurrentBid { get; set; }
+		public int AlreadyBid { get; set; }
+		public int MinimumBid { get; set; }
+		public int DeficitBid { get; set; }
+		public string HighestBidder { get; set; }
+		public int HighestBidderUserID { get; set; }
+		public string CurrentItem { get; set; }
+		public string CurrentItemLong { get; set; }
+		public int Inventory { get; set; }
+		public string Token { get; set; }
+		public AuctionResourceMultiplier ResourceMultiplier { get; set; }
+		public Dictionary<string, AuctionResourcesValue> Resources { get; set; }
+
+		public long TotalResourcesOffered {
+			get {
+				long sum = 0;
+				foreach (var item in Resources) {
+					sum += item.Value.output.TotalResources;
+				}
+
+				return sum;
+			}
+		}
+
+		public override string ToString() {
+			// TODO CurrentItemLong is too long, but can be parsed with a RegExp. Moreover it has unicode characters.
+			// Just too lazy to do anything else :)
+			if(HasFinished) {
+				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
+				return	$"Item: {CurrentItem} sold for {CurrentBid} to {HighestBidder}.\n" +
+						$"Next Auction in {timeStr} \n" +
+						$"Number of Bids: {NumBids}.";
+			} else {
+				// When in action, only minutes are worth.Lets keep seconds though
+				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
+				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
+						$"CurrentBid: {CurrentBid} by \"{HighestBidder}\" (ID:{HighestBidderUserID}). \n" +
+						$"AlreadyBid: {AlreadyBid} MinimumBid: {MinimumBid}. \n" +
+						$"To enter we must bid \"{MinimumBid - AlreadyBid}\"\n" +
+						$"Resource Multiplier: M:{ResourceMultiplier.Metal} C:{ResourceMultiplier.Crystal} D:{ResourceMultiplier.Deuterium}\n" +
+						$"Number of Bids: {NumBids}.";
+			}
 		}
 	}
 }

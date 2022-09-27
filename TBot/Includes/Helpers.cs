@@ -115,6 +115,7 @@ namespace Tbot.Includes {
 			var rand = new Random();
 			return type switch {
 				IntervalType.LessThanASecond => rand.Next(500, 1000),
+				IntervalType.LessThanFiveSeconds => rand.Next(1000, 5000),
 				IntervalType.AFewSeconds => rand.Next(5000, 15000),
 				IntervalType.SomeSeconds => rand.Next(20000, 50000),
 				IntervalType.AMinuteOrTwo => rand.Next(40000, 140000),
