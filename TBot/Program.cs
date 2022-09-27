@@ -3632,6 +3632,19 @@ namespace Tbot {
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+				} else if (started) {
+					long interval = (long) celestial.Constructions.BuildingCountdown;
+
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+					if (_lastDOIR >= _nextDOIR) {
+						_nextDOIR = 0;
+					}
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 
