@@ -969,7 +969,7 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Model.Resources>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
-    public Model.Auction GetCurrentAuction() {
+    		public Model.Auction GetCurrentAuction() {
 			var request = new RestRequest {
 				Resource = "/bot/get-auction",
 				Method = Method.GET,
