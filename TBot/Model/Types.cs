@@ -199,23 +199,19 @@ namespace Tbot.Model {
 			return output;
 		}
 
+		public int GetLevel(LFTechno techno) {
+			int output = 0;
+			foreach (PropertyInfo prop in LFTechs.GetType().GetProperties()) {
+				if (prop.Name == techno.ToString()) {
+					output = (int) prop.GetValue(LFTechs);
+				}
+			}
+			return output;
+		}
+
 		public LFTypes SetLFType() {
-			if ((bool) LFBuildings.GetType().GetProperty("None").GetValue(LFBuildings))
-				this.LFtype = LFTypes.None;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Humans").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Humans;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Rocktal").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Rocktal;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Mechas").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Mechas;
-
-			if ((bool) LFBuildings.GetType().GetProperty("Kaelesh").GetValue(LFBuildings))
-				this.LFtype = LFTypes.Kaelesh;
-
-			return this.LFtype;
+			LFTypes LFtype = (LFTypes)LFBuildings.GetType().GetProperty("LifeformType").GetValue(LFBuildings);
+			return LFtype;
 		}
 	}
 
@@ -499,10 +495,9 @@ namespace Tbot.Model {
 	public class Supplies : Buildings { }
 
 	public class LFBuildings {
-		public bool None { get; set; }
+		public int LifeformType { get; set; }
 
 		//humans
-		public bool Humans { get; set; }
 		public int ResidentialSector { get; set; }
 		public int BiosphereFarm { get; set; }
 		public int ResearchCentre { get; set; }
@@ -517,7 +512,6 @@ namespace Tbot.Model {
 		public int PlanetaryShield { get; set; }
 
 		//Rocktal
-		public bool Rocktal { get; set; }
 		public int MeditationEnclave { get; set; }
 		public int CrystalFarm { get; set; }
 		public int RuneTechnologium { get; set; }
@@ -532,7 +526,6 @@ namespace Tbot.Model {
 		public int MetalRecyclingPlant { get; set; }
 
 		//Mechas
-		public bool Mechas { get; set; }
 		public int AssemblyLine { get; set; }
 		public int FusionCellFactory { get; set; }
 		public int RoboticsResearchCentre { get; set; }
@@ -547,7 +540,6 @@ namespace Tbot.Model {
 		public int NanoRepairBots { get; set; }
 
 		//Kaelesh
-		public bool Kaelesh { get; set; }
 		public int Sanctuary { get; set; }
 		public int AntimatterCondenser { get; set; }
 		public int VortexChamber { get; set; }
@@ -584,7 +576,7 @@ namespace Tbot.Model {
 
 	public class LFTechs {
 		//Humans
-		public int intIntergalacticEnvoys { get; set; }
+		public int IntergalacticEnvoys { get; set; }
 		public int HighPerformanceExtractors { get; set; }
 		public int FusionDrives { get; set; }
 		public int StealthFieldGenerator { get; set; }

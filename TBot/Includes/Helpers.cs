@@ -1496,6 +1496,18 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public static int GetNextLevel(Celestial planet, LFTechno buildable) {
+			int output = 0;
+			if (planet is Planet) {
+				foreach (PropertyInfo prop in planet.LFTechs.GetType().GetProperties()) {
+					if (prop.Name == buildable.ToString()) {
+						output = (int) prop.GetValue(planet.LFTechs) + 1;
+					}
+				}
+			}
+			return output;
+		}
+
 		public static long CalcDepositCapacity(int level) {
 			return 5000 * (long) (2.5 * Math.Pow(Math.E, (20 * level / 33)));
 		}
@@ -1953,16 +1965,17 @@ namespace Tbot.Includes {
 		}
 
 		public static LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20) {
-			LFBuildables nextLFbuild = LFBuildables.Null;
+			LFBuildables nextLFbuild = LFBuildables.None;
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
 
-			LFBuildables T2 = LFBuildables.Null;
-			LFBuildables T3 = LFBuildables.Null;
+			LFBuildables T2 = LFBuildables.None;
+			LFBuildables T3 = LFBuildables.None;
 			var T2lifeformNextlvl = 0;
 			var T3lifeformNextlvl = 0;
 			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
-				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
+				//if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
+				if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied < 0.86)) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.ResidentialSector;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -1972,7 +1985,12 @@ namespace Tbot.Includes {
 					} else if (planet.LFtype == LFTypes.Kaelesh) {
 						nextLFbuild = LFBuildables.Sanctuary;
 					}
-				} else if ((planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Population.Hungry > 0) {
+					//Force building population if max population reached
+					if (planet.ResourcesProduction.Population.Available == planet.ResourcesProduction.Population.LivingSpace) {
+						return nextLFbuild;
+					}
+
+				} else if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied > 0.86) || planet.ResourcesProduction.Population.Hungry > 0) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.BiosphereFarm;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -1982,15 +2000,22 @@ namespace Tbot.Includes {
 					} else if (planet.LFtype == LFTypes.Kaelesh) {
 						nextLFbuild = LFBuildables.AntimatterCondenser;
 					}
+					//Forced build food if people are dying or livingspace higher than food (people gonna die)
+					if ((planet.ResourcesProduction.Population.Hungry > 0 || planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied)) {
+						return nextLFbuild;
+					}
 				}
+			} else {
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings, Skipping..");
+				return nextLFbuild;
 			}
-
+			
 			var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
 			Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
-
 			//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
 			LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
-			if (LessExpensiveLFbuild != LFBuildables.Null)
+			// Prevent chosing food building because less expensive whereas it is not needed
+			if (LessExpensiveLFbuild != LFBuildables.None && LessExpensiveLFbuild != LFBuildables.BiosphereFarm && LessExpensiveLFbuild != LFBuildables.CrystalFarm && LessExpensiveLFbuild != LFBuildables.FusionCellFactory && LessExpensiveLFbuild != LFBuildables.AntimatterCondenser)
 				nextLFbuild = LessExpensiveLFbuild;
 
 			//Check if can build T2 or T3 Lifeorms
@@ -2008,7 +2033,7 @@ namespace Tbot.Includes {
 				T3 = LFBuildables.ForumOfTranscendence;
 			}
 
-			if (T2 != LFBuildables.Null && isUnlocked(planet, T2)) {
+			if (T2 != LFBuildables.None && isUnlocked(planet, T2)) {
 				T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
 				Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
 				if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
@@ -2016,7 +2041,7 @@ namespace Tbot.Includes {
 				}
 			}
 
-			if (T3 != LFBuildables.Null && isUnlocked(planet, T3)) {
+			if (T3 != LFBuildables.None && isUnlocked(planet, T3)) {
 				T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
 				Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
 				if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
@@ -2069,12 +2094,46 @@ namespace Tbot.Includes {
 					}
 				}
 			}
-			return LFBuildables.Null;
+			return LFBuildables.None;
 		}
 
-		public static LFTechno GetNextLFTechToBuild(Celestial planet) {
+		public static LFTechno GetNextLFTechToBuild(Celestial celestial) {
 			//TODO
+			//As planets can have any lifeform techs, its complicated to find which techs are existing on a planet if the techs are not at least level 1
+			//Threfore, for the moment, up only techs that are minimum level 1
+			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
+				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
+					//skip intergalactic envoys tech cuz we dont care
+					if (prop.Name == "IntergalacticEnvoys" || nextLFTech == LFTechno.IntergalacticEnvoys)
+						continue;
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == nextLFTech.ToString()) {
+						return nextLFTech;
+					}
 
+				}
+
+			}
+			return LFTechno.None;
+		}
+
+		public static LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost) {
+			LFTechno nextLFtech = LFTechno.None;
+			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
+				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
+					if (prop.Name == "IntergalacticEnvoys" || next == LFTechno.IntergalacticEnvoys)
+						continue;
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == next.ToString()) {
+						nextLFtech = next;
+						var nextLFtechlvl = Helpers.GetNextLevel(celestial, nextLFtech);
+						Resources newcost = Tbot.Program.ogamedService.GetPrice(nextLFtech, nextLFtechlvl);
+						if (newcost.TotalResources < currentcost.TotalResources) {
+							return nextLFtech;
+						}
+					}
+
+				}
+
+			}
 			return LFTechno.None;
 		}
 
