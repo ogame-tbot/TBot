@@ -54,16 +54,19 @@ namespace Tbot.Includes {
 				"/sleep",
 				"/wakeup",
 				"/collect",
+				"/minexpecargo",
 				"/stopautoping",
 				"/startautoping",
-				"stopexpe",
-				"startexpe",
+				"/stopexpe",
+				"/startexpe",
 				"/stopautoresearch",
 				"/startautoresearch",
 				"/stopautomine",
 				"/startautomine",
 				"/stoplifeformautomine",
 				"/startlifeformautomine",
+				"/stoplifeformautoresearch",
+				"/startlifeformautoresearch",
 				"/stopdefender",
 				"/startdefender",
 				"/msg",
@@ -365,6 +368,23 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/minexpecargo"):
+								if (message.Text.Split(' ').Length < 2) {
+									SendMessage(botClient, message.Chat, "Need minimum cargo number argument!");
+									return;
+								}
+								if (!Int32.TryParse(message.Text.Split(' ')[1], out int value)) {
+									SendMessage(botClient, message.Chat, "argument must be an integer!");
+									return;
+								}
+
+								arg = message.Text.Split(' ')[1];
+								int cargo = Int32.Parse(arg);
+								if (Tbot.Program.EditSettings(null, Feature.Null, string.Empty, cargo))
+									SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
+								return;
+
+
 							case ("/stopexpe"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -460,6 +480,28 @@ namespace Tbot.Includes {
 
 								Tbot.Program.InitializeBrainLifeformAutoMine();
 								SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
+								return;
+
+
+							case ("/stoplifeformautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.StopBrainLifeformAutoResearch();
+								SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
+								return;
+
+
+							case ("/startlifeformautoresearch"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								Tbot.Program.InitializeBrainLifeformAutoResearch();
+								SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
 								return;
 
 
@@ -709,6 +751,7 @@ namespace Tbot.Includes {
 									"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
 									"/getinfo - Get current celestial resources and ships\n" +
 									"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
+									"/minexpecargo - Modify MinPrimaryToSend value inside JSON settings\n" +
 									"/stopexpe - Stop sending expedition\n" +
 									"/startexpe - Start sending expedition\n" +
 									"/startdefender - start defender\n" +
@@ -719,6 +762,8 @@ namespace Tbot.Includes {
 									"/startautomine - start brain automine\n" +
 									"/stoplifeformautomine - stop brain Lifeform automine\n" +
 									"/startlifeformautomine - start brain Lifeform automine\n" +
+									"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
+									"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
 									"/stopautofarm - stop autofarm\n" +
 									"/startautofarm - start autofarm\n" +
 									"/stopautoping - stop telegram autoping\n" +

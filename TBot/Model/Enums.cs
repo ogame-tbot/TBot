@@ -100,7 +100,7 @@ namespace Tbot.Model {
 	}
 
 	public enum LFBuildables {
-		Null = 0,
+		None = 0,
 		//Humans
 		ResidentialSector = 11101,
 		BiosphereFarm = 11102,
@@ -133,7 +133,7 @@ namespace Tbot.Model {
 		AssemblyLine = 13101,
 		FusionCellFactory = 13102,
 		RoboticsResearchCentre = 13103,
-		UpdateNetwork = 12304,
+		UpdateNetwork = 13104,
 		QuantumComputerCentre = 13105,
 		AutomatisedAssemblyCentre = 13106,
 		HighPerformanceTransformer = 13107,
@@ -474,7 +474,8 @@ namespace Tbot.Model {
 		Colonize = 12,
 		AutoFarm = 13,
 		TelegramAutoPing = 14,
-		BrainLifeformAutoMine = 15
+		BrainLifeformAutoMine = 15,
+		BrainLifeformAutoResearch = 16
 	}
 
 	public enum SendFleetCode : int {

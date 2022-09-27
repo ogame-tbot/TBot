@@ -149,6 +149,14 @@
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},
+		"LifeformAutoResearch": {
+			"Active": true,
+			"Transports": {
+				"Active": true,
+			},
+			"CheckIntervalMin": 30,
+			"CheckIntervalMax": 60
+		},
 		"AutoResearch": {
 			"Active": true,
 			"MaxEnergyTechnology": 20,

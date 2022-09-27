@@ -214,6 +214,7 @@ namespace Tbot {
 						Feature.BrainAutoRepatriate,
 						Feature.BrainAutoMine,
 						Feature.BrainLifeformAutoMine,
+						Feature.BrainLifeformAutoResearch,
 						Feature.BrainOfferOfTheDay,
 						Feature.BrainAutoResearch,
 						Feature.AutoFarm,
@@ -290,6 +291,10 @@ namespace Tbot {
 					case Feature.BrainLifeformAutoMine:
 						if (currentValue)
 							StopBrainLifeformAutoMine();
+						return false;
+					case Feature.BrainLifeformAutoResearch:
+						if (currentValue)
+							StopBrainLifeformAutoResearch();
 						return false;
 					case Feature.BrainOfferOfTheDay:
 						if (currentValue)
@@ -381,6 +386,15 @@ namespace Tbot {
 					} else {
 						if (currentValue)
 							StopBrainLifeformAutoMine();
+						return false;
+					}
+				case Feature.BrainLifeformAutoResearch:
+					if ((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) {
+						InitializeBrainLifeformAutoResearch();
+						return true;
+					} else {
+						if (currentValue)
+							StopBrainLifeformAutoResearch();
 						return false;
 					}
 				case Feature.BrainOfferOfTheDay:
@@ -477,6 +491,7 @@ namespace Tbot {
 					Feature.BrainAutoRepatriate,
 					Feature.BrainAutoMine,
 					Feature.BrainLifeformAutoMine,
+					Feature.BrainLifeformAutoResearch,
 					Feature.BrainOfferOfTheDay,
 					Feature.BrainAutoResearch,
 					Feature.AutoFarm,
@@ -495,7 +510,7 @@ namespace Tbot {
 			settings = SettingsService.GetSettings();
 		}
 
-		public static bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "") {
+		public static bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
 			System.Threading.Thread.Sleep(500);
 			var file = File.ReadAllText(Path.GetFullPath(SettingsService.settingPath));
 			var jsonObj = new JObject();
@@ -503,6 +518,10 @@ namespace Tbot {
 
 			if (recall != "") {
 				jsonObj["SleepMode"]["AutoFleetSave"]["Recall"] = Convert.ToBoolean(recall);
+			}
+
+			if (cargo > 0) {
+				jsonObj["Expeditions"]["MinPrimaryToSend"] = (int) cargo;
 			}
 
 			if (celestial != null) {
@@ -994,14 +1013,14 @@ namespace Tbot {
 		}
 
 		public static void InitializeBrainLifeformAutoMine() {
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform automine...");
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform autoMine...");
 			StopBrainLifeformAutoMine(false);
 			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public static void StopBrainLifeformAutoMine(bool echo = true) {
 			if (echo)
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform automine...");
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform autoMine...");
 			if (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("LifeformAutoMineTimer");
@@ -1009,6 +1028,25 @@ namespace Tbot {
 				if (timers.TryGetValue($"LifeformAutoMineTimer-{celestial.ID.ToString()}", out value))
 					value.Dispose();
 				timers.Remove($"LifeformAutoMineTimer-{celestial.ID.ToString()}");
+			}
+		}
+
+		public static void InitializeBrainLifeformAutoResearch() {
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing Lifeform autoResearch...");
+			StopBrainLifeformAutoResearch(false);
+			timers.Add("LifeformAutoResearchTimer", new Timer(LifeformAutoResearch, null, Helpers.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+		}
+
+		public static void StopBrainLifeformAutoResearch(bool echo = true) {
+			if (echo)
+				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Stopping Lifeform autoResearch...");
+			if (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("LifeformAutoResearchTimer");
+			foreach (var celestial in celestials) {
+				if (timers.TryGetValue($"LifeformAutoResearchTimer-{celestial.ID.ToString()}", out value))
+					value.Dispose();
+				timers.Remove($"LifeformAutoResearchTimer-{celestial.ID.ToString()}");
 			}
 		}
 
@@ -1910,7 +1948,7 @@ namespace Tbot {
 			DateTime time = GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
-			telegramMessenger.SendMessage($"[{userInfo.PlayerName}{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
+			telegramMessenger.SendMessage($"[{userInfo.PlayerName}@{serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 
 			isSleeping = true;
@@ -3498,8 +3536,8 @@ namespace Tbot {
 										.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
+										.SingleOrDefault() ?? new() { ID = 0 };	
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable, buildable);
 
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
@@ -3596,6 +3634,15 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
+					
 					if (interval == long.MaxValue || interval == long.MinValue)
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 
@@ -3612,6 +3659,235 @@ namespace Tbot {
 					//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Last DOIR: {Math.Round(_lastDOIR, 2)}");
 					//Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Next DOIR: {Math.Round(_nextDOIR, 2)}");
 
+				}
+			}
+		}
+
+		private static void LifeformAutoResearch(object state) {
+			try {
+				// Wait for the thread semaphore to avoid the concurrency with itself
+				xaSem[Feature.Brain].WaitOne();
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running Lifeform autoresearch...");
+
+				if (isSleeping) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
+					xaSem[Feature.Brain].Release();
+					return;
+				}
+
+				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) || (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))) {
+					AutoMinerSettings autoMinerSettings = new() {
+						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
+					};
+
+					List<Celestial> celestialsToMine = new();
+					LFBuildings maxLFBuildings = new();
+					if (state == null) {
+						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
+							var cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+							cel = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+							cel = UpdatePlanet(celestial, UpdateTypes.Resources);
+
+							if (cel.LFtype == LFTypes.None) {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {cel.ToString()}: No Lifeform active on this planet.");
+								continue;
+							}
+							var nextLFTechToBuild = Helpers.GetNextLFTechToBuild(cel);
+							if (nextLFTechToBuild != LFTechno.None) {
+								var level = Helpers.GetNextLevel(cel, nextLFTechToBuild);
+								Resources nextLFTechCost = ogamedService.GetPrice(nextLFTechToBuild, level);
+								var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost);
+								if (isLessCostLFTechToBuild != LFTechno.None) {
+									level = Helpers.GetNextLevel(cel, isLessCostLFTechToBuild);
+									nextLFTechToBuild = isLessCostLFTechToBuild;
+								}
+
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Lifeform Research: {nextLFTechToBuild.ToString()} lv {level.ToString()}.");
+								celestialsToMine.Add(celestial);
+							} else {
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: No Next Lifeform technology to build found.");
+							}
+
+						}
+					} else {
+						celestialsToMine.Add(state as Celestial);
+					}
+					foreach (Celestial celestial in celestialsToMine) {
+						LifeformAutoResearchCelestial(celestial);
+					}
+				} else {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping: feature disabled");
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"Lifeform AutoMine Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			} finally {
+				if (!isSleeping) {
+					UpdateTitle();
+					xaSem[Feature.Brain].Release();
+				}
+			}
+		}
+
+		private static void LifeformAutoResearchCelestial(Celestial celestial) {
+			int fleetId = (int) SendFleetCode.GenericError;
+			LFTechno buildable = LFTechno.None;
+			int level = 0;
+			bool started = false;
+			bool stop = false;
+			bool delay = false;
+			bool delayProduction = false;
+			long delayTime = 0;
+			long interval = 0;
+			try {
+				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running Lifeform AutoResearch on {celestial.ToString()}");
+				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+
+				if (celestial.Constructions.LFTechID != 0) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform research in production.");
+					delayProduction = true;
+					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					return;
+				}
+
+				if (celestial is Planet) {
+					buildable = Helpers.GetNextLFTechToBuild(celestial);
+
+					if (buildable != LFTechno.None) {
+						level = Helpers.GetNextLevel(celestial, buildable);
+						Resources nextLFTechCost = ogamedService.GetPrice(buildable, level);
+						var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost);
+						if (isLessCostLFTechToBuild != LFTechno.None) {
+							level = Helpers.GetNextLevel(celestial, isLessCostLFTechToBuild);
+							buildable = isLessCostLFTechToBuild;
+						}
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best Lifeform Research for {celestial.ToString()}: {buildable.ToString()}");
+
+						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
+
+						if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
+							bool result = false;
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Lifeform Research {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+							result = ogamedService.BuildCancelable(celestial, (LFTechno)buildable);
+
+							if (result) {
+								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+								if (celestial.Constructions.LFTechID == (int) buildable) {
+									started = true;
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Lifeform Research succesfully started.");
+								} else {
+									celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+									if (celestial.GetLevel(buildable) != level)
+										Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start Lifeform Research construction: an unknown error has occurred");
+									else {
+										started = true;
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, "Lifeform Research succesfully started.");
+									}
+								}
+
+							} else {
+								Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start Lifeform Research: a network error has occurred");
+							}
+						} else {
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
+
+							if ((bool) settings.Brain.LifeformAutoResearch.Transports.Active) {
+								fleets = UpdateFleets();
+								if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
+									Celestial origin = celestials
+											.Unique()
+											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+											.SingleOrDefault() ?? new() { ID = 0 };
+									fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
+									if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+										stop = true;
+										return;
+									}
+									if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+										delay = true;
+										return;
+									}
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
+								}
+							}
+						}
+					} else {
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. Check max Lifeform base building max level in settings file?");
+						stop = true;
+					}
+				}
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"LifeformAutoResearch Celestial Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			} finally {
+				var time = GetDateTime();
+				string autoMineTimer = $"LifeformAutoResearchTimer-{celestial.ID.ToString()}";
+				DateTime newTime;
+				if (stop) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Stopping Lifeform AutoResearch check for {celestial.ToString()}.");
+					if (timers.TryGetValue($"LifeformAutoResearchTimer-{celestial.ID.ToString()}", out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+				} else if (delayProduction) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(delayTime);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, delayTime, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform Research check for {celestial.ToString()} at {newTime.ToString()}");
+				} else if (delay) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Delaying...");
+					time = GetDateTime();
+					fleets = UpdateFleets();
+					try {
+						interval = (fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} catch {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+					}
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
+
+				} else if (started) {
+					interval = ((long) celestial.Constructions.LFTechCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					if (interval == long.MaxValue || interval == long.MinValue)
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
+				} else {
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
+
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(interval);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoResearch, celestial, interval, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
 		}
@@ -3638,8 +3914,6 @@ namespace Tbot {
 					if (state == null) {
 						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
 							var cel = UpdatePlanet(celestial, UpdateTypes.Buildings);
-							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 
 							if ((int) settings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine) {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()} did not reached required CrystalMine level. SKipping..");
@@ -3649,8 +3923,10 @@ namespace Tbot {
 							int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
 							int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
+							cel = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+							cel = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 							var nextLFBuilding = Helpers.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
-							if (nextLFBuilding != LFBuildables.Null) {
+							if (nextLFBuilding != LFBuildables.None) {
 								var lv = Helpers.GetNextLevel(celestial, nextLFBuilding);
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextLFBuilding.ToString()} lv {lv.ToString()}.");
 
@@ -3682,7 +3958,7 @@ namespace Tbot {
 
 		private static void LifeformAutoMineCelestial(Celestial celestial) {
 			int fleetId = (int) SendFleetCode.GenericError;
-			LFBuildables buildable = LFBuildables.Null;
+			LFBuildables buildable = LFBuildables.None;
 			int level = 0;
 			bool started = false;
 			bool stop = false;
@@ -3696,7 +3972,7 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
+				//celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFBuildingID != 0) {
@@ -3709,10 +3985,9 @@ namespace Tbot {
 				if (celestial is Planet) {
 					buildable = Helpers.GetNextLFBuildingToBuild(celestial);
 
-					if (buildable != LFBuildables.Null) {
+					if (buildable != LFBuildables.None) {
 						level = Helpers.GetNextLevel(celestial, buildable);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
-
 						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
 
 						if (celestial.Resources.IsBuildable(xCostBuildable)) {
@@ -3771,7 +4046,7 @@ namespace Tbot {
 					}
 				}
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
+				Helpers.WriteLog(LogType.Error, LogSender.Brain, $"LifeformAutoMine Celestial Exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				var time = GetDateTime();
@@ -3808,26 +4083,32 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else if (started) {
-					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.LFBuildingCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					if (interval == long.MaxValue || interval == long.MinValue)
-						interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else {
-					interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						fleets = UpdateFleets();
+						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
+						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+					} else {
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
@@ -3953,7 +4234,7 @@ namespace Tbot {
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -3984,6 +4265,28 @@ namespace Tbot {
 							preferredShip = Buildables.SmallCargo;
 						}
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+						if (preferredShip == Buildables.SmallCargo && idealShips <= 2 && buildable != Buildables.Null) {
+							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Less than 3 SmallCargo is needed, Will try sending resource for next level also..");
+							int level = Helpers.GetNextLevel(destination, buildable);
+							Resources nextCostBuildable = Helpers.CalcPrice(buildable, level+1);
+							if (nextCostBuildable.TotalResources < 1000000) {
+								missingResources = missingResources.Sum(nextCostBuildable);
+								if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+									missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+									missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+									missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+								}
+								if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
+									idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+								} else {
+									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin for level+2. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+									return 0;
+								}
+							} else {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: level+2 resources cost too expensive (high level building maybe not wanted), sending with less than 2 small cargo.");
+							}
+						}
+
 						Ships ships = new();
 						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
 							ships.Add(preferredShip, idealShips);
@@ -4655,7 +4958,7 @@ namespace Tbot {
 					return;
 				}
 
-				if ((bool) settings.Expeditions.Active || timers.TryGetValue("ExpeditionsTimer", out Timer value)) {
+				if ((bool) settings.Expeditions.Active && timers.TryGetValue("ExpeditionsTimer", out Timer value)) {
 					researches = UpdateResearches();
 					if (researches.Astrophysics == 0) {
 						Helpers.WriteLog(LogType.Info, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
@@ -4679,9 +4982,10 @@ namespace Tbot {
 					} else {
 						expsToSend = Math.Min(slots.ExpFree, slots.Free);
 					}
-
+					Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Expedition slot free: {expsToSend}");
 					if (Helpers.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
 						if ((double) expsToSend < Math.Round((double) slots.ExpTotal / 2D, 0, MidpointRounding.ToZero) + 1D) {
+							Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Majority of expedition already in flight, Skipping...");
 							expsToSend = 0;
 						}
 					}
@@ -4782,7 +5086,7 @@ namespace Tbot {
 											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
 												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
 											}
-
+											Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)}");
 											fleet = Helpers.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, serverData, researches, userInfo.Class, serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) settings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) settings.Expeditions.MinPrimaryToSend);
