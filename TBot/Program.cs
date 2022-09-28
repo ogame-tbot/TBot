@@ -3806,7 +3806,7 @@ namespace Tbot {
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (started) {
-					long interval = (long) celestial.Constructions.BuildingCountdown;
+					long interval = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3825,6 +3825,7 @@ namespace Tbot {
 						fleets = UpdateFleets();
 						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+
 					} else {
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
@@ -4161,74 +4162,78 @@ namespace Tbot {
 				//celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
-				if (celestial.Constructions.LFBuildingID != 0) {
-					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform building in production.");
+				if (celestial.Constructions.LFBuildingID != 0 || celestial.Constructions.BuildingID == (int) Buildables.RoboticsFactory || celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building (LF, robotic or nanite) in production.");
 					delayProduction = true;
-					delayTime = (long) celestial.Constructions.LFBuildingCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
-					return;
+					if (celestial.Constructions.LFBuildingID != 0) {
+						delayTime = (long) celestial.Constructions.LFBuildingCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					} else {
+						delayTime = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					}
 				}
+				if (delayTime == 0) {
+					if (celestial is Planet) {
+						buildable = Helpers.GetNextLFBuildingToBuild(celestial);
 
-				if (celestial is Planet) {
-					buildable = Helpers.GetNextLFBuildingToBuild(celestial);
+						if (buildable != LFBuildables.None) {
+							level = Helpers.GetNextLevel(celestial, buildable);
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
+							Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
 
-					if (buildable != LFBuildables.None) {
-						level = Helpers.GetNextLevel(celestial, buildable);
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
-						Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
+							if (celestial.Resources.IsBuildable(xCostBuildable)) {
+								bool result = false;
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
+								result = ogamedService.BuildCancelable(celestial, buildable);
 
-						if (celestial.Resources.IsBuildable(xCostBuildable)) {
-							bool result = false;
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
-							result = ogamedService.BuildCancelable(celestial, buildable);
-
-							if (result) {
-								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
-								if (celestial.Constructions.LFBuildingID == (int) buildable) {
-									started = true;
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
-								} else {
-									celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
-									if (celestial.GetLevel(buildable) != level)
-										Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknown error has occurred");
-									else {
+								if (result) {
+									celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
+									if (celestial.Constructions.LFBuildingID == (int) buildable) {
 										started = true;
 										Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+									} else {
+										celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+										if (celestial.GetLevel(buildable) != level)
+											Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: an unknown error has occurred");
+										else {
+											started = true;
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, "Building succesfully started.");
+										}
+									}
+
+								} else {
+									Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
+								}
+							} else {
+								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
+
+								if ((bool) settings.Brain.LifeformAutoMine.Transports.Active) {
+									fleets = UpdateFleets();
+									if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
+										Celestial origin = celestials
+												.Unique()
+												.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
+												.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
+												.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
+												.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+												.SingleOrDefault() ?? new() { ID = 0 };
+										fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
+										if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+											stop = true;
+											return;
+										}
+										if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+											delay = true;
+											return;
+										}
+									} else {
+										Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
 									}
 								}
-
-							} else {
-								Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to start building construction: a network error has occurred");
 							}
 						} else {
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
-
-							if ((bool) settings.Brain.LifeformAutoMine.Transports.Active) {
-								fleets = UpdateFleets();
-								if (!Helpers.IsThereTransportTowardsCelestial(celestial, fleets)) {
-									Celestial origin = celestials
-											.Unique()
-											.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-											.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-											.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
-											.SingleOrDefault() ?? new() { ID = 0 };
-									fleetId = HandleMinerTransport(origin, celestial, xCostBuildable);
-									if (fleetId == (int)SendFleetCode.AfterSleepTime) {
-										stop = true;
-										return;
-									}
-									if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
-										delay = true;
-										return;
-									}
-								} else {
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
-								}
-							}
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. Check max Lifeform base building max level in settings file?");
+							stop = true;
 						}
-					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. Check max Lifeform base building max level in settings file?");
-						stop = true;
 					}
 				}
 			} catch (Exception e) {
@@ -4280,6 +4285,16 @@ namespace Tbot {
 					newTime = time.AddMilliseconds(interval);
 					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+
+				} else if (delayTime > 0) {
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(delayTime);
+					timers.Add(autoMineTimer, new Timer(LifeformAutoMine, celestial, delayTime, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+
 				} else {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						fleets = UpdateFleets();
