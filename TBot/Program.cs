@@ -3810,7 +3810,7 @@ namespace Tbot {
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (started) {
-					long interval = (long) celestial.Constructions.BuildingCountdown;
+					long interval = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3829,6 +3829,7 @@ namespace Tbot {
 						fleets = UpdateFleets();
 						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+
 					} else {
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
