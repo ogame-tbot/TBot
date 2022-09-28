@@ -141,22 +141,18 @@ namespace Tbot {
 
 			if (!isLoggedIn) {
 				Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to login. Checking captcha...");
-				string challengeID = ogamedService.GetCaptchaChallengeID();
-				if (challengeID == "") {
+				var captchaChallenge = ogamedService.GetCaptchaChallenge();
+				if (captchaChallenge.Id == "") {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Please check your credentials, language and universe name.");
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "If your credentials are correct try refreshing your IP address.");
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Trying to solve captcha...");
-					var text = ogamedService.GetCaptchaTextImage(challengeID);
-					var icons = ogamedService.GetCaptchaIcons(challengeID);
 					int answer = 0;
-					if (text.Length > 0 && icons.Length > 0) {
-						answer = OgameCaptchaSolver.GetCapcthaSolution(icons, text);
-					} else if (!(bool) settings.General.Proxy.Enabled) {
-						answer = OgameCaptchaSolver.GetCapcthaSolution(challengeID, settings.General.UserAgent);
+					if (captchaChallenge.Icons != "" && captchaChallenge.Question != "" && captchaChallenge.Icons != null && captchaChallenge.Question != null) {
+						answer = OgameCaptchaSolver.GetCapcthaSolution(captchaChallenge.Icons, captchaChallenge.Question);
 					}
-					ogamedService.SolveCaptcha(challengeID, answer);
+					ogamedService.SolveCaptcha(captchaChallenge.Id, answer);
 					Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 					isLoggedIn = ogamedService.Login();
 				}

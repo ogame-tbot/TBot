@@ -1500,4 +1500,10 @@ namespace Tbot.Model {
 			}
 		}
 	}
+
+	public class CaptchaChallenge {
+		public string Id { get; set; }
+		public string Icons { get; set; }
+		public string Question { get; set; }
+	}
 }
