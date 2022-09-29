@@ -152,7 +152,7 @@
 		"LifeformAutoResearch": {
 			"Active": true,
 			"Transports": {
-				"Active": true,
+				"Active": true
 			},
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
