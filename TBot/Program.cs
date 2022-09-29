@@ -1872,7 +1872,7 @@ namespace Tbot {
 				//var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 				//Random randomSpeed = new Random();
 				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
-				decimal speed = 100;
+				decimal speed = 10;
 				AlreadySent = TelegramSwitch(speed, celestial);
 			}
 
