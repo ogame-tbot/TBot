@@ -10,51 +10,24 @@ namespace Tbot.Services {
 
 	public static class OgameCaptchaSolver {
 
-		public static int GetCapcthaSolution(string challengeId, string userAgent = "") {
-			RestClient client = SetupRestClient(userAgent);
-
-			return GetCapcthaSolution(challengeId, client);
-		}
-
-		public static int GetCapcthaSolution(string challengeId, RestClient client) {
-			var challengeURL = "https://image-drop-challenge.gameforge.com/challenge/" + challengeId + "/en-GB";
-			var challengeRequest = new RestRequest() {
-				Method = Method.GET,
-				Resource = challengeURL
-			};
-			challengeRequest.AddHeader("Content-Type", "application/json");
-			client.Execute(challengeRequest);
-
-			var challengeImageRequest = new RestRequest() {
-				Method = Method.GET,
-				Resource = challengeURL + "/drag-icons"
-			};
-			challengeImageRequest.AddHeader("Content-Type", "application/json");
-			IRestResponse challengeImageResponse = client.Execute(challengeImageRequest);
-
-			var challengeTextRequest = new RestRequest() {
-				Method = Method.GET,
-				Resource = challengeURL + "/text"
-			};
-			challengeTextRequest.AddHeader("Content-Type", "application/json");
-			IRestResponse challengeTextResponse = client.Execute(challengeTextRequest);
-
-			return GetCapcthaSolution(challengeImageResponse.RawBytes, challengeTextResponse.RawBytes);
-		}
-
-		private static RestClient SetupRestClient(string userAgent = "") {
-			RestClient client = new() {
-				UserAgent = userAgent != "" ? userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
-			};
-			client.AddDefaultHeader("Accept", "gzip, deflate, br");
-			client.Timeout = 30000;
-
-			return client;
-		}
-
 		public static int GetCapcthaSolution(byte[] images, byte[] text) {
 			string textHash = GetImageHash(text);
 			string[] hashes = GetCaptchaImagesHashes(images);
+			int answer;
+			if (CaptchaTextPairs.TryGetValue(textHash, out var stringAnswer) && CaptchaImagePairs.TryGetValue(stringAnswer, out var correctHash))
+				for (int i = 0; i < hashes.Length; i++)
+					if (hashes[i] == correctHash)
+						return i;
+
+			Random random = new();
+			answer = random.Next(0, 4);
+
+			return answer;
+		}
+		
+		public static int GetCapcthaSolution(string base64images, string base64text) {
+			string textHash = GetImageHash(base64text);
+			string[] hashes = GetCaptchaImagesHashes(base64images);
 			int answer;
 			if (CaptchaTextPairs.TryGetValue(textHash, out var stringAnswer) && CaptchaImagePairs.TryGetValue(stringAnswer, out var correctHash))
 				for (int i = 0; i < hashes.Length; i++)
@@ -81,12 +54,22 @@ namespace Tbot.Services {
 			return result;
 		}
 
+		private static string[] GetCaptchaImagesHashes(string base64String) {
+			byte[] data = Convert.FromBase64String(base64String);
+			return GetCaptchaImagesHashes(data);
+		}
+
 		private static string GetImageHash(byte[] picture) {
 			Image image = Image.Load(picture);
 			using MemoryStream ms = new();
 			image.SaveAsPng(ms);
 			using MD5 md5 = MD5.Create();
 			return BitConverter.ToString(md5.ComputeHash(ms.ToArray())).Replace("-", "").ToLower();
+		}
+		
+		private static string GetImageHash(string base64String) {
+			byte[] data = Convert.FromBase64String(base64String);
+			return GetImageHash(data);
 		}
 
 		private static readonly Dictionary<string, string> CaptchaImagePairs = new()

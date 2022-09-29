@@ -125,51 +125,19 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		public string GetCaptchaChallengeID() {
+		public CaptchaChallenge GetCaptchaChallenge() {
 			try {
 				var request = new RestRequest {
-					Resource = "/bot/captcha/challengeID",
+					Resource = "/bot/captcha/challenge",
 					Method = Method.GET
 				};
 
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-				if (result != null && result.Status == "ok")
-					return (string) result.Result;
-				else
-					return "";
-			} catch { return ""; }
-		}
-
-		public byte[] GetCaptchaTextImage(string challengeID) {
-			try {
-				var request = new RestRequest {
-					Resource = "/bot/captcha/question/" + challengeID,
-					Method = Method.GET
-				};
-
-				var response = Client.Execute(request);
-				var result = response.RawBytes;
-				if (result != null)
-					return result;
-				else
-					return new byte[0];
-			} catch { return new byte[0]; }
-		}
-
-		public byte[] GetCaptchaIcons(string challengeID) {
-			try {
-				var request = new RestRequest {
-					Resource = "/bot/captcha/icons/" + challengeID,
-					Method = Method.GET
-				};
-
-				var response = Client.Execute(request);
-				var result = response.RawBytes;
-				if (result != null)
-					return result;
-				else
-					return new byte[0];
-			} catch { return new byte[0]; }
+				if (result != null && result.Status == "ok") {
+					return JsonConvert.DeserializeObject<CaptchaChallenge>(JsonConvert.SerializeObject(result.Result));
+				} else
+					return new CaptchaChallenge();
+			} catch { return new CaptchaChallenge(); }
 		}
 
 		public void SolveCaptcha(string challengeID, int answer) {
