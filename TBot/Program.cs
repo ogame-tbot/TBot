@@ -4462,45 +4462,45 @@ namespace Tbot {
 						Ships ships = new();
 						Ships tempShips = new();
 						tempShips.Add(preferredShip, 1);
-						int level = Helpers.GetNextLevel(destination, buildable);
-						long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
 						var flightPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, researches, serverData, userInfo.Class);
 						long flightTime = flightPrediction.Time;
 						idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
-						if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
-							var tempCelestial = destination;
-							while (flightTime >= buildTime && idealShips <= availableShips) {
-								tempCelestial.SetLevel(buildable, level);
-								var nextBuildable = Buildables.Null;
-								if (tempCelestial.Coordinate.Type == Celestials.Planet) {
-									tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
-									tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
-									nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
-								} else {
-									nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
-								}
-								if (nextBuildable != Buildables.Null) {
-									var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
-									var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
-
-									if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
-										var newIdealShips = Helpers.CalcShipNumberForPayload(newMissingRes, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-										if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
-											idealShips = newIdealShips;
-											missingResources = newMissingRes;
-											buildTime += Helpers.CalcProductionTime(nextBuildable, nextLevel, serverData, tempCelestial.Facilities);											
-											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
-											level = nextLevel;
-											buildable = nextBuildable;
-										}
+						if (buildable != Buildables.Null && buildable != Buildables.SolarSatellite) {
+							int level = Helpers.GetNextLevel(destination, buildable);
+							long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
+							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
+								var tempCelestial = destination;
+								while (flightTime >= buildTime && idealShips <= availableShips) {
+									tempCelestial.SetLevel(buildable, level);
+									var nextBuildable = Buildables.Null;
+									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
+										tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
+										tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
+										nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
+									} else {
+										nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
 									}
-									else {
+									if (nextBuildable != Buildables.Null) {
+										var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
+										var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
+
+										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
+											var newIdealShips = Helpers.CalcShipNumberForPayload(newMissingRes, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
+												idealShips = newIdealShips;
+												missingResources = newMissingRes;
+												buildTime += Helpers.CalcProductionTime(nextBuildable, nextLevel, serverData, tempCelestial.Facilities);
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
+												level = nextLevel;
+												buildable = nextBuildable;
+											}
+										} else {
+											break;
+										}
+									} else {
 										break;
 									}
-								}
-								else {
-									break;
 								}
 							}
 						}
