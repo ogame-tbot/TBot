@@ -1449,6 +1449,18 @@ namespace Tbot.Includes {
 				return 0;
 		}
 
+		public static long GetProductionEnergyDelta(Buildables buildable, int level, int energyTechnology = 0, float ratio = 1, CharacterClass userClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false) {
+			if (buildable == Buildables.SolarSatellite || buildable == Buildables.SolarPlant || buildable == Buildables.FusionReactor) {
+				if (level > 1) {
+					var prevLevelEnergy = CalcEnergyProduction(buildable, level - 1, energyTechnology, ratio, userClass, hasEngineer, hasStaff);
+					var thisLevelEnergy = CalcEnergyProduction(buildable, level, energyTechnology, ratio, userClass, hasEngineer, hasStaff);
+					return thisLevelEnergy - prevLevelEnergy;
+				} else
+					return CalcEnergyProduction(buildable, 1, energyTechnology, ratio, userClass, hasEngineer, hasStaff);
+			} else
+				return 0;
+		}
+
 		public static int GetNextLevel(Celestial planet, Buildables buildable, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false) {
 			int output = 0;
 			if (buildable == Buildables.SolarSatellite) {

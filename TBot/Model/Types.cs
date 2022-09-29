@@ -189,6 +189,20 @@ namespace Tbot.Model {
 			return output;
 		}
 
+		public Celestial SetLevel(Buildables building, int level) {
+			foreach (PropertyInfo prop in Buildings.GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					prop.SetValue(this.Buildings, level);
+				}
+			}
+			foreach (PropertyInfo prop in Facilities.GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					prop.SetValue(this.Facilities, level);
+				}
+			}
+			return this;
+		}
+
 		public int GetLevel(LFBuildables building) {
 			int output = 0;
 			foreach (PropertyInfo prop in LFBuildings.GetType().GetProperties()) {
@@ -426,6 +440,14 @@ namespace Tbot.Model {
 			if (output.Deuterium < 0)
 				output.Deuterium = 0;
 
+			return output;
+		}
+
+		public Resources Round(int roundTo = 1000) {
+			Resources output = new();
+			output.Metal = (long) Math.Round((double) ((double) Metal / (double) roundTo), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+			output.Crystal = (long) Math.Round((double) ((double) Crystal / (double) roundTo), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
+			output.Deuterium = (long) Math.Round((double) ((double) Deuterium / (double) roundTo), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
 			return output;
 		}
 
