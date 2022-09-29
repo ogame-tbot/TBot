@@ -2511,6 +2511,7 @@ namespace Tbot {
 			int fleetId = (int) SendFleetCode.GenericError;
 			bool stop = false;
 			bool delay = false;
+			long delayResearch = 0;
 			try {
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
@@ -2558,6 +2559,7 @@ namespace Tbot {
 					}
 					celestial = UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 					if (celestial.Constructions.ResearchID != 0) {
+						delayResearch = (long) celestial.Constructions.ResearchID * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
 						return;
 					}
@@ -2706,7 +2708,13 @@ namespace Tbot {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
-					} else {
+					} else if (delayResearch > 0) {
+						var time = GetDateTime();
+						var newTime = time.AddMilliseconds(delayResearch);
+						timers.GetValueOrDefault("AutoResearchTimer").Change(delayResearch, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
+					}
+					else {
 						long interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = celestials
 							.Unique()
@@ -3545,6 +3553,7 @@ namespace Tbot {
 			bool started = false;
 			bool stop = false;
 			bool delay = false;
+			long delayBuilding = 0;
 			bool delayProduction = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
@@ -3595,6 +3604,7 @@ namespace Tbot {
 								_lastDOIR = DOIR;
 							}
 						}
+						delayBuilding = (long) celestial.Constructions.BuildingID * (long) 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						return;
 					}
 
@@ -3818,6 +3828,15 @@ namespace Tbot {
 					if (_lastDOIR >= _nextDOIR) {
 						_nextDOIR = 0;
 					}
+				} else if (delayBuilding > 0) {
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(delayBuilding);
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, delayBuilding, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 
