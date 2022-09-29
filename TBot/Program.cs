@@ -3710,7 +3710,7 @@ namespace Tbot {
 										.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };	
-								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable, buildable);
+								fleetId = HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
@@ -4103,7 +4103,7 @@ namespace Tbot {
 							var cel = UpdatePlanet(celestial, UpdateTypes.Buildings);
 
 							if ((int) settings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine) {
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()} did not reached required CrystalMine level. SKipping..");
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()} did not reach required CrystalMine level. Skipping..");
 								continue;
 							}
 							int maxTechFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
@@ -4435,7 +4435,7 @@ namespace Tbot {
 			return interval + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
-		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null) {
+		private static int HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null) {
 			try {
 				if (origin.ID == destination.ID) {
 					Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Skipping transport: origin and destination are the same.");
@@ -4445,13 +4445,6 @@ namespace Tbot {
 					return 0;
 				} else {
 					var missingResources = resources.Difference(destination.Resources);
-
-					if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
-						missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-						missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-						missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-					}
-
 					Resources resToLeave = new(0, 0, 0);
 					if ((long) settings.Brain.AutoMine.Transports.DeutToLeave > 0)
 						resToLeave.Deuterium = (long) settings.Brain.AutoMine.Transports.DeutToLeave;
@@ -4463,32 +4456,60 @@ namespace Tbot {
 						if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Unable to parse CargoType. Falling back to default SmallCargo");
 							preferredShip = Buildables.SmallCargo;
-							preferredShip = Buildables.SmallCargo;
 						}
+
 						long idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-						if (preferredShip == Buildables.SmallCargo && idealShips <= 2 && buildable != Buildables.Null) {
-							Helpers.WriteLog(LogType.Warning, LogSender.Brain, "Less than 3 SmallCargo is needed, Will try sending resource for next level also..");
-							int level = Helpers.GetNextLevel(destination, buildable);
-							Resources nextCostBuildable = Helpers.CalcPrice(buildable, level+1);
-							if (nextCostBuildable.TotalResources < 1000000) {
-								missingResources = missingResources.Sum(nextCostBuildable);
-								if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
-									missingResources.Metal = (long) Math.Round((double) ((double) missingResources.Metal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-									missingResources.Crystal = (long) Math.Round((double) ((double) missingResources.Crystal / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-									missingResources.Deuterium = (long) Math.Round((double) ((double) missingResources.Deuterium / (double) 1000), 0, MidpointRounding.ToPositiveInfinity) * (long) 1000;
-								}
-								if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
-									idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+						Ships ships = new();
+						Ships tempShips = new();
+						tempShips.Add(preferredShip, 1);
+						int level = Helpers.GetNextLevel(destination, buildable);
+						long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
+						var flightPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, researches, serverData, userInfo.Class);
+						long flightTime = flightPrediction.Time;
+						idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+						var availableShips = origin.Ships.GetAmount(preferredShip);
+						if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
+							var tempCelestial = destination;
+							while (flightTime >= buildTime && idealShips <= availableShips) {
+								tempCelestial.SetLevel(buildable, level);
+								var nextBuildable = Buildables.Null;
+								if (tempCelestial.Coordinate.Type == Celestials.Planet) {
+									tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
+									tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
+									nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
 								} else {
-									Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: not enough resources in origin for level+2. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-									return 0;
+									nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
 								}
-							} else {
-								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping transport: level+2 resources cost too expensive (high level building maybe not wanted), sending with less than 2 small cargo.");
+								if (nextBuildable != Buildables.Null) {
+									var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
+									var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
+
+									if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
+										var newIdealShips = Helpers.CalcShipNumberForPayload(newMissingRes, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+										if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
+											idealShips = newIdealShips;
+											missingResources = newMissingRes;
+											buildTime += Helpers.CalcProductionTime(nextBuildable, nextLevel, serverData, tempCelestial.Facilities);											
+											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
+											level = nextLevel;
+											buildable = nextBuildable;
+										}
+									}
+									else {
+										break;
+									}
+								}
+								else {
+									break;
+								}
 							}
 						}
 
-						Ships ships = new();
+						if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+							missingResources = missingResources.Round();
+							idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+						}
+
 						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
 							ships.Add(preferredShip, idealShips);
 
@@ -4496,10 +4517,6 @@ namespace Tbot {
 								destination = UpdatePlanet(destination, UpdateTypes.ResourceSettings);
 								destination = UpdatePlanet(destination, UpdateTypes.Buildings);
 								destination = UpdatePlanet(destination, UpdateTypes.ResourcesProduction);
-
-								FleetPrediction flightPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, ships, Missions.Transport, Speeds.HundredPercent, researches, serverData, userInfo.Class);
-
-								var flightTime = flightPrediction.Time;
 
 								float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
 								float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
