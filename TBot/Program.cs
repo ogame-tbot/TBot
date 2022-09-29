@@ -2559,7 +2559,7 @@ namespace Tbot {
 					}
 					celestial = UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 					if (celestial.Constructions.ResearchID != 0) {
-						delayResearch = (long) celestial.Constructions.ResearchID * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						delayResearch = (long) celestial.Constructions.ResearchCountdown * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
 						return;
 					}
@@ -3604,7 +3604,7 @@ namespace Tbot {
 								_lastDOIR = DOIR;
 							}
 						}
-						delayBuilding = (long) celestial.Constructions.BuildingID * (long) 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+						delayBuilding = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						return;
 					}
 
