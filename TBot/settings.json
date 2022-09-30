@@ -154,6 +154,7 @@
 			"Transports": {
 				"Active": true
 			},
+			"MaxResearchLevel": 6,
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},

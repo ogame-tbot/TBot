@@ -2111,16 +2111,16 @@ namespace Tbot.Includes {
 			return LFBuildables.None;
 		}
 
-		public static LFTechno GetNextLFTechToBuild(Celestial celestial) {
+		public static LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel) {
 			//TODO
 			//As planets can have any lifeform techs, its complicated to find which techs are existing on a planet if the techs are not at least level 1
-			//Threfore, for the moment, up only techs that are minimum level 1
+			//Therefore, for the moment, up only techs that are minimum level 1, its a way to also allows player to chose which research to up
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
 					//skip intergalactic envoys tech cuz we dont care
 					if (prop.Name == "IntergalacticEnvoys" || nextLFTech == LFTechno.IntergalacticEnvoys)
 						continue;
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == nextLFTech.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == nextLFTech.ToString()) {
 						return nextLFTech;
 					}
 

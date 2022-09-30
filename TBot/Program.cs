@@ -3885,8 +3885,8 @@ namespace Tbot {
 					AutoMinerSettings autoMinerSettings = new() {
 						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
-
-					List<Celestial> celestialsToMine = new();
+					int maxResearchLevel = settings.Brain.LifeformAutoResearch.MaxResearchLevel;
+					List <Celestial> celestialsToMine = new();
 					LFBuildings maxLFBuildings = new();
 					if (state == null) {
 						foreach (Celestial celestial in celestials.Where(p => p is Planet)) {
@@ -3898,7 +3898,7 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {cel.ToString()}: No Lifeform active on this planet.");
 								continue;
 							}
-							var nextLFTechToBuild = Helpers.GetNextLFTechToBuild(cel);
+							var nextLFTechToBuild = Helpers.GetNextLFTechToBuild(cel,  maxResearchLevel);
 							if (nextLFTechToBuild != LFTechno.None) {
 								var level = Helpers.GetNextLevel(cel, nextLFTechToBuild);
 								Resources nextLFTechCost = ogamedService.GetPrice(nextLFTechToBuild, level);
@@ -3911,7 +3911,7 @@ namespace Tbot {
 								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Lifeform Research: {nextLFTechToBuild.ToString()} lv {level.ToString()}.");
 								celestialsToMine.Add(celestial);
 							} else {
-								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: No Next Lifeform technology to build found.");
+								Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: No Next Lifeform technology to build found. All research reached settings MaxResearchLevel ?");
 							}
 
 						}
@@ -3958,9 +3958,9 @@ namespace Tbot {
 					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					return;
 				}
-
+				int maxResearchLevel = settings.Brain.LifeformAutoResearch.MaxResearchLevel;
 				if (celestial is Planet) {
-					buildable = Helpers.GetNextLFTechToBuild(celestial);
+					buildable = Helpers.GetNextLFTechToBuild(celestial, maxResearchLevel);
 
 					if (buildable != LFTechno.None) {
 						level = Helpers.GetNextLevel(celestial, buildable);
@@ -4025,7 +4025,7 @@ namespace Tbot {
 							}
 						}
 					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. Check max Lifeform base building max level in settings file?");
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: nothing to build. All research reached settings MaxResearchLevel ?");
 						stop = true;
 					}
 				}
