@@ -3468,7 +3468,7 @@ namespace Tbot {
 					return;
 				}
 
-				if (((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) || (timers.TryGetValue("AutoMineTimer", out Timer value))) {
+				if (((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) && (timers.TryGetValue("AutoMineTimer", out Timer value))) {
 					Buildings maxBuildings = new() {
 						MetalMine = (int) settings.Brain.AutoMine.MaxMetalMine,
 						CrystalMine = (int) settings.Brain.AutoMine.MaxCrystalMine,
@@ -3881,7 +3881,7 @@ namespace Tbot {
 					return;
 				}
 
-				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) || (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))) {
+				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) && (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))) {
 					AutoMinerSettings autoMinerSettings = new() {
 						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
@@ -4110,7 +4110,7 @@ namespace Tbot {
 					return;
 				}
 
-				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoMine.Active) || (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))) {
+				if (((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoMine.Active) && (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))) {
 					AutoMinerSettings autoMinerSettings = new() {
 						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
