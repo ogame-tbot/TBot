@@ -1872,7 +1872,7 @@ namespace Tbot {
 				//var validSpeeds = userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 				//Random randomSpeed = new Random();
 				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
-				decimal speed = 100;
+				decimal speed = 10;
 				AlreadySent = TelegramSwitch(speed, celestial);
 			}
 
@@ -2511,6 +2511,7 @@ namespace Tbot {
 			int fleetId = (int) SendFleetCode.GenericError;
 			bool stop = false;
 			bool delay = false;
+			long delayResearch = 0;
 			try {
 				xaSem[Feature.Brain].WaitOne();
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, "Running autoresearch...");
@@ -2558,6 +2559,7 @@ namespace Tbot {
 					}
 					celestial = UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 					if (celestial.Constructions.ResearchID != 0) {
+						delayResearch = (long) celestial.Constructions.ResearchCountdown * 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
 						return;
 					}
@@ -2706,7 +2708,13 @@ namespace Tbot {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
-					} else {
+					} else if (delayResearch > 0) {
+						var time = GetDateTime();
+						var newTime = time.AddMilliseconds(delayResearch);
+						timers.GetValueOrDefault("AutoResearchTimer").Change(delayResearch, Timeout.Infinite);
+						Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
+					}
+					else {
 						long interval = Helpers.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = celestials
 							.Unique()
@@ -3545,6 +3553,7 @@ namespace Tbot {
 			bool started = false;
 			bool stop = false;
 			bool delay = false;
+			long delayBuilding = 0;
 			bool delayProduction = false;
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running AutoMine on {celestial.ToString()}");
@@ -3595,6 +3604,7 @@ namespace Tbot {
 								_lastDOIR = DOIR;
 							}
 						}
+						delayBuilding = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 						return;
 					}
 
@@ -3818,6 +3828,15 @@ namespace Tbot {
 					if (_lastDOIR >= _nextDOIR) {
 						_nextDOIR = 0;
 					}
+				} else if (delayBuilding > 0) {
+					if (timers.TryGetValue(autoMineTimer, out Timer value))
+						value.Dispose();
+					timers.Remove(autoMineTimer);
+
+					newTime = time.AddMilliseconds(delayBuilding);
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, delayBuilding, Timeout.Infinite));
+					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
+
 				} else {
 					long interval = CalcAutoMineTimer(celestial, buildable, level, started, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 
@@ -4462,45 +4481,45 @@ namespace Tbot {
 						Ships ships = new();
 						Ships tempShips = new();
 						tempShips.Add(preferredShip, 1);
-						int level = Helpers.GetNextLevel(destination, buildable);
-						long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
 						var flightPrediction = Helpers.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, researches, serverData, userInfo.Class);
 						long flightTime = flightPrediction.Time;
 						idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
-						if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
-							var tempCelestial = destination;
-							while (flightTime >= buildTime && idealShips <= availableShips) {
-								tempCelestial.SetLevel(buildable, level);
-								var nextBuildable = Buildables.Null;
-								if (tempCelestial.Coordinate.Type == Celestials.Planet) {
-									tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
-									tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
-									nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
-								} else {
-									nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
-								}
-								if (nextBuildable != Buildables.Null) {
-									var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
-									var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
-
-									if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
-										var newIdealShips = Helpers.CalcShipNumberForPayload(newMissingRes, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
-										if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
-											idealShips = newIdealShips;
-											missingResources = newMissingRes;
-											buildTime += Helpers.CalcProductionTime(nextBuildable, nextLevel, serverData, tempCelestial.Facilities);											
-											Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
-											level = nextLevel;
-											buildable = nextBuildable;
-										}
+						if (buildable != Buildables.Null && buildable != Buildables.SolarSatellite) {
+							int level = Helpers.GetNextLevel(destination, buildable);
+							long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
+							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
+								var tempCelestial = destination;
+								while (flightTime >= buildTime && idealShips <= availableShips) {
+									tempCelestial.SetLevel(buildable, level);
+									var nextBuildable = Buildables.Null;
+									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
+										tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
+										tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
+										nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
+									} else {
+										nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
 									}
-									else {
+									if (nextBuildable != Buildables.Null) {
+										var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
+										var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
+
+										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
+											var newIdealShips = Helpers.CalcShipNumberForPayload(newMissingRes, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
+												idealShips = newIdealShips;
+												missingResources = newMissingRes;
+												buildTime += Helpers.CalcProductionTime(nextBuildable, nextLevel, serverData, tempCelestial.Facilities);
+												Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
+												level = nextLevel;
+												buildable = nextBuildable;
+											}
+										} else {
+											break;
+										}
+									} else {
 										break;
 									}
-								}
-								else {
-									break;
 								}
 							}
 						}
