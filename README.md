@@ -9,10 +9,8 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v9.0.4**!
-LifeForm is NOT offically supported at the moment.
-All non-LF features should work fine on LF servers.
-However, none of the new features is automated and there may be bugs.
+TBot supports Ogame **v9.0.5**!
+A basic LifeForm support is provided.
 
 Feel free to publish issues or pull requests
 
@@ -51,6 +49,8 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
   * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
+  * AutoMineLF: TBot will develop you LifeForms buildings up to the given levels.
+  * AutoResearchLF: TBot will research the LifeForms techs you selected up to the given level.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoFarm: TBot will scan one or more ranges of systems spying inactive players and attacking them with the specified type of ship if they are profitable above a given amount.
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
@@ -77,36 +77,50 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
   * It will answer you a message containing your user ID and chat ID
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 * Send "/help" to the bot to get a list of the available commands. Here is a list:
-  * /ghostsleep - Wait for fleets to come back, ghost fleet for the specified amount of hours, then go to sleep and wake up at return\n, let bot chose mission type. Format: /ghostsleep 4
-  * /ghost - Ghost fleet for the specified amount of hours\n, let bot chose mission type. Format: /ghost 4
-  * /ghostto - Ghost for the specified amount of hours on the specified mission. Format: /ghostto 4 Harvest
-  * /ghostmoons - Ghost all you moons' flteets for the 'specified amount of hours on the specified mission. Format: /ghostmoons 4 Harvest
-  * /switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: /switch 5
-  * /deploy - Deploy to celestial with full ships and resources. Format: /delpoy 3:41:9 moon/planet 10
-  * /jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: /jumpgate 2:41:9 auto/full
-  * /spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: /jumpgate 2:41:9/auto
-  * /recall - Enable/disable fleet auto recall. Format: /recall true/false
-  * /collect - Collect planets resources to JSON setting celestial
-  * /msg - Send a message to current attacker. Format: /msg hello dude
-  * /sleep - Stop bot for the specified amount of hours. Format: /sleep 1
-  * /wakeup - Wakeup bot
-  * /cancel - Cancel fleet with specified ID. Format: /cancel 65656
-  * /getcelestials - Return the list of your celestials
-  * /attacked - check if you're (still) under attack
-  * /celestial - Update program current celestial target. Format: /celestial 2:45:8 Moon/Planet
-  * /getinfo - Get current celestial resources and ships
-  * /editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: /editsettings 2:425:9 Moon
-  * /stopexpe - Stop sending expedition
-  * /startexpe - Start sending expedition
-  * /startdefender - start defender
-  * /stopdefender - stop defender
-  * /stopautomine - stop brain automine
-  * /startautomine - start brain automine
-  * /stopautoping - stop telegram autoping
-  * /startautoping - start telegram autoping [Receive message every X hours]
-  * /ping - Ping bot
-  * /help - Display this help
-
+  * /getfleets - Get OnGoing fleets ids (which are not already coming back)
+  * /getcurrentauction - Get current Auction
+  *	/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>
+  *	/subscribeauction - Get a notification when next auction will start
+  *	/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>
+  *	/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>
+  *	/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>
+  *	/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>
+  *	/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>
+  *	/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>
+  *	/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>
+  *	/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent
+  *	/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>
+  *	/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>
+  *	/collect - Collect planets resources to JSON setting celestial
+  *	/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>
+  *	/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>
+  *	/wakeup - Wakeup bot
+  *	/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>
+  *	/getcelestials - Return the list of your celestials
+  *	/attacked - check if you're (still) under attack
+  *	/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>
+  *	/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>
+  *	/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>
+  *	/minexpecargo - Modify MinPrimaryToSend value inside JSON settings
+  *	/stopexpe - Stop sending expedition
+  *	/startexpe - Start sending expeditio
+  *	/startdefender - start defender
+  *	/stopdefender - stop defender
+  *	/stopautoresearch - stop brain autoresearch
+  *	/startautoresearch - start brain autoresearch
+  *	/stopautomine - stop brain automine
+  *	/startautomine - start brain automine
+  *	/stoplifeformautomine - stop brain Lifeform automine
+  *	/startlifeformautomine - start brain Lifeform automine
+  *	/stoplifeformautoresearch - stop brain Lifeform autoresearch
+  *	/startlifeformautoresearch - start brain Lifeform autoresearch
+  *	/stopautofarm - stop autofarm
+  *	/startautofarm - start autofarm
+  *	/stopautoping - stop telegram autoping
+  *	/startautoping - start telegram autoping [Receive message every X hours]
+  *	/ping - Ping bot
+  *	/help - Display this help
+ 
 ## Settings Hot Reload
 
 TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
@@ -143,6 +157,7 @@ TBot supports the editing of the settings even while it is running. It will take
   * `./TBot`
 
 ## Running on Amazon Web Services
+WARNING: Ogame is positively blocking IPs from datacenters. You probably need a residential proxy to run on AWS, or any other VPS.
 Some successful tests have been done to run TBot on the smallest instance of LightSail (1 vCPU, 20 GB SSD, 500 MB RAM and 1 TB outbound traffic) on Amazon Linux 2, which is free for a three month trial. In order to run it, steps should be as follow:
 * Create your account on Amazon Web Services (Credit Card required), and create a LightSail Instance running Amazon Linux 2. The smallest one fits into the "Free Tier" Program, which allows a 3 month free trial.
 * Select the ports where you want to connect, and open them in the Networking Settings on the instance's AWS Console (ex. ports 8000 - 8020 open for TCP and from any ip address if you don't know where you will be connecting from). This should make it accessible to the public internet.

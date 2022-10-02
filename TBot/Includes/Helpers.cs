@@ -1968,7 +1968,7 @@ namespace Tbot.Includes {
 					}
 				}
 			} else {
-				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings, Skipping..");
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings.");
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {

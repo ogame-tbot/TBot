@@ -4181,6 +4181,10 @@ namespace Tbot {
 				//celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
+				int maxTechFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+				int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+				int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+
 				if (celestial.Constructions.LFBuildingID != 0 || celestial.Constructions.BuildingID == (int) Buildables.RoboticsFactory || celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building (LF, robotic or nanite) in production.");
 					delayProduction = true;
@@ -4192,11 +4196,11 @@ namespace Tbot {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = Helpers.GetNextLFBuildingToBuild(celestial);
+						buildable = Helpers.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
 
 						if (buildable != LFBuildables.None) {
 							level = Helpers.GetNextLevel(celestial, buildable);
-							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
+							Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Best building for {celestial.ToString()}: {buildable.ToString()} ${level.ToString()}");
 							Resources xCostBuildable = ogamedService.GetPrice(buildable, level);
 
 							if (celestial.Resources.IsBuildable(xCostBuildable)) {
