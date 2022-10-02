@@ -222,58 +222,8 @@ namespace Tbot.Includes {
 			return baseCargo * (bonus + 100) / 100;
 		}
 
-		public static int CalcShipFuelCapacity(Buildables buildable, int probeCargo = 0) {
-			int baseCargo;
-			switch (buildable) {
-				case Buildables.SmallCargo:
-					baseCargo = 5000;
-					break;
-				case Buildables.LargeCargo:
-					baseCargo = 25000;
-					break;
-				case Buildables.LightFighter:
-					baseCargo = 50;
-					break;
-				case Buildables.HeavyFighter:
-					baseCargo = 100;
-					break;
-				case Buildables.Cruiser:
-					baseCargo = 800;
-					break;
-				case Buildables.Battleship:
-					baseCargo = 1500;
-					break;
-				case Buildables.ColonyShip:
-					baseCargo = 7500;
-					break;
-				case Buildables.Recycler:
-					baseCargo = 20000;
-					break;
-				case Buildables.EspionageProbe:
-					baseCargo = probeCargo;
-					break;
-				case Buildables.Bomber:
-					baseCargo = 750;
-					break;
-				case Buildables.Destroyer:
-					baseCargo = 2000;
-					break;
-				case Buildables.Deathstar:
-					baseCargo = 1000000;
-					break;
-				case Buildables.Battlecruiser:
-					baseCargo = 750;
-					break;
-				case Buildables.Reaper:
-					baseCargo = 7000;
-					break;
-				case Buildables.Pathfinder:
-					baseCargo = 10000;
-					break;
-				default:
-					return 0;
-			}
-			return baseCargo;
+		public static int CalcShipFuelCapacity(Buildables buildable, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
+			return CalcShipCapacity(buildable, 0, CharacterClass.General, probeCargo);
 		}
 
 		public static long CalcFleetCapacity(Ships fleet, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
@@ -290,14 +240,14 @@ namespace Tbot.Includes {
 			return total;
 		}
 
-		public static long CalcFleetFuelCapacity(Ships fleet, int probeCargo = 0) {
+		public static long CalcFleetFuelCapacity(Ships fleet, int hyperspaceTech, CharacterClass playerClass, int probeCargo = 0) {
 			long total = 0;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					int oneCargo = CalcShipFuelCapacity(buildable, probeCargo);
+					int oneCargo = CalcShipFuelCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
 					total += oneCargo * qty;
 				}
 			}
