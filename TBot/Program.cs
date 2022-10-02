@@ -3958,7 +3958,7 @@ namespace Tbot {
 					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					return;
 				}
-				int maxResearchLevel = settings.Brain.LifeformAutoResearch.MaxResearchLevel;
+				int maxResearchLevel = (int) settings.Brain.LifeformAutoResearch.MaxResearchLevel;
 				if (celestial is Planet) {
 					buildable = Helpers.GetNextLFTechToBuild(celestial, maxResearchLevel);
 
