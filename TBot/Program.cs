@@ -146,6 +146,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Please check your credentials, language and universe name.");
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "If your credentials are correct try refreshing your IP address.");
+					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "If you are using a proxy, a VPN or hosting TBot on a VPS, be warned that Ogame blocks datacenters' IPs. You probably need a residential proxy.");
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Trying to solve captcha...");
 					int answer = 0;
@@ -235,26 +236,6 @@ namespace Tbot {
 					InitializeSleepMode();
 				} else {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
-					/*
-					celestials = GetPlanets();
-					UpdateTitle(true);
-					celestials = UpdatePlanets(UpdateTypes.Buildings);
-					researches = UpdateResearches();					
-					var cels = celestials;
-					for (var i = 0; i < 50; i++) {
-						var newCels = new List<Celestial>();
-						foreach (Celestial celestial in cels.Where(p => p is Planet)) {
-							var cel = celestial as Planet;
-							var nextMine = Helpers.GetNextMineToBuild(cel, researches, serverData.Speed, 100, 100, 100, 1, userInfo.Class, staff.Geologist, staff.IsFull, true, int.MaxValue);
-							var lv = Helpers.GetNextLevel(cel, nextMine, userInfo.Class == CharacterClass.Collector, staff.Engineer, staff.IsFull);
-							var DOIR = Helpers.CalcNextDaysOfInvestmentReturn(cel, researches, serverData.Speed, 1, userInfo.Class, staff.Geologist, staff.IsFull);
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Celestial {cel.ToString()}: Next Mine: {nextMine.ToString()} {lv}; DOIR: {DOIR.ToString()}.");
-							cel.Buildings.SetLevel(nextMine, lv);
-							newCels.Add(cel);
-						}
-						cels = newCels;
-					}
-					*/
 				}
 
 				Console.ReadLine();
@@ -3958,7 +3939,7 @@ namespace Tbot {
 					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					return;
 				}
-				int maxResearchLevel = settings.Brain.LifeformAutoResearch.MaxResearchLevel;
+				int maxResearchLevel = (int) settings.Brain.LifeformAutoResearch.MaxResearchLevel;
 				if (celestial is Planet) {
 					buildable = Helpers.GetNextLFTechToBuild(celestial, maxResearchLevel);
 

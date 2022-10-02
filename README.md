@@ -49,8 +49,8 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
   * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
   * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
-  * AutoMineLF: TBot will develop you LifeForms buildings up to the given levels.
-  * AutoResearchLF: TBot will research the LifeForms techs you selected up to the given level.
+  * AutoMineLF: TBot will develop you LifeForms buildings up to the given levels. TBot will detect the active lifeform based on lifeform buildings present, so you must build at least a lv 1 building in order to TBot to account for that planet.
+  * AutoResearchLF: TBot will research the LifeForms techs you selected up to the given level. Only researches with lv 1 or more will be researched. You must manually select the desired researches and upgrade them to lv 1 or more in order to TBot to account for them.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoFarm: TBot will scan one or more ranges of systems spying inactive players and attacking them with the specified type of ship if they are profitable above a given amount.
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
@@ -62,7 +62,7 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
   * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
-  * Fill the settings in settings.json. The settings are quite self-explainatory.
+  * Fill the settings in settings.json. The settings are quite self-explainatory. WARNING: Ogame is positively blocking IPs from datacenters. You will probably need a residential proxy in ordet to be able to login.
 
 ## Telegram
 You can control and get info for TBot through a Telegram Bot. In order to enable it, you need to follow theese steps:
