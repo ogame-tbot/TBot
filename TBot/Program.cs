@@ -4084,7 +4084,7 @@ namespace Tbot {
 						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
-						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
 					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
