@@ -4196,7 +4196,7 @@ namespace Tbot {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = Helpers.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
+						buildable = Helpers.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
 
 						if (buildable != LFBuildables.None) {
 							level = Helpers.GetNextLevel(celestial, buildable);
