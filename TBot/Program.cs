@@ -1661,7 +1661,7 @@ namespace Tbot {
 					StopColonize();
 					StopBrainAutoResearch();
 					StopBrainAutoMine();
-					StopBrainLifeformAutoMine();
+					StopBrainLifeformAutoMine(); 
 					StopBrainRepatriate();
 					StopAutoFarm();
 					StopHarvest();
@@ -4065,7 +4065,7 @@ namespace Tbot {
 						var transportfleet = fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 						interval = (transportfleet.ArriveIn * 1000) + Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
-						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
 					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
@@ -4161,7 +4161,11 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
 				//celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
-
+				
+				int maxTechFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+				int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+				int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+				
 				if (celestial.Constructions.LFBuildingID != 0 || celestial.Constructions.BuildingID == (int) Buildables.RoboticsFactory || celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building (LF, robotic or nanite) in production.");
 					delayProduction = true;
@@ -4173,7 +4177,7 @@ namespace Tbot {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = Helpers.GetNextLFBuildingToBuild(celestial);
+						buildable = Helpers.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
 
 						if (buildable != LFBuildables.None) {
 							level = Helpers.GetNextLevel(celestial, buildable);
