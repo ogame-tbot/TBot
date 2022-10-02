@@ -3885,7 +3885,7 @@ namespace Tbot {
 					AutoMinerSettings autoMinerSettings = new() {
 						DeutToLeaveOnMoons = (int) settings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
-					int maxResearchLevel = settings.Brain.LifeformAutoResearch.MaxResearchLevel;
+					int maxResearchLevel = (int) settings.Brain.LifeformAutoResearch.MaxResearchLevel;
 					List <Celestial> celestialsToMine = new();
 					LFBuildings maxLFBuildings = new();
 					if (state == null) {
