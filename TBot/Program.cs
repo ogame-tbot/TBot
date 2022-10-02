@@ -1919,7 +1919,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: not enough fuel!");
 				return false;
 			}
-			if (Helpers.CalcFleetFuelCapacity(fleetHypotesis.Ships, serverData.ProbeCargo) < fleetHypotesis.Fuel) {
+			if (Helpers.CalcFleetFuelCapacity(fleetHypotesis.Ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo) < fleetHypotesis.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: ships don't have enough fuel capacity!");
 				return false;
 			}
@@ -4932,7 +4932,7 @@ namespace Tbot {
 			}
 
 			// TODO: Fix ugly workaround.
-			if (Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, serverData.ProbeCargo) < fleetPrediction.Fuel) {
+			if (Helpers.CalcFleetFuelCapacity(ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
 				return (int) SendFleetCode.GenericError;
 			}
