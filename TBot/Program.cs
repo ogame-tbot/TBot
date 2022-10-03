@@ -4870,9 +4870,23 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
 				return (int) SendFleetCode.GenericError;
 			}
-			if (destination.Galaxy <= 0 || destination.Galaxy > serverData.Galaxies || destination.System <= 0 || destination.System > 500 || destination.Position <= 0 || destination.Position > 17) {
+			if (destination.Galaxy <= 0 || destination.Galaxy > serverData.Galaxies || destination.Position <= 0 || destination.Position > 17) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
 				return (int) SendFleetCode.GenericError;
+			}
+			if (destination.System <= 0 || destination.System > serverData.Systems ) {
+				if (serverData.DonutGalaxy) {
+					if (destination.System <= 0) {
+						destination.System += serverData.Systems;
+					}
+					else if (destination.System > serverData.Systems) {
+						destination.System -= serverData.Systems;
+					}
+				}
+				else {
+					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
+					return (int) SendFleetCode.GenericError;
+				}				
 			}
 
 			/*
@@ -4912,7 +4926,6 @@ namespace Tbot {
 				return (int) SendFleetCode.GenericError;
 			}
 
-			// TODO: Fix ugly workaround.
 			if (Helpers.CalcFleetFuelCapacity(ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo) != 0 && Helpers.CalcFleetFuelCapacity(ships, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
 				return (int) SendFleetCode.GenericError;
