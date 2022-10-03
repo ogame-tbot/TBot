@@ -6,6 +6,7 @@ using System.Threading;
 using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Numerics;
 
 namespace Tbot.Includes {
 
@@ -2145,9 +2146,9 @@ namespace Tbot.Includes {
 		public static Buildables GetNextFacilityToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1, bool force = false) {
 			Buildables facilityToBuild = Buildables.Null;
 			if (settings.PrioritizeRobotsAndNanites)
-				if (planet.Facilities.RoboticsFactory < 10 && planet.Facilities.RoboticsFactory < maxFacilities.RoboticsFactory)
+				if (planet.Facilities.RoboticsFactory < 10 && planet.Facilities.RoboticsFactory < maxFacilities.RoboticsFactory && planet.Constructions.LFBuildingID != (int) LFBuildables.None)
 					facilityToBuild = Buildables.RoboticsFactory;
-				else if (planet.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && planet.Facilities.NaniteFactory < maxFacilities.NaniteFactory && !planet.HasProduction())
+				else if (planet.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && planet.Facilities.NaniteFactory < maxFacilities.NaniteFactory && !planet.HasProduction() && planet.Constructions.LFBuildingID != (int) LFBuildables.None)
 					facilityToBuild = Buildables.NaniteFactory;
 			if (facilityToBuild == Buildables.Null && ShouldBuildSpaceDock(planet, maxFacilities.SpaceDock, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force))
 				facilityToBuild = Buildables.SpaceDock;
@@ -2191,6 +2192,9 @@ namespace Tbot.Includes {
 
 		public static bool ShouldBuildRoboticFactory(Celestial celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, float maxDaysOfInvestmentReturn = 36500, bool force = false) {
 			if (celestial is Planet) {
+				if (celestial.Constructions.LFBuildingID != (int) LFBuildables.None)
+					return false;
+				
 				var nextMine = GetNextMineToBuild(celestial as Planet, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
 				var nextMineLevel = GetNextLevel(celestial, nextMine);
 				var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
@@ -2291,6 +2295,9 @@ namespace Tbot.Includes {
 		}
 
 		public static bool ShouldBuildNanites(Planet celestial, int maxLevel = 10, Researches researches = null, int speedFactor = 1, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool optimizeForStart = true, float maxDaysOfInvestmentReturn = 36500, bool force = false) {
+			if (celestial.Constructions.LFBuildingID != (int) LFBuildables.None)
+				return false;
+
 			var nextMine = GetNextMineToBuild(celestial, researches, speedFactor, maxMetalMine, maxCrystalMine, maxDeuteriumSynthetizer, ratio, playerClass, hasGeologist, hasStaff, optimizeForStart, maxDaysOfInvestmentReturn);
 			var nextMineLevel = GetNextLevel(celestial, nextMine);
 			var nextMinePrice = CalcPrice(nextMine, nextMineLevel);
