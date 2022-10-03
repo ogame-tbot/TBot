@@ -1742,6 +1742,7 @@ namespace Tbot {
 					StopBrainAutoResearch();
 					StopBrainAutoMine();
 					StopBrainLifeformAutoMine();
+					StopBrainLifeformAutoResearch();
 					StopBrainRepatriate();
 					StopAutoFarm();
 					StopHarvest();
