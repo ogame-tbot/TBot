@@ -1024,8 +1024,8 @@ namespace Tbot.Model {
 		public int ResearchCountdown { get; set; }
 		public int LFBuildingID { get; set; }
 		public int LFBuildingCountdown { get; set; }
-		public int LFTechID { get; set; }
-		public int LFTechCountdown { get; set; }
+		public int LFResearchID { get; set; }
+		public int LFResearchCountdown { get; set; }
 	}
 
 	public class Techs {

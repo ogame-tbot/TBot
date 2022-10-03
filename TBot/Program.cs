@@ -3933,10 +3933,10 @@ namespace Tbot {
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFTechs);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
 
-				if (celestial.Constructions.LFTechID != 0) {
+				if (celestial.Constructions.LFResearchID != 0) {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform research in production.");
 					delayProduction = true;
-					delayTime = (long) celestial.Constructions.LFTechCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					delayTime = (long) celestial.Constructions.LFResearchCountdown * (long) 1000 + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					return;
 				}
 				int maxResearchLevel = (int) settings.Brain.LifeformAutoResearch.MaxResearchLevel;
@@ -3962,7 +3962,7 @@ namespace Tbot {
 
 							if (result) {
 								celestial = UpdatePlanet(celestial, UpdateTypes.Constructions);
-								if (celestial.Constructions.LFTechID == (int) buildable) {
+								if (celestial.Constructions.LFResearchID == (int) buildable) {
 									started = true;
 									Helpers.WriteLog(LogType.Info, LogSender.Brain, "Lifeform Research succesfully started.");
 								} else {
@@ -4048,7 +4048,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else if (started) {
-					interval = ((long) celestial.Constructions.LFTechCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.LFResearchCountdown * (long) 1000) + (long) Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 					if (interval == long.MaxValue || interval == long.MinValue)
 						interval = Helpers.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
 
