@@ -1642,6 +1642,86 @@ namespace Tbot {
 			return;
 		}
 
+		public static void TelegramCollectDeut(long MinAmount = 0) {
+			fleets = UpdateFleets();
+			long TotalDeut = 0;
+			Coordinate destinationCoordinate;
+
+			Celestial cel = celestials
+					.Unique()
+					.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoRepatriate.Target.Galaxy)
+					.Where(c => c.Coordinate.System == (int) settings.Brain.AutoRepatriate.Target.System)
+					.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoRepatriate.Target.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoRepatriate.Target.Type))
+					.SingleOrDefault() ?? new() { ID = 0 };
+
+			if (cel.ID == 0) {
+				telegramMessenger.SendMessage("Error! Could not parse auto repatriate Celestial from JSON settings. Need <code>/editsettings</code>");
+				return;
+			} else {
+				destinationCoordinate = cel.Coordinate;
+			}
+
+			foreach (Celestial celestial in celestials.ToList()) {
+				if (celestial.Coordinate.IsSame(destinationCoordinate)) {
+					continue;
+				}
+				if (celestial is Moon) {
+					continue;
+				}
+
+				var tempCelestial = UpdatePlanet(celestial, UpdateTypes.Fast);
+				fleets = UpdateFleets();
+
+				tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+				tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Ships);
+
+				Buildables preferredShip = Buildables.LargeCargo;
+				if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
+					preferredShip = Buildables.LargeCargo;
+				}
+				Resources payload = tempCelestial.Resources;
+				payload.Metal = 0;
+				payload.Crystal = 0;
+				payload.Food = 0;
+
+				if ((long) tempCelestial.Resources.Deuterium < (long) MinAmount || payload.IsEmpty()) {
+					continue;
+				}
+
+				long idealShips = Helpers.CalcShipNumberForPayload(payload, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+
+				Ships ships = new();
+				if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
+					if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
+						ships.Add(preferredShip, idealShips);
+					} else {
+						ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
+					}
+					payload = Helpers.CalcMaxTransportableResources(ships, payload, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
+
+					if ((long) payload.TotalResources >= (long) MinAmount) {
+						var fleetId = SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+						if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+							continue;
+						}
+						if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+							continue;
+						}
+
+						TotalDeut += payload.Deuterium;
+					}
+				} else {
+					continue;
+				}
+			}
+
+			if ( TotalDeut > 0 ) {
+				telegramMessenger.SendMessage($"{TotalDeut} Deuterium sent.");
+			} else {
+				telegramMessenger.SendMessage("No resources sent");
+			}	
+		}
 		public static void AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false) {
 			DateTime departureTime = GetDateTime();
 			duration = minDuration;

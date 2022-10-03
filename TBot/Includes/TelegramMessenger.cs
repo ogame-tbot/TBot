@@ -54,6 +54,7 @@ namespace Tbot.Includes {
 				"/sleep",
 				"/wakeup",
 				"/collect",
+				"/collectdeut",
 				"/minexpecargo",
 				"/stopautoping",
 				"/startautoping",
@@ -484,6 +485,21 @@ namespace Tbot.Includes {
 								return;
 
 
+							case ("/collectdeut"):
+								if (message.Text.Split(' ').Length != 2) {
+									SendMessage(botClient, message.Chat, "Need minimum deut amount argument <code>/collectdeut 500000</code>");
+									return;
+								}
+								if (!Int32.TryParse(message.Text.Split(' ')[1], out int val)) {
+									SendMessage(botClient, message.Chat, "argument must be an integer!");
+									return;
+								}
+
+								long MinAmount = Int32.Parse(message.Text.Split(' ')[1]);
+								Tbot.Program.TelegramCollectDeut(MinAmount);
+								return;
+
+
 							case ("/stopautoresearch"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -844,6 +860,7 @@ namespace Tbot.Includes {
 									"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
+									"/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
 									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
 									"/wakeup - Wakeup bot\n" +
