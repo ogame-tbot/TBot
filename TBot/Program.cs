@@ -2394,7 +2394,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while going to sleep: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
 				DateTime time = GetDateTime();
-				int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2436,7 +2436,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while waking up: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
 				DateTime time = GetDateTime();
-				int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2497,7 +2497,7 @@ namespace Tbot {
 					Helpers.SetTitle();
 					Helpers.WriteLog(LogType.Info, LogSender.Defender, "Your empire is safe");
 				}
-				int interval = Helpers.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
+				long interval = Helpers.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
 				if (interval <= 0)
 					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
@@ -2508,7 +2508,7 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, $"An error has occurred while checking for attacks: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, $"Stacktrace: {e.StackTrace}");
 				DateTime time = GetDateTime();
-				int interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = Helpers.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Next check at {newTime.ToString()}");
@@ -3136,7 +3136,7 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
 							Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, "Unable to parse scan range");
 						}
-
+						
 						// Wait for all espionage fleets to return.
 						fleets = UpdateFleets();
 						Fleet firstReturning = Helpers.GetFirstReturningEspionage(fleets);
@@ -3885,7 +3885,7 @@ namespace Tbot {
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(interval);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval > System.Int32.MaxValue ? System.Int32.MaxValue : interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 					if (_lastDOIR >= _nextDOIR) {
 						_nextDOIR = 0;
@@ -3896,7 +3896,7 @@ namespace Tbot {
 					timers.Remove(autoMineTimer);
 
 					newTime = time.AddMilliseconds(delayBuilding);
-					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, delayBuilding, Timeout.Infinite));
+					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, delayBuilding > System.Int32.MaxValue ? System.Int32.MaxValue : delayBuilding, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else {
@@ -5140,7 +5140,7 @@ namespace Tbot {
 		private static void HandleAttack(AttackerFleet attack) {
 			if (celestials.Count() == 0) {
 				DateTime time = GetDateTime();
-				int interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
+				long interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, "Unable to handle attack at the moment: bot is still getting account info.");
@@ -5260,7 +5260,7 @@ namespace Tbot {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				xaSem[Feature.Expeditions].WaitOne();
-				int interval;
+				long interval;
 				DateTime time;
 				DateTime newTime;
 
@@ -5699,7 +5699,7 @@ namespace Tbot {
 					}
 
 					fleets = UpdateFleets();
-					int interval;
+					long interval;
 					if (fleets.Any(f => f.Mission == Missions.Harvest)) {
 						interval = (fleets
 							.Where(f => f.Mission == Missions.Harvest)
@@ -5719,7 +5719,7 @@ namespace Tbot {
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Warning, LogSender.Harvest, $"HandleHarvest exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Harvest, $"Stacktrace: {e.StackTrace}");
-				int interval = (int) Helpers.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+				long interval = (int) Helpers.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
 				var time = GetDateTime();
 				if (interval <= 0)
 					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -5884,7 +5884,7 @@ namespace Tbot {
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Warning, LogSender.Colonize, $"HandleColonize exception: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.Colonize, $"Stacktrace: {e.StackTrace}");
-				int interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+				long interval = Helpers.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
 				DateTime time = GetDateTime();
 				if (interval <= 0)
 					interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
