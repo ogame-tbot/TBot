@@ -92,6 +92,7 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
   *	/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>
   *	/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>
   *	/collect - Collect planets resources to JSON setting celestial
+  *	/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial
   *	/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>
   *	/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>
   *	/wakeup - Wakeup bot
