@@ -1978,7 +1978,24 @@ namespace Tbot.Includes {
 				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
 				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
 				// Prevent chosing food building because less expensive whereas it is not needed
-				if (LessExpensiveLFbuild != LFBuildables.None && LessExpensiveLFbuild != LFBuildables.BiosphereFarm && LessExpensiveLFbuild != LFBuildables.CrystalFarm && LessExpensiveLFbuild != LFBuildables.FusionCellFactory && LessExpensiveLFbuild != LFBuildables.AntimatterCondenser){
+				if (LessExpensiveLFbuild != LFBuildables.None ){
+					nextLFbuild = LessExpensiveLFbuild;
+				}
+			} else {
+				//Up other building if less expensive than population building even if popu max level reached
+				if (planet.LFtype == LFTypes.Humans) {
+					nextLFbuild = LFBuildables.ResidentialSector;
+				} else if (planet.LFtype == LFTypes.Rocktal) {
+					nextLFbuild = LFBuildables.MeditationEnclave;
+				} else if (planet.LFtype == LFTypes.Mechas) {
+					nextLFbuild = LFBuildables.AssemblyLine;
+				} else if (planet.LFtype == LFTypes.Kaelesh) {
+					nextLFbuild = LFBuildables.Sanctuary;
+				}
+				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
+				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
+				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				if (LessExpensiveLFbuild != LFBuildables.None) {
 					nextLFbuild = LessExpensiveLFbuild;
 				}
 			}
@@ -2081,13 +2098,13 @@ namespace Tbot.Includes {
 			return LFTechno.None;
 		}
 
-		public static LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost) {
+		public static LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel) {
 			LFTechno nextLFtech = LFTechno.None;
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
 					if (prop.Name == "IntergalacticEnvoys" || next == LFTechno.IntergalacticEnvoys)
 						continue;
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && prop.Name == next.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
 						nextLFtech = next;
 						var nextLFtechlvl = Helpers.GetNextLevel(celestial, nextLFtech);
 						Resources newcost = Tbot.Program.ogamedService.GetPrice(nextLFtech, nextLFtechlvl);

@@ -3964,7 +3964,7 @@ namespace Tbot {
 							if (nextLFTechToBuild != LFTechno.None) {
 								var level = Helpers.GetNextLevel(cel, nextLFTechToBuild);
 								Resources nextLFTechCost = ogamedService.GetPrice(nextLFTechToBuild, level);
-								var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost);
+								var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
 								if (isLessCostLFTechToBuild != LFTechno.None) {
 									level = Helpers.GetNextLevel(cel, isLessCostLFTechToBuild);
 									nextLFTechToBuild = isLessCostLFTechToBuild;
@@ -4027,7 +4027,7 @@ namespace Tbot {
 					if (buildable != LFTechno.None) {
 						level = Helpers.GetNextLevel(celestial, buildable);
 						Resources nextLFTechCost = ogamedService.GetPrice(buildable, level);
-						var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost);
+						var isLessCostLFTechToBuild = Helpers.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost, maxResearchLevel);
 						if (isLessCostLFTechToBuild != LFTechno.None) {
 							level = Helpers.GetNextLevel(celestial, isLessCostLFTechToBuild);
 							buildable = isLessCostLFTechToBuild;
