@@ -891,13 +891,8 @@ namespace Tbot {
 							Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Less celestials than last check detected!!");
 						} else {
 							Helpers.WriteLog(LogType.Info, LogSender.Tbot, "More celestials than last check detected");
-							if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) {
-								InitializeBrainAutoMine();
-							}
-							if ((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoMine.Active) {
-								InitializeBrainLifeformAutoMine();
-							}
 						}
+						InitializeSleepMode();
 					}
 				}
 			} catch {
