@@ -4547,12 +4547,14 @@ namespace Tbot {
 							long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
 							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
 								var tempCelestial = destination;
-								while (flightTime >= buildTime && idealShips <= availableShips) {
+								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
 									tempCelestial.SetLevel(buildable, level);
 									var nextBuildable = Buildables.Null;
 									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
 										tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
+										tempCelestial.ResourcesProduction.Energy.Available += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
 										tempCelestial.Resources.Energy -= Helpers.GetRequiredEnergyDelta(buildable, level);
+										tempCelestial.ResourcesProduction.Energy.Available -= Helpers.GetRequiredEnergyDelta(buildable, level);
 										nextBuildable = Helpers.GetNextBuildingToBuild(tempCelestial as Planet, researches, maxBuildings, maxFacilities, userInfo.Class, staff, serverData, autoMinerSettings, 1);
 									} else {
 										nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
