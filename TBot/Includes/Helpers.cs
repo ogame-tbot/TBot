@@ -2018,18 +2018,22 @@ namespace Tbot.Includes {
 			}
 
 			if (T2 != LFBuildables.None && isUnlocked(planet, T2)) {
-				T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
-				Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
-				if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
-					nextLFbuild = T2;
+				if (planet.ResourcesProduction.Population.T2Lifeforms < 11000000) { //Require 11M T2 lifeform to unlock last level2 LFTech
+					T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
+					Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
+					if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
+						nextLFbuild = T2;
+					}
 				}
 			}
 
 			if (T3 != LFBuildables.None && isUnlocked(planet, T3)) {
-				T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
-				Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
-				if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
-					nextLFbuild = T3;
+				if (planet.ResourcesProduction.Population.T3Lifeforms < 435000000) { //Require 435M T3 lifeform to unlock last level3 LFTech
+					T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
+					Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
+					if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
+						nextLFbuild = T3;
+					}
 				}
 			}
 
