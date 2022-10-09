@@ -888,7 +888,7 @@ namespace Tbot.Includes {
 									"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
-									"/build - Try to build buildable on each planet. Build max possible if not number value sent <code>/build LightFighter [100]</code>\n"+
+									"/build - Try to build buildable on each planet. Build max possible if no number value sent <code>/build LightFighter [100]</code>\n"+
 									"/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
 									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
