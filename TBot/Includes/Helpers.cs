@@ -2165,9 +2165,9 @@ namespace Tbot.Includes {
 		public static Buildables GetNextFacilityToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1, bool force = false) {
 			Buildables facilityToBuild = Buildables.Null;
 			if (settings.PrioritizeRobotsAndNanites)
-				if (planet.Facilities.RoboticsFactory < 10 && planet.Facilities.RoboticsFactory < maxFacilities.RoboticsFactory && planet.Constructions.LFBuildingID != (int) LFBuildables.None)
+				if (planet.Facilities.RoboticsFactory < 10 && planet.Facilities.RoboticsFactory < maxFacilities.RoboticsFactory && planet.Constructions.LFBuildingID == (int) LFBuildables.None)
 					facilityToBuild = Buildables.RoboticsFactory;
-				else if (planet.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && planet.Facilities.NaniteFactory < maxFacilities.NaniteFactory && !planet.HasProduction() && planet.Constructions.LFBuildingID != (int) LFBuildables.None)
+				else if (planet.Facilities.RoboticsFactory >= 10 && researches.ComputerTechnology >= 10 && planet.Facilities.NaniteFactory < maxFacilities.NaniteFactory && !planet.HasProduction() && planet.Constructions.LFBuildingID == (int) LFBuildables.None)
 					facilityToBuild = Buildables.NaniteFactory;
 			if (facilityToBuild == Buildables.Null && ShouldBuildSpaceDock(planet, maxFacilities.SpaceDock, researches, serverData.Speed, maxBuildings.MetalMine, maxBuildings.CrystalMine, maxBuildings.DeuteriumSynthesizer, 1, playerClass, staff.Geologist, staff.IsFull, settings.OptimizeForStart, settings.MaxDaysOfInvestmentReturn, force))
 				facilityToBuild = Buildables.SpaceDock;
