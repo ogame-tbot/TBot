@@ -1154,7 +1154,7 @@ namespace Tbot {
 			foreach (Celestial celestial in celestials.Where(c => c is Planet).ToList()) {
 				UpdatePlanet(celestial, UpdateTypes.Constructions);
 				if ((int) celestial.Constructions.BuildingID == (int)Buildables.NaniteFactory || (int) celestial.Constructions.BuildingID == (int) Buildables.Shipyard) {
-					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction";
+					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction\n";
 					continue;
 				}
 				UpdatePlanet(celestial, UpdateTypes.Resources);
