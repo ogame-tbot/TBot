@@ -1146,6 +1146,45 @@ namespace Tbot {
 
 		}
 
+		public static void TelegramBuild(Buildables buildable, decimal num = 0) {
+			string results = "";
+			decimal MaxNumToBuild = 0;
+			Resources cost = Helpers.CalcPrice(buildable, 1);
+			List<decimal> MaxNumber = new();
+			foreach (Celestial celestial in celestials.Where(c => c is Planet).ToList()) {
+				UpdatePlanet(celestial, UpdateTypes.Constructions);
+				if ((int) celestial.Constructions.BuildingID == (int)Buildables.NaniteFactory || (int) celestial.Constructions.BuildingID == (int) Buildables.Shipyard) {
+					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction";
+					continue;
+				}
+				UpdatePlanet(celestial, UpdateTypes.Resources);
+				Resources resources = celestial.Resources;
+				if (num == 0) {
+					if (cost.Metal > 0)
+						MaxNumber.Add(Math.Floor((decimal) resources.Metal / (decimal) cost.Metal));
+					if (cost.Crystal > 0)
+						MaxNumber.Add(Math.Floor((decimal) resources.Crystal / (decimal) cost.Crystal));
+					if (cost.Deuterium > 0)
+						MaxNumber.Add(Math.Floor((decimal) resources.Deuterium / (decimal) cost.Deuterium));
+
+					MaxNumToBuild = MaxNumber.Min();
+				}
+				else {
+					MaxNumToBuild = num;
+				}
+
+				bool rez = ogamedService.BuildShips(celestial, buildable, (long)MaxNumToBuild);
+				if (rez)
+					results += $"{celestial.Coordinate.ToString()}: {MaxNumToBuild} started\n";
+			}
+			if (results != "") {
+				telegramMessenger.SendMessage(results);
+			} else {
+				telegramMessenger.SendMessage("Could not start build anywhere, maybe not enough resources.");
+			}
+			return;
+		}
+
 		public static void TelegramGetCurrentAuction() {
 			Auction auction;
 			try {

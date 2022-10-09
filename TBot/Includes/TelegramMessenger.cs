@@ -53,6 +53,7 @@ namespace Tbot.Includes {
 				"/switch",
 				"/sleep",
 				"/wakeup",
+				"/build",
 				"/collect",
 				"/collectdeut",
 				"/minexpecargo",
@@ -360,6 +361,33 @@ namespace Tbot.Includes {
 
 								celestial = Tbot.Program.TelegramGetCurrentCelestial();
 								Tbot.Program.TelegramJumGate(celestial, coord, mode);
+								return;
+
+
+							case ("/build"):
+								string listbuildables = "RocketLauncher\nLightLaser\nHeavyLaser\nGaussCannon\nPlasmaTurret\nSmallCargo\nLargeCargo\nLightFighter\nCruiser\nBattleship\nRecycler\nDestroyer\nBattlecruiser\nDeathstar\nCrawler\nPathfinder";
+								decimal number = 0;
+								Buildables buildable = Buildables.Null;
+
+								if (message.Text.Split(' ').Length < 2) {
+									SendMessage(botClient, message.Chat, $"English buildable name required such as:\n{listbuildables}");
+									return;
+								}
+								if (message.Text.Split(' ').Length == 3) {
+									try {
+										number = Int32.Parse(message.Text.Split(' ')[2]);
+									} catch {
+										SendMessage(botClient, message.Chat, "Error while parsing number value!");
+										return;
+									}
+								}
+								if (Buildables.TryParse(message.Text.Split(' ')[1], out buildable)) {
+									Tbot.Program.TelegramBuild(buildable, number);
+								}
+								else {
+									SendMessage(botClient, message.Chat, "Error while parsing buildable value!");
+									return;
+								}
 								return;
 
 
@@ -860,6 +888,7 @@ namespace Tbot.Includes {
 									"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
 									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
 									"/collect - Collect planets resources to JSON setting celestial\n" +
+									"/build - Try to build buildable on each planet. Build max possible if not number value sent <code>/build LightFighter [100]</code>\n"+
 									"/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial\n" +
 									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
 									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
