@@ -1969,7 +1969,7 @@ namespace Tbot.Includes {
 					}
 				}
 			} else {
-				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings, Skipping..");
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings!");
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
@@ -2049,7 +2049,7 @@ namespace Tbot.Includes {
 			return nextLFbuild;
 		}
 
-		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 20) {
+		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 10) {
 			if (lftype == LFTypes.Humans) {
 				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxTechFactory)
