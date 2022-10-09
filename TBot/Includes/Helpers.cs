@@ -2018,19 +2018,32 @@ namespace Tbot.Includes {
 			}
 
 			if (T2 != LFBuildables.None && isUnlocked(planet, T2)) {
-				T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
-				Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
-				if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
-					nextLFbuild = T2;
+				if (planet.ResourcesProduction.Population.T2Lifeforms < 11000000) { //Require 11M T2 lifeform to unlock last level2 LFTech
+					T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
+					Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
+					if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
+						nextLFbuild = T2;
+					}
 				}
 			}
 
 			if (T3 != LFBuildables.None && isUnlocked(planet, T3)) {
-				T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
-				Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
-				if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
-					nextLFbuild = T3;
+				if (planet.ResourcesProduction.Population.T3Lifeforms < 435000000) { //Require 435M T3 lifeform to unlock last level3 LFTech
+					T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
+					Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
+					if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
+						nextLFbuild = T3;
+					}
 				}
+			}
+
+			//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
+			var nextlvl = Helpers.GetNextLevel(planet, nextLFbuild);
+			var nextlvlcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextlvl);
+			var MetalMineCost = Helpers.CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
+			if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
+				nextLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
 			}
 
 			return nextLFbuild;
