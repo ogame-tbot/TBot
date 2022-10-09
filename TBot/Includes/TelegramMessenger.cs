@@ -920,22 +920,26 @@ namespace Tbot.Includes {
 		}
 
 		async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) {
-			if (exception is ApiRequestException apiRequestException) {
-				await botClient.SendTextMessageAsync(Channel, apiRequestException.ToString());
-			}
+			try {
+				if (exception is ApiRequestException apiRequestException) {
+					await botClient.SendTextMessageAsync(Channel, apiRequestException.ToString());
+				}
+			} catch { }
 		}
 
 		public async void TelegramBot() {
+			try {
+				var cts = new CancellationTokenSource();
+				var cancellationToken = cts.Token;
 
-			var cts = new CancellationTokenSource();
-			var cancellationToken = cts.Token;
+				var receiverOptions = new ReceiverOptions {
+					AllowedUpdates = Array.Empty<UpdateType>(),
+					ThrowPendingUpdates = true
+				};
 
-			var receiverOptions = new ReceiverOptions {
-				AllowedUpdates = Array.Empty<UpdateType>(),
-				ThrowPendingUpdates = true
-			};
-
-			await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cts.Token);
+				await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cts.Token);
+			}
+			catch { }
 		}
 	}
 }

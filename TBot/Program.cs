@@ -4542,13 +4542,16 @@ namespace Tbot {
 						long flightTime = flightPrediction.Time;
 						idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, researches.HyperspaceTechnology, userInfo.Class, serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
-						if (buildable != Buildables.Null && buildable != Buildables.SolarSatellite) {
+						if (buildable != Buildables.Null) {
 							int level = Helpers.GetNextLevel(destination, buildable);
 							long buildTime = Helpers.CalcProductionTime(buildable, level, serverData, destination.Facilities);
 							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
 									tempCelestial.SetLevel(buildable, level);
+									if (buildable != Buildables.SolarSatellite && buildable != Buildables.Crawler && buildable != Buildables.SpaceDock) {
+										tempCelestial.Fields.Built += 1;
+									}
 									var nextBuildable = Buildables.Null;
 									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
 										tempCelestial.Resources.Energy += Helpers.GetProductionEnergyDelta(buildable, level, researches.EnergyTechnology, 1, userInfo.Class, staff.Engineer, staff.IsFull);
