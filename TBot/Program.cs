@@ -1149,6 +1149,7 @@ namespace Tbot {
 		public static void TelegramBuild(Buildables buildable, decimal num = 0) {
 			string results = "";
 			decimal MaxNumToBuild = 0;
+			bool rez = false;
 			Resources cost = Helpers.CalcPrice(buildable, 1);
 			List<decimal> MaxNumber = new();
 			foreach (Celestial celestial in celestials.Where(c => c is Planet).ToList()) {
@@ -1173,7 +1174,9 @@ namespace Tbot {
 					MaxNumToBuild = num;
 				}
 
-				bool rez = ogamedService.BuildShips(celestial, buildable, (long)MaxNumToBuild);
+				if (MaxNumToBuild > 0)
+					rez = ogamedService.BuildShips(celestial, buildable, (long)MaxNumToBuild);
+
 				if (rez)
 					results += $"{celestial.Coordinate.ToString()}: {MaxNumToBuild} started\n";
 			}
