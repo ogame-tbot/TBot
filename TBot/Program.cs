@@ -1175,7 +1175,11 @@ namespace Tbot {
 				}
 
 				if (MaxNumToBuild > 0)
-					rez = ogamedService.BuildShips(celestial, buildable, (long)MaxNumToBuild);
+					if (buildable == Buildables.RocketLauncher || buildable == Buildables.LightLaser || buildable == Buildables.HeavyFighter || buildable == Buildables.GaussCannon || buildable == Buildables.IonCannon || buildable == Buildables.PlasmaTurret || buildable == Buildables.InterplanetaryMissiles || buildable == Buildables.AntiBallisticMissiles) {
+						rez = ogamedService.BuildDefences(celestial, buildable, (long) MaxNumToBuild);
+					} else {
+						rez = ogamedService.BuildShips(celestial, buildable, (long) MaxNumToBuild);
+					}
 
 				if (rez)
 					results += $"{celestial.Coordinate.ToString()}: {MaxNumToBuild} started\n";
