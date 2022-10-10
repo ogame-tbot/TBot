@@ -1149,7 +1149,6 @@ namespace Tbot {
 		public static void TelegramBuild(Buildables buildable, decimal num = 0) {
 			string results = "";
 			decimal MaxNumToBuild = 0;
-			bool rez = false;
 			Resources cost = Helpers.CalcPrice(buildable, 1);
 			List<decimal> MaxNumber = new();
 			foreach (Celestial celestial in celestials.Where(c => c is Planet).ToList()) {
@@ -1174,20 +1173,21 @@ namespace Tbot {
 					MaxNumToBuild = num;
 				}
 
-				if (MaxNumToBuild > 0)
+				if (MaxNumToBuild > 0) {
 					if (buildable == Buildables.RocketLauncher || buildable == Buildables.LightLaser || buildable == Buildables.HeavyLaser || buildable == Buildables.GaussCannon || buildable == Buildables.IonCannon || buildable == Buildables.PlasmaTurret || buildable == Buildables.InterplanetaryMissiles || buildable == Buildables.AntiBallisticMissiles) {
-						rez = ogamedService.BuildDefences(celestial, buildable, (long) MaxNumToBuild);
+						bool rez = ogamedService.BuildDefences(celestial, buildable, (long) MaxNumToBuild);
 					} else {
-						rez = ogamedService.BuildShips(celestial, buildable, (long) MaxNumToBuild);
+						bool rez = ogamedService.BuildShips(celestial, buildable, (long) MaxNumToBuild);
+						results += $"{celestial.Coordinate.ToString()}: {MaxNumToBuild} started\n";
 					}
-
-				if (rez)
-					results += $"{celestial.Coordinate.ToString()}: {MaxNumToBuild} started\n";
+				} else {
+					results += $"{celestial.Coordinate.ToString()}: Not enough resources\n";
+				}
 			}
 			if (results != "") {
 				telegramMessenger.SendMessage(results);
 			} else {
-				telegramMessenger.SendMessage("Could not start build anywhere, maybe not enough resources.");
+				telegramMessenger.SendMessage("Could not start build anywhere.");
 			}
 			return;
 		}
@@ -4276,8 +4276,11 @@ namespace Tbot {
 			long delayTime = 0;
 			long interval = 0;
 			try {
+				int maxTechFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+				int maxPopuFactory = (int) settings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+				int maxFoodFactory = (int) settings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+
 				Helpers.WriteLog(LogType.Info, LogSender.Brain, $"Running Lifeform AutoMine on {celestial.ToString()}");
-				celestial = UpdatePlanet(celestial, UpdateTypes.Fast);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Resources);
 				celestial = UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 				celestial = UpdatePlanet(celestial, UpdateTypes.LFBuildings);
@@ -4295,7 +4298,7 @@ namespace Tbot {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = Helpers.GetNextLFBuildingToBuild(celestial);
+						buildable = Helpers.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
 
 						if (buildable != LFBuildables.None) {
 							level = Helpers.GetNextLevel(celestial, buildable);
