@@ -1150,8 +1150,8 @@ namespace Tbot {
 			string results = "";
 			decimal MaxNumToBuild = 0;
 			Resources cost = Helpers.CalcPrice(buildable, 1);
-			List<decimal> MaxNumber = new();
 			foreach (Celestial celestial in celestials.Where(c => c is Planet).ToList()) {
+				List<decimal> MaxNumber = new();
 				UpdatePlanet(celestial, UpdateTypes.Constructions);
 				if ((int) celestial.Constructions.BuildingID == (int)Buildables.NaniteFactory || (int) celestial.Constructions.BuildingID == (int) Buildables.Shipyard) {
 					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction\n";
