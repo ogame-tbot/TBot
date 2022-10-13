@@ -29,6 +29,7 @@ namespace Tbot.Includes {
 				LogSender.AutoFarm => ConsoleColor.DarkCyan,
 				LogSender.SleepMode => ConsoleColor.DarkBlue,
 				LogSender.Tbot => ConsoleColor.DarkYellow,
+				LogSender.Main => ConsoleColor.Yellow,
 				LogSender.OGameD => ConsoleColor.DarkCyan,
 				_ => ConsoleColor.Gray
 			};
@@ -2762,15 +2763,6 @@ namespace Tbot.Includes {
 			}
 
 			return output;
-		}
-
-		public static bool IsSettingSet(dynamic setting) {
-			try {
-				var x = setting;
-				return true;
-			} catch {
-				return false;
-			}
 		}
 
 		public static int CalcMaxExpeditions(Researches researches, CharacterClass playerClass, Staff staff) {

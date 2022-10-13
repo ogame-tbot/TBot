@@ -446,6 +446,7 @@ namespace Tbot.Model {
 	}
 
 	public enum LogSender {
+		Main,
 		Tbot,
 		OGameD,
 		Defender,

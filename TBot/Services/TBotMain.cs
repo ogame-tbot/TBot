@@ -24,11 +24,11 @@ namespace Tbot.Services {
 		public UserData userData = new();
 		public TelegramUserData telegramUserData = new();
 
-		static long duration;
-		static DateTime NextWakeUpTime;
-		static DateTime startTime = DateTime.UtcNow;
-		public static PhysicalFileProvider physicalFileProvider;
-		public static IDisposable changeToken;
+		public long duration;
+		public DateTime NextWakeUpTime;
+		public DateTime startTime = DateTime.UtcNow;
+		public PhysicalFileProvider physicalFileProvider;
+		public IDisposable changeToken;
 
 		private string settingsPath;
 		private dynamic settings;
@@ -42,9 +42,6 @@ namespace Tbot.Services {
 		}
 
 		public bool init() {
-			PhysicalFileProvider physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
-			changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath)).RegisterChangeCallback(OnSettingsChanged, null);
-
 			Credentials credentials = new() {
 				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
 				Username = (string) settings.Credentials.Email,
@@ -81,15 +78,12 @@ namespace Tbot.Services {
 					} else {
 						Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Unable to initialize proxy: unsupported proxy type");
 						Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Press enter to continue");
-						Console.ReadLine();
 					}
 				}
 
-				if (Helpers.IsSettingSet(settings.General.CookiesPath) && (string) settings.General.CookiesPath != "") {
+				if (SettingsService.IsSettingSet(settings.General.CookiesPath) && (string) settings.General.CookiesPath != "") {
 					// Cookies are defined relative to the settings file
 					cookiesPath = Path.Combine(Path.GetDirectoryName(settingsPath), (string) settings.General.CookiesPath);
-				} else {
-					cookiesPath = "cookies.txt";
 				}
 
 				ogamedService = new OgamedService(credentials, (string) host, int.Parse(port), (string) captchaKey, proxy, cookiesPath);
@@ -152,7 +146,8 @@ namespace Tbot.Services {
 				Helpers.WriteLog(LogType.Info, LogSender.Tbot, $"Player honour points: {userData.userInfo.HonourPoints}");
 
 				if (!ogamedService.IsVacationMode()) {
-					telegramMessenger.AddTbotInstance(this);
+					if(telegramMessenger != null)
+						telegramMessenger.AddTbotInstance(this);
 					userData.lastDOIR = 0;
 					userData.nextDOIR = 0;
 
@@ -203,6 +198,10 @@ namespace Tbot.Services {
 
 					Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Initializing features...");
 					InitializeSleepMode();
+
+					// Up and running. Lets initialize notification for settings file
+					PhysicalFileProvider physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
+					changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath)).RegisterChangeCallback(OnSettingsChanged, null);
 				} else {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
 					return false;
@@ -416,7 +415,7 @@ namespace Tbot.Services {
 						return false;
 					}
 				case Feature.TelegramAutoPing:
-					if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+					if ((telegramMessenger != null) && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 						InitializeTelegramAutoPing();
 						return true;
 					} else {
@@ -833,7 +832,7 @@ namespace Tbot.Services {
 		public void InitializeTelegramAutoPing() {
 			DateTime now = GetDateTime();
 			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.Active && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
+			if ((telegramMessenger != null) && (bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
 				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
 			} else
 				return;
@@ -1429,7 +1428,7 @@ namespace Tbot.Services {
 			if (celestial.Coordinate.Type == Celestials.Planet) {
 				bool hasMoon = userData.celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
 				if (!hasMoon) {
-					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					if ((telegramMessenger != null) && fromTelegram)
 						telegramMessenger.SendMessage($"This planet does not have a Moon! Switch impossible.");
 					return false;
 				}
@@ -1451,7 +1450,7 @@ namespace Tbot.Services {
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from {celestial.Coordinate.ToString()}: No ships!");
-				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+				if ((telegramMessenger != null) && fromTelegram)
 					telegramMessenger.SendMessage($"No ships on {celestial.Coordinate}, did you /celestial?");
 				return false;
 			}
@@ -1459,7 +1458,7 @@ namespace Tbot.Services {
 			var payload = celestial.Resources;
 			if (celestial.Resources.Deuterium == 0) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel!");
-				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+				if ((telegramMessenger != null) && fromTelegram)
 					telegramMessenger.SendMessage($"Skipping fleetsave from {celestial.Coordinate.ToString()}: there is no fuel.");
 				return false;
 			}
@@ -1471,7 +1470,7 @@ namespace Tbot.Services {
 				fleetId != (int) SendFleetCode.AfterSleepTime ||
 				fleetId != (int) SendFleetCode.NotEnoughSlots) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {dest.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
-				if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+				if ((telegramMessenger != null) && fromTelegram)
 					telegramMessenger.SendMessage($"Fleet {fleetId} switched from {celestial.Coordinate.Type} to {dest.Type}\nPredicted time: {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
 				return true;
 			}
@@ -1724,7 +1723,8 @@ namespace Tbot.Services {
 						timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturn, null, interval, Timeout.Infinite));
 
 					Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {TimeToGhost.ToString()}");
-					telegramMessenger.SendMessage($"Waiting for fleets return, delaying ghosting at {TimeToGhost.ToString()}");
+					if(telegramMessenger != null)
+						telegramMessenger.SendMessage($"Waiting for fleets return, delaying ghosting at {TimeToGhost.ToString()}");
 
 					return;
 				} else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2))) {
@@ -1738,7 +1738,8 @@ namespace Tbot.Services {
 
 					return;
 				} else if (timers.TryGetValue("GhostSleepTimer", out Timer value3)) {
-					telegramMessenger.SendMessage($"GhostSleep already planned, try /cancelghostsleep");
+					if (telegramMessenger != null)
+						telegramMessenger.SendMessage($"GhostSleep already planned, try /cancelghostsleep");
 					return;
 				}
 			}
@@ -1906,7 +1907,7 @@ namespace Tbot.Services {
 
 			if (!AlreadySent) {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no suitable destination found, you gonna get hit!");
-				if ((bool) settings.TelegramMessenger.Active) {
+				if ((telegramMessenger != null)) {
 					telegramMessenger.SendMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found!, you gonna get hit!");
 				}
 				return;
@@ -1925,7 +1926,7 @@ namespace Tbot.Services {
 					DateTime newTime = time.AddMilliseconds(interval);
 					timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
-					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					if ((telegramMessenger != null) && fromTelegram)
 						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}, recalled at {newTime.ToString()}");
 				}
 			} else {
@@ -1935,7 +1936,7 @@ namespace Tbot.Services {
 					Fleet fleet = userData.fleets.Single(fleet => fleet.ID == fleetId);
 					DateTime returntime = (DateTime) fleet.BackTime;
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
-					if ((bool) settings.TelegramMessenger.Active || fromTelegram)
+					if ((telegramMessenger != null) && fromTelegram)
 						telegramMessenger.SendMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration.ToString()}, returned at {returntime.ToString()} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
 				}
 			}
@@ -2149,7 +2150,8 @@ namespace Tbot.Services {
 			DateTime time = GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
-			telegramMessenger.SendMessage($"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
+			if (telegramMessenger != null)
+				telegramMessenger.SendMessage($"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 
 			userData.isSleeping = true;
@@ -2330,7 +2332,7 @@ namespace Tbot.Services {
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
 							Helpers.WriteLog(LogType.Info, LogSender.SleepMode, $"Fleets active, Next check at {newTime.ToString()}");
-							if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active) {
+							if ((telegramMessenger != null) && (bool) settings.SleepMode.TelegramMessenger.Active) {
 								telegramMessenger.SendMessage($"Fleets active, Next check at {newTime.ToString()}");
 							}
 						}
@@ -2350,7 +2352,7 @@ namespace Tbot.Services {
 							AutoFleetSave(celestial, true);
 					}
 
-					if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
+					if ((telegramMessenger != null) && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
 						telegramMessenger.SendMessage($"[{userData.userInfo.PlayerName}{userData.serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
 					}
 					userData.isSleeping = true;
@@ -2380,7 +2382,8 @@ namespace Tbot.Services {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("TelegramSleepModeTimer");
-			telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Bot woke up!");
+			if (telegramMessenger != null)
+				telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Bot woke up!");
 
 			Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -2391,7 +2394,7 @@ namespace Tbot.Services {
 		private void WakeUp(object state) {
 			try {
 				Helpers.WriteLog(LogType.Info, LogSender.SleepMode, "Waking Up...");
-				if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
+				if ((telegramMessenger != null) && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
 					telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Waking up");
 					telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Going to sleep at {state.ToString()}");
 				}
@@ -2834,7 +2837,7 @@ namespace Tbot.Services {
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
-								if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+								if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 									break;
 
 								int galaxy = (int) range.Galaxy;
@@ -2843,7 +2846,7 @@ namespace Tbot.Services {
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
-									if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+									if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 										break;
 
 									// Check excluded system.
@@ -2883,7 +2886,7 @@ namespace Tbot.Services {
 									// Add each planet that has inactive status to userData.farmTargets.
 									foreach (Celestial planet in scannedTargets) {
 										// Check if target is below set minimum rank.
-										if (Helpers.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
 											int rank = 1;
 											if (planet.Coordinate.Type == Celestials.Planet) {
 												rank = (planet as Planet).Player.Rank;
@@ -2897,7 +2900,7 @@ namespace Tbot.Services {
 											}
 										}
 
-										if (Helpers.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
+										if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
 											settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
 											break;
@@ -3068,7 +3071,7 @@ namespace Tbot.Services {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
-												if (Helpers.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
+												if (SettingsService.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 													var tempCelestial = UpdatePlanet(closest, UpdateTypes.Resources);
@@ -3151,14 +3154,14 @@ namespace Tbot.Services {
 						userData.researches = UpdateResearches();
 						userData.celestials = UpdateCelestials();
 						int attackTargetsCount = 0;
-						decimal lootFuelRatio = Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) ? (decimal) settings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
+						decimal lootFuelRatio = SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) ? (decimal) settings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
 						decimal speed = 0;
 						foreach (FarmTarget target in attackTargets) {
 							attackTargetsCount++;
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count()} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userData.userInfo.Class).TransportableResources}.");
 							var loot = target.Report.Loot(userData.userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
-							if (Helpers.IsSettingSet(settings.AutoFarm.CargoSurplusPercentage) && (double) settings.AutoFarm.CargoSurplusPercentage > 0) {
+							if (SettingsService.IsSettingSet(settings.AutoFarm.CargoSurplusPercentage) && (double) settings.AutoFarm.CargoSurplusPercentage > 0) {
 								numCargo = (long) Math.Round(numCargo + (numCargo / 100 * (double) settings.AutoFarm.CargoSurplusPercentage), 0);
 							}
 							var attackingShips = new Ships().Add(cargoShip, numCargo);
@@ -3176,8 +3179,8 @@ namespace Tbot.Services {
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 									speed = 0;
-									if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-										long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+									if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+										long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 										var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 										if (optimalSpeed == 0) {
 											Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3188,7 +3191,7 @@ namespace Tbot.Services {
 										}
 									}
 									if (speed == 0) {
-										if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
 											speed = (int) settings.AutoFarm.FleetSpeed / 10;
 											if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3202,7 +3205,7 @@ namespace Tbot.Services {
 
 									if (
 										(
-											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											!SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
 											(long) settings.AutoFarm.MaxFlightTime == 0 ||
 											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
 										) &&
@@ -3223,7 +3226,7 @@ namespace Tbot.Services {
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 									speed = 0;
-									if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) settings.AutoFarm.FleetSpeed / 10;
 										if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3231,8 +3234,8 @@ namespace Tbot.Services {
 										}
 									} else {
 										speed = 0;
-										if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-											long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+										if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+											long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 											var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 											if (optimalSpeed == 0) {
 												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3243,7 +3246,7 @@ namespace Tbot.Services {
 											}
 										}
 										if (speed == 0) {
-											if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+											if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
 												speed = (int) settings.AutoFarm.FleetSpeed / 10;
 												if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3260,12 +3263,12 @@ namespace Tbot.Services {
 										tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
 										tempCelestial.Resources.Deuterium >= prediction.Fuel &&
 										(
-											!Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											!SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
 											(long) settings.AutoFarm.MaxFlightTime == 0 ||
 											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
 										)
 									) {
-										if (Helpers.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
 											if (tempCelestial.Resources.IsEnoughFor(cost)) {
@@ -3315,7 +3318,7 @@ namespace Tbot.Services {
 								// No slots free, wait for first fleet to come back.
 								if (userData.fleets.Any()) {
 									int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-									if (Helpers.IsSettingSet(settings.AutoFarm.MaxWaitTime) && (int) settings.AutoFarm.MaxWaitTime != 0 && interval > (int) settings.AutoFarm.MaxWaitTime) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm.MaxWaitTime) && (int) settings.AutoFarm.MaxWaitTime != 0 && interval > (int) settings.AutoFarm.MaxWaitTime) {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Time to wait greater than set {(int) settings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
 										return;
 									} else {
@@ -3335,8 +3338,8 @@ namespace Tbot.Services {
 								Ships ships = new();
 
 								speed = 0;
-								if (/*cargoShip == Buildables.EspionageProbe &&*/ Helpers.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-									long maxFlightTime = Helpers.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+								if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
+									long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 									var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 									if (optimalSpeed == 0) {
 										Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3347,7 +3350,7 @@ namespace Tbot.Services {
 									}
 								}
 								if (speed == 0) {
-									if (Helpers.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) settings.AutoFarm.FleetSpeed / 10;
 										if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3593,7 +3596,7 @@ namespace Tbot.Services {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 				if (
-					(!Helpers.IsSettingSet(settings.Brain.AutoMine.BuildCrawlers) || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
+					(!SettingsService.IsSettingSet(settings.Brain.AutoMine.BuildCrawlers) || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
 					userData.userInfo.Class == CharacterClass.Collector &&
 					celestial.Facilities.Shipyard >= 5 &&
@@ -4558,7 +4561,7 @@ namespace Tbot.Services {
 							}
 						}
 
-						if (Helpers.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+						if (SettingsService.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
 							missingResources = missingResources.Round();
 							idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						}
@@ -4859,7 +4862,7 @@ namespace Tbot.Services {
 						}
 						userData.celestials = newCelestials;
 						//send notif only if sent via telegram
-						if ((bool) settings.TelegramMessenger.Active && timers.TryGetValue("TelegramCollect", out Timer value1)) {
+						if ((telegramMessenger != null) && timers.TryGetValue("TelegramCollect", out Timer value1)) {
 							if ((TotalMet > 0) || (TotalCri > 0) || (TotalDeut > 0)) {
 								telegramMessenger.SendMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
 							} else {
@@ -5046,12 +5049,12 @@ namespace Tbot.Services {
 				Fleet recalledFleet = userData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
 				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
 					Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
-					//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
+					//if (telegramMessenger && (bool) settings.Defender.TelegramMessenger.Active) {
 					//	telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Unable to recall fleet: an unknon error has occurred.");
 					//}
 				} else {
 					Helpers.WriteLog(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
-					if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
+					if ((telegramMessenger != null) && (bool) settings.Defender.TelegramMessenger.Active) {
 						telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 					}
 					return;
@@ -5059,7 +5062,7 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
-				//if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
+				//if (telegramMessenger && (bool) settings.Defender.TelegramMessenger.Active) {
 				//	telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Unable to recall fleet: an exception has occurred.");
 				//}
 				return;
@@ -5136,15 +5139,15 @@ namespace Tbot.Services {
 			try {
 				if (attack.MissionType == Missions.MissileAttack) {
 					if (
-						!Helpers.IsSettingSet(settings.Defender.IgnoreMissiles) ||
-						(Helpers.IsSettingSet(settings.Defender.IgnoreMissiles) && (bool) settings.Defender.IgnoreMissiles)
+						!SettingsService.IsSettingSet(settings.Defender.IgnoreMissiles) ||
+						(SettingsService.IsSettingSet(settings.Defender.IgnoreMissiles) && (bool) settings.Defender.IgnoreMissiles)
 					) {
 						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
 						return;
 					}
 				}
 				if (attack.Ships != null && userData.researches.EspionageTechnology >= 8) {
-					if (Helpers.IsSettingSet(settings.Defender.IgnoreProbes) && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
+					if (SettingsService.IsSettingSet(settings.Defender.IgnoreProbes) && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
 						if (attack.MissionType == Missions.Spy)
 							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attacker sent only Probes! Espionage action skipped.");
 						else
@@ -5166,7 +5169,7 @@ namespace Tbot.Services {
 				Helpers.WriteLog(LogType.Warning, LogSender.Defender, "An error has occurred while checking attacker fleet composition");
 			}
 
-			if ((bool) settings.TelegramMessenger.Active && (bool) settings.Defender.TelegramMessenger.Active) {
+			if ((telegramMessenger != null) && (bool) settings.Defender.TelegramMessenger.Active) {
 				telegramMessenger.SendMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					Thread.Sleep(1000);
@@ -5255,7 +5258,7 @@ namespace Tbot.Services {
 					userData.fleets = UpdateFleets();
 					userData.serverData = ogamedService.GetServerData();
 					int expsToSend;
-					if (Helpers.IsSettingSet(settings.Expeditions.WaitForAllExpeditions) && (bool) settings.Expeditions.WaitForAllExpeditions) {
+					if (SettingsService.IsSettingSet(settings.Expeditions.WaitForAllExpeditions) && (bool) settings.Expeditions.WaitForAllExpeditions) {
 						if (userData.slots.ExpInUse == 0)
 							expsToSend = userData.slots.ExpTotal;
 						else
@@ -5264,7 +5267,7 @@ namespace Tbot.Services {
 						expsToSend = Math.Min(userData.slots.ExpFree, userData.slots.Free);
 					}
 					Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Expedition slot free: {expsToSend}");
-					if (Helpers.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
+					if (SettingsService.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
 						if ((double) expsToSend < Math.Round((double) userData.slots.ExpTotal / 2D, 0, MidpointRounding.ToZero) + 1D) {
 							Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Majority of expedition already in flight, Skipping...");
 							expsToSend = 0;
@@ -5364,7 +5367,7 @@ namespace Tbot.Services {
 											}
 
 											var availableShips = origin.Ships.GetMovableShips();
-											if (Helpers.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
+											if (SettingsService.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
 												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
 											}
 											Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)}");

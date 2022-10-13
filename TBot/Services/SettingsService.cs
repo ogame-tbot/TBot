@@ -19,7 +19,24 @@ namespace Tbot.Services {
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
-		}	
+		}
+
+		public static bool IsSettingSet(dynamic setting) {
+			try {
+				var x = setting;
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
+		public static T GetSetting<T>(dynamic setting, T defValue) {
+			if (IsSettingSet(setting))
+				return (T) setting;
+			else
+				return defValue;
+		}
+
 	}
 
 	public static class JsonNetAdapter {

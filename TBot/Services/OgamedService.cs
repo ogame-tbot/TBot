@@ -63,6 +63,7 @@ namespace Tbot.Services {
 				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 				ogamedProcess = ogameProc;
 			} catch {
+				Helpers.WriteLog(LogType.Info, LogSender.OGameD, "Error executing ogamed instance");
 				Environment.Exit(0);
 			}
 		}

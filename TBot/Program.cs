@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,6 +21,7 @@ namespace Tbot {
 		static dynamic mainSettings;
 
 		static TelegramMessenger telegramMessenger;
+		static List<TBotMain> instances = new();
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -41,24 +43,62 @@ namespace Tbot {
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{settingPath}\"");
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 
+			// TODO Assert if JSON is not complete at bare minimum
+
 			// Read settings first
 			mainSettings = SettingsService.GetSettings(settingPath);
 
 			// Initialize TelegramMessenger if enabled on main settings
 			if ((bool) mainSettings.TelegramMessenger.Active) {
-				Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Activating Telegram Messenger");
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "Activating Telegram Messenger");
 				telegramMessenger = new TelegramMessenger((string) mainSettings.TelegramMessenger.API, (string) mainSettings.TelegramMessenger.ChatId);
 				Thread.Sleep(1000);
 				telegramMessenger.TelegramBot();
 			}
+			else
+			{
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger disabled");
+			}
 
 			// Initialize all the instances of TBot found in main settings
-			var tbot = new TBotMain(settingPath, telegramMessenger);
-			tbot.init();
+			ICollection json_instances = mainSettings.Instances;
+			Helpers.WriteLog(LogType.Info, LogSender.Main, $"Initializing {json_instances.Count} instances...");
+			foreach (var instance in mainSettings.Instances) {
+				// We expect to find a settings file here and an alias
+				string settingsPath = new DirectoryInfo(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), instance.Settings)).FullName;
+				string alias = instance.Alias;
 
-			Helpers.SetTitle($"Managing accounts");
+				StartTBotMain(settingsPath, alias);
+			}
 
-			Console.ReadLine();
+			Helpers.WriteLog(LogType.Info, LogSender.Main, "All instances processed. Press CTRL+C to exit");
+			var exitEvt = new ManualResetEvent(false);
+			Console.CancelKeyPress += (sender, e) => {
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "CTRL+C pressed! Closing up...");
+				e.Cancel = true;
+				exitEvt.Set();
+			};
+			exitEvt.WaitOne();
+		}
+
+		private static void StartTBotMain(string settingsPath, string alias) {
+			Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Initializing instance \"{alias}\" \"{settingsPath}\"");
+			try {
+				if(File.Exists(settingsPath) == false) {
+					Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
+				}
+				else {
+					var tbot = new TBotMain(settingsPath, telegramMessenger);
+					if (tbot.init() == false) {
+						Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Error initializing instance \"{alias}\"");
+					} else {
+						Helpers.WriteLog(LogType.Info, LogSender.Main, $"Instance \"{alias}\" initialized.");
+						instances.Add(tbot);
+					}
+				}
+			} catch (Exception ) {
+				Helpers.WriteLog(LogType.Warning, LogSender.Main, "Exception happened during initialization");
+			}
 		}
 	}
 }
