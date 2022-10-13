@@ -477,7 +477,6 @@ namespace Tbot.Model {
 		TelegramAutoPing = 14,
 		BrainLifeformAutoMine = 15,
 		BrainLifeformAutoResearch = 16,
-    		TelegramAuction = 17
 	}
 
 	public enum SendFleetCode : int {

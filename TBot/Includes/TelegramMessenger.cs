@@ -9,20 +9,32 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Exceptions;
 using System.Linq;
-
+using Tbot.Services;
 
 namespace Tbot.Includes {
 
 	class TelegramMessenger {
 		public string Api { get; private set; }
 		public string Channel { get; private set; }
-		static ITelegramBotClient Client { get; set; }
+		public ITelegramBotClient Client { get; set; }
+
+		private List<TBotMain> instances = new();
+		private int currInstanceIndex = -1;
+
 		public TelegramMessenger(string api, string channel) {
 			Api = api;
 			Client = new TelegramBotClient(Api);
 			Channel = channel;
 		}
 
+		public void AddTbotInstance(TBotMain instance) {
+			if (instances.Contains(instance) == false) {
+				instances.Add(instance);
+
+				int instanceIndex = instances.IndexOf(instance);
+				SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
+			}
+		}
 
 		public async void SendMessage(string message, ParseMode parseMode = ParseMode.Html) {
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Sending Telegram message...");
@@ -43,9 +55,18 @@ namespace Tbot.Includes {
 		}
 
 		public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) {
-
+			// Commands targeting TBot process
+			List<string> core_cmds = new List<string>()
+			{
+				"/setmain",
+				"/ping",
+				"/help"
+			};
+			// Commands targeting specific TBotMain instance
 			List<string> commands = new List<string>()
 			{
+				"/stopautoping",
+				"/startautoping",
 				"/ghostsleep",
 				"/ghostsleepall",
 				"/ghost",
@@ -57,8 +78,6 @@ namespace Tbot.Includes {
 				"/collect",
 				"/collectdeut",
 				"/minexpecargo",
-				"/stopautoping",
-				"/startautoping",
 				"/stopexpe",
 				"/startexpe",
 				"/stopautoresearch",
@@ -72,7 +91,6 @@ namespace Tbot.Includes {
 				"/stopdefender",
 				"/startdefender",
 				"/msg",
-				"/ping",
 				"/getinfo",
 				"/celestial",
 				"/cancel",
@@ -88,10 +106,12 @@ namespace Tbot.Includes {
 				"/getcurrentauction",
 				"/bidauction",
 				"/subscribeauction",
-				"/help"
 			};
 
-			if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message) {
+			if (update.Type != Telegram.Bot.Types.Enums.UpdateType.Message) {
+
+			}
+			else {
 				var message = update.Message;
 				var arg = "";
 				var test = "";
@@ -104,22 +124,124 @@ namespace Tbot.Includes {
 				Coordinate coord = new();
 				String[] args;
 
-				if (commands.Any(x => message.Text.ToLower().Contains(x))) {
+				if (core_cmds.Any(x => message.Text.ToLower().Contains(x))) {
+					args = message.Text.ToLower().Split(' ');
+					arg = args.ElementAt(0);
+
+					switch (arg) {
+						case ("/setmain"):
+
+							return;
+						case ("/ping"):
+							if (message.Text.Split(' ').Length != 1) {
+								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								return;
+							}
+							SendMessage(botClient, message.Chat, "Pong");
+							return;
+						case ("/help"):
+							if (message.Text.Split(' ').Length != 1) {
+								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								return;
+							}
+							SendMessage(botClient, message.Chat,
+								"\t Core Commands\n" +
+								"/setmain - Set the TBot main instance to pilot\n" +
+								"/ping - Ping bot\n" +
+								"/help - Display this help\n" +
+								"\n\t TBot Main instance commands\n" +
+								"/stopautoping - stop telegram autoping\n" +
+								"/startautoping - start telegram autoping [Receive message every X hours]\n" +
+								"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
+								"/getcurrentauction - Get current Auction\n" +
+								"/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>\n" +
+								"/subscribeauction - Get a notification when next auction will start\n" +
+								"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
+								"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>\n" +
+								"/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghost 4h3m or 3m50s Harvest</code>\n" +
+								"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>\n" +
+								"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
+								"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
+								"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>\n" +
+								"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
+								"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
+								"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
+								"/collect - Collect planets resources to JSON setting celestial\n" +
+								"/build - Try to build buildable on each planet. Build max possible if no number value sent <code>/build LightFighter [100]</code>\n" +
+								"/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial\n" +
+								"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
+								"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
+								"/wakeup - Wakeup bot\n" +
+								"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
+								"/getcelestials - Return the list of your celestials\n" +
+								"/attacked - check if you're (still) under attack\n" +
+								"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
+								"/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>\n" +
+								"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
+								"/minexpecargo - Modify MinPrimaryToSend value inside JSON settings\n" +
+								"/stopexpe - Stop sending expedition\n" +
+								"/startexpe - Start sending expedition\n" +
+								"/startdefender - start defender\n" +
+								"/stopdefender - stop defender\n" +
+								"/stopautoresearch - stop brain autoresearch\n" +
+								"/startautoresearch - start brain autoresearch\n" +
+								"/stopautomine - stop brain automine\n" +
+								"/startautomine - start brain automine\n" +
+								"/stoplifeformautomine - stop brain Lifeform automine\n" +
+								"/startlifeformautomine - start brain Lifeform automine\n" +
+								"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
+								"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
+								"/stopautofarm - stop autofarm\n" +
+								"/startautofarm - start autofarm"
+							, ParseMode.Html);
+							return;
+						default:
+
+							return;
+					}
+				}
+				// Check if instance is correct
+				else if ((currInstanceIndex < 0) || (currInstanceIndex >= instances.Count())) {
+					SendMessage(botClient, message.Chat, "Select an instance with /setmain !");
+					return;
+				}
+				else if (commands.Any(x => message.Text.ToLower().Contains(x))) {
 					//Handle /commands@botname in string if exist
 					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1)
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 
+					TBotMain currInstance = instances.ElementAt(currInstanceIndex);
+
 					try {
-						Tbot.Program.WaitFeature();
+						currInstance.WaitFeature();
 
 						switch (message.Text.ToLower().Split(' ')[0]) {
+
+							case ("/stopautoping"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+								currInstance.StopTelegramAutoPing();
+								SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
+								return;
+
+
+							case ("/startautoping"):
+								if (message.Text.Split(' ').Length != 1) {
+									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+								currInstance.InitializeTelegramAutoPing();
+								SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
+								return;
 
 							case ("/getfleets"):
 								if (message.Text.Split(' ').Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								Tbot.Program.TelegramGetFleets();
+								currInstance.TelegramGetFleets();
 
 								return;
 
@@ -129,13 +251,13 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.TelegramGetCurrentAuction();
+								currInstance.TelegramGetCurrentAuction();
 
 								return;
 
 							case ("/subscribeauction"):
 								// If there is no auction in progress, then we will trigger a timer when next auction will be in place
-								Tbot.Program.TelegramSubscribeToNextAuction();
+								currInstance.TelegramSubscribeToNextAuction();
 
 								return;
 
@@ -143,7 +265,7 @@ namespace Tbot.Includes {
 								args = message.Text.Split(' ');
 								if(args.Length == 1) {
 									// Bid minimum amount
-									Tbot.Program.TelegramBidAuctionMinimum();
+									currInstance.TelegramBidAuctionMinimum();
 								}
 								else if (args.Length < 3) {
 									SendMessage(botClient, message.Chat,
@@ -153,12 +275,12 @@ namespace Tbot.Includes {
 								} else {
 									// First string has to be a valid celestialID
 									try {
-										myCelestials = Tbot.Program.celestials.ToList();
+										myCelestials = currInstance.userData.celestials.ToList();
 										celestial = myCelestials.Single(celestial => celestial.ID == Int32.Parse(args[1]));
 										// If above has not thrown InvalidOperationException, then remaining can be any resource
 										resources = Resources.FromString(String.Join(' ', args.Skip(2)));
 										if (resources.TotalResources > 0)
-											Tbot.Program.TelegramBidAuction(celestial, resources);
+											currInstance.TelegramBidAuction(celestial, resources);
 										else
 											SendMessage(botClient, message.Chat, "Cannot bid to auction with 0 resources set!");
 									} catch (Exception e) {
@@ -178,8 +300,8 @@ namespace Tbot.Includes {
 								arg = message.Text.Split(' ')[1];
 								duration = Helpers.ParseDurationFromString(arg);
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
+								celestial = currInstance.TelegramGetCurrentCelestial();
+								currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
 
 								return;
 
@@ -200,8 +322,8 @@ namespace Tbot.Includes {
 								}
 								duration = Helpers.ParseDurationFromString(arg);
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, false, mission, true);
+								celestial = currInstance.TelegramGetCurrentCelestial();
+								currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
 
 								return;
 
@@ -221,12 +343,12 @@ namespace Tbot.Includes {
 								}
 								duration = Helpers.ParseDurationFromString(arg);
 
-								List<Celestial> myMoons = Tbot.Program.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
+								List<Celestial> myMoons = currInstance.userData.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
 								if (myMoons.Count > 0) {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
-										Tbot.Program.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+										currInstance.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
@@ -255,10 +377,10 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.TelegramCurrentCelestialToSave = celestial;
-								Tbot.Program.telegramMission = mission;
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, Tbot.Program.telegramMission, true);
+								celestial = currInstance.TelegramGetCurrentCelestial();
+								currInstance.telegramUserData.CurrentCelestialToSave = celestial;
+								currInstance.telegramUserData.Mission = mission;
+								currInstance.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
 								return;
 
 
@@ -277,8 +399,8 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								celestial = currInstance.TelegramGetCurrentCelestial();
+								currInstance.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 
@@ -291,7 +413,7 @@ namespace Tbot.Includes {
 								speed = decimal.Parse(test);
 
 								if (1 <= speed && speed <= 10) {
-									Tbot.Program.TelegramSwitch(speed);
+									currInstance.TelegramSwitch(speed);
 									return;
 								}
 								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
@@ -329,8 +451,8 @@ namespace Tbot.Includes {
 								speed = decimal.Parse(test);
 
 								if (1 <= speed && speed <= 10) {
-									celestial = Tbot.Program.TelegramGetCurrentCelestial();
-									Tbot.Program.TelegramDeploy(celestial, coord, speed);
+									celestial = currInstance.TelegramGetCurrentCelestial();
+									currInstance.TelegramDeploy(celestial, coord, speed);
 									return;
 								}
 								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
@@ -359,8 +481,8 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								celestial = Tbot.Program.TelegramGetCurrentCelestial();
-								Tbot.Program.TelegramJumGate(celestial, coord, mode);
+								celestial = currInstance.TelegramGetCurrentCelestial();
+								currInstance.TelegramJumGate(celestial, coord, mode);
 								return;
 
 
@@ -382,7 +504,7 @@ namespace Tbot.Includes {
 									}
 								}
 								if (Buildables.TryParse(message.Text.Split(' ')[1], out buildable)) {
-									Tbot.Program.TelegramBuild(buildable, number);
+									currInstance.TelegramBuild(buildable, number);
 								}
 								else {
 									SendMessage(botClient, message.Chat, "Error while parsing buildable value!");
@@ -399,7 +521,7 @@ namespace Tbot.Includes {
 								arg = message.Text.Split(' ')[1];
 								int fleetId = Int32.Parse(arg);
 
-								Tbot.Program.TelegramRetireFleet(fleetId);
+								currInstance.TelegramRetireFleet(fleetId);
 								return;
 
 
@@ -409,7 +531,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.TelegramCancelGhostSleep();
+								currInstance.TelegramCancelGhostSleep();
 								return;
 
 
@@ -425,7 +547,7 @@ namespace Tbot.Includes {
 								}
 								string recall = message.Text.Split(' ')[1];
 
-								if (Tbot.Program.EditSettings(null, Feature.Null, recall))
+								if (currInstance.EditSettings(null, Feature.Null, recall))
 									SendMessage(botClient, message.Chat, $"Recall value updated to {recall}.");
 								return;
 
@@ -438,10 +560,10 @@ namespace Tbot.Includes {
 								arg = message.Text.Split(' ')[1];
 								duration = Helpers.ParseDurationFromString(arg);
 
-								DateTime timeNow = Tbot.Program.GetDateTime();
+								DateTime timeNow = currInstance.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 
-								Tbot.Program.SleepNow(WakeUpTime);
+								currInstance.SleepNow(WakeUpTime);
 								return;
 
 
@@ -450,7 +572,7 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								Tbot.Program.WakeUpNow(null);
+								currInstance.WakeUpNow(null);
 								return;
 
 
@@ -460,7 +582,7 @@ namespace Tbot.Includes {
 									return;
 								}
 								arg = message.Text.Split(new[] { ' ' }, 2).Last();
-								Tbot.Program.TelegramMesgAttacker(arg);
+								currInstance.TelegramMesgAttacker(arg);
 								return;
 
 
@@ -476,7 +598,7 @@ namespace Tbot.Includes {
 
 								arg = message.Text.Split(' ')[1];
 								int cargo = Int32.Parse(arg);
-								if (Tbot.Program.EditSettings(null, Feature.Null, string.Empty, cargo))
+								if (currInstance.EditSettings(null, Feature.Null, string.Empty, cargo))
 									SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
 								return;
 
@@ -487,7 +609,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopExpeditions();
+								currInstance.StopExpeditions();
 								SendMessage(botClient, message.Chat, "Expeditions stopped!");
 								return;
 
@@ -498,7 +620,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeExpeditions();
+								currInstance.InitializeExpeditions();
 								SendMessage(botClient, message.Chat, "Expeditions initialized!");
 								return;
 
@@ -509,7 +631,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.TelegramCollect();
+								currInstance.TelegramCollect();
 								return;
 
 
@@ -524,7 +646,7 @@ namespace Tbot.Includes {
 								}
 
 								long MinAmount = Int32.Parse(message.Text.Split(' ')[1]);
-								Tbot.Program.TelegramCollectDeut(MinAmount);
+								currInstance.TelegramCollectDeut(MinAmount);
 								return;
 
 
@@ -534,7 +656,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopBrainAutoResearch();
+								currInstance.StopBrainAutoResearch();
 								SendMessage(botClient, message.Chat, "AutoResearch stopped!");
 								return;
 
@@ -545,7 +667,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeBrainAutoResearch();
+								currInstance.InitializeBrainAutoResearch();
 								SendMessage(botClient, message.Chat, "AutoResearch started!");
 								return;
 
@@ -556,7 +678,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopBrainAutoMine();
+								currInstance.StopBrainAutoMine();
 								SendMessage(botClient, message.Chat, "AutoMine stopped!");
 								return;
 
@@ -567,7 +689,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeBrainAutoMine();
+								currInstance.InitializeBrainAutoMine();
 								SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
 
@@ -578,7 +700,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopBrainLifeformAutoMine();
+								currInstance.StopBrainLifeformAutoMine();
 								SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
 								return;
 
@@ -589,7 +711,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeBrainLifeformAutoMine();
+								currInstance.InitializeBrainLifeformAutoMine();
 								SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
 								return;
 
@@ -600,7 +722,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopBrainLifeformAutoResearch();
+								currInstance.StopBrainLifeformAutoResearch();
 								SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
 								return;
 
@@ -611,7 +733,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeBrainLifeformAutoResearch();
+								currInstance.InitializeBrainLifeformAutoResearch();
 								SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
 								return;
 
@@ -622,7 +744,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopDefender();
+								currInstance.StopDefender();
 								SendMessage(botClient, message.Chat, "Defender stopped!");
 								return;
 
@@ -633,7 +755,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeDefender();
+								currInstance.InitializeDefender();
 								SendMessage(botClient, message.Chat, "Defender started!");
 								return;
 
@@ -644,7 +766,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.StopAutoFarm();
+								currInstance.StopAutoFarm();
 								SendMessage(botClient, message.Chat, "Autofarm stopped!");
 								return;
 
@@ -655,7 +777,7 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Tbot.Program.InitializeAutoFarm();
+								currInstance.InitializeAutoFarm();
 								SendMessage(botClient, message.Chat, "Autofarm started!");
 								return;
 
@@ -663,17 +785,17 @@ namespace Tbot.Includes {
 							case ("/getinfo"):
 								args = message.Text.Split(' ');
 								if (args.Length == 1) {
-									celestial = Tbot.Program.TelegramGetCurrentCelestial();
-									Tbot.Program.TelegramGetInfo(celestial);
+									celestial = currInstance.TelegramGetCurrentCelestial();
+									currInstance.TelegramGetInfo(celestial);
 									
 									return;
 								} else if((args.Length == 2)) {
-									myCelestials = Tbot.Program.celestials.ToList();
+									myCelestials = currInstance.userData.celestials.ToList();
 									// Try celestial ID first
 									try {
 										celestialID = Int32.Parse(args[1]);
 										celestial = myCelestials.Single(c => c.ID == celestialID);
-										Tbot.Program.TelegramGetInfo(celestial);
+										currInstance.TelegramGetInfo(celestial);
 
 									} catch (Exception e) {
 										SendMessage(botClient, message.Chat,
@@ -682,12 +804,12 @@ namespace Tbot.Includes {
 									}
 									return;
 								} else if((args.Length == 3)) {
-									myCelestials = Tbot.Program.celestials.ToList();
+									myCelestials = currInstance.userData.celestials.ToList();
 									// Try format Galaxy:System:Position (Moon|Planet)
 									try {
 										coord = Coordinate.FromString(String.Join(' ', args.Skip(1)));
 										celestial = myCelestials.Single(c => c.Coordinate.IsSame(coord));
-										Tbot.Program.TelegramGetInfo(celestial);
+										currInstance.TelegramGetInfo(celestial);
 										
 									} catch (Exception e) {
 										SendMessage(botClient, message.Chat,
@@ -726,7 +848,7 @@ namespace Tbot.Includes {
 								}
 
 								arg = char.ToUpper(arg[0]) + arg.Substring(1);
-								Tbot.Program.TelegramSetCurrentCelestial(coord, arg);
+								currInstance.TelegramSetCurrentCelestial(coord, arg);
 								return;
 
 
@@ -778,7 +900,7 @@ namespace Tbot.Includes {
 									}
 								}
 
-								Tbot.Program.TelegramSetCurrentCelestial(coord, celestialType, updateType, true);
+								currInstance.TelegramSetCurrentCelestial(coord, celestialType, updateType, true);
 								return;
 
 
@@ -802,9 +924,9 @@ namespace Tbot.Includes {
 										return;
 									}
 								}
-								Celestial origin = Tbot.Program.TelegramGetCurrentCelestial();
+								Celestial origin = currInstance.TelegramGetCurrentCelestial();
 
-								Tbot.Program.SpyCrash(origin, target);
+								currInstance.SpyCrash(origin, target);
 								return;
 
 
@@ -813,7 +935,7 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								bool isUnderAttack = Tbot.Program.TelegramIsUnderAttack();
+								bool isUnderAttack = currInstance.TelegramIsUnderAttack();
 
 								if (isUnderAttack) {
 									SendMessage(botClient, message.Chat, "Yes! You're still under attack!");
@@ -828,97 +950,13 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								myCelestials = Tbot.Program.celestials.ToList();
+								myCelestials = currInstance.userData.celestials.ToList();
 								string celestialStr = "";
 								foreach(Celestial c in myCelestials) {
 									celestialStr += $"{c.Name.PadRight(16, ' ')} {c.Coordinate.ToString().PadRight(16)} {c.ID}\n";
 								}
 								SendMessage(botClient, message.Chat, celestialStr);
 
-								return;
-
-
-							case ("/ping"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								SendMessage(botClient, message.Chat, "Pong");
-								return;
-
-
-							case ("/stopautoping"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								Tbot.Program.StopTelegramAutoPing();
-								SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
-								return;
-
-
-							case ("/startautoping"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								Tbot.Program.InitializeTelegramAutoPing();
-								SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
-								return;
-
-
-							case ("/help"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								SendMessage(botClient, message.Chat,
-									"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
-									"/getcurrentauction - Get current Auction\n" +
-									"/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>\n" +
-									"/subscribeauction - Get a notification when next auction will start\n" +
-									"/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>\n" +
-									"/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>\n" +
-									"/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghost 4h3m or 3m50s Harvest</code>\n" +
-									"/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>\n" +
-									"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
-									"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
-									"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>\n" +
-									"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
-									"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
-									"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
-									"/collect - Collect planets resources to JSON setting celestial\n" +
-									"/build - Try to build buildable on each planet. Build max possible if no number value sent <code>/build LightFighter [100]</code>\n"+
-									"/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial\n" +
-									"/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>\n" +
-									"/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>\n" +
-									"/wakeup - Wakeup bot\n" +
-									"/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>\n" +
-									"/getcelestials - Return the list of your celestials\n" +
-									"/attacked - check if you're (still) under attack\n" +
-									"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
-									"/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>\n" +
-									"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
-									"/minexpecargo - Modify MinPrimaryToSend value inside JSON settings\n" +
-									"/stopexpe - Stop sending expedition\n" +
-									"/startexpe - Start sending expedition\n" +
-									"/startdefender - start defender\n" +
-									"/stopdefender - stop defender\n" +
-									"/stopautoresearch - stop brain autoresearch\n" +
-									"/startautoresearch - start brain autoresearch\n" +
-									"/stopautomine - stop brain automine\n" +
-									"/startautomine - start brain automine\n" +
-									"/stoplifeformautomine - stop brain Lifeform automine\n" +
-									"/startlifeformautomine - start brain Lifeform automine\n" +
-									"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
-									"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
-									"/stopautofarm - stop autofarm\n" +
-									"/startautofarm - start autofarm\n" +
-									"/stopautoping - stop telegram autoping\n" +
-									"/startautoping - start telegram autoping [Receive message every X hours]\n" +
-									"/ping - Ping bot\n" +
-									"/help - Display this help"
-								, ParseMode.Html);
 								return;
 							default:
 								return;
@@ -941,8 +979,7 @@ namespace Tbot.Includes {
 						return;
 
 					} finally {
-						Tbot.Program.releaseFeature();
-
+						currInstance.releaseFeature();
 					}
 				}
 			}

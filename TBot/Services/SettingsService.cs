@@ -10,16 +10,16 @@ using Tbot.Includes;
 
 namespace Tbot.Services {
 	public static class SettingsService {
-		public static dynamic GetSettings() {
-			System.Threading.Thread.Sleep(500);
+		public static dynamic GetSettings(string settingsPath) {
+			if (File.Exists(settingsPath) == false) {
+				throw new Exception($"{settingsPath} does not exist.");
+			}
 
-			string file = File.ReadAllText(settingPath);
+			string file = File.ReadAllText(settingsPath);
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
-		}
-
-		public static string settingPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
+		}	
 	}
 
 	public static class JsonNetAdapter {
