@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using Tbot.Includes;
 using Tbot.Model;
@@ -30,7 +31,8 @@ namespace Tbot.Services {
 		public DateTime NextWakeUpTime;
 		public DateTime startTime = DateTime.UtcNow;
 		public PhysicalFileProvider physicalFileProvider;
-		public IDisposable changeToken;
+		public IChangeToken changeToken;
+		public IDisposable changeCallback;
 
 		private string settingsPath;
 		private dynamic settings;
@@ -197,8 +199,9 @@ namespace Tbot.Services {
 					InitializeSleepMode();
 
 					// Up and running. Lets initialize notification for settings file
-					PhysicalFileProvider physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
-					changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath)).RegisterChangeCallback(OnSettingsChanged, null);
+					physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
+					changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath));
+					changeCallback = changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 				} else {
 					Helpers.WriteLog(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
 					loggedIn = false;
@@ -214,7 +217,10 @@ namespace Tbot.Services {
 		}
 
 		public void deinit() {
-			if(ogamedService != null) {
+			if(changeCallback != null)
+				changeCallback.Dispose();	// Unregister callback
+
+			if (ogamedService != null) {
 				if (loggedIn) {
 					loggedIn = false;
 					ogamedService.Logout();
@@ -543,6 +549,8 @@ namespace Tbot.Services {
 
 		private void OnSettingsChanged(object state) {
 
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
+
 			xaSem[Feature.Defender].WaitOne();
 			xaSem[Feature.Brain].WaitOne();
 			xaSem[Feature.Expeditions].WaitOne();
@@ -552,7 +560,7 @@ namespace Tbot.Services {
 			xaSem[Feature.SleepMode].WaitOne();
 			xaSem[Feature.TelegramAutoPing].WaitOne();
 
-			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Settings file changed");
+			Helpers.WriteLog(LogType.Info, LogSender.Tbot, "Reloading Settings file");
 			settings = SettingsService.GetSettings(settingsPath);
 
 			xaSem[Feature.Defender].Release();
@@ -567,9 +575,10 @@ namespace Tbot.Services {
 			InitializeSleepMode();
 			// UpdateTitle();
 
-			changeToken.Dispose();
 			physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
-			changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath)).RegisterChangeCallback(OnSettingsChanged, null);
+			changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath));
+			changeCallback.Dispose();
+			changeCallback = changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 		}
 
 		public DateTime GetDateTime() {
