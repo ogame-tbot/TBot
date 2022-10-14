@@ -2844,7 +2844,7 @@ namespace Tbot.Services {
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
-								if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+								if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && ((int)settings.AutoFarm.TargetsProbedBeforeAttack != 0) && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 									break;
 
 								int galaxy = (int) range.Galaxy;
@@ -2853,7 +2853,7 @@ namespace Tbot.Services {
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
-									if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+									if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && ((int) settings.AutoFarm.TargetsProbedBeforeAttack != 0) && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 										break;
 
 									// Check excluded system.
