@@ -153,7 +153,7 @@ namespace Tbot.Includes {
 									currInstanceIndex = UserSelectedInstance;
 									var cInstance = instances.ElementAt(currInstanceIndex);
 									SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
-										"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
+										$"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
 								}
 							} else {
 								SendMessage(botClient, message.Chat, $"Error parsing instance index from \"{args.ElementAt(1)}\"");
@@ -164,7 +164,7 @@ namespace Tbot.Includes {
 								SendMessage(botClient, message.Chat, "Currently managing no instance");
 							} else {
 								var instance = instances[currInstanceIndex];
-								SendMessage(botClient, message.Chat, $" Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+								SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case ("/listinstances"):
