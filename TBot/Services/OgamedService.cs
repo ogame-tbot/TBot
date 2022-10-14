@@ -83,11 +83,13 @@ namespace Tbot.Services {
 		}
 
 		private void handle_ogamedProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e) {
-			dump_ogamedProcess_Log(true, e.Data);
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(true, e.Data);
 		}
 
 		private void handle_ogamedProcess_OutputDataReceived(object sender, DataReceivedEventArgs e) {
-			dump_ogamedProcess_Log(false, e.Data);
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(false, e.Data);
 		}
 
 		private void dump_ogamedProcess_Log(bool isErr, string payload) {
