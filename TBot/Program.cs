@@ -73,7 +73,7 @@ namespace Tbot {
 			// Detect settings versioning by checking existence of "Instances" key
 			SettingsVersion settingVersion = SettingsVersion.Invalid;
 
-			if (SettingsService.IsSettingSet(mainSettings.Instances) == false) {
+			if (SettingsService.IsSettingSet(mainSettings, "Instances") == false) {
 				settingVersion = SettingsVersion.AllInOne;
 				// Start only an instance of TBot
 				StartTBotMain(settingPath, "MAIN");

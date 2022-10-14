@@ -15,7 +15,10 @@ namespace Tbot.Services {
 		private RestClient Client { get; set; }
 		private Process ogamedProcess { get; set; } = null;
 
+		private string userName { get; set; } = "";
+
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "") {
+			userName = credentials.Username;
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, cookiesPath);
 			Url = $"http://{host}:{port}";
 			Client = new(Url) {
@@ -69,6 +72,8 @@ namespace Tbot.Services {
 				ogameProc.ErrorDataReceived += handle_ogamedProcess_ErrorDataReceived;
 
 				ogameProc.Start();
+				ogameProc.BeginErrorReadLine();
+				ogameProc.BeginOutputReadLine();
 				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 				ogamedProcess = ogameProc;
 			} catch {
@@ -78,15 +83,17 @@ namespace Tbot.Services {
 		}
 
 		private void handle_ogamedProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e) {
-			dump_ogamedProcess_Log(true, e.Data);
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(true, e.Data);
 		}
 
 		private void handle_ogamedProcess_OutputDataReceived(object sender, DataReceivedEventArgs e) {
-			dump_ogamedProcess_Log(false, e.Data);
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(false, e.Data);
 		}
 
 		private void dump_ogamedProcess_Log(bool isErr, string payload) {
-			Helpers.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[process] \"{payload}\"");
+			Helpers.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[{userName}] \"{payload}\"");
 		}
 
 		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {

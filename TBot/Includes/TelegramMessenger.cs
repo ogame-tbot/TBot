@@ -64,6 +64,7 @@ namespace Tbot.Includes {
 			List<string> core_cmds = new List<string>()
 			{
 				"/setmain",
+				"/getmain",
 				"/listinstances",
 				"/ping",
 				"/help"
@@ -155,6 +156,14 @@ namespace Tbot.Includes {
 								SendMessage(botClient, message.Chat, $"Error parsing instance index from \"{args.ElementAt(1)}\"");
 							}
 							return;
+						case ("/getmain"):
+							if ( (currInstanceIndex < 0) || (currInstanceIndex >= instances.Count()) ) {
+								SendMessage(botClient, message.Chat, "Currently managing no instance");
+							} else {
+								var instance = instances[currInstanceIndex];
+								SendMessage(botClient, message.Chat, $" Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+							}
+							return;
 						case ("/listinstances"):
 							foreach(var instance in instances) {
 								SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
@@ -175,6 +184,7 @@ namespace Tbot.Includes {
 							SendMessage(botClient, message.Chat,
 								"\t Core Commands\n" +
 								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
+								"/getmain - Get the current TBot instance that Telegram is managing\n" +
 								"/listinstances - List TBot main instances\n" +
 								"/ping - Ping bot\n" +
 								"/help - Display this help\n" +

@@ -83,7 +83,7 @@ namespace Tbot.Services {
 					}
 				}
 
-				if (SettingsService.IsSettingSet(settings.General.CookiesPath) && (string) settings.General.CookiesPath != "") {
+				if (SettingsService.IsSettingSet(settings.General, "CookiesPath") && (string) settings.General.CookiesPath != "") {
 					// Cookies are defined relative to the settings file
 					cookiesPath = Path.Combine(Path.GetDirectoryName(settingsPath), (string) settings.General.CookiesPath);
 				}
@@ -2844,7 +2844,7 @@ namespace Tbot.Services {
 							/// Galaxy scanning + target probing.
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Detecting farm targets...");
 							foreach (var range in settings.AutoFarm.ScanRange) {
-								if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+								if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 									break;
 
 								int galaxy = (int) range.Galaxy;
@@ -2853,7 +2853,7 @@ namespace Tbot.Services {
 
 								// Loop from start to end system.
 								for (var system = startSystem; system <= endSystem; system++) {
-									if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
+									if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") && settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack)
 										break;
 
 									// Check excluded system.
@@ -2893,7 +2893,7 @@ namespace Tbot.Services {
 									// Add each planet that has inactive status to userData.farmTargets.
 									foreach (Celestial planet in scannedTargets) {
 										// Check if target is below set minimum rank.
-										if (SettingsService.IsSettingSet(settings.AutoFarm.MinimumPlayerRank) && settings.AutoFarm.MinimumPlayerRank != 0) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm, "MinimumPlayerRank") && settings.AutoFarm.MinimumPlayerRank != 0) {
 											int rank = 1;
 											if (planet.Coordinate.Type == Celestials.Planet) {
 												rank = (planet as Planet).Player.Rank;
@@ -2907,7 +2907,7 @@ namespace Tbot.Services {
 											}
 										}
 
-										if (SettingsService.IsSettingSet(settings.AutoFarm.TargetsProbedBeforeAttack) &&
+										if (SettingsService.IsSettingSet(settings.AutoFarm, "TargetsProbedBeforeAttack") &&
 											settings.AutoFarm.TargetsProbedBeforeAttack != 0 && numProbed >= (int) settings.AutoFarm.TargetsProbedBeforeAttack) {
 											Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
 											break;
@@ -3078,7 +3078,7 @@ namespace Tbot.Services {
 												}
 											} else {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
-												if (SettingsService.IsSettingSet(settings.AutoFarm.BuildProbes) && settings.AutoFarm.BuildProbes == true) {
+												if (SettingsService.IsSettingSet(settings.AutoFarm, "BuildProbes") && settings.AutoFarm.BuildProbes == true) {
 													var buildProbes = neededProbes - celestialProbes[closest.ID];
 													var cost = Helpers.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 													var tempCelestial = UpdatePlanet(closest, UpdateTypes.Resources);
@@ -3161,14 +3161,14 @@ namespace Tbot.Services {
 						userData.researches = UpdateResearches();
 						userData.celestials = UpdateCelestials();
 						int attackTargetsCount = 0;
-						decimal lootFuelRatio = SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) ? (decimal) settings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
+						decimal lootFuelRatio = SettingsService.IsSettingSet(settings.AutoFarm, "MinLootFuelRatio") ? (decimal) settings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
 						decimal speed = 0;
 						foreach (FarmTarget target in attackTargets) {
 							attackTargetsCount++;
 							Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count()} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userData.userInfo.Class).TransportableResources}.");
 							var loot = target.Report.Loot(userData.userInfo.Class);
 							var numCargo = Helpers.CalcShipNumberForPayload(loot, cargoShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
-							if (SettingsService.IsSettingSet(settings.AutoFarm.CargoSurplusPercentage) && (double) settings.AutoFarm.CargoSurplusPercentage > 0) {
+							if (SettingsService.IsSettingSet(settings.AutoFarm, "CargoSurplusPercentage") && (double) settings.AutoFarm.CargoSurplusPercentage > 0) {
 								numCargo = (long) Math.Round(numCargo + (numCargo / 100 * (double) settings.AutoFarm.CargoSurplusPercentage), 0);
 							}
 							var attackingShips = new Ships().Add(cargoShip, numCargo);
@@ -3186,8 +3186,8 @@ namespace Tbot.Services {
 								if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + settings.AutoFarm.MinCargosToKeep)) {
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 									speed = 0;
-									if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-										long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+									if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm, "MinLootFuelRatio") && settings.AutoFarm.MinLootFuelRatio != 0) {
+										long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm, "MaxFlightTime") ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 										var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 										if (optimalSpeed == 0) {
 											Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3198,7 +3198,7 @@ namespace Tbot.Services {
 										}
 									}
 									if (speed == 0) {
-										if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm, "FleetSpeed") && settings.AutoFarm.FleetSpeed > 0) {
 											speed = (int) settings.AutoFarm.FleetSpeed / 10;
 											if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 												Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3212,7 +3212,7 @@ namespace Tbot.Services {
 
 									if (
 										(
-											!SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											!SettingsService.IsSettingSet(settings.AutoFarm, "MaxFlightTime") ||
 											(long) settings.AutoFarm.MaxFlightTime == 0 ||
 											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
 										) &&
@@ -3233,7 +3233,7 @@ namespace Tbot.Services {
 									tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 									// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 									speed = 0;
-									if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm, "FleetSpeed") && settings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) settings.AutoFarm.FleetSpeed / 10;
 										if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3241,8 +3241,8 @@ namespace Tbot.Services {
 										}
 									} else {
 										speed = 0;
-										if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-											long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+										if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm, "MinLootFuelRatio") && settings.AutoFarm.MinLootFuelRatio != 0) {
+											long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm, "MaxFlightTime") ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 											var optimalSpeed = Helpers.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 											if (optimalSpeed == 0) {
 												Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3253,7 +3253,7 @@ namespace Tbot.Services {
 											}
 										}
 										if (speed == 0) {
-											if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+											if (SettingsService.IsSettingSet(settings.AutoFarm, "FleetSpeed") && settings.AutoFarm.FleetSpeed > 0) {
 												speed = (int) settings.AutoFarm.FleetSpeed / 10;
 												if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 													Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3270,12 +3270,12 @@ namespace Tbot.Services {
 										tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) settings.AutoFarm.MinCargosToKeep &&
 										tempCelestial.Resources.Deuterium >= prediction.Fuel &&
 										(
-											!SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ||
+											!SettingsService.IsSettingSet(settings.AutoFarm, "MaxFlightTime") ||
 											(long) settings.AutoFarm.MaxFlightTime == 0 ||
 											prediction.Time <= (long) settings.AutoFarm.MaxFlightTime
 										)
 									) {
-										if (SettingsService.IsSettingSet(settings.AutoFarm.BuildCargos) && settings.AutoFarm.BuildCargos == true) {
+										if (SettingsService.IsSettingSet(settings.AutoFarm, "BuildCargos") && settings.AutoFarm.BuildCargos == true) {
 											var neededCargos = numCargo + (long) settings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
 											var cost = Helpers.CalcPrice(cargoShip, (int) neededCargos);
 											if (tempCelestial.Resources.IsEnoughFor(cost)) {
@@ -3325,7 +3325,7 @@ namespace Tbot.Services {
 								// No slots free, wait for first fleet to come back.
 								if (userData.fleets.Any()) {
 									int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
-									if (SettingsService.IsSettingSet(settings.AutoFarm.MaxWaitTime) && (int) settings.AutoFarm.MaxWaitTime != 0 && interval > (int) settings.AutoFarm.MaxWaitTime) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm, "MaxWaitTime") && (int) settings.AutoFarm.MaxWaitTime != 0 && interval > (int) settings.AutoFarm.MaxWaitTime) {
 										Helpers.WriteLog(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Time to wait greater than set {(int) settings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
 										return;
 									} else {
@@ -3345,8 +3345,8 @@ namespace Tbot.Services {
 								Ships ships = new();
 
 								speed = 0;
-								if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm.MinLootFuelRatio) && settings.AutoFarm.MinLootFuelRatio != 0) {
-									long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm.MaxFlightTime) ? (long) settings.AutoFarm.MaxFlightTime : 86400;
+								if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(settings.AutoFarm, "MinLootFuelRatio") && settings.AutoFarm.MinLootFuelRatio != 0) {
+									long maxFlightTime = SettingsService.IsSettingSet(settings.AutoFarm, "MaxFlightTime") ? (long) settings.AutoFarm.MaxFlightTime : 86400;
 									var optimalSpeed = Helpers.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(userData.userInfo.Class), lootFuelRatio, maxFlightTime, userData.researches, userData.serverData, userData.userInfo.Class);
 									if (optimalSpeed == 0) {
 										Helpers.WriteLog(LogType.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
@@ -3357,7 +3357,7 @@ namespace Tbot.Services {
 									}
 								}
 								if (speed == 0) {
-									if (SettingsService.IsSettingSet(settings.AutoFarm.FleetSpeed) && settings.AutoFarm.FleetSpeed > 0) {
+									if (SettingsService.IsSettingSet(settings.AutoFarm, "FleetSpeed") && settings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) settings.AutoFarm.FleetSpeed / 10;
 										if (!Helpers.GetValidSpeedsForClass(userData.userInfo.Class).Any(s => s == speed)) {
 											Helpers.WriteLog(LogType.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
@@ -3603,7 +3603,7 @@ namespace Tbot.Services {
 				celestial = UpdatePlanet(celestial, UpdateTypes.Productions);
 				celestial = UpdatePlanet(celestial, UpdateTypes.Ships);
 				if (
-					(!SettingsService.IsSettingSet(settings.Brain.AutoMine.BuildCrawlers) || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
+					(!SettingsService.IsSettingSet(settings.Brain.AutoMine, "BuildCrawlers") || (bool) settings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
 					userData.userInfo.Class == CharacterClass.Collector &&
 					celestial.Facilities.Shipyard >= 5 &&
@@ -4568,7 +4568,7 @@ namespace Tbot.Services {
 							}
 						}
 
-						if (SettingsService.IsSettingSet(settings.Brain.AutoMine.Transports.RoundResources) && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
+						if (SettingsService.IsSettingSet(settings.Brain.AutoMine.Transports, "RoundResources") && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
 							missingResources = missingResources.Round();
 							idealShips = Helpers.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						}
@@ -5146,15 +5146,15 @@ namespace Tbot.Services {
 			try {
 				if (attack.MissionType == Missions.MissileAttack) {
 					if (
-						!SettingsService.IsSettingSet(settings.Defender.IgnoreMissiles) ||
-						(SettingsService.IsSettingSet(settings.Defender.IgnoreMissiles) && (bool) settings.Defender.IgnoreMissiles)
+						!SettingsService.IsSettingSet(settings.Defender, "IgnoreMissiles") ||
+						(SettingsService.IsSettingSet(settings.Defender, "IgnoreMissiles") && (bool) settings.Defender.IgnoreMissiles)
 					) {
 						Helpers.WriteLog(LogType.Info, LogSender.Defender, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
 						return;
 					}
 				}
 				if (attack.Ships != null && userData.researches.EspionageTechnology >= 8) {
-					if (SettingsService.IsSettingSet(settings.Defender.IgnoreProbes) && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
+					if (SettingsService.IsSettingSet(settings.Defender, "IgnoreProbes") && (bool) settings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {
 						if (attack.MissionType == Missions.Spy)
 							Helpers.WriteLog(LogType.Info, LogSender.Defender, "Attacker sent only Probes! Espionage action skipped.");
 						else
@@ -5265,7 +5265,7 @@ namespace Tbot.Services {
 					userData.fleets = UpdateFleets();
 					userData.serverData = ogamedService.GetServerData();
 					int expsToSend;
-					if (SettingsService.IsSettingSet(settings.Expeditions.WaitForAllExpeditions) && (bool) settings.Expeditions.WaitForAllExpeditions) {
+					if (SettingsService.IsSettingSet(settings.Expeditions, "WaitForAllExpeditions") && (bool) settings.Expeditions.WaitForAllExpeditions) {
 						if (userData.slots.ExpInUse == 0)
 							expsToSend = userData.slots.ExpTotal;
 						else
@@ -5274,7 +5274,7 @@ namespace Tbot.Services {
 						expsToSend = Math.Min(userData.slots.ExpFree, userData.slots.Free);
 					}
 					Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Expedition slot free: {expsToSend}");
-					if (SettingsService.IsSettingSet(settings.Expeditions.WaitForMajorityOfExpeditions) && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
+					if (SettingsService.IsSettingSet(settings.Expeditions, "WaitForMajorityOfExpeditions") && (bool) settings.Expeditions.WaitForMajorityOfExpeditions) {
 						if ((double) expsToSend < Math.Round((double) userData.slots.ExpTotal / 2D, 0, MidpointRounding.ToZero) + 1D) {
 							Helpers.WriteLog(LogType.Debug, LogSender.Expeditions, $"Majority of expedition already in flight, Skipping...");
 							expsToSend = 0;
@@ -5374,7 +5374,7 @@ namespace Tbot.Services {
 											}
 
 											var availableShips = origin.Ships.GetMovableShips();
-											if (SettingsService.IsSettingSet(settings.Expeditions.PrimaryToKeep) && (int) settings.Expeditions.PrimaryToKeep > 0) {
+											if (SettingsService.IsSettingSet(settings.Expeditions, "PrimaryToKeep") && (int) settings.Expeditions.PrimaryToKeep > 0) {
 												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) settings.Expeditions.PrimaryToKeep);
 											}
 											Helpers.WriteLog(LogType.Warning, LogSender.Expeditions, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)}");

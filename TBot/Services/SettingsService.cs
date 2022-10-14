@@ -21,18 +21,21 @@ namespace Tbot.Services {
 			return settings;
 		}
 
-		public static bool IsSettingSet(dynamic setting) {
+		public static bool IsSettingSet(dynamic setting, string property) {
 			try {
-				var x = setting;
-				return true;
+				var x = setting[property];
+				if (x != null)
+					return true;
+				else
+					return false;
 			} catch {
 				return false;
 			}
 		}
 
-		public static T GetSetting<T>(dynamic setting, T defValue) {
-			if (IsSettingSet(setting))
-				return (T) setting;
+		public static T GetSetting<T>(dynamic setting, string property, T defValue) {
+			if (IsSettingSet(setting, property))
+				return (T) setting[property];
 			else
 				return defValue;
 		}
