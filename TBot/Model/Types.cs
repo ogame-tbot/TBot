@@ -1506,12 +1506,12 @@ namespace Tbot.Model {
 			// TODO CurrentItemLong is too long, but can be parsed with a RegExp. Moreover it has unicode characters.
 			// Just too lazy to do anything else :)
 			if(HasFinished) {
+				// Auctions are no longer than 50 minutes so far.
 				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 				return	$"Item: {CurrentItem} sold for {CurrentBid} to {HighestBidder}.\n" +
 						$"Next Auction in {timeStr} \n" +
 						$"Number of Bids: {NumBids}.";
 			} else {
-				// When in action, only minutes are worth.Lets keep seconds though
 				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
 						$"CurrentBid: {CurrentBid} by \"{HighestBidder}\" (ID:{HighestBidderUserID}). \n" +

@@ -27,6 +27,10 @@ namespace Tbot.Services {
 			}
 		}
 
+		public static string GetExecutableName() {
+			return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
+		}
+
 		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "cookies.txt") {
 			try {
 				string args = $"--universe=\"{credentials.Universe}\" --username={credentials.Username} --password={credentials.Password} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port} --cookies-filename={cookiesPath}";
@@ -54,28 +58,48 @@ namespace Tbot.Services {
 					args += $" --cookies-filename=\"{cookiesPath}\"";
 
 				Process ogameProc = new Process();
-				ogameProc.StartInfo.FileName = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
+				ogameProc.StartInfo.FileName = GetExecutableName();
 				ogameProc.StartInfo.Arguments = args;
 				ogameProc.EnableRaisingEvents = true;
+				ogameProc.StartInfo.RedirectStandardOutput = true;
+				ogameProc.StartInfo.RedirectStandardError = true;
+				ogameProc.StartInfo.RedirectStandardInput = true;
 				ogameProc.Exited += handle_ogamedProcess_Exited;
+				ogameProc.OutputDataReceived += handle_ogamedProcess_OutputDataReceived;
+				ogameProc.ErrorDataReceived += handle_ogamedProcess_ErrorDataReceived;
 
 				ogameProc.Start();
 				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 				ogamedProcess = ogameProc;
 			} catch {
+				Helpers.WriteLog(LogType.Info, LogSender.OGameD, "Error executing ogamed instance");
 				Environment.Exit(0);
 			}
 		}
 
-		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
-			Helpers.WriteLog(LogType.Error, LogSender.OGameD, $"OgameD Exited {e.ToString()}");
-			Environment.Exit(0);
+		private void handle_ogamedProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e) {
+			dump_ogamedProcess_Log(true, e.Data);
 		}
 
-		public void KillOgamedExecultable() {
+		private void handle_ogamedProcess_OutputDataReceived(object sender, DataReceivedEventArgs e) {
+			dump_ogamedProcess_Log(false, e.Data);
+		}
+
+		private void dump_ogamedProcess_Log(bool isErr, string payload) {
+			Helpers.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[process] \"{payload}\"");
+		}
+
+		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
+			Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Exited {ogamedProcess.ExitCode}" +
+				$" TotalTime(ms) {Math.Round((ogamedProcess.ExitTime - ogamedProcess.StartTime).TotalMilliseconds)}");
+			ogamedProcess.Dispose();
+			ogamedProcess = null;
+		}
+
+		public void KillOgamedExecutable() {
 			if (ogamedProcess != null) {
 				ogamedProcess.Close();
-				ogamedProcess.Kill();
+				ogamedProcess.Dispose();
 				ogamedProcess = null;
 			}
 		}
@@ -95,19 +119,23 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		public bool Login() {
+		public bool Login(out string ErrorMessage) {
 			try {
 				var request = new RestRequest {
 					Resource = "/bot/login",
 					Method = Method.GET
 				};
 
+				
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-				if (result.Status != "ok")
+				if (result.Status != "ok") {
+					ErrorMessage = result.Message;
 					return false;
-				else
+				} else {
+					ErrorMessage = "";
 					return true;
-			} catch { return false; }
+				}
+			} catch { ErrorMessage = "LocalException"; return false; }
 		}
 
 		public bool Logout() {
