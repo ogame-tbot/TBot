@@ -28,6 +28,9 @@ namespace Tbot.Includes {
 		}
 
 		public void AddTbotInstance(TBotMain instance) {
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Adding instance.....");
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
+
 			if (instances.Contains(instance) == false) {
 				instances.Add(instance);
 
@@ -165,7 +168,8 @@ namespace Tbot.Includes {
 							}
 							return;
 						case ("/listinstances"):
-							foreach(var instance in instances) {
+							SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
+							foreach (var instance in instances) {
 								SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;

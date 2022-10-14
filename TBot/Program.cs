@@ -79,13 +79,23 @@ namespace Tbot {
 				StartTBotMain(settingPath, "MAIN");
 			}
 			else {
+				// In this case we need a json formatted like follows:
+				//	"Instances": [
+				//		{
+				//			"Settings": "<relative to main settings path>",
+				//			"Alias": "<Custom name for this instance>"
+				//		}
+				// ]
 				settingVersion = SettingsVersion.MultipleInstances;
 				// Initialize all the instances of TBot found in main settings
 				ICollection json_instances = mainSettings.Instances;
 				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Initializing {json_instances.Count} instances...");
 				foreach (var instance in mainSettings.Instances) {
-					// We expect to find a settings file here and an alias
-					string settingsPath = new DirectoryInfo(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), instance.Settings)).FullName;
+					if ( (SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false) ) {
+						continue;
+					}
+
+					string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
 					string alias = instance.Alias;
 
 					StartTBotMain(settingsPath, alias);
@@ -118,7 +128,7 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
 				}
 				else {
-					var tbot = new TBotMain(settingsPath, telegramMessenger);
+					var tbot = new TBotMain(settingsPath, alias, telegramMessenger);
 					if (tbot.init() == false) {
 						Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Error initializing instance \"{alias}\"");
 					} else {
@@ -126,8 +136,8 @@ namespace Tbot {
 						instances.Add(tbot);
 					}
 				}
-			} catch (Exception ) {
-				Helpers.WriteLog(LogType.Warning, LogSender.Main, "Exception happened during initialization");
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Exception happened during initialization \"{e.Message}\"");
 			}
 		}
 	}
