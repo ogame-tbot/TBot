@@ -43,7 +43,17 @@ namespace Tbot {
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{settingPath}\"");
 			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 
-			// TODO Assert if JSON is not complete at bare minimum
+			// Context validation
+			//	a - Ogamed binary is present on same directory ?
+			//	b - Settings file does exist ?
+			if (File.Exists(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), OgamedService.GetExecutableName())) == false) {
+				Helpers.WriteLog(LogType.Error, LogSender.Main, $"\"{OgamedService.GetExecutableName()}\" not found. Cannot proceed...");
+				Environment.Exit(-1);
+			}
+			else if (File.Exists(settingPath) == false) {
+				Helpers.WriteLog(LogType.Error, LogSender.Main, $"\"{settingPath}\" not found. Cannot proceed...");
+				Environment.Exit(-1);
+			}
 
 			// Read settings first
 			mainSettings = SettingsService.GetSettings(settingPath);
@@ -60,25 +70,45 @@ namespace Tbot {
 				Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger disabled");
 			}
 
-			// Initialize all the instances of TBot found in main settings
-			ICollection json_instances = mainSettings.Instances;
-			Helpers.WriteLog(LogType.Info, LogSender.Main, $"Initializing {json_instances.Count} instances...");
-			foreach (var instance in mainSettings.Instances) {
-				// We expect to find a settings file here and an alias
-				string settingsPath = new DirectoryInfo(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), instance.Settings)).FullName;
-				string alias = instance.Alias;
+			// Detect settings versioning by checking existence of "Instances" key
+			SettingsVersion settingVersion = SettingsVersion.Invalid;
 
-				StartTBotMain(settingsPath, alias);
+			if (SettingsService.IsSettingSet(mainSettings.Instances) == false) {
+				settingVersion = SettingsVersion.AllInOne;
+				// Start only an instance of TBot
+				StartTBotMain(settingPath, "MAIN");
+			}
+			else {
+				settingVersion = SettingsVersion.MultipleInstances;
+				// Initialize all the instances of TBot found in main settings
+				ICollection json_instances = mainSettings.Instances;
+				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Initializing {json_instances.Count} instances...");
+				foreach (var instance in mainSettings.Instances) {
+					// We expect to find a settings file here and an alias
+					string settingsPath = new DirectoryInfo(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), instance.Settings)).FullName;
+					string alias = instance.Alias;
+
+					StartTBotMain(settingsPath, alias);
+				}
 			}
 
-			Helpers.WriteLog(LogType.Info, LogSender.Main, "All instances processed. Press CTRL+C to exit");
+			Helpers.WriteLog(LogType.Info, LogSender.Main, $"SettingsVersion Detected {settingVersion.ToString()} and managed. Press CTRL+C to exit");
 			var exitEvt = new ManualResetEvent(false);
 			Console.CancelKeyPress += (sender, e) => {
-				Helpers.WriteLog(LogType.Info, LogSender.Main, "CTRL+C pressed! Closing up...");
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "CTRL+C pressed!");
 				e.Cancel = true;
 				exitEvt.Set();
 			};
+
+
 			exitEvt.WaitOne();
+
+			Helpers.WriteLog(LogType.Info, LogSender.Main, "Closing up...");
+			foreach (var instance in instances) {
+				instance.deinit();
+			}
+			Helpers.WriteLog(LogType.Info, LogSender.Main, "Goodbye!");
+			instances.Clear();
 		}
 
 		private static void StartTBotMain(string settingsPath, string alias) {

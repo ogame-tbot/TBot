@@ -485,4 +485,10 @@ namespace Tbot.Model {
 		AfterSleepTime = -1,
 		NotEnoughSlots = -2
 	}
+
+	public enum SettingsVersion : int {
+		AllInOne = 0,
+		MultipleInstances = 1,
+		Invalid = -1
+	}
 }

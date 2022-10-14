@@ -33,6 +33,11 @@ namespace Tbot.Includes {
 
 				int instanceIndex = instances.IndexOf(instance);
 				SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
+
+				// Set a default instance
+				if(currInstanceIndex < 0) {
+					currInstanceIndex = instanceIndex;
+				}
 			}
 		}
 
@@ -59,6 +64,7 @@ namespace Tbot.Includes {
 			List<string> core_cmds = new List<string>()
 			{
 				"/setmain",
+				"/listinstances",
 				"/ping",
 				"/help"
 			};
@@ -130,23 +136,46 @@ namespace Tbot.Includes {
 
 					switch (arg) {
 						case ("/setmain"):
+							if (args.Length != 2) {
+								SendMessage(botClient, message.Chat, "Invalid number of arguments. Expected 1");
+								return;
+							}
 
+							if (Int32.TryParse(args.ElementAt(1), out int UserSelectedInstance) == true)
+							{
+								if(UserSelectedInstance >= instances.Count()) {
+									SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\" exceeds managed {instances.Count()}");
+								} else {
+									currInstanceIndex = UserSelectedInstance;
+									var cInstance = instances.ElementAt(currInstanceIndex);
+									SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
+										"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
+								}
+							} else {
+								SendMessage(botClient, message.Chat, $"Error parsing instance index from \"{args.ElementAt(1)}\"");
+							}
+							return;
+						case ("/listinstances"):
+							foreach(var instance in instances) {
+								SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+							}
 							return;
 						case ("/ping"):
-							if (message.Text.Split(' ').Length != 1) {
+							if (args.Length != 1) {
 								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
 							SendMessage(botClient, message.Chat, "Pong");
 							return;
 						case ("/help"):
-							if (message.Text.Split(' ').Length != 1) {
+							if (args.Length != 1) {
 								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
 							SendMessage(botClient, message.Chat,
 								"\t Core Commands\n" +
-								"/setmain - Set the TBot main instance to pilot\n" +
+								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
+								"/listinstances - List TBot main instances\n" +
 								"/ping - Ping bot\n" +
 								"/help - Display this help\n" +
 								"\n\t TBot Main instance commands\n" +
@@ -482,7 +511,7 @@ namespace Tbot.Includes {
 								}
 
 								celestial = currInstance.TelegramGetCurrentCelestial();
-								currInstance.TelegramJumGate(celestial, coord, mode);
+								currInstance.TelegramJumpGate(celestial, coord, mode);
 								return;
 
 

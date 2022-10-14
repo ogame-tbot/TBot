@@ -162,6 +162,22 @@ namespace Tbot.Includes {
 			}
 		}
 
+		public static int ClampSystem(int system) {
+			if (system < 1)
+				system = 1;
+			if (system > 499)
+				system = 499;
+			return system;
+		}
+
+		public static int WrapSystem(int system) {
+			if(system > 499)
+				system = 1;
+			if (system < 1)
+				system = 499;
+			return system;
+		}
+
 		public static int CalcShipCapacity(Buildables buildable, int hyperspaceTech, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			int baseCargo;
 			int bonus = (hyperspaceTech * 5);
