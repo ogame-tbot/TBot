@@ -14,6 +14,26 @@ using Tbot.Model;
 using Tbot.Services;
 
 namespace Tbot {
+
+	sealed class InstanceData : IEquatable<InstanceData> {
+		public TBotMain _botMain;
+		public string _botSettingsPath;
+		public string _alias;
+
+		public InstanceData(TBotMain botMain, string botSettingsPath, string alias) {
+			_botMain = botMain;
+			_botSettingsPath = botSettingsPath;
+			_alias = alias;
+		}
+
+		public bool Equals(InstanceData other) {
+			// Equality must check of settings path is the same, since user may change Alias and settings internal data
+			if (other == null)
+				return false;
+
+			return (_botSettingsPath == other._botSettingsPath);
+		}
+	}
 	class Program {
 
 		static DateTime startTime = DateTime.UtcNow;
@@ -21,7 +41,8 @@ namespace Tbot {
 		static dynamic mainSettings;
 
 		static TelegramMessenger telegramMessenger;
-		static List<TBotMain> instances = new();
+		static List<InstanceData> instances = new();
+		static SettingsFileWatcher settingsWatcher;
 
 		static void Main(string[] args) {
 			Helpers.SetTitle();
@@ -59,16 +80,7 @@ namespace Tbot {
 			mainSettings = SettingsService.GetSettings(settingPath);
 
 			// Initialize TelegramMessenger if enabled on main settings
-			if ((bool) mainSettings.TelegramMessenger.Active) {
-				Helpers.WriteLog(LogType.Info, LogSender.Main, "Activating Telegram Messenger");
-				telegramMessenger = new TelegramMessenger((string) mainSettings.TelegramMessenger.API, (string) mainSettings.TelegramMessenger.ChatId);
-				Thread.Sleep(1000);
-				telegramMessenger.TelegramBot();
-			}
-			else
-			{
-				Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger disabled");
-			}
+			InitializeTelegramMessenger();
 
 			// Detect settings versioning by checking existence of "Instances" key
 			SettingsVersion settingVersion = SettingsVersion.Invalid;
@@ -76,7 +88,7 @@ namespace Tbot {
 			if (SettingsService.IsSettingSet(mainSettings, "Instances") == false) {
 				settingVersion = SettingsVersion.AllInOne;
 				// Start only an instance of TBot
-				StartTBotMain(settingPath, "MAIN");
+				StartTBotMain(settingPath, "MAIN", ref instances);
 			}
 			else {
 				// In this case we need a json formatted like follows:
@@ -94,12 +106,13 @@ namespace Tbot {
 					if ( (SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false) ) {
 						continue;
 					}
-
 					string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
 					string alias = instance.Alias;
 
-					StartTBotMain(settingsPath, alias);
+					StartTBotMain(settingsPath, alias, ref instances);
 				}
+
+				settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, settingPath);
 			}
 
 			Helpers.WriteLog(LogType.Info, LogSender.Main, $"SettingsVersion Detected {settingVersion.ToString()} and managed. Press CTRL+C to exit");
@@ -115,13 +128,14 @@ namespace Tbot {
 
 			Helpers.WriteLog(LogType.Info, LogSender.Main, "Closing up...");
 			foreach (var instance in instances) {
-				instance.deinit();
+				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
+				instance._botMain.deinit();
 			}
 			Helpers.WriteLog(LogType.Info, LogSender.Main, "Goodbye!");
 			instances.Clear();
 		}
 
-		private static void StartTBotMain(string settingsPath, string alias) {
+		private static void StartTBotMain(string settingsPath, string alias, ref List<InstanceData> instanceList) {
 			Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Initializing instance \"{alias}\" \"{settingsPath}\"");
 			try {
 				if(File.Exists(settingsPath) == false) {
@@ -133,12 +147,97 @@ namespace Tbot {
 						Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Error initializing instance \"{alias}\"");
 					} else {
 						Helpers.WriteLog(LogType.Info, LogSender.Main, $"Instance \"{alias}\" initialized.");
-						instances.Add(tbot);
+						InstanceData instance = new InstanceData(tbot, settingsPath, alias);
+						instance._botMain = tbot;
+						instanceList.Add(instance);
 					}
 				}
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Exception happened during initialization \"{e.Message}\"");
 			}
+		}
+
+		private static void InitializeTelegramMessenger() {
+			if (
+				SettingsService.IsSettingSet(mainSettings, "TelegramMessenger") &&
+				SettingsService.IsSettingSet(mainSettings.TelegramMessenger, "Active") &&
+				(bool) mainSettings.TelegramMessenger.Active
+			) {
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "Activating Telegram Messenger");
+				telegramMessenger = new TelegramMessenger((string) mainSettings.TelegramMessenger.API, (string) mainSettings.TelegramMessenger.ChatId);
+				Thread.Sleep(1000);
+				telegramMessenger.TelegramBot();
+
+				// Check autoping
+				if (
+					SettingsService.IsSettingSet(mainSettings.TelegramMessenger, "TelegramAutoPing") &&
+					SettingsService.IsSettingSet(mainSettings.TelegramMessenger.TelegramAutoPing, "Active") &&
+					SettingsService.IsSettingSet(mainSettings.TelegramMessenger.TelegramAutoPing, "EveryHours")
+				) {
+					Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing is enabled!");
+					long everyHours = (long) mainSettings.TelegramMessenger.TelegramAutoPing.EveryHours;
+					if (everyHours == 0) {
+						Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing EveryHours is 0. Setting to 1 hour.");
+						everyHours = 1;
+					}
+
+					telegramMessenger.StartAutoPing(everyHours);
+				} else {
+					Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing disabled.");
+				}
+			} else {
+				Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger disabled");
+			}
+		}
+
+		private static void OnSettingsChanged() {
+			Helpers.WriteLog(LogType.Info, LogSender.Main, "Core settings file changed.");
+
+			mainSettings = SettingsService.GetSettings(settingPath);
+
+			// Change autoPing is it has changes
+			if (
+				SettingsService.IsSettingSet(mainSettings.TelegramMessenger, "TelegramAutoPing") &&
+				SettingsService.IsSettingSet(mainSettings.TelegramMessenger.TelegramAutoPing, "Active") &&
+				(bool) mainSettings.TelegramMessenger.TelegramAutoPing.Active &&
+				SettingsService.IsSettingSet(mainSettings.TelegramMessenger.TelegramAutoPing, "EveryHours")
+				) {
+
+				long everyHours = (long) mainSettings.TelegramMessenger.TelegramAutoPing.EveryHours;
+				telegramMessenger.StartAutoPing(everyHours);
+			}
+			// Remove / Add instances
+			List<InstanceData> newInstances = new();
+			ICollection json_instances = mainSettings.Instances;
+			// Existing instances will be kept, new one will be created.
+			foreach (var instance in mainSettings.Instances) {
+				if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
+					continue;
+				}
+				string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
+				string alias = instance.Alias;
+
+				// Check if settings is already in our instances List
+				if (instances.Any(c => c._botSettingsPath == settingsPath) == true) {
+					// Already inside our list!
+					newInstances.Add(instances.First(c => c._botSettingsPath == settingsPath));
+				} else {
+					// Initialize new instance
+					StartTBotMain(settingsPath, alias, ref newInstances);
+				}
+			}
+
+			// Deinitialize instances that are no more valid
+			foreach (var instance in instances) {
+				if (newInstances.Any(c => c._botSettingsPath == instance._botSettingsPath) == false) {
+					Helpers.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
+					instance._botMain.deinit();
+				}
+			}
+
+			// Finally, swap lists
+			instances.Clear();
+			instances = newInstances;
 		}
 	}
 }

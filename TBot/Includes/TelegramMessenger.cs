@@ -10,6 +10,8 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Exceptions;
 using System.Linq;
 using Tbot.Services;
+using System.Timers;
+using Timer = System.Threading.Timer;
 
 namespace Tbot.Includes {
 
@@ -21,10 +23,67 @@ namespace Tbot.Includes {
 		private List<TBotMain> instances = new();
 		private int currInstanceIndex = -1;
 
+		private Timer autoPingTimer;
+		private Semaphore pingSem;
+		private long pingHours;
+		private DateTime startTime = DateTime.UtcNow;
+
 		public TelegramMessenger(string api, string channel) {
 			Api = api;
 			Client = new TelegramBotClient(Api);
 			Channel = channel;
+		}
+
+		public void StartAutoPing(long everyHours) {
+			
+			DateTime now = DateTime.UtcNow;
+			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Initializing AutoPing (Hours {everyHours})...");
+			StopAutoPing();
+
+			pingHours = everyHours;
+			pingSem = new Semaphore(1, 1);
+			autoPingTimer = new Timer(AutoPing, null, nextping, Timeout.Infinite);
+		}
+
+		public void StopAutoPing() {
+			if (autoPingTimer != null) {
+				autoPingTimer.Dispose();
+				autoPingTimer = null;
+			}
+
+			if (pingSem != null) {
+				pingSem.Dispose();
+				pingSem = null;
+			}
+		}
+		private void AutoPing(object state) {
+			pingSem.WaitOne();
+			DateTime now = DateTime.UtcNow;
+			TimeSpan upTime = now - startTime;
+			DateTime roundedNextHour = now.AddHours(pingHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+
+			DateTime newTime = now.AddMilliseconds(nextping);
+			autoPingTimer.Change(nextping, Timeout.Infinite);
+
+			string pingStr = $"TBot is running since {Helpers.TimeSpanToString(upTime)}\n";
+			foreach (var instance in instances) {
+				TimeSpan instanceUpTime = now - instance.startTime;
+				int instanceIndex = instances.IndexOf(instance);
+				pingStr += $"#{instanceIndex} " +
+					$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
+					$"since {Helpers.TimeSpanToString(instanceUpTime)}";
+			}
+			SendMessage(pingStr);
+
+			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
+
+			pingSem.Release();
+
+			return;
 		}
 
 		public void AddTbotInstance(TBotMain instance) {
@@ -70,13 +129,13 @@ namespace Tbot.Includes {
 				"/getmain",
 				"/listinstances",
 				"/ping",
+				"/stopautoping",
+				"/startautoping",
 				"/help"
 			};
 			// Commands targeting specific TBotMain instance
 			List<string> commands = new List<string>()
 			{
-				"/stopautoping",
-				"/startautoping",
 				"/ghostsleep",
 				"/ghostsleepall",
 				"/ghost",
@@ -180,6 +239,24 @@ namespace Tbot.Includes {
 							}
 							SendMessage(botClient, message.Chat, "Pong");
 							return;
+						case ("/stopautoping"):
+							if (args.Length != 1) {
+								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								return;
+							}
+							StopAutoPing();
+							SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
+							return;
+
+
+						case ("/startautoping"):
+							if (args.Length != 1) {
+								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								return;
+							}
+							StartAutoPing(pingHours);
+							SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
+							return;
 						case ("/help"):
 							if (args.Length != 1) {
 								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -191,10 +268,10 @@ namespace Tbot.Includes {
 								"/getmain - Get the current TBot instance that Telegram is managing\n" +
 								"/listinstances - List TBot main instances\n" +
 								"/ping - Ping bot\n" +
-								"/help - Display this help\n" +
-								"\n\t TBot Main instance commands\n" +
 								"/stopautoping - stop telegram autoping\n" +
 								"/startautoping - start telegram autoping [Receive message every X hours]\n" +
+								"/help - Display this help\n" +
+								"\n\t TBot Main instance commands\n" +
 								"/getfleets - Get OnGoing fleets ids (which are not already coming back)\n" +
 								"/getcurrentauction - Get current Auction\n" +
 								"/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>\n" +
@@ -254,33 +331,16 @@ namespace Tbot.Includes {
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 
 					TBotMain currInstance = instances.ElementAt(currInstanceIndex);
+					args = message.Text.ToLower().Split(' ');
+					arg = args.ElementAt(0);
 
 					try {
 						currInstance.WaitFeature();
 
-						switch (message.Text.ToLower().Split(' ')[0]) {
-
-							case ("/stopautoping"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								currInstance.StopTelegramAutoPing();
-								SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
-								return;
-
-
-							case ("/startautoping"):
-								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
-									return;
-								}
-								currInstance.InitializeTelegramAutoPing();
-								SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
-								return;
+						switch (arg) {
 
 							case ("/getfleets"):
-								if (message.Text.Split(' ').Length != 1) {
+								if (args.Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
@@ -289,7 +349,7 @@ namespace Tbot.Includes {
 								return;
 
 							case ("/getcurrentauction"):
-								if (message.Text.Split(' ').Length != 1) {
+								if (args.Length != 1) {
 									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
@@ -305,7 +365,6 @@ namespace Tbot.Includes {
 								return;
 
 							case ("/bidauction"):
-								args = message.Text.Split(' ');
 								if(args.Length == 1) {
 									// Bid minimum amount
 									currInstance.TelegramBidAuctionMinimum();
@@ -335,8 +394,7 @@ namespace Tbot.Includes {
 
 
 							case ("/ghost"):
-								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
+								if (args.Length != 2) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
 									return;
 								}
@@ -350,7 +408,7 @@ namespace Tbot.Includes {
 
 
 							case ("/ghostto"):
-								if (message.Text.Split(' ').Length != 3) {
+								if (args.Length != 3) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
@@ -371,13 +429,13 @@ namespace Tbot.Includes {
 								return;
 
 							case ("/ghostmoons"):
-								if (message.Text.Split(' ').Length != 3) {
+								if (args.Length != 3) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4h3m or 3m50s or 1h <mission></code>!");
 									return;
 								}
 
-								arg = message.Text.Split(' ')[1];
-								test = message.Text.Split(' ')[2];
+								arg = args[1];
+								test = args[2];
 								Missions mission_to_do;
 
 								if (!Missions.TryParse(test, out mission_to_do)) {
@@ -406,7 +464,7 @@ namespace Tbot.Includes {
 
 
 							case ("/ghostsleep"):
-								if (message.Text.Split(' ').Length != 3) {
+								if (args.Length != 3) {
 									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}

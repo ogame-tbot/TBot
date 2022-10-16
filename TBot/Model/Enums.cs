@@ -475,9 +475,8 @@ namespace Tbot.Model {
 		BrainAutoResearch = 11,
 		Colonize = 12,
 		AutoFarm = 13,
-		TelegramAutoPing = 14,
-		BrainLifeformAutoMine = 15,
-		BrainLifeformAutoResearch = 16,
+		BrainLifeformAutoMine = 14,
+		BrainLifeformAutoResearch = 15,
 	}
 
 	public enum SendFleetCode : int {

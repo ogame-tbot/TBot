@@ -30,9 +30,7 @@ namespace Tbot.Services {
 		public long duration;
 		public DateTime NextWakeUpTime;
 		public DateTime startTime = DateTime.UtcNow;
-		public PhysicalFileProvider physicalFileProvider;
-		public IChangeToken changeToken;
-		public IDisposable changeCallback;
+		public SettingsFileWatcher settingsWatcher;
 
 		private string settingsPath;
 		private string instanceAlias;
@@ -163,7 +161,6 @@ namespace Tbot.Services {
 					xaSem[Feature.Colonize] = new Semaphore(1, 1);
 					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
 					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
-					xaSem[Feature.TelegramAutoPing] = new Semaphore(1, 1);
 
 					features = new();
 					InitializeFeatures(new List<Feature>() {
@@ -182,7 +179,6 @@ namespace Tbot.Services {
 						Feature.Harvest,
 						Feature.FleetScheduler,
 						Feature.SleepMode,
-						Feature.TelegramAutoPing
 					});
 
 
@@ -197,9 +193,7 @@ namespace Tbot.Services {
 					InitializeSleepMode();
 
 					// Up and running. Lets initialize notification for settings file
-					physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
-					changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath));
-					changeCallback = changeToken.RegisterChangeCallback(OnSettingsChanged, default);
+					settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, settingsPath);
 				} else {
 					log(LogType.Warning, LogSender.Tbot, "Account in vacation mode");
 					loggedIn = false;
@@ -215,8 +209,9 @@ namespace Tbot.Services {
 		}
 
 		public void deinit() {
-			if(changeCallback != null)
-				changeCallback.Dispose();	// Unregister callback
+			log(LogType.Info, LogSender.Tbot, "Deinitializing instance...");
+
+			settingsWatcher.deinitWatch();
 
 			if (ogamedService != null) {
 				if (loggedIn) {
@@ -227,9 +222,18 @@ namespace Tbot.Services {
 				ogamedService.KillOgamedExecutable();
 				ogamedService = null;
 			}
+
+			foreach (KeyValuePair<string, Timer> entry in timers) {
+				log(LogType.Info, LogSender.Tbot, $"Disposing timer \"{entry.Key}\"");
+				entry.Value.Dispose();
+			}
+			timers.Clear();
+			log(LogType.Info, LogSender.Tbot, "Deinitialization completed");
 		}
 
 		public bool Equals(TBotMain other) {
+			if (other == null)
+				return false;
 			return object.ReferenceEquals(this, other);
 		}
 
@@ -301,10 +305,6 @@ namespace Tbot.Services {
 						if (!currentValue)
 							InitializeSleepMode();
 						return true;
-					case Feature.TelegramAutoPing:
-						if (currentValue)
-							StopTelegramAutoPing();
-						return false;
 
 					default:
 						return false;
@@ -441,15 +441,6 @@ namespace Tbot.Services {
 							StopSleepMode();
 						return false;
 					}
-				case Feature.TelegramAutoPing:
-					if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
-						InitializeTelegramAutoPing();
-						return true;
-					} else {
-						if (currentValue)
-							StopTelegramAutoPing();
-						return false;
-					}
 				default:
 					return false;
 			}
@@ -471,7 +462,6 @@ namespace Tbot.Services {
 					Feature.Expeditions,
 					Feature.Harvest,
 					Feature.Colonize,
-					Feature.TelegramAutoPing
 				};
 			}
 			foreach (Feature feat in featuresToInitialize) {
@@ -556,7 +546,7 @@ namespace Tbot.Services {
 			xaSem[Feature.AutoFarm].Release();
 		}
 
-		private void OnSettingsChanged(object state) {
+		private void OnSettingsChanged() {
 
 			log(LogType.Info, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
@@ -567,7 +557,6 @@ namespace Tbot.Services {
 			xaSem[Feature.Colonize].WaitOne();
 			xaSem[Feature.AutoFarm].WaitOne();
 			xaSem[Feature.SleepMode].WaitOne();
-			xaSem[Feature.TelegramAutoPing].WaitOne();
 
 			log(LogType.Info, LogSender.Tbot, "Reloading Settings file");
 			settings = SettingsService.GetSettings(settingsPath);
@@ -579,15 +568,8 @@ namespace Tbot.Services {
 			xaSem[Feature.Colonize].Release();
 			xaSem[Feature.AutoFarm].Release();
 			xaSem[Feature.SleepMode].Release();
-			xaSem[Feature.TelegramAutoPing].Release();
 
 			InitializeSleepMode();
-			// UpdateTitle();
-
-			physicalFileProvider = new PhysicalFileProvider(Path.GetDirectoryName(settingsPath));
-			changeToken = physicalFileProvider.Watch(Path.GetFileName(settingsPath));
-			changeCallback.Dispose();
-			changeCallback = changeToken.RegisterChangeCallback(OnSettingsChanged, default);
 		}
 
 		public DateTime GetDateTime() {
@@ -835,7 +817,7 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogType.Debug, LogSender.Tbot, $"Exception: {e.Message}");
 				log(LogType.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
-				log(LogType.Warning, LogSender.Tbot, "An error has occurred. Skipping update");
+				log(LogType.Warning, LogSender.Tbot, $"An error has occurred with update {UpdateTypes.ToString()}. Skipping update");
 			}
 			return planet;
 		}
@@ -857,29 +839,6 @@ namespace Tbot.Services {
 			} catch {
 				userData.celestials = userData.celestials.Unique().ToList();
 			}
-		}
-
-		public void InitializeTelegramAutoPing() {
-			DateTime now = GetDateTime();
-			long everyHours = 0;
-			if ((bool) settings.TelegramMessenger.TelegramAutoPing.Active) {
-				everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
-			} else
-				return;
-			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
-			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
-
-			log(LogType.Info, LogSender.Tbot, "Initializing TelegramAutoPing...");
-			StopTelegramAutoPing(false);
-			timers.Add("TelegramAutoPing", new Timer(TelegramAutoPing, null, nextping, Timeout.Infinite));
-		}
-
-		public void StopTelegramAutoPing(bool echo = true) {
-			if (echo)
-				log(LogType.Info, LogSender.Tbot, "Stopping TelegramAutoPing...");
-			if (timers.TryGetValue("TelegramAutoPing", out Timer value))
-				value.Dispose();
-			timers.Remove("TelegramAutoPing");
 		}
 
 		public void InitializeDefender() {
@@ -1100,7 +1059,7 @@ namespace Tbot.Services {
 			if(telegramMessenger != null) {
 				string finalStr = $"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code>\n" +
 					fmt;
-				telegramMessenger.SendMessage(fmt);
+				telegramMessenger.SendMessage(finalStr);
 			}
 		}
 
@@ -1330,22 +1289,7 @@ namespace Tbot.Services {
 			}
 		}
 
-		public void TelegramAutoPing(object state) {
-			xaSem[Feature.TelegramAutoPing].WaitOne();
-			DateTime now = GetDateTime();
-			TimeSpan upTime = DateTime.UtcNow - startTime;
-			long everyHours = settings.TelegramMessenger.TelegramAutoPing.EveryHours;
-			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
-			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 
-			DateTime newTime = now.AddMilliseconds(nextping);
-			timers.GetValueOrDefault("TelegramAutoPing").Change(nextping, Timeout.Infinite);
-			SendTelegramMessage($"TBot is running since {Helpers.TimeSpanToString(upTime)}");
-			log(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
-			xaSem[Feature.TelegramAutoPing].Release();
-
-			return;
-		}
 
 		public void TelegramCollect() {
 			timers.Add("TelegramCollect", new Timer(AutoRepatriate, null, 3000, Timeout.Infinite));
@@ -2487,7 +2431,6 @@ namespace Tbot.Services {
 						HandleAttack(attack);
 					}
 				} else {
-					Helpers.SetTitle();
 					log(LogType.Info, LogSender.Defender, "Your empire is safe");
 				}
 				long interval = Helpers.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
