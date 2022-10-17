@@ -2351,7 +2351,7 @@ namespace Tbot.Services {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("TelegramSleepModeTimer");
-			SendTelegramMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Bot woke up!");
+			SendTelegramMessage($"Bot woke up!");
 
 			log(LogType.Info, LogSender.SleepMode, "Bot woke up!");
 
@@ -5016,9 +5016,6 @@ namespace Tbot.Services {
 				Fleet recalledFleet = userData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
 				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
 					log(LogType.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
-					//if (telegramMessenger && (bool) settings.Defender.TelegramMessenger.Active) {
-					//	SendTelegramMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Unable to recall fleet: an unknon error has occurred.");
-					//}
 				} else {
 					log(LogType.Info, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 					if ((bool) settings.Defender.TelegramMessenger.Active) {
@@ -5029,9 +5026,6 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogType.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
 				log(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
-				//if (telegramMessenger && (bool) settings.Defender.TelegramMessenger.Active) {
-				//	SendTelegramMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Unable to recall fleet: an exception has occurred.");
-				//}
 				return;
 			} finally {
 				if (timers.TryGetValue($"RecallTimer-{fleet.ID.ToString()}", out Timer value)) {
@@ -5137,7 +5131,7 @@ namespace Tbot.Services {
 			}
 
 			if ((bool) settings.Defender.TelegramMessenger.Active) {
-				SendTelegramMessage($"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code> Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
+				SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
 					Thread.Sleep(1000);
 				SendTelegramMessage($"The attack is composed by: {attack.Ships.ToString()}");

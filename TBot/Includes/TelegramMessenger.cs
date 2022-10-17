@@ -75,7 +75,7 @@ namespace Tbot.Includes {
 				int instanceIndex = instances.IndexOf(instance);
 				pingStr += $"#{instanceIndex} " +
 					$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
-					$"since {Helpers.TimeSpanToString(instanceUpTime)}";
+					$"since {Helpers.TimeSpanToString(instanceUpTime)}\n";
 			}
 			SendMessage(pingStr);
 
@@ -413,15 +413,15 @@ namespace Tbot.Includes {
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								test = message.Text.Split(' ')[2];
-								test = char.ToUpper(test[0]) + test.Substring(1);
+
+								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 								Missions mission;
 
-								if (!Missions.TryParse(test, out mission)) {
+								if (!Missions.TryParse(args[2], out mission)) {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-								duration = Helpers.ParseDurationFromString(arg);
+								duration = Helpers.ParseDurationFromString(args[1]);
 
 								celestial = currInstance.TelegramGetCurrentCelestial();
 								currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
@@ -434,15 +434,13 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								arg = args[1];
-								test = args[2];
+								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 								Missions mission_to_do;
-
-								if (!Missions.TryParse(test, out mission_to_do)) {
-									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+								if (!Missions.TryParse(args[2], out mission_to_do)) {
+									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'. Got \"{test}\"");
 									return;
 								}
-								duration = Helpers.ParseDurationFromString(arg);
+								duration = Helpers.ParseDurationFromString(args[1]);
 
 								List<Celestial> myMoons = currInstance.userData.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
 								if (myMoons.Count > 0) {
