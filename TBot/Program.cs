@@ -4611,7 +4611,7 @@ namespace Tbot {
 									} else {
 										nextBuildable = Helpers.GetNextLunarFacilityToBuild(tempCelestial as Moon, researches, maxLunarFacilities);
 									}
-									if (nextBuildable != Buildables.Null) {
+									if (nextBuildable != Buildables.Null && buildable != Buildables.SolarSatellite) {
 										var nextLevel = Helpers.GetNextLevel(tempCelestial, nextBuildable);
 										var newMissingRes = missingResources.Sum(Helpers.CalcPrice(nextBuildable, nextLevel));
 
