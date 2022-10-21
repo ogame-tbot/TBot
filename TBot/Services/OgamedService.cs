@@ -637,6 +637,20 @@ namespace Tbot.Services {
 				return JsonConvert.DeserializeObject<Slots>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
 		}
 
+		public bool AbandonPlanet(Planet planet) {
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/planets/{planet.ID}/abandon",
+					Method = Method.GET
+				};
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok")
+					return false;
+				else
+					return true;
+			} catch { return false; }
+		}
+
 		public Researches GetResearches() {
 			var request = new RestRequest {
 				Resource = "/bot/get-research",
