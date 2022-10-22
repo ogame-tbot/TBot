@@ -466,12 +466,10 @@ namespace Tbot.Includes {
 									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
-								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
-								test = message.Text.Split(' ')[2];
-								test = char.ToUpper(test[0]) + test.Substring(1);
+								duration = Helpers.ParseDurationFromString(args[1]);
+								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 
-								if (!Missions.TryParse(test, out mission)) {
+								if (!Missions.TryParse(args[2], out mission)) {
 									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
