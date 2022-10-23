@@ -1375,7 +1375,7 @@ namespace Tbot.Services {
 			string outputMessage = "";
 			List<Fleet> phalanxed = ogamedService.Phalanx(origin, target, out outputMessage);
 			if (phalanxed.Count == 0) {
-				SendTelegramMessage("No fleet phalanxed");
+				SendTelegramMessage($"No fleet phalanxed. Client returned {outputMessage}");
 			}
 			else {
 				SendTelegramMessage($"Phalanxed {phalanxed.Count} fleets");
