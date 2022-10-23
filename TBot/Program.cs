@@ -3868,9 +3868,9 @@ namespace Tbot {
 						}
 					} else if (celestial.Coordinate.Type == Celestials.Moon) {
 						if ((celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
-							stop = true;
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");	
 						}
+						stop = true;
 					}
 				}
 			} catch (Exception e) {
