@@ -12,6 +12,7 @@ using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using Tbot.Includes;
 using Tbot.Model;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static System.Reflection.Metadata.BlobBuilder;
 
@@ -471,7 +472,7 @@ namespace Tbot.Services {
 
 		public bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
 			System.Threading.Thread.Sleep(500);
-			var file = File.ReadAllText(Path.GetFullPath(settingsPath));
+			var file = System.IO.File.ReadAllText(Path.GetFullPath(settingsPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -525,7 +526,7 @@ namespace Tbot.Services {
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			File.WriteAllText(Path.GetFullPath(settingsPath), output);
+			System.IO.File.WriteAllText(Path.GetFullPath(settingsPath), output);
 
 			return true;
 		}
@@ -1184,7 +1185,9 @@ namespace Tbot.Services {
 			} else {
 				// check if auction is currently ours
 				if (userData.userInfo.PlayerID == auction.HighestBidderUserID) {
-					SendTelegramMessage("Auction is already ours! Doing nothing...");
+					SendTelegramMessage("Auction is already ours!\n" +
+						$"Item: \"{auction.CurrentItem}\"\n" +
+						$"Ending in: {auction.GetTimeString()}");
 				} else {
 					long minBidRequired = auction.MinimumBid - auction.AlreadyBid;
 
@@ -1365,6 +1368,25 @@ namespace Tbot.Services {
 				SendTelegramMessage($"JumGate Done!");
 			} else {
 				SendTelegramMessage($"JumGate Failed!");
+			}
+		}
+
+		public void TelegramPhalanx(Celestial origin, Coordinate target) {
+			string outputMessage = "";
+			List<Fleet> phalanxed = ogamedService.Phalanx(origin, target, out outputMessage);
+			if (phalanxed.Count == 0) {
+				SendTelegramMessage("No fleet phalanxed");
+			}
+			else {
+				SendTelegramMessage($"Phalanxed {phalanxed.Count} fleets");
+				foreach (Fleet fleetPhalanxed in phalanxed) {
+					string currFleetStr =
+						$"Mission {fleetPhalanxed.Mission.ToString()}\n" +
+						$"Origin {fleetPhalanxed.Origin.ToString()}\n" +
+						$"Destination {fleetPhalanxed.Destination.ToString()}\n" +
+						$"Ships: {fleetPhalanxed.Ships.ToString()}";
+					SendTelegramMessage($"Phalanxed: {currFleetStr}");
+				}
 			}
 		}
 

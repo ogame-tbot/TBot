@@ -1507,12 +1507,12 @@ namespace Tbot.Model {
 			// Just too lazy to do anything else :)
 			if(HasFinished) {
 				// Auctions are no longer than 50 minutes so far.
-				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
+				string timeStr = GetTimeString();
 				return	$"Item: {CurrentItem} sold for {CurrentBid} to {HighestBidder}.\n" +
 						$"Next Auction in {timeStr} \n" +
 						$"Number of Bids: {NumBids}.";
 			} else {
-				string timeStr = (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
+				string timeStr = GetTimeString();
 				return	$"Item: {CurrentItem} ending in \"{timeStr}\". \n" +
 						$"CurrentBid: {CurrentBid} by \"{HighestBidder}\" (ID:{HighestBidderUserID}). \n" +
 						$"AlreadyBid: {AlreadyBid} MinimumBid: {MinimumBid}. \n" +
@@ -1520,6 +1520,10 @@ namespace Tbot.Model {
 						$"Resource Multiplier: M:{ResourceMultiplier.Metal} C:{ResourceMultiplier.Crystal} D:{ResourceMultiplier.Deuterium}\n" +
 						$"Number of Bids: {NumBids}.";
 			}
+		}
+
+		public string GetTimeString() {
+			return (Endtime > 60) ? $"{Endtime / 60}m{Endtime % 60}s" : $"{Endtime}s";
 		}
 	}
 

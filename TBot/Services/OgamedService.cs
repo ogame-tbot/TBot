@@ -1107,7 +1107,28 @@ namespace Tbot.Services {
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (!result.Status.Equals("ok")) { return false; } else { return true; }
+		}
 
+		public List<Fleet> Phalanx(Celestial origin, Coordinate coords, out string message) {
+			// If empty list, then check message!
+			List<Fleet> ret = new();
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}",
+					Method = Method.GET,
+				};
+
+
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok") {
+					message = result.Message;
+					return ret;
+				} else {
+					message = "";
+					return JsonConvert.DeserializeObject<List<Fleet>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+					;
+				}
+			} catch { message = "LocalException"; return ret; }
 		}
 	}
 }

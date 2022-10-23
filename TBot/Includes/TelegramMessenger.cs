@@ -170,6 +170,7 @@ namespace Tbot.Includes {
 				"/getcelestials",
 				"/recall",
 				"/jumpgate",
+				"/phalanx",
 				"/deploy",
 				"/getfleets",
 				"/getcurrentauction",
@@ -191,6 +192,7 @@ namespace Tbot.Includes {
 				List<Celestial> myCelestials;
 				Resources resources;
 				Coordinate coord = new();
+				Coordinate target = new();
 				String[] args;
 
 				if (core_cmds.Any(x => message.Text.ToLower().Contains(x))) {
@@ -283,6 +285,7 @@ namespace Tbot.Includes {
 								"/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>\n" +
 								"/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>\n" +
 								"/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>\n" +
+								"/phalanx - use phalanx from moon to destination. Format <code>/phalanx 2:241:9 4:100:1</code>\n" +
 								"/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent\n" +
 								"/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>\n" +
 								"/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>\n" +
@@ -581,6 +584,48 @@ namespace Tbot.Includes {
 								celestial = currInstance.TelegramGetCurrentCelestial();
 								currInstance.TelegramJumpGate(celestial, coord, mode);
 								return;
+
+							case ("/phalanx"): {
+								if (args.Length != 3) {
+									SendMessage(botClient, message.Chat, "Error! Format: <code>2:241:9 4:100:1</code>", ParseMode.Html);
+									return;
+								}
+
+								// Parse Origin
+								try {
+									coord.Galaxy = Int32.Parse(args[1].Split(':')[0]);
+									coord.System = Int32.Parse(args[1].Split(':')[1]);
+									coord.Position = Int32.Parse(args[1].Split(':')[2]);
+									coord.Type = Celestials.Moon;
+								} catch {
+									SendMessage(botClient, message.Chat, "Error while parsing origin coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								// Parse destination
+								try {
+									target = new();
+									target.Galaxy = Int32.Parse(args[2].Split(':')[0]);
+									target.System = Int32.Parse(args[2].Split(':')[1]);
+									target.Position = Int32.Parse(args[2].Split(':')[2]);
+									target.Type = Celestials.Planet;
+								} catch {
+									SendMessage(botClient, message.Chat, "Error while parsing destination coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									return;
+								}
+
+								// Check if Origin is a valid moon
+								myCelestials = currInstance.userData.celestials.Where(p => (p.Coordinate.IsSame(coord))).ToList();
+								if (myCelestials.Count > 0) {
+									SendMessage(botClient, message.Chat, $"Phalanx from \"{myCelestials[0].Coordinate.ToString()}\" to \"{target.ToString()}\"");
+									currInstance.TelegramPhalanx(myCelestials[0], target);
+									
+								} else {
+									SendMessage(botClient, message.Chat, $"Origin coordinate \"{coord.ToString()}\" is not a Moon or does not belong to us!");
+								}
+								return;
+							}
+
 
 
 							case ("/build"):
@@ -1007,7 +1052,6 @@ namespace Tbot.Includes {
 									return;
 								}
 
-								Coordinate target;
 								if (message.Text.Split(' ')[1].ToLower().Equals("auto")) {
 									target = null;
 								} else {
