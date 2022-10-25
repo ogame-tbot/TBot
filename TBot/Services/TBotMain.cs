@@ -2336,11 +2336,16 @@ namespace Tbot.Services {
 					log(LogType.Info, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
 
 					if ((bool) settings.SleepMode.AutoFleetSave.Active) {
-						var celestialsToFleetsave = UpdateCelestials();
+						var celestialsToFleetsave = UpdatePlanets(UpdateTypes.Ships);
 						if ((bool) settings.SleepMode.AutoFleetSave.OnlyMoons)
 							celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
-						foreach (Celestial celestial in celestialsToFleetsave)
-							AutoFleetSave(celestial, true);
+						foreach (Celestial celestial in celestialsToFleetsave.OrderByDescending(c => c.Ships.GetFleetPoints())) {
+							try {
+								AutoFleetSave(celestial, true);
+							} catch (Exception e) {
+								Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
+							}
+						}
 					}
 
 					if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
@@ -3783,9 +3788,9 @@ namespace Tbot.Services {
 						}
 					} else if (celestial.Coordinate.Type == Celestials.Moon) {
 						if ((celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
-							log(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
-							stop = true;
+							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
 						}
+						stop = true;
 					}
 				}
 			} catch (Exception e) {
@@ -5008,7 +5013,11 @@ namespace Tbot.Services {
 			}
 			userData.slots = UpdateSlots();
 			int slotsToLeaveFree = (int) settings.General.SlotsToLeaveFree;
-			if (userData.slots.Free > slotsToLeaveFree || force) {
+			if (userData.slots.Free == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				return (int) SendFleetCode.NotEnoughSlots;
+			}
+			else if (userData.slots.Free > slotsToLeaveFree || force) {
 				if (payload == null)
 					payload = new();
 				try {
