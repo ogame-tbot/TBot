@@ -5103,7 +5103,11 @@ namespace Tbot {
 			fleets = UpdateFleets();
 			slots = UpdateSlots();			
 			int slotsToLeaveFree = (int) settings.General.SlotsToLeaveFree;
-			if (slots.Free > slotsToLeaveFree || force) {
+			if (slots.Free == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				return (int) SendFleetCode.NotEnoughSlots;
+			}
+			else if (slots.Free > slotsToLeaveFree || force) {
 				if (payload == null)
 					payload = new();
 				try {
@@ -5117,9 +5121,6 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
 					return (int) SendFleetCode.GenericError;
 				}
-			} else if (slots.Free == 0) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
-				return (int) SendFleetCode.NotEnoughSlots;
 			} else {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
 				return (int) SendFleetCode.NotEnoughSlots;
