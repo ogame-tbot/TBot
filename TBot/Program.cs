@@ -2421,8 +2421,14 @@ namespace Tbot {
 						var celestialsToFleetsave = UpdateCelestials();
 						if ((bool) settings.SleepMode.AutoFleetSave.OnlyMoons)
 							celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
-						foreach (Celestial celestial in celestialsToFleetsave)
-							AutoFleetSave(celestial, true);
+
+						foreach (Celestial celestial in celestialsToFleetsave.OrderByDescending(c => c.Ships.GetFleetPoints())) {
+							try {
+								AutoFleetSave(celestial, true);
+							} catch (Exception e) {
+								Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
+							}
+						}
 					}
 
 					if ((bool) settings.TelegramMessenger.Active && (bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
@@ -5094,7 +5100,8 @@ namespace Tbot {
 					return (int) SendFleetCode.AfterSleepTime;
 				}
 			}
-			slots = UpdateSlots();
+			fleets = UpdateFleets();
+			slots = UpdateSlots();			
 			int slotsToLeaveFree = (int) settings.General.SlotsToLeaveFree;
 			if (slots.Free > slotsToLeaveFree || force) {
 				if (payload == null)
@@ -5110,6 +5117,9 @@ namespace Tbot {
 					Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
 					return (int) SendFleetCode.GenericError;
 				}
+			} else if (slots.Free == 0) {
+				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				return (int) SendFleetCode.NotEnoughSlots;
 			} else {
 				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
 				return (int) SendFleetCode.NotEnoughSlots;
