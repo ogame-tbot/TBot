@@ -7,6 +7,7 @@ using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Numerics;
+using Tbot.Services;
 
 namespace Tbot.Includes {
 
@@ -28,6 +29,7 @@ namespace Tbot.Includes {
 				LogSender.AutoFarm => ConsoleColor.DarkCyan,
 				LogSender.SleepMode => ConsoleColor.DarkBlue,
 				LogSender.Tbot => ConsoleColor.DarkYellow,
+				LogSender.Main => ConsoleColor.Yellow,
 				LogSender.OGameD => ConsoleColor.DarkCyan,
 				_ => ConsoleColor.Gray
 			};
@@ -158,6 +160,22 @@ namespace Tbot.Includes {
 					}
 				}
 			}
+		}
+
+		public static int ClampSystem(int system) {
+			if (system < 1)
+				system = 1;
+			if (system > 499)
+				system = 499;
+			return system;
+		}
+
+		public static int WrapSystem(int system) {
+			if(system > 499)
+				system = 1;
+			if (system < 1)
+				system = 499;
+			return system;
 		}
 
 		public static int CalcShipCapacity(Buildables buildable, int hyperspaceTech, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
@@ -1927,7 +1945,7 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public static LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20) {
+		public static LFBuildables GetNextLFBuildingToBuild(OgamedService srvc, Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20) {
 			LFBuildables nextLFbuild = LFBuildables.None;
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
@@ -1969,14 +1987,14 @@ namespace Tbot.Includes {
 					}
 				}
 			} else {
-				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level speicified in settings!");
+				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
 				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
-				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
+				Resources nextLFbuildcost = srvc.GetPrice(nextLFbuild, nextLFbuildLvl);
 				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(srvc, planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
 				// Prevent chosing food building because less expensive whereas it is not needed
 				if (LessExpensiveLFbuild != LFBuildables.None){
 					nextLFbuild = LessExpensiveLFbuild;
@@ -1993,8 +2011,8 @@ namespace Tbot.Includes {
 					nextLFbuild = LFBuildables.Sanctuary;
 				}
 				var nextLFbuildLvl = Helpers.GetNextLevel(planet, nextLFbuild);
-				Resources nextLFbuildcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextLFbuildLvl);
-				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				Resources nextLFbuildcost = srvc.GetPrice(nextLFbuild, nextLFbuildLvl);
+				LFBuildables LessExpensiveLFbuild = GetLessExpensiveLFBuilding(srvc, planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
 				if (LessExpensiveLFbuild != LFBuildables.None) {
 					nextLFbuild = LessExpensiveLFbuild;
 				} else {
@@ -2020,7 +2038,7 @@ namespace Tbot.Includes {
 			if (T2 != LFBuildables.None && isUnlocked(planet, T2)) {
 				if (planet.ResourcesProduction.Population.T2Lifeforms < 11000000) { //Require 11M T2 lifeform to unlock last level2 LFTech
 					T2lifeformNextlvl = Helpers.GetNextLevel(planet, T2);
-					Resources T2cost = Tbot.Program.ogamedService.GetPrice(T2, T2lifeformNextlvl);
+					Resources T2cost = srvc.GetPrice(T2, T2lifeformNextlvl);
 					if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
 						nextLFbuild = T2;
 					}
@@ -2030,7 +2048,7 @@ namespace Tbot.Includes {
 			if (T3 != LFBuildables.None && isUnlocked(planet, T3)) {
 				if (planet.ResourcesProduction.Population.T3Lifeforms < 435000000) { //Require 435M T3 lifeform to unlock last level3 LFTech
 					T3lifeformNextlvl = Helpers.GetNextLevel(planet, T3);
-					Resources T3cost = Tbot.Program.ogamedService.GetPrice(T3, T3lifeformNextlvl);
+					Resources T3cost = srvc.GetPrice(T3, T3lifeformNextlvl);
 					if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
 						nextLFbuild = T3;
 					}
@@ -2039,24 +2057,24 @@ namespace Tbot.Includes {
 
 			//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
 			var nextlvl = Helpers.GetNextLevel(planet, nextLFbuild);
-			var nextlvlcost = Tbot.Program.ogamedService.GetPrice(nextLFbuild, nextlvl);
+			var nextlvlcost = srvc.GetPrice(nextLFbuild, nextlvl);
 			var MetalMineCost = Helpers.CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
 			if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
 				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
-				nextLFbuild = GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
+				nextLFbuild = GetLessExpensiveLFBuilding(srvc, planet, planet.LFtype, nextlvlcost, maxTechFactory);
 			}
 
 			return nextLFbuild;
 		}
 
-		private static LFBuildables GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 10) {
+		private static LFBuildables GetLessExpensiveLFBuilding(OgamedService srvc, Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 10) {
 			if (lftype == LFTypes.Humans) {
 				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
 							return (LFBuildables) nextbuildable;
 					}
 				}
@@ -2066,7 +2084,7 @@ namespace Tbot.Includes {
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
 							return (LFBuildables) nextbuildable;
 					}
 				}
@@ -2076,7 +2094,7 @@ namespace Tbot.Includes {
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
 							return (LFBuildables) nextbuildable;
 					}
 				}
@@ -2086,7 +2104,7 @@ namespace Tbot.Includes {
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (Tbot.Program.ogamedService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
+						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
 							return (LFBuildables) nextbuildable;
 					}
 				}
@@ -2113,7 +2131,7 @@ namespace Tbot.Includes {
 			return LFTechno.None;
 		}
 
-		public static LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel) {
+		public static LFTechno GetLessExpensiveLFTechToBuild(OgamedService srvc, Celestial celestial, Resources currentcost, int MaxReasearchLevel) {
 			LFTechno nextLFtech = LFTechno.None;
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
@@ -2122,7 +2140,7 @@ namespace Tbot.Includes {
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
 						nextLFtech = next;
 						var nextLFtechlvl = Helpers.GetNextLevel(celestial, nextLFtech);
-						Resources newcost = Tbot.Program.ogamedService.GetPrice(nextLFtech, nextLFtechlvl);
+						Resources newcost = srvc.GetPrice(nextLFtech, nextLFtechlvl);
 						if (newcost.TotalResources < currentcost.TotalResources) {
 							return nextLFtech;
 						}
@@ -2761,15 +2779,6 @@ namespace Tbot.Includes {
 			}
 
 			return output;
-		}
-
-		public static bool IsSettingSet(dynamic setting) {
-			try {
-				var x = setting;
-				return true;
-			} catch {
-				return false;
-			}
 		}
 
 		public static int CalcMaxExpeditions(Researches researches, CharacterClass playerClass, Staff staff) {

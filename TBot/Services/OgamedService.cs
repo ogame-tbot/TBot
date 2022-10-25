@@ -15,7 +15,10 @@ namespace Tbot.Services {
 		private RestClient Client { get; set; }
 		private Process ogamedProcess { get; set; } = null;
 
+		private string userName { get; set; } = "";
+
 		public OgamedService(Credentials credentials, string host = "127.0.0.1", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "") {
+			userName = credentials.Username;
 			ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, cookiesPath);
 			Url = $"http://{host}:{port}";
 			Client = new(Url) {
@@ -25,6 +28,10 @@ namespace Tbot.Services {
 			if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "") {
 				Client.Authenticator = new RestSharp.Authenticators.HttpBasicAuthenticator(credentials.BasicAuthUsername, credentials.BasicAuthPassword);
 			}
+		}
+
+		public static string GetExecutableName() {
+			return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
 		}
 
 		internal void ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "cookies.txt") {
@@ -54,28 +61,52 @@ namespace Tbot.Services {
 					args += $" --cookies-filename=\"{cookiesPath}\"";
 
 				Process ogameProc = new Process();
-				ogameProc.StartInfo.FileName = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
+				ogameProc.StartInfo.FileName = GetExecutableName();
 				ogameProc.StartInfo.Arguments = args;
 				ogameProc.EnableRaisingEvents = true;
+				ogameProc.StartInfo.RedirectStandardOutput = true;
+				ogameProc.StartInfo.RedirectStandardError = true;
+				ogameProc.StartInfo.RedirectStandardInput = true;
 				ogameProc.Exited += handle_ogamedProcess_Exited;
+				ogameProc.OutputDataReceived += handle_ogamedProcess_OutputDataReceived;
+				ogameProc.ErrorDataReceived += handle_ogamedProcess_ErrorDataReceived;
 
 				ogameProc.Start();
+				ogameProc.BeginErrorReadLine();
+				ogameProc.BeginOutputReadLine();
 				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 				ogamedProcess = ogameProc;
 			} catch {
+				Helpers.WriteLog(LogType.Info, LogSender.OGameD, "Error executing ogamed instance");
 				Environment.Exit(0);
 			}
 		}
 
-		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
-			Helpers.WriteLog(LogType.Error, LogSender.OGameD, $"OgameD Exited {e.ToString()}");
-			Environment.Exit(0);
+		private void handle_ogamedProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e) {
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(true, e.Data);
 		}
 
-		public void KillOgamedExecultable() {
+		private void handle_ogamedProcess_OutputDataReceived(object sender, DataReceivedEventArgs e) {
+			if (e.Data.Length != 0)
+				dump_ogamedProcess_Log(false, e.Data);
+		}
+
+		private void dump_ogamedProcess_Log(bool isErr, string payload) {
+			Helpers.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[{userName}] \"{payload}\"");
+		}
+
+		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
+			Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Exited {ogamedProcess.ExitCode}" +
+				$" TotalTime(ms) {Math.Round((ogamedProcess.ExitTime - ogamedProcess.StartTime).TotalMilliseconds)}");
+			ogamedProcess.Dispose();
+			ogamedProcess = null;
+		}
+
+		public void KillOgamedExecutable() {
 			if (ogamedProcess != null) {
 				ogamedProcess.Close();
-				ogamedProcess.Kill();
+				ogamedProcess.Dispose();
 				ogamedProcess = null;
 			}
 		}
@@ -95,19 +126,23 @@ namespace Tbot.Services {
 			} catch { return false; }
 		}
 
-		public bool Login() {
+		public bool Login(out string ErrorMessage) {
 			try {
 				var request = new RestRequest {
 					Resource = "/bot/login",
 					Method = Method.GET
 				};
 
+				
 				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
-				if (result.Status != "ok")
+				if (result.Status != "ok") {
+					ErrorMessage = result.Message;
 					return false;
-				else
+				} else {
+					ErrorMessage = "";
 					return true;
-			} catch { return false; }
+				}
+			} catch { ErrorMessage = "LocalException"; return false; }
 		}
 
 		public bool Logout() {
@@ -1072,7 +1107,28 @@ namespace Tbot.Services {
 
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
 			if (!result.Status.Equals("ok")) { return false; } else { return true; }
+		}
 
+		public List<Fleet> Phalanx(Celestial origin, Coordinate coords, out string message) {
+			// If empty list, then check message!
+			List<Fleet> ret = new();
+			try {
+				var request = new RestRequest {
+					Resource = $"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}",
+					Method = Method.GET,
+				};
+
+
+				var result = JsonConvert.DeserializeObject<OgamedResponse>(Client.Execute(request).Content);
+				if (result.Status != "ok") {
+					message = result.Message;
+					return ret;
+				} else {
+					message = "";
+					return JsonConvert.DeserializeObject<List<Fleet>>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Local });
+					;
+				}
+			} catch { message = "LocalException"; return ret; }
 		}
 	}
 }
