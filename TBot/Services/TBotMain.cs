@@ -240,9 +240,9 @@ namespace Tbot.Services {
 
 		private void log(LogType type, LogSender sender, string format) {
 			if(loggedIn && (userData.userInfo != null) && (userData.serverData != null) )
-				Helpers.WriteLog(type, LogSender.Tbot, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
+				Helpers.WriteLog(type, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
 			else
-				Helpers.WriteLog(type, LogSender.Tbot, $"[{instanceAlias}] {format}");
+				Helpers.WriteLog(type, sender, $"[{instanceAlias}] {format}");
 		}
 
 		private bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -3788,7 +3788,7 @@ namespace Tbot.Services {
 						}
 					} else if (celestial.Coordinate.Type == Celestials.Moon) {
 						if ((celestial as Moon).HasLunarFacilities(maxLunarFacilities)) {
-							Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
+							log(LogType.Debug, LogSender.Brain, $"To continue building you should rise Brain.AutoMine lunar facilities max levels");
 						}
 						stop = true;
 					}
