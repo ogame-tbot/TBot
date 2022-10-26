@@ -2275,7 +2275,7 @@ namespace Tbot.Services {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				// UpdateTitle();
+				CheckCelestials();
 			} finally {
 				releaseFeature();
 			}
@@ -2362,7 +2362,7 @@ namespace Tbot.Services {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				// UpdateTitle();
+				CheckCelestials();
 			}
 		}
 
@@ -2404,7 +2404,7 @@ namespace Tbot.Services {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogType.Info, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				// UpdateTitle();
+				CheckCelestials();
 			}
 		}
 
@@ -2466,7 +2466,7 @@ namespace Tbot.Services {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				log(LogType.Info, LogSender.Defender, $"Next check at {newTime.ToString()}");
-				// UpdateTitle();
+				CheckCelestials();
 			} catch (Exception e) {
 				log(LogType.Warning, LogSender.Defender, $"An error has occurred while checking for attacks: {e.Message}");
 				log(LogType.Warning, LogSender.Defender, $"Stacktrace: {e.StackTrace}");
@@ -2475,7 +2475,7 @@ namespace Tbot.Services {
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				log(LogType.Info, LogSender.Defender, $"Next check at {newTime.ToString()}");
-				// UpdateTitle();
+				CheckCelestials();
 			} finally {
 				if (!userData.isSleeping)
 					xaSem[Feature.Defender].Release();
@@ -2525,7 +2525,7 @@ namespace Tbot.Services {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-						// UpdateTitle();
+						CheckCelestials();
 					}
 					xaSem[Feature.Brain].Release();
 				}
@@ -2776,7 +2776,7 @@ namespace Tbot.Services {
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
 					}
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -3393,7 +3393,7 @@ namespace Tbot.Services {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoFarmTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.AutoFarm, $"Next autofarm check at {newTime.ToString()}");
-						// UpdateTitle();
+						CheckCelestials();
 					}
 
 					xaSem[Feature.AutoFarm].Release();
@@ -3563,7 +3563,7 @@ namespace Tbot.Services {
 				log(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!userData.isSleeping) {
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -3952,7 +3952,7 @@ namespace Tbot.Services {
 				log(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!userData.isSleeping) {
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -4179,7 +4179,7 @@ namespace Tbot.Services {
 				log(LogType.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!userData.isSleeping) {
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -4737,7 +4737,7 @@ namespace Tbot.Services {
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Brain, $"Next capacity check at {newTime.ToString()}");
-						// UpdateTitle();
+						CheckCelestials();
 					}
 					xaSem[Feature.Brain].Release();
 				}
@@ -4899,7 +4899,7 @@ namespace Tbot.Services {
 							log(LogType.Info, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
 						}
 					}
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Brain].Release();
 				}
 			}
@@ -5489,7 +5489,7 @@ namespace Tbot.Services {
 					newTime = time.AddMilliseconds(interval);
 					timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 					log(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
-					// UpdateTitle();
+					CheckCelestials();
 				}
 			} catch (Exception e) {
 				log(LogType.Warning, LogSender.Expeditions, $"HandleExpeditions exception: {e.Message}");
@@ -5518,7 +5518,7 @@ namespace Tbot.Services {
 						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
 					}
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Expeditions].Release();
 				}
 			}
@@ -5697,7 +5697,7 @@ namespace Tbot.Services {
 						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 					}
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Harvest].Release();
 				}
 			}
@@ -5867,7 +5867,7 @@ namespace Tbot.Services {
 						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
 						log(LogType.Info, LogSender.Colonize, $"Next check at {newTime}");
 					}
-					// UpdateTitle();
+					CheckCelestials();
 					xaSem[Feature.Colonize].Release();
 				}
 			}
