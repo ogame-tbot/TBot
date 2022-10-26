@@ -2312,10 +2312,12 @@ namespace Tbot.Includes {
 			var nextLabLevel = GetNextLevel(celestial, Buildables.ResearchLab);
 			var nextLabPrice = CalcPrice(Buildables.ResearchLab, nextLabLevel);
 
+			/*
 			var nextResearch = GetNextResearchToBuild(celestial, researches);
 			var nextResearchLevel = GetNextLevel(researches, nextResearch);
 			var nextResearchTime = CalcProductionTime(nextResearch, nextResearchLevel, (int) Math.Round(speedFactor * researchDurationDivisor), celestial.Facilities);
 			var nextLabTime = CalcProductionTime(Buildables.ResearchLab, nextLabLevel, speedFactor, celestial.Facilities);
+			*/
 
 			if (
 				nextLabLevel <= maxLevel &&
@@ -2484,6 +2486,9 @@ namespace Tbot.Includes {
 		}
 
 		public static Buildables GetNextResearchToBuild(Planet celestial, Researches researches, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25, bool optimizeForStart = true, bool ensureExpoSlots = true, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasAdmiral = false) {
+			if (ShouldBuildResearchLab(celestial, 12, researches))
+				return Buildables.Null;
+
 			if (optimizeForStart) {
 				if (researches.EnergyTechnology == 0 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology < maxEnergyTechnology)
 					return Buildables.EnergyTechnology;
