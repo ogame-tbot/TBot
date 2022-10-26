@@ -9,7 +9,7 @@ OGame Bot
 
 TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v9.0.5**!
+TBot supports Ogame **v9.0.6**!
 A basic LifeForm support is provided.
 
 Feel free to publish issues or pull requests
@@ -77,50 +77,57 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
   * It will answer you a message containing your user ID and chat ID
   * Insert the newly obtained ID in settings.json under TelegramMessenger.ChatId
 * Send "/help" to the bot to get a list of the available commands. Here is a list:
-  * /getfleets - Get OnGoing fleets ids (which are not already coming back)
-  * /getcurrentauction - Get current Auction
-  *	/bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>
-  *	/subscribeauction - Get a notification when next auction will start
-  *	/ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>
-  *	/ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>
-  *	/ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h3m or 3m50s Harvest</code>
-  *	/ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>
-  *	/switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>
-  *	/deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>
-  *	/jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>
-  *	/cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent
-  *	/spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>
-  *	/recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>
-  *	/collect - Collect planets resources to JSON setting celestial
-  *	/collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial
-  *	/msg - Send a message to current attacker. Format: <code>/msg hello dude</code>
-  *	/sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>
-  *	/wakeup - Wakeup bot
-  *	/cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>
-  *	/getcelestials - Return the list of your celestials
-  *	/attacked - check if you're (still) under attack
-  *	/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>
-  *	/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>
-  *	/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>
-  *	/minexpecargo - Modify MinPrimaryToSend value inside JSON settings
-  *	/stopexpe - Stop sending expedition
-  *	/startexpe - Start sending expeditio
-  *	/startdefender - start defender
-  *	/stopdefender - stop defender
-  *	/stopautoresearch - stop brain autoresearch
-  *	/startautoresearch - start brain autoresearch
-  *	/stopautomine - stop brain automine
-  *	/startautomine - start brain automine
-  *	/stoplifeformautomine - stop brain Lifeform automine
-  *	/startlifeformautomine - start brain Lifeform automine
-  *	/stoplifeformautoresearch - stop brain Lifeform autoresearch
-  *	/startlifeformautoresearch - start brain Lifeform autoresearch
-  *	/stopautofarm - stop autofarm
-  *	/startautofarm - start autofarm
-  *	/stopautoping - stop telegram autoping
-  *	/startautoping - start telegram autoping [Receive message every X hours]
-  *	/ping - Ping bot
-  *	/help - Display this help
+  * Core Commands
+    * /setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>
+    * /getmain - Get the current TBot instance that Telegram is managing
+    * /listinstances - List TBot main instances
+    * /ping - Ping bot
+    * /stopautoping - stop telegram autoping
+    * /startautoping - start telegram autoping [Receive message every X hours]
+    * /help - Display this help
+  * TBot Main instance commands
+    * /getfleets - Get OnGoing fleets ids (which are not already coming back)
+    * /getcurrentauction - Get current Auction
+    * /bidauction - Bid to current auction if there is one in progress. Format <code>/bidauction 213131 M:1000 C:1000 D:1000</code>
+    * /subscribeauction - Get a notification when next auction will start
+    * /ghostsleep - Wait fleets return, ghost harvest for current celestial only, and sleep for 5hours <code>/ghostsleep 4h3m or 3m50s Harvest</code>
+    * /ghostsleepall - Wait fleets return, ghost harvest for all celestial and sleep for 5hours <code>/ghostsleepall 4h3m or 3m50s Harvest</code>
+    * /ghost - Ghost for the specified amount of hours on the specified mission. Format: <code>/ghost 4h3m or 3m50s Harvest</code>
+    * /ghostmoons - Ghost moons fleet for the specified amount of hours on the specified mission. Format: <code>/ghostto 4h30m Harvest</code>
+    * /switch - Switch current celestial resources and fleets to its planet or moon at the specified speed. Format: <code>/switch 5</code>
+    * /deploy - Deploy to celestial with full ships and resources. Format: <code>/deploy 3:41:9 moon/planet 10</code>
+    * /jumpgate - jumpgate to moon with full ships [full], or keeps needed cargo amount for resources [auto]. Format: <code>/jumpgate 2:41:9 auto/full</code>
+    * /phalanx - use phalanx from moon to destination. Format <code>/phalanx 2:241:9 4:100:1</code>
+    * /cancelghostsleep - Cancel planned /ghostsleep(expe) if not already sent
+    * /spycrash - Create a debris field by crashing a probe on target or automatically selected planet. Format: <code>/spycrash 2:41:9/auto</code>
+    * /recall - Enable/disable fleet auto recall. Format: <code>/recall true/false</code>
+    * /collect - Collect planets resources to JSON setting celestial
+    * /build - Try to build buildable on each planet. Build max possible if no number value sent <code>/build LightFighter [100]</code>
+    * /collectdeut - Collect planets only deut resources -> to JSON repatriate setting celestial
+    * /msg - Send a message to current attacker. Format: <code>/msg hello dude</code>
+    * /sleep - Stop bot for the specified amount of hours. Format: <code>/sleep 4h3m or 3m50s</code>
+    * /wakeup - Wakeup bot\n" +
+    * /cancel - Cancel fleet with specified ID. Format: <code>/cancel 65656</code>
+    * /getcelestials - Return the list of your celestials
+    * /attacked - check if you're (still) under attack
+    * /celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>
+    * /getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>
+    * /editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>
+    * /minexpecargo - Modify MinPrimaryToSend value inside JSON settings
+    * /stopexpe - Stop sending expedition
+    * /startexpe - Start sending expedition
+    * /startdefender - start defender
+    * /stopdefender - stop defender
+    * /stopautoresearch - stop brain autoresearch
+    * /startautoresearch - start brain autoresearch
+    * /stopautomine - stop brain automine
+    * /startautomine - start brain automine
+    * /stoplifeformautomine - stop brain Lifeform automine
+    * /startlifeformautomine - start brain Lifeform automine
+    * /stoplifeformautoresearch - stop brain Lifeform autoresearch
+    * /startlifeformautoresearch - start brain Lifeform autoresearch
+    * /stopautofarm - stop autofarm
+    * /startautofarm - start autofarm
  
 ## Settings Hot Reload
 
