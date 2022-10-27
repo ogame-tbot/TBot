@@ -800,7 +800,8 @@ namespace Tbot.Model {
 
 		public bool IsEmpty() {
 			return LightFighter == 0
-				&& HeavyFighter == 0 && Cruiser == 0
+				&& HeavyFighter == 0
+				&& Cruiser == 0
 				&& Battleship == 0
 				&& Battlecruiser == 0
 				&& Bomber == 0
@@ -815,6 +816,26 @@ namespace Tbot.Model {
 				&& Crawler == 0
 				&& Reaper == 0
 				&& Pathfinder == 0;
+		}
+
+		public bool IsOnlyProbes() {
+			return LightFighter == 0
+				&& HeavyFighter == 0
+				&& Cruiser == 0
+				&& Battleship == 0
+				&& Battlecruiser == 0
+				&& Bomber == 0
+				&& Destroyer == 0
+				&& Deathstar == 0
+				&& SmallCargo == 0
+				&& LargeCargo == 0
+				&& ColonyShip == 0
+				&& Recycler == 0
+				&& SolarSatellite == 0
+				&& Crawler == 0
+				&& Reaper == 0
+				&& Pathfinder == 0
+				&& EspionageProbe != 0;
 		}
 
 		public long GetFleetPoints() {

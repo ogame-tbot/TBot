@@ -4918,6 +4918,10 @@ namespace Tbot.Services {
 				log(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: there are no ships to send");
 				return (int) SendFleetCode.GenericError;
 			}
+			if (mission == Missions.Expedition && ships.IsOnlyProbes()) {
+				log(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: cannot send an expedition with no ships");
+				return (int) SendFleetCode.GenericError;
+			}
 			if (origin.Coordinate.IsSame(destination)) {
 				log(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
 				return (int) SendFleetCode.GenericError;
