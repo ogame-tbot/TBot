@@ -4545,6 +4545,9 @@ namespace Tbot.Services {
 												level = nextLevel;
 												buildable = nextBuildable;
 											}
+											else {
+												break;
+											}
 										} else {
 											break;
 										}
