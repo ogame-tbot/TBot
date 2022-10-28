@@ -2068,48 +2068,69 @@ namespace Tbot.Includes {
 		}
 
 		private static LFBuildables GetLessExpensiveLFBuilding(OgamedService srvc, Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 10) {
+			Resources nextlfcost = new();
+			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			if (lftype == LFTypes.Humans) {
 				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
-							return (LFBuildables) nextbuildable;
+						nextlfcost = srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
+						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
+							Currentlfbuildingcost = nextlfcost;
+							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
+						}
 					}
 				}
+				return lessExpensiveLFBuild;
+
 			} else if (lftype == LFTypes.Rocktal) {
 				foreach (RocktalBuildables nextbuildable in Enum.GetValues<RocktalBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.RuneTechnologium && planet.LFBuildings.RuneTechnologium >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
-							return (LFBuildables) nextbuildable;
+						nextlfcost = srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
+						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
+							Currentlfbuildingcost = nextlfcost;
+							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
+						}
 					}
 				}
+				return lessExpensiveLFBuild;
+
 			} else if (lftype == LFTypes.Mechas) {
 				foreach (MechasBuildables nextbuildable in Enum.GetValues<MechasBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.RoboticsResearchCentre && planet.LFBuildings.RoboticsResearchCentre >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
-							return (LFBuildables) nextbuildable;
+						nextlfcost = srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
+						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
+							Currentlfbuildingcost = nextlfcost;
+							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
+						}
 					}
 				}
+				return lessExpensiveLFBuild;
+
 			} else if (lftype == LFTypes.Kaelesh) {
 				foreach (KaeleshBuildables nextbuildable in Enum.GetValues<KaeleshBuildables>()) {
 					if ((LFBuildables) nextbuildable == LFBuildables.VortexChamber && planet.LFBuildings.VortexChamber >= maxTechFactory)
 						continue;
 					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
 						var nextLFbuildlvl = Helpers.GetNextLevel(planet, (LFBuildables) nextbuildable);
-						if (srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl).TotalResources < Currentlfbuildingcost.TotalResources)
-							return (LFBuildables) nextbuildable;
+						nextlfcost = srvc.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
+						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
+							Currentlfbuildingcost = nextlfcost;
+							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
+						}
 					}
 				}
+				return lessExpensiveLFBuild;
 			}
-			return LFBuildables.None;
+			return lessExpensiveLFBuild;
 		}
 
 		public static LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel) {
@@ -2133,23 +2154,24 @@ namespace Tbot.Includes {
 
 		public static LFTechno GetLessExpensiveLFTechToBuild(OgamedService srvc, Celestial celestial, Resources currentcost, int MaxReasearchLevel) {
 			LFTechno nextLFtech = LFTechno.None;
+			Resource nextLFtechcost = new();
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
 					if (prop.Name == "IntergalacticEnvoys" || next == LFTechno.IntergalacticEnvoys)
 						continue;
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
-						nextLFtech = next;
-						var nextLFtechlvl = Helpers.GetNextLevel(celestial, nextLFtech);
-						Resources newcost = srvc.GetPrice(nextLFtech, nextLFtechlvl);
+						var nextLFtechlvl = Helpers.GetNextLevel(celestial, next);
+						Resources newcost = srvc.GetPrice(next, nextLFtechlvl);
 						if (newcost.TotalResources < currentcost.TotalResources) {
-							return nextLFtech;
+							currentcost = newcost;
+							nextLFtech = next;
 						}
 					}
 
 				}
 
 			}
-			return LFTechno.None;
+			return nextLFtech;
 		}
 
 		public static Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1) {
