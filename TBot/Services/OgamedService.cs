@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-
+using System.Net.Sockets;
 
 namespace Tbot.Services {
 	class OgamedService {
@@ -27,6 +27,18 @@ namespace Tbot.Services {
 			};
 			if (credentials.BasicAuthUsername != "" && credentials.BasicAuthPassword != "") {
 				Client.Authenticator = new RestSharp.Authenticators.HttpBasicAuthenticator(credentials.BasicAuthUsername, credentials.BasicAuthPassword);
+			}
+		}
+
+		public static bool IsPortAvailable(string host, int port = 8080) {
+			using (TcpClient tcpClient = new TcpClient()) {
+				try {
+					tcpClient.Connect(host, port);
+					tcpClient.Close();
+					return false;					
+				} catch (Exception) {
+					return true;
+				}
 			}
 		}
 

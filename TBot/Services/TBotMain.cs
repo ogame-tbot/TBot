@@ -60,9 +60,13 @@ namespace Tbot.Services {
 			try {
 				string host = (string) settings.General.Host ?? "localhost";
 				string port = (string) settings.General.Port ?? "8080";
+				if (!OgamedService.IsPortAvailable(host, int.Parse(port))) {
+					throw new Exception("Port " + port + " is not available");
+				}
+				
 				string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
 				ProxySettings proxy = new();
-				string cookiesPath = "cookies.txt";
+				string cookiesPath = "cookies" + (string) settings.Credentials.Email + ".txt";
 
 				if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
 					log(LogType.Info, LogSender.Tbot, "Initializing proxy");
@@ -189,6 +193,11 @@ namespace Tbot.Services {
 					userData.scheduledFleets = new();
 					userData.farmTargets = new();
 					// UpdateTitle(false);
+
+					if (userData.celestials.Count == 1) {
+						EditSettings(userData.celestials.First());
+						settings = SettingsService.GetSettings(settingsPath);
+					}
 
 					log(LogType.Info, LogSender.Tbot, "Initializing features...");
 					InitializeSleepMode();
@@ -5798,8 +5807,8 @@ namespace Tbot.Services {
 							} else {
 								UpdatePlanet(origin, UpdateTypes.Productions);
 								UpdatePlanet(origin, UpdateTypes.Facilities);
-								if (origin.Productions.Any(p => p.ID == (int) Buildables.ColonyShip)) {
-									log(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.First(p => p.ID == (int) Buildables.ColonyShip).Nbr} colony ship(s) already in production.");
+								if (origin.Productions.Any()) {
+									log(LogType.Info, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.Where(p => p.ID == (int) Buildables.ColonyShip).Sum(p => p.Nbr)} colony ship(s) already in production.");
 									foreach (var prod in origin.Productions) {
 										if (prod == origin.Productions.First()) {
 											interval += (int) Helpers.CalcProductionTime((Buildables) prod.ID, prod.Nbr - 1, userData.serverData, origin.Facilities) * 1000;
@@ -5819,6 +5828,9 @@ namespace Tbot.Services {
 										if (origin.HasConstruction() && (origin.Constructions.BuildingID == (int) Buildables.Shipyard || origin.Constructions.BuildingID == (int) Buildables.NaniteFactory)) {
 											log(LogType.Info, LogSender.Colonize, $"Unable to build colony ship: {((Buildables) origin.Constructions.BuildingID).ToString()} is in construction");
 											interval = (long) origin.Constructions.BuildingCountdown * (long) 1000;
+										} else if (origin.HasProduction()) {
+											log(LogType.Info, LogSender.Colonize, $"Unable to build colony ship: there is already something in production");
+											interval = (long) Helpers.CalcProductionTime((Buildables) origin.Productions.First().ID, origin.Productions.First().Nbr - 1, userData.serverData, origin.Facilities) * 1000;
 										} else if (origin.Facilities.Shipyard >= 4 && userData.researches.ImpulseDrive >= 3) {
 											log(LogType.Info, LogSender.Colonize, $"Building {neededColonizers - origin.Ships.ColonyShip}....");
 											ogamedService.BuildShips(origin, Buildables.ColonyShip, neededColonizers - origin.Ships.ColonyShip);
