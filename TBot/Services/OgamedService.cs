@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Net;
 
 namespace Tbot.Services {
 	class OgamedService {
@@ -31,14 +32,19 @@ namespace Tbot.Services {
 		}
 
 		public static bool IsPortAvailable(string host, int port = 8080) {
-			using (TcpClient tcpClient = new TcpClient()) {
-				try {
-					tcpClient.Connect(host, port);
-					tcpClient.Close();
-					return false;					
-				} catch (Exception) {
-					return true;
-				}
+			try {
+				// Host is not needed. We need to bind locally
+				IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+				var server = new TcpListener(localAddr, port);
+
+				server.Start();	// Should raise exception if not available
+
+				server.Stop();
+
+				return true;
+			} catch (Exception e) {
+				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"PortAvailable({port} Error: {e.Message}");
+				return false;
 			}
 		}
 
