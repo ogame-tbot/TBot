@@ -206,14 +206,18 @@ namespace Tbot {
 				long everyHours = (long) mainSettings.TelegramMessenger.TelegramAutoPing.EveryHours;
 				telegramMessenger.StartAutoPing(everyHours);
 			}
+
 			// Remove / Add instances
 			List<InstanceData> newInstances = new();
 			ICollection json_instances = mainSettings.Instances;
 			// Existing instances will be kept, new one will be created.
 			foreach (var instance in mainSettings.Instances) {
+				// Validate JSON first
 				if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
+					Helpers.WriteLog(LogType.Info, LogSender.Main, "Wrong element found. \"Settings\" and \"Alias\" are not correctly set");
 					continue;
 				}
+
 				string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
 				string alias = instance.Alias;
 
@@ -222,7 +226,7 @@ namespace Tbot {
 					// Already inside our list!
 					newInstances.Add(instances.First(c => c._botSettingsPath == settingsPath));
 				} else {
-					// Initialize new instance
+					// Initialize new instance. StartTBotMain will take care of checking if file exists and enqueueing inside our Collection
 					StartTBotMain(settingsPath, alias, ref newInstances);
 				}
 			}
