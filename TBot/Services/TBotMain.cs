@@ -22,7 +22,7 @@ namespace Tbot.Services {
 		private bool loggedIn = false;
 		private Dictionary<string, Timer> timers;
 		private ConcurrentDictionary<Feature, bool> features;
-		private ConcurrentDictionary<Feature, Semaphore> xaSem = new();
+		private ConcurrentDictionary<Feature, SemaphoreSlim> xaSem = new();
 
 
 		public UserData userData = new();
@@ -46,7 +46,7 @@ namespace Tbot.Services {
 			telegramMessenger = telegramHandler;
 		}
 
-		public bool init() {
+		public async Task<bool> init() {
 			Credentials credentials = new() {
 				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
 				Username = (string) settings.Credentials.Email,
@@ -102,12 +102,12 @@ namespace Tbot.Services {
 			}
 
 			ogamedService.SetUserAgent((string) settings.General.UserAgent);
-			Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
+			await Task.Delay(Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 
 
 			loggedIn = false;
 			loggedIn = ogamedService.Login(out string loginErrMessage);
-			Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+			await Task.Delay(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 
 			if (!loggedIn) {
 				log(LogType.Warning, LogSender.Tbot, $"Unable to login (\"{loginErrMessage}\"). Checking captcha...");
@@ -124,7 +124,7 @@ namespace Tbot.Services {
 						answer = OgameCaptchaSolver.GetCapcthaSolution(captchaChallenge.Icons, captchaChallenge.Question);
 					}
 					ogamedService.SolveCaptcha(captchaChallenge.Id, answer);
-					Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+					await Task.Delay(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 					loggedIn = ogamedService.Login(out loginErrMessage);
 				}
 			}
@@ -153,19 +153,19 @@ namespace Tbot.Services {
 
 					timers = new Dictionary<string, Timer>();
 
-					xaSem[Feature.Defender] = new Semaphore(1, 1);
-					xaSem[Feature.Brain] = new Semaphore(1, 1);
-					xaSem[Feature.BrainAutobuildCargo] = new Semaphore(1, 1);
-					xaSem[Feature.BrainAutoRepatriate] = new Semaphore(1, 1);
-					xaSem[Feature.BrainAutoMine] = new Semaphore(1, 1);
-					xaSem[Feature.BrainLifeformAutoMine] = new Semaphore(1, 1);
-					xaSem[Feature.BrainOfferOfTheDay] = new Semaphore(1, 1);
-					xaSem[Feature.AutoFarm] = new Semaphore(1, 1);
-					xaSem[Feature.Expeditions] = new Semaphore(1, 1);
-					xaSem[Feature.Harvest] = new Semaphore(1, 1);
-					xaSem[Feature.Colonize] = new Semaphore(1, 1);
-					xaSem[Feature.FleetScheduler] = new Semaphore(1, 1);
-					xaSem[Feature.SleepMode] = new Semaphore(1, 1);
+					xaSem[Feature.Defender] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.Brain] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.BrainAutobuildCargo] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.BrainAutoRepatriate] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.BrainAutoMine] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.BrainLifeformAutoMine] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.BrainOfferOfTheDay] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.AutoFarm] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.Expeditions] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.Harvest] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.Colonize] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.FleetScheduler] = new SemaphoreSlim(1, 1);
+					xaSem[Feature.SleepMode] = new SemaphoreSlim(1, 1);
 
 					features = new();
 					InitializeFeatures(new List<Feature>() {
@@ -195,7 +195,7 @@ namespace Tbot.Services {
 					// UpdateTitle(false);
 
 					if (userData.celestials.Count == 1) {
-						EditSettings(userData.celestials.First());
+						await EditSettings(userData.celestials.First());
 						settings = SettingsService.GetSettings(settingsPath);
 					}
 
@@ -218,26 +218,36 @@ namespace Tbot.Services {
 			}
 		}
 
-		public void deinit() {
+		public async void deinit() {
 			log(LogType.Info, LogSender.Tbot, "Deinitializing instance...");
 
 			settingsWatcher.deinitWatch();
 
-			if (ogamedService != null) {
-				if (loggedIn) {
-					loggedIn = false;
-					ogamedService.Logout();
-				}
-
-				ogamedService.KillOgamedExecutable();
-				ogamedService = null;
+			foreach (var sem in xaSem) {
+				log(LogType.Info, LogSender.Tbot, $"Deinitializing feature {sem.Key.ToString()}");
+				await sem.Value.WaitAsync();
 			}
 
+			log(LogType.Info, LogSender.Tbot, "Deinitializing timers...");
 			foreach (KeyValuePair<string, Timer> entry in timers) {
 				log(LogType.Info, LogSender.Tbot, $"Disposing timer \"{entry.Key}\"");
 				entry.Value.Dispose();
 			}
 			timers.Clear();
+
+			log(LogType.Info, LogSender.Tbot, "Deinitializing ogamed...");
+			if (ogamedService != null) {
+				if (loggedIn) {
+					loggedIn = false;
+					log(LogType.Info, LogSender.Tbot, "Logging out");
+					ogamedService.Logout();
+				}
+
+				log(LogType.Info, LogSender.Tbot, "Killing ogamed instance");
+				ogamedService.KillOgamedExecutable();
+				ogamedService = null;
+			}
+
 			log(LogType.Info, LogSender.Tbot, "Deinitialization completed");
 		}
 
@@ -479,8 +489,8 @@ namespace Tbot.Services {
 			}
 		}
 
-		public bool EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
-			System.Threading.Thread.Sleep(500);
+		public async Task<bool> EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
+			await Task.Delay(500);
 			var file = System.IO.File.ReadAllText(Path.GetFullPath(settingsPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
@@ -541,11 +551,13 @@ namespace Tbot.Services {
 		}
 
 		public void WaitFeature() {
-			xaSem[Feature.Brain].WaitOne();
-			xaSem[Feature.Expeditions].WaitOne();
-			xaSem[Feature.Harvest].WaitOne();
-			xaSem[Feature.Colonize].WaitOne();
-			xaSem[Feature.AutoFarm].WaitOne();
+			Task.WaitAll(
+				xaSem[Feature.Brain].WaitAsync(),
+				xaSem[Feature.Expeditions].WaitAsync(),
+				xaSem[Feature.Harvest].WaitAsync(),
+				xaSem[Feature.Colonize].WaitAsync(),
+				xaSem[Feature.AutoFarm].WaitAsync());
+			
 		}
 
 		public void releaseFeature() {
@@ -556,28 +568,36 @@ namespace Tbot.Services {
 			xaSem[Feature.AutoFarm].Release();
 		}
 
-		private void OnSettingsChanged() {
+		private async void OnSettingsChanged() {
 
 			log(LogType.Info, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
-			xaSem[Feature.Defender].WaitOne();
-			xaSem[Feature.Brain].WaitOne();
-			xaSem[Feature.Expeditions].WaitOne();
-			xaSem[Feature.Harvest].WaitOne();
-			xaSem[Feature.Colonize].WaitOne();
-			xaSem[Feature.AutoFarm].WaitOne();
-			xaSem[Feature.SleepMode].WaitOne();
+			List<Feature> featuresToHandle = new List<Feature>{
+				Feature.Defender,
+				Feature.Brain,
+				Feature.Expeditions,
+				Feature.Harvest,
+				Feature.Colonize,
+				Feature.AutoFarm,
+				Feature.SleepMode
+			};
+
+			// Wait on feature to be locked
+			foreach(var feature in featuresToHandle) {
+				log(LogType.Info, LogSender.Tbot, $"Waiting on feature {feature.ToString()}...");
+				await xaSem[feature].WaitAsync();
+				log(LogType.Info, LogSender.Tbot, $"Feature {feature.ToString()} locked for settings reload!");
+			}
 
 			log(LogType.Info, LogSender.Tbot, "Reloading Settings file");
 			settings = SettingsService.GetSettings(settingsPath);
 
-			xaSem[Feature.Defender].Release();
-			xaSem[Feature.Brain].Release();
-			xaSem[Feature.Expeditions].Release();
-			xaSem[Feature.Harvest].Release();
-			xaSem[Feature.Colonize].Release();
-			xaSem[Feature.AutoFarm].Release();
-			xaSem[Feature.SleepMode].Release();
+			// Release features lock!
+			foreach (var feature in featuresToHandle) {
+				log(LogType.Info, LogSender.Tbot, $"Unlocking feature {feature.ToString()}...");
+				xaSem[feature].Release();
+				log(LogType.Info, LogSender.Tbot, $"Feature {feature.ToString()} unlocked!");
+			}
 
 			InitializeSleepMode();
 		}
@@ -1491,7 +1511,7 @@ namespace Tbot.Services {
 			return false;
 		}
 
-		public void TelegramSetCurrentCelestial(Coordinate coord, string celestialType, Feature updateType = Feature.Null, bool editsettings = false) {
+		public async void TelegramSetCurrentCelestial(Coordinate coord, string celestialType, Feature updateType = Feature.Null, bool editsettings = false) {
 			userData.celestials = UpdateCelestials();
 
 			//check if no error in submitted celestial (belongs to the current player)
@@ -1508,7 +1528,7 @@ namespace Tbot.Services {
 				return;
 			}
 			if (editsettings) {
-				EditSettings(telegramUserData.CurrentCelestial, updateType);
+				await EditSettings(telegramUserData.CurrentCelestial, updateType);
 				SendTelegramMessage($"JSON settings updated to: {telegramUserData.CurrentCelestial.Coordinate.ToString()}\nWait few seconds for Bot to reload before sending commands.");
 			} else {
 				SendTelegramMessage($"Main celestial successfuly updated to {telegramUserData.CurrentCelestial.Coordinate.ToString()}");
@@ -2441,10 +2461,10 @@ namespace Tbot.Services {
 			return;
 		}
 
-		private void Defender(object state) {
+		private async void Defender(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Defender].WaitOne();
+				await xaSem[Feature.Defender].WaitAsync();
 				log(LogType.Info, LogSender.Defender, "Checking attacks...");
 
 				if (userData.isSleeping) {
@@ -2459,7 +2479,7 @@ namespace Tbot.Services {
 				DateTime time = GetDateTime();
 				if (isUnderAttack) {
 					if ((bool) settings.Defender.Alarm.Active)
-						Task.Factory.StartNew(() => Helpers.PlayAlarm());
+						await Task.Factory.StartNew(() => Helpers.PlayAlarm());
 					// UpdateTitle(false, true);
 					log(LogType.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
 					userData.attacks = ogamedService.GetAttacks();
@@ -2491,11 +2511,11 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void BuyOfferOfTheDay(object state) {
+		private async void BuyOfferOfTheDay(object state) {
 			bool stop = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 
 				if (userData.isSleeping) {
 					log(LogType.Info, LogSender.Brain, "Skipping: Sleep Mode Active!");
@@ -2541,13 +2561,13 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void AutoResearch(object state) {
+		private async void AutoResearch(object state) {
 			int fleetId = (int) SendFleetCode.GenericError;
 			bool stop = false;
 			bool delay = false;
 			long delayResearch = 0;
 			try {
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Running autoresearch...");
 
 				if (userData.isSleeping) {
@@ -2791,11 +2811,11 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void AutoFarm(object state) {
+		private async void AutoFarm(object state) {
 			bool stop = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.AutoFarm].WaitOne();
+				await xaSem[Feature.AutoFarm].WaitAsync();
 
 				log(LogType.Info, LogSender.AutoFarm, "Running autofarm...");
 
@@ -2996,7 +3016,7 @@ namespace Tbot.Services {
 															if (probesCount >= neededProbes) {
 																int interval = (int) ((1000 * returningFleets[i].BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 																log(LogType.Info, LogSender.AutoFarm, $"Waiting for probes to return...");
-																Thread.Sleep(interval);
+																await Task.Delay(interval);
 																freeSlots++;
 																break;
 															}
@@ -3020,7 +3040,7 @@ namespace Tbot.Services {
 												if (userData.fleets.Any()) {
 													int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + Helpers.CalcRandomInterval(IntervalType.LessThanASecond));
 													log(LogType.Info, LogSender.AutoFarm, $"Out of fleet slots. Waiting for fleet to return...");
-													Thread.Sleep(interval);
+													await Task.Delay(interval);
 													userData.slots = UpdateSlots();
 													freeSlots = userData.slots.Free;
 												} else {
@@ -3091,7 +3111,7 @@ namespace Tbot.Services {
 														tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
 														int interval = (int) (Helpers.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, userData.serverData, tempCelestial.Facilities) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
 														log(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
-														Thread.Sleep(interval);
+														await Task.Delay(interval);
 													} else {
 														log(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 													}
@@ -3114,7 +3134,7 @@ namespace Tbot.Services {
 						if (firstReturning != null) {
 							int interval = (int) ((1000 * firstReturning.BackIn) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
 							log(LogType.Info, LogSender.AutoFarm, $"Waiting for probes to return...");
-							Thread.Sleep(interval);
+							await Task.Delay(interval);
 						}
 
 						log(LogType.Info, LogSender.AutoFarm, "Processing espionage reports of found inactives...");
@@ -3287,7 +3307,7 @@ namespace Tbot.Services {
 												tempCelestial = UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
 												int interval = (int) (Helpers.CalcProductionTime(cargoShip, (int) neededCargos, userData.serverData, tempCelestial.Facilities) + Helpers.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
 												log(LogType.Info, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
-												Thread.Sleep(interval);
+												await Task.Delay(interval);
 											} else {
 												log(LogType.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 											}
@@ -3326,7 +3346,7 @@ namespace Tbot.Services {
 										return;
 									} else {
 										log(LogType.Info, LogSender.AutoFarm, "Out of fleet slots. Waiting for first fleet to return...");
-										Thread.Sleep(interval);
+										await Task.Delay(interval);
 										userData.slots = UpdateSlots();
 										freeSlots = userData.slots.Free;
 									}
@@ -3488,10 +3508,10 @@ namespace Tbot.Services {
 			ogamedService.DeleteAllEspionageReports();
 		}
 
-		private void AutoMine(object state) {
+		private async void AutoMine(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Running automine...");
 
 				if (userData.isSleeping) {
@@ -3901,10 +3921,10 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void LifeformAutoResearch(object state) {
+		private async void LifeformAutoResearch(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Running Lifeform autoresearch...");
 
 				if (userData.isSleeping) {
@@ -4130,10 +4150,10 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void LifeformAutoMine(object state) {
+		private async void LifeformAutoMine(object state) {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Running Lifeform automine...");
 
 				if (userData.isSleeping) {
@@ -4624,11 +4644,11 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void AutoBuildCargo(object state) {
+		private async void AutoBuildCargo(object state) {
 			bool stop = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Running autocargo...");
 
 				if (userData.isSleeping) {
@@ -4756,12 +4776,12 @@ namespace Tbot.Services {
 			}
 		}
 
-		public void AutoRepatriate(object state) {
+		public async void AutoRepatriate(object state) {
 			bool stop = false;
 			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Brain].WaitOne();
+				await xaSem[Feature.Brain].WaitAsync();
 				log(LogType.Info, LogSender.Brain, "Repatriating resources...");
 
 				if (userData.isSleeping) {
@@ -5053,12 +5073,12 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void CancelFleet(Fleet fleet) {
+		private async void CancelFleet(Fleet fleet) {
 			//log(LogType.Info, LogSender.FleetScheduler, $"Recalling fleet id {fleet.ID} originally from {fleet.Origin.ToString()} to {fleet.Destination.ToString()} with mission: {fleet.Mission.ToString()}. Start time: {fleet.StartTime.ToString()} - Arrival time: {fleet.ArrivalTime.ToString()} - Ships: {fleet.Ships.ToString()}");
 			userData.slots = UpdateSlots();
 			try {
 				ogamedService.CancelFleet(fleet);
-				Thread.Sleep((int) IntervalType.AFewSeconds);
+				await Task.Delay((int) IntervalType.AFewSeconds);
 				userData.fleets = UpdateFleets();
 				Fleet recalledFleet = userData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
 				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
@@ -5117,7 +5137,7 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void HandleAttack(AttackerFleet attack) {
+		private async void HandleAttack(AttackerFleet attack) {
 			if (userData.celestials.Count() == 0) {
 				DateTime time = GetDateTime();
 				long interval = Helpers.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -5180,12 +5200,12 @@ namespace Tbot.Services {
 			if ((bool) settings.Defender.TelegramMessenger.Active) {
 				SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
-					Thread.Sleep(1000);
+					await Task.Delay(1000);
 				SendTelegramMessage($"The attack is composed by: {attack.Ships.ToString()}");
 			}
 			log(LogType.Warning, LogSender.Defender, $"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attackedCelestial.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 			if (attack.Ships != null)
-				Thread.Sleep(1000);
+				await Task.Delay(1000);
 			log(LogType.Warning, LogSender.Defender, $"The attack is composed by: {attack.Ships.ToString()}");
 
 			if ((bool) settings.Defender.SpyAttacker.Active) {
@@ -5234,12 +5254,12 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void HandleExpeditions(object state) {
+		private async void HandleExpeditions(object state) {
 			bool stop = false;
 			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Expeditions].WaitOne();
+				await xaSem[Feature.Expeditions].WaitAsync();
 				long interval;
 				DateTime time;
 				DateTime newTime;
@@ -5463,7 +5483,7 @@ namespace Tbot.Services {
 													delay = true;
 													return;
 												}
-												Thread.Sleep((int) IntervalType.AFewSeconds);
+												await Task.Delay((int) IntervalType.AFewSeconds);
 											} else {
 												log(LogType.Info, LogSender.Expeditions, "Unable to send expeditions: no expedition slots available.");
 												break;
@@ -5540,12 +5560,12 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void HandleHarvest(object state) {
+		private async void HandleHarvest(object state) {
 			bool stop = false;
 			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Harvest].WaitOne();
+				await xaSem[Feature.Harvest].WaitAsync();
 
 				if (userData.isSleeping) {
 					log(LogType.Info, LogSender.Harvest, "Skipping: Sleep Mode Active!");
@@ -5718,12 +5738,12 @@ namespace Tbot.Services {
 				}
 			}
 		}
-		private void HandleColonize(object state) {
+		private async void HandleColonize(object state) {
 			bool stop = false;
 			bool delay = false;
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
-				xaSem[Feature.Colonize].WaitOne();
+				await xaSem[Feature.Colonize].WaitAsync();
 
 				if (userData.isSleeping) {
 					log(LogType.Info, LogSender.Colonize, "Skipping: Sleep Mode Active!");
@@ -5892,10 +5912,10 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void ScheduleFleet(object scheduledFleet) {
+		private async void ScheduleFleet(object scheduledFleet) {
 			FleetSchedule _scheduledFleet = scheduledFleet as FleetSchedule;
 			try {
-				xaSem[Feature.FleetScheduler].WaitOne();
+				await xaSem[Feature.FleetScheduler].WaitAsync();
 				userData.scheduledFleets.Add(_scheduledFleet);
 				SendFleet(_scheduledFleet.Origin, _scheduledFleet.Ships, _scheduledFleet.Destination, _scheduledFleet.Mission, _scheduledFleet.Speed, _scheduledFleet.Payload, userData.userInfo.Class);
 			} catch (Exception e) {
@@ -5912,10 +5932,10 @@ namespace Tbot.Services {
 			}
 		}
 
-		private void HandleScheduledFleet(object scheduledFleet) {
+		private async void HandleScheduledFleet(object scheduledFleet) {
 			FleetSchedule _scheduledFleet = scheduledFleet as FleetSchedule;
 			try {
-				xaSem[Feature.FleetScheduler].WaitOne();
+				await xaSem[Feature.FleetScheduler].WaitAsync();
 				SendFleet(_scheduledFleet.Origin, _scheduledFleet.Ships, _scheduledFleet.Destination, _scheduledFleet.Mission, _scheduledFleet.Speed, _scheduledFleet.Payload, userData.userInfo.Class);
 			} catch (Exception e) {
 				log(LogType.Warning, LogSender.FleetScheduler, $"HandleScheduledFleet exception: {e.Message}");

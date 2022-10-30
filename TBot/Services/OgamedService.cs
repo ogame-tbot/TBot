@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace Tbot.Services {
 	class OgamedService {
@@ -121,9 +122,9 @@ namespace Tbot.Services {
 			ogamedProcess = null;
 		}
 
-		public void KillOgamedExecutable() {
+		public void KillOgamedExecutable(CancellationToken ct = default) {
 			if (ogamedProcess != null) {
-				ogamedProcess.Close();
+				ogamedProcess.Kill();
 				ogamedProcess.Dispose();
 				ogamedProcess = null;
 			}

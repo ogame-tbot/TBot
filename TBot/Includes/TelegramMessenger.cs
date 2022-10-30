@@ -20,11 +20,14 @@ namespace Tbot.Includes {
 		public string Channel { get; private set; }
 		public ITelegramBotClient Client { get; set; }
 
+		CancellationTokenSource cts;
+		CancellationToken ct;
+
 		private List<TBotMain> instances = new();
 		private int currInstanceIndex = -1;
 
 		private Timer autoPingTimer;
-		private Semaphore pingSem;
+		private SemaphoreSlim pingSem;
 		private long pingHours;
 		private DateTime startTime = DateTime.UtcNow;
 
@@ -44,7 +47,7 @@ namespace Tbot.Includes {
 			StopAutoPing();
 
 			pingHours = everyHours;
-			pingSem = new Semaphore(1, 1);
+			pingSem = new SemaphoreSlim(1, 1);
 			autoPingTimer = new Timer(AutoPing, null, nextping, Timeout.Infinite);
 		}
 
@@ -59,8 +62,8 @@ namespace Tbot.Includes {
 				pingSem = null;
 			}
 		}
-		private void AutoPing(object state) {
-			pingSem.WaitOne();
+		private async void AutoPing(object state) {
+			await pingSem.WaitAsync();
 			DateTime now = DateTime.UtcNow;
 			TimeSpan upTime = now - startTime;
 			DateTime roundedNextHour = now.AddHours(pingHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
@@ -103,13 +106,24 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public async void SendMessage(string message, ParseMode parseMode = ParseMode.Html) {
+		public async void SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
 			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Sending Telegram message...");
 			try {
-				await Client.SendTextMessageAsync(Channel, message, parseMode);
+				await Client.SendTextMessageAsync(
+					chatId:Channel,
+					text: message,
+					parseMode: parseMode,
+					cancellationToken: cancellationToken);
 			} catch (Exception e) {
 				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
+		}
+
+		public async void SendTyping(CancellationToken cancellationToken) {
+			await Client.SendChatActionAsync(
+				chatId: Channel,
+				chatAction: ChatAction.Typing,
+				cancellationToken: cancellationToken);
 		}
 
 		public async void SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
@@ -368,11 +382,10 @@ namespace Tbot.Includes {
 								return;
 
 							case ("/bidauction"):
-								if(args.Length == 1) {
+								if (args.Length == 1) {
 									// Bid minimum amount
 									currInstance.TelegramBidAuctionMinimum();
-								}
-								else if (args.Length < 3) {
+								} else if (args.Length < 3) {
 									SendMessage(botClient, message.Chat,
 										"To bid auction must format: <code>/bidauction 33651579 M:1000 C:1000 D:1000 </code> \n" +
 										"Or <code>/bidauction</code> to bid minimum amount to take auction", ParseMode.Html);
@@ -392,7 +405,7 @@ namespace Tbot.Includes {
 										SendMessage(botClient, message.Chat, $"Error parsing bid auction command \"{e.Message}\"");
 									}
 								}
-	
+
 								return;
 
 
@@ -454,7 +467,7 @@ namespace Tbot.Includes {
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
-											Thread.Sleep(Helpers.CalcRandomInterval(IntervalType.AFewSeconds));
+											await Task.Delay(Helpers.CalcRandomInterval(IntervalType.AFewSeconds), cancellationToken);
 									}
 									SendMessage(botClient, message.Chat, "Moons FleetSave done!");
 								} else {
@@ -619,7 +632,7 @@ namespace Tbot.Includes {
 								if (myCelestials.Count > 0) {
 									SendMessage(botClient, message.Chat, $"Phalanx from \"{myCelestials[0].Coordinate.ToString()}\" to \"{target.ToString()}\"");
 									currInstance.TelegramPhalanx(myCelestials[0], target);
-									
+
 								} else {
 									SendMessage(botClient, message.Chat, $"Origin coordinate \"{coord.ToString()}\" is not a Moon or does not belong to us!");
 								}
@@ -647,8 +660,7 @@ namespace Tbot.Includes {
 								}
 								if (Buildables.TryParse(message.Text.Split(' ')[1], out buildable)) {
 									currInstance.TelegramBuild(buildable, number);
-								}
-								else {
+								} else {
 									SendMessage(botClient, message.Chat, "Error while parsing buildable value!");
 									return;
 								}
@@ -689,7 +701,7 @@ namespace Tbot.Includes {
 								}
 								string recall = message.Text.Split(' ')[1];
 
-								if (currInstance.EditSettings(null, Feature.Null, recall))
+								if (await currInstance.EditSettings(null, Feature.Null, recall))
 									SendMessage(botClient, message.Chat, $"Recall value updated to {recall}.");
 								return;
 
@@ -740,7 +752,7 @@ namespace Tbot.Includes {
 
 								arg = message.Text.Split(' ')[1];
 								int cargo = Int32.Parse(arg);
-								if (currInstance.EditSettings(null, Feature.Null, string.Empty, cargo))
+								if (await currInstance.EditSettings(null, Feature.Null, string.Empty, cargo))
 									SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
 								return;
 
@@ -929,9 +941,9 @@ namespace Tbot.Includes {
 								if (args.Length == 1) {
 									celestial = currInstance.TelegramGetCurrentCelestial();
 									currInstance.TelegramGetInfo(celestial);
-									
+
 									return;
-								} else if((args.Length == 2)) {
+								} else if ((args.Length == 2)) {
 									myCelestials = currInstance.userData.celestials.ToList();
 									// Try celestial ID first
 									try {
@@ -945,25 +957,24 @@ namespace Tbot.Includes {
 											$"Error:{e.Message}");
 									}
 									return;
-								} else if((args.Length == 3)) {
+								} else if ((args.Length == 3)) {
 									myCelestials = currInstance.userData.celestials.ToList();
 									// Try format Galaxy:System:Position (Moon|Planet)
 									try {
 										coord = Coordinate.FromString(String.Join(' ', args.Skip(1)));
 										celestial = myCelestials.Single(c => c.Coordinate.IsSame(coord));
 										currInstance.TelegramGetInfo(celestial);
-										
+
 									} catch (Exception e) {
 										SendMessage(botClient, message.Chat,
 											$"Invalid arguments specified for Format <code>/getinfo 2:48:5 Moon/Planet</code>\n" +
 											$"Error:{e.Message}");
-									}									
-								}
-								else {
+									}
+								} else {
 									SendMessage(botClient, message.Chat, "Invalid number of argument specified for current command");
 								}
 
-								
+
 								return;
 
 
@@ -1093,7 +1104,7 @@ namespace Tbot.Includes {
 								}
 								myCelestials = currInstance.userData.celestials.ToList();
 								string celestialStr = "";
-								foreach(Celestial c in myCelestials) {
+								foreach (Celestial c in myCelestials) {
 									celestialStr += $"{c.Name.PadRight(16, ' ')} {c.Coordinate.ToString().PadRight(16)} {c.ID}\n";
 								}
 								SendMessage(botClient, message.Chat, celestialStr);
@@ -1113,6 +1124,10 @@ namespace Tbot.Includes {
 
 					} catch (NullReferenceException) {
 						SendMessage(botClient, message.Chat, $"NullReferenceException Error!\n Something unknown went wrong!\nTry /ping to check if bot still alive!");
+						return;
+
+					} catch(OperationCanceledException) when (cancellationToken.IsCancellationRequested == true) {
+						SendMessage(botClient, message.Chat, $"OperationCanceledException Maybe TelegramMessenger has been disabled.");
 						return;
 
 					} catch (Exception) {
@@ -1136,17 +1151,24 @@ namespace Tbot.Includes {
 
 		public async void TelegramBot() {
 			try {
-				var cts = new CancellationTokenSource();
-				var cancellationToken = cts.Token;
+				cts = new CancellationTokenSource();
+				ct = cts.Token;
 
 				var receiverOptions = new ReceiverOptions {
 					AllowedUpdates = Array.Empty<UpdateType>(),
 					ThrowPendingUpdates = true
 				};
 
-				await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cts.Token);
+				await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, ct);
 			}
 			catch { }
+		}
+
+		public void TelegramBotDisable() {
+			if (Client != null) {
+				cts.Cancel();
+			}
+			// We should wait for ReceiveAsync to be dismissed
 		}
 	}
 }
