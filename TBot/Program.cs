@@ -101,7 +101,7 @@ namespace Tbot {
 			List<Task> deinitTasks = new();
 			foreach (var instance in instances) {
 				LoggerService.Logger.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
-				deinitTasks.Add(instance._botMain.deinit());
+				deinitTasks.Add(instance._botMain.DisposeAsync().AsTask());
 			}
 			Task.WaitAll(deinitTasks.ToArray());
 			LoggerService.Logger.WriteLog(LogType.Info, LogSender.Main, "Goodbye!");
@@ -246,12 +246,16 @@ namespace Tbot {
 				}
 
 				// Deinitialize instances that are no more valid
-				foreach (var instance in instances) {
-					if (newInstances.Any(c => c._botSettingsPath == instance._botSettingsPath) == false) {
-						LoggerService.Logger.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
+				List<Task> deinitingInstances = new();
+				foreach (var deInstance in instances) {
+					if (newInstances.Any(c => c._botSettingsPath == deInstance._botSettingsPath) == false) {
+						LoggerService.Logger.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{deInstance._alias}\" \"{deInstance._botSettingsPath}\"");
 
-						await instance._botMain.deinit();
+						deinitingInstances.Add(deInstance._botMain.DisposeAsync().AsTask());
 					}
+				}
+				foreach(var deInstance in deinitingInstances) {
+					await deInstance;
 				}
 
 				// Now Async initialize "validated" instances
@@ -274,6 +278,8 @@ namespace Tbot {
 				// Finally, swap lists
 				instances.Clear();
 				instances = newInstances;
+
+				LoggerService.Logger.WriteLog(LogType.Info, LogSender.Main, $"Instances stats: Initialized {instances.Count} - Deinitialized {deinitingInstances.Count}");
 
 				// Initialize settingsWatcher 
 				if (settingsWatcher == null)

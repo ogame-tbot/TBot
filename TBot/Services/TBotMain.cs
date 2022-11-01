@@ -17,7 +17,7 @@ using Telegram.Bot.Types.Enums;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Tbot.Services {
-	class TBotMain : IEquatable<TBotMain> {
+	class TBotMain : IEquatable<TBotMain>, IAsyncDisposable {
 		private OgamedService ogamedService;
 		private bool loggedIn = false;
 		private Dictionary<string, Timer> timers;
@@ -39,7 +39,7 @@ namespace Tbot.Services {
 		private dynamic settings;
 		private TelegramMessenger telegramMessenger;
 
-		public TBotMain(string settingPath, string alias, TelegramMessenger telegramHandler)  {
+		public TBotMain(string settingPath, string alias, TelegramMessenger telegramHandler) {
 			settingsPath = settingPath;
 			instanceAlias = alias;
 			settings = SettingsService.GetSettings(settingPath);
@@ -219,7 +219,7 @@ namespace Tbot.Services {
 			}
 		}
 
-		public async Task deinit() {
+		public async ValueTask DisposeAsync() {
 			log(LogType.Info, LogSender.Tbot, "Deinitializing instance...");
 
 			settingsWatcher.deinitWatch();
@@ -255,6 +255,8 @@ namespace Tbot.Services {
 			}
 
 			log(LogType.Info, LogSender.Tbot, "Deinitialization completed");
+
+			GC.SuppressFinalize(this);
 		}
 
 		public bool Equals(TBotMain other) {
