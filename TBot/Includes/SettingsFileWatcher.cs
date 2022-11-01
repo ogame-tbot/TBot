@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
@@ -12,6 +13,7 @@ namespace Tbot.Includes {
 
 		private Action _watchFunc;
 		private string _absFpToWatch;
+		private SemaphoreSlim _changedSem = new SemaphoreSlim(1, 1);
 		private PhysicalFileProvider p;
 		private IChangeToken changeToken;
 		private IDisposable changeCallback;
@@ -36,9 +38,11 @@ namespace Tbot.Includes {
 			}
 		}
 
-		private void onChanged(object state) {
+		private async void onChanged(object state) {
 
+			await _changedSem.WaitAsync();
 			_watchFunc();
+			_changedSem.Release();
 
 			initWatch();
 		}

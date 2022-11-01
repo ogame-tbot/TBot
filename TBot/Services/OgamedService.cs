@@ -44,7 +44,7 @@ namespace Tbot.Services {
 
 				return true;
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"PortAvailable({port} Error: {e.Message}");
+				LoggerService.Logger.WriteLog(LogType.Info, LogSender.OGameD, $"PortAvailable({port} Error: {e.Message}");
 				return false;
 			}
 		}
@@ -93,10 +93,10 @@ namespace Tbot.Services {
 				ogameProc.Start();
 				ogameProc.BeginErrorReadLine();
 				ogameProc.BeginOutputReadLine();
-				Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
+				LoggerService.Logger.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 				ogamedProcess = ogameProc;
 			} catch {
-				Helpers.WriteLog(LogType.Info, LogSender.OGameD, "Error executing ogamed instance");
+				LoggerService.Logger.WriteLog(LogType.Info, LogSender.OGameD, "Error executing ogamed instance");
 				Environment.Exit(0);
 			}
 		}
@@ -112,11 +112,11 @@ namespace Tbot.Services {
 		}
 
 		private void dump_ogamedProcess_Log(bool isErr, string payload) {
-			Helpers.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[{userName}] \"{payload}\"");
+			LoggerService.Logger.WriteLog(isErr ? LogType.Error : LogType.Info, LogSender.OGameD, $"[{userName}] \"{payload}\"");
 		}
 
 		private void handle_ogamedProcess_Exited(object sender, EventArgs e) {
-			Helpers.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Exited {ogamedProcess.ExitCode}" +
+			LoggerService.Logger.WriteLog(LogType.Info, LogSender.OGameD, $"OgameD Exited {ogamedProcess.ExitCode}" +
 				$" TotalTime(ms) {Math.Round((ogamedProcess.ExitTime - ogamedProcess.StartTime).TotalMilliseconds)}");
 			ogamedProcess.Dispose();
 			ogamedProcess = null;

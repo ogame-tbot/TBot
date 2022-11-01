@@ -33,8 +33,9 @@ namespace Tbot.Services {
 		public DateTime startTime = DateTime.UtcNow;
 		public SettingsFileWatcher settingsWatcher;
 
-		private string settingsPath;
-		private string instanceAlias;
+		public string settingsPath { get; private set; } = "";
+		public string instanceAlias { get; private set; } = "Main";
+
 		private dynamic settings;
 		private TelegramMessenger telegramMessenger;
 
@@ -146,7 +147,7 @@ namespace Tbot.Services {
 
 				if (!ogamedService.IsVacationMode()) {
 					if (telegramMessenger != null) {
-						telegramMessenger.AddTbotInstance(this);
+						telegramMessenger.AddTBotInstance(this);
 					}
 					userData.lastDOIR = 0;
 					userData.nextDOIR = 0;
@@ -218,10 +219,15 @@ namespace Tbot.Services {
 			}
 		}
 
-		public async void deinit() {
+		public async Task deinit() {
 			log(LogType.Info, LogSender.Tbot, "Deinitializing instance...");
 
 			settingsWatcher.deinitWatch();
+
+			if (telegramMessenger != null) {
+				log(LogType.Info, LogSender.Tbot, "Removing instance from telegram...");
+				telegramMessenger.RemoveTBotInstance(this);
+			}
 
 			foreach (var sem in xaSem) {
 				log(LogType.Info, LogSender.Tbot, $"Deinitializing feature {sem.Key.ToString()}");
@@ -259,9 +265,9 @@ namespace Tbot.Services {
 
 		private void log(LogType type, LogSender sender, string format) {
 			if(loggedIn && (userData.userInfo != null) && (userData.serverData != null) )
-				Helpers.WriteLog(type, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
+				LoggerService.Logger.WriteLog(type, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
 			else
-				Helpers.WriteLog(type, sender, $"[{instanceAlias}] {format}");
+				LoggerService.Logger.WriteLog(type, sender, $"[{instanceAlias}] {format}");
 		}
 
 		private bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -582,7 +588,7 @@ namespace Tbot.Services {
 				Feature.SleepMode
 			};
 
-			// Wait on feature to be locked
+			// Wait on features to be locked
 			foreach(var feature in featuresToHandle) {
 				log(LogType.Info, LogSender.Tbot, $"Waiting on feature {feature.ToString()}...");
 				await xaSem[feature].WaitAsync();
@@ -1089,7 +1095,7 @@ namespace Tbot.Services {
 			if(telegramMessenger != null) {
 				string finalStr = $"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code>\n" +
 					fmt;
-				telegramMessenger.SendMessage(finalStr);
+				telegramMessenger.SendMessage(finalStr).Wait();
 			}
 		}
 
@@ -2372,7 +2378,7 @@ namespace Tbot.Services {
 							try {
 								AutoFleetSave(celestial, true);
 							} catch (Exception e) {
-								Helpers.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
+								LoggerService.Logger.WriteLog(LogType.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
 							}
 						}
 					}
@@ -5050,7 +5056,7 @@ namespace Tbot.Services {
 			userData.slots = UpdateSlots();
 			int slotsToLeaveFree = (int) settings.General.SlotsToLeaveFree;
 			if (userData.slots.Free == 0) {
-				Helpers.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				LoggerService.Logger.WriteLog(LogType.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
 				return (int) SendFleetCode.NotEnoughSlots;
 			}
 			else if (userData.slots.Free > slotsToLeaveFree || force) {
