@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using Tbot.Includes;
-using TBot.Common;
+using TBot.Common.Logging;
 using TBot.Model;
 using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
@@ -278,9 +278,11 @@ namespace Tbot.Services {
 
 		private void log(LogLevel logLevel, LogSender sender, string format) {
 			if (loggedIn && (userData.userInfo != null) && (userData.serverData != null))
-				_logger.Log(logLevel, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
+				_logger.WriteLog(logLevel, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
+			else if (instanceAlias != "MAIN")
+				_logger.WriteLog(logLevel, sender, $"[{instanceAlias}] {format}");
 			else
-				_logger.Log(logLevel, sender, $"[{instanceAlias}] {format}");
+				_logger.WriteLog(logLevel, sender, format);
 		}
 
 		private bool HandleStartStopFeatures(Feature feature, bool currentValue) {
@@ -2192,8 +2194,11 @@ namespace Tbot.Services {
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
 			await SendTelegramMessage($"Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			log(LogLevel.Information, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
-
-			userData.isSleeping = true;
+			if (!userData.isSleeping) {
+				await _ogameService.Logout();
+				log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+				userData.isSleeping = true;
+			}
 		}
 
 
@@ -2390,7 +2395,7 @@ namespace Tbot.Services {
 							try {
 								await AutoFleetSave(celestial, true);
 							} catch (Exception e) {
-								_logger.Log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
+								_logger.WriteLog(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
 							}
 						}
 					}
@@ -2398,7 +2403,11 @@ namespace Tbot.Services {
 					if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
 						await SendTelegramMessage($"[{userData.userInfo.PlayerName}{userData.serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
 					}
-					userData.isSleeping = true;
+					if (!userData.isSleeping) {
+						await _ogameService.Logout();
+						log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+						userData.isSleeping = true;
+					}
 				}
 				InitializeFeatures();
 			} catch (Exception e) {
@@ -2429,7 +2438,11 @@ namespace Tbot.Services {
 
 			log(LogLevel.Information, LogSender.SleepMode, "Bot woke up!");
 
-			userData.isSleeping = false;
+			if (userData.isSleeping) {
+				userData.isSleeping = false;
+				await _ogameService.Login();
+				log(LogLevel.Information, LogSender.SleepMode, "Ogamed logged in again!");
+			}
 			InitializeFeatures();
 		}
 
@@ -2440,7 +2453,11 @@ namespace Tbot.Services {
 					await SendTelegramMessage($"Waking up");
 					await SendTelegramMessage($"Going to sleep at {state.ToString()}");
 				}
-				userData.isSleeping = false;
+				if (userData.isSleeping) {
+					userData.isSleeping = false;
+					await _ogameService.Login();
+					log(LogLevel.Information, LogSender.SleepMode, "Ogamed logged in again!");
+				}
 				InitializeFeatures();
 
 			} catch (Exception e) {
@@ -3130,7 +3147,7 @@ namespace Tbot.Services {
 													try {
 														await _ogameService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
 														tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
-														int interval = (int) (_helpersService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, userData.serverData, tempCelestial.Facilities) + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
+														int interval = (int) (_helpersService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, userData.serverData, tempCelestial.Facilities) * 1000 + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
 														log(LogLevel.Information, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 														await Task.Delay(interval);
 													} catch {
@@ -3326,7 +3343,7 @@ namespace Tbot.Services {
 											try {
 												await _ogameService.BuildShips(tempCelestial, cargoShip, neededCargos);
 												tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
-												int interval = (int) (_helpersService.CalcProductionTime(cargoShip, (int) neededCargos, userData.serverData, tempCelestial.Facilities) + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds)) * 1000;
+												int interval = (int) (_helpersService.CalcProductionTime(cargoShip, (int) neededCargos, userData.serverData, tempCelestial.Facilities) * 1000 + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
 												log(LogLevel.Information, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 												await Task.Delay(interval);
 											} catch {
@@ -5075,7 +5092,7 @@ namespace Tbot.Services {
 			userData.slots = await UpdateSlots();
 			int slotsToLeaveFree = (int) settings.General.SlotsToLeaveFree;
 			if (userData.slots.Free == 0) {
-				_logger.Log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				_logger.WriteLog(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
 				return (int) SendFleetCode.NotEnoughSlots;
 			} else if (userData.slots.Free > slotsToLeaveFree || force) {
 				if (payload == null)

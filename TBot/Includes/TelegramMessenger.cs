@@ -13,8 +13,8 @@ using System.Timers;
 using Timer = System.Threading.Timer;
 using TBot.Ogame.Infrastructure.Models;
 using TBot.Ogame.Infrastructure.Enums;
-using TBot.Common;
 using Microsoft.Extensions.Logging;
+using TBot.Common.Logging;
 using TBot.Model;
 
 namespace Tbot.Includes {
@@ -55,7 +55,7 @@ namespace Tbot.Includes {
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
 			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 
-			_logger.Log(LogLevel.Information, LogSender.Telegram, $"Initializing AutoPing (Hours {everyHours})...");
+			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"Initializing AutoPing (Hours {everyHours})...");
 			StopAutoPing();
 
 			pingHours = everyHours;
@@ -76,34 +76,37 @@ namespace Tbot.Includes {
 		}
 		private async void AutoPing(object state) {
 			await pingSem.WaitAsync();
-			DateTime now = DateTime.UtcNow;
-			TimeSpan upTime = now - startTime;
-			DateTime roundedNextHour = now.AddHours(pingHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
-			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
+			try {
+				DateTime now = DateTime.UtcNow;
+				TimeSpan upTime = now - startTime;
+				DateTime roundedNextHour = now.AddHours(pingHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
+				long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 
-			DateTime newTime = now.AddMilliseconds(nextping);
-			autoPingTimer.Change(nextping, Timeout.Infinite);
+				DateTime newTime = now.AddMilliseconds(nextping);
+				autoPingTimer.Change(nextping, Timeout.Infinite);
 
-			string pingStr = $"TBot is running since {_helpersService.TimeSpanToString(upTime)}\n";
-			foreach (var instance in instances) {
-				TimeSpan instanceUpTime = now - instance.startTime;
-				int instanceIndex = instances.IndexOf(instance);
-				pingStr += $"#{instanceIndex} " +
-					$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
-					$"since {_helpersService.TimeSpanToString(instanceUpTime)}\n";
+				string pingStr = $"TBot is running since {_helpersService.TimeSpanToString(upTime)}\n";
+				foreach (var instance in instances) {
+					TimeSpan instanceUpTime = now - instance.startTime;
+					int instanceIndex = instances.IndexOf(instance);
+					pingStr += $"#{instanceIndex} " +
+						$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
+						$"since {_helpersService.TimeSpanToString(instanceUpTime)}\n";
+				}
+				await SendMessage(pingStr);
+
+				_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
+			} catch (Exception ex) {
+				_logger.WriteLog(LogLevel.Error, LogSender.Telegram, $"Error in AutoPing: {ex.Message}");
+			} finally {
+				pingSem.Release();
 			}
-			await SendMessage(pingStr);
-
-			_logger.Log(LogLevel.Information, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
-
-			pingSem.Release();
-
 			return;
 		}
 
 		public async Task AddTbotInstance(TBotMain instance) {
-			_logger.Log(LogLevel.Information, LogSender.Telegram, "Adding instance.....");
-			_logger.Log(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
+			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Adding instance.....");
+			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			if (instances.Contains(instance) == false) {
 				instances.Add(instance);
@@ -119,7 +122,7 @@ namespace Tbot.Includes {
 		}
 
 		public async Task SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
-			_logger.Log(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
+			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await Client.SendTextMessageAsync(
 					chatId: Channel,
@@ -127,7 +130,7 @@ namespace Tbot.Includes {
 					parseMode: parseMode,
 					cancellationToken: cancellationToken);
 			} catch (Exception e) {
-				_logger.Log(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
+				_logger.WriteLog(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
 		}
 
@@ -139,11 +142,11 @@ namespace Tbot.Includes {
 		}
 
 		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
-			_logger.Log(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
+			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await client.SendTextMessageAsync(chat, message, parseMode);
 			} catch (Exception e) {
-				_logger.Log(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
+				_logger.WriteLog(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
 		}
 
@@ -361,7 +364,7 @@ namespace Tbot.Includes {
 					arg = args.ElementAt(0);
 
 					try {
-						currInstance.WaitFeature();
+						await currInstance.WaitFeature();
 
 						switch (arg) {
 

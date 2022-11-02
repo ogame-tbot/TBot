@@ -5,10 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace TBot.Common
-{
-    public interface ILoggerService<T>
-    {
-		void Log(LogLevel level, LogSender source, string message);
-    }
+namespace TBot.Common.Logging {
+	public interface ILoggerService<T> {
+		void WriteLog(LogLevel level, LogSender source, string message);
+	}
 }

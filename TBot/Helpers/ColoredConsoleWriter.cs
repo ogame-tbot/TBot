@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using TBot.Common.Logging;
 
-namespace TBot.Common {
-	public class LoggerService<T> : ILoggerService<T> {
-		public void Log(LogLevel level, LogSender source, string message) {
-			LogToConsole(level, source, message);
-		}
-
-		private void LogToConsole(LogLevel level, LogSender sender, string message) {
+namespace Tbot.Helpers {
+	public static class ColoredConsoleWriter {
+		public static void LogToConsole(LogLevel type, LogSender sender, string message) {
 			ConsoleColor consoleColor = sender switch {
 				LogSender.Brain => ConsoleColor.Blue,
 				LogSender.Defender => ConsoleColor.DarkGreen,
@@ -26,17 +23,18 @@ namespace TBot.Common {
 				LogSender.OGameD => ConsoleColor.DarkCyan,
 				_ => ConsoleColor.Gray
 			};
-			Console.ForegroundColor = level == LogLevel.Information
+			Console.ForegroundColor = type == LogLevel.Information
 				? consoleColor
-				: level switch {
+				: type switch {
 					LogLevel.Error => ConsoleColor.Red,
 					LogLevel.Warning => ConsoleColor.Yellow,
 					LogLevel.Debug => ConsoleColor.White,
 					_ => ConsoleColor.Gray
 				};
 
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{level.ToString()}|{sender.ToString()}] {message}");
+			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
 			Console.ForegroundColor = ConsoleColor.Gray;
 		}
+
 	}
 }

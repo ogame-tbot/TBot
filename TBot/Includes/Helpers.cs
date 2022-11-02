@@ -1,4 +1,3 @@
-using TBot.Model;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,8 +11,9 @@ using TBot.Ogame.Infrastructure.Models;
 using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure;
 using System.Threading.Tasks;
-using TBot.Common;
 using Microsoft.Extensions.Logging;
+using TBot.Common.Logging;
+using TBot.Model;
 
 namespace Tbot.Includes {
 
@@ -26,66 +26,6 @@ namespace Tbot.Includes {
 			_logger = logger;
 			_ogameService = ogameService;
 		}
-		//public void WriteLog(LogType type, LogSender sender, string message) {
-		//	LogToConsole(type, sender, message);
-		//	LogToFile(type, sender, message);
-		//	LogToCSV(type, sender, message);
-		//}
-
-		//public void LogToConsole(LogType type, LogSender sender, string message) {
-		//	ConsoleColor consoleColor = sender switch {
-		//		LogSender.Brain => ConsoleColor.Blue,
-		//		LogSender.Defender => ConsoleColor.DarkGreen,
-		//		LogSender.Expeditions => ConsoleColor.Cyan,
-		//		LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
-		//		LogSender.Harvest => ConsoleColor.Green,
-		//		LogSender.Colonize => ConsoleColor.DarkRed,
-		//		LogSender.AutoFarm => ConsoleColor.DarkCyan,
-		//		LogSender.SleepMode => ConsoleColor.DarkBlue,
-		//		LogSender.Tbot => ConsoleColor.DarkYellow,
-		//		LogSender.Main => ConsoleColor.Yellow,
-		//		LogSender.OGameD => ConsoleColor.DarkCyan,
-		//		_ => ConsoleColor.Gray
-		//	};
-		//	Console.ForegroundColor = type == LogLevel.Information
-		//		? consoleColor
-		//		: type switch {
-		//			LogLevel.Error => ConsoleColor.Red,
-		//			LogLevel.Warning => ConsoleColor.Yellow,
-		//			LogLevel.Debug => ConsoleColor.White,
-		//			_ => ConsoleColor.Gray
-		//		};
-
-		//	Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-		//	Console.ForegroundColor = ConsoleColor.Gray;
-		//}
-
-		//public string logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
-		//public void LogToFile(LogType type, LogSender sender, string message) {
-		//	string path = logPath;
-		//	DirectoryInfo dir = new(path);
-		//	if (!dir.Exists)
-		//		dir.Create();
-		//	string fileName = $"{DateTime.Now.Year.ToString()}{DateTime.Now.Month.ToString()}{DateTime.Now.Day.ToString()}_TBot.log";
-		//	try {
-		//		StreamWriter file = new($"{path}/{fileName}", true);
-		//		file.WriteLine($"[{type.ToString()}] [{sender.ToString()}] [{DateTime.Now.ToString()}] - {message}");
-		//		file.Close();
-		//	} catch (Exception) { }
-		//}
-
-		//public void LogToCSV(LogType type, LogSender sender, string message) {
-		//	string path = logPath;
-		//	DirectoryInfo dir = new(path);
-		//	if (!dir.Exists)
-		//		dir.Create();
-		//	string fileName = "TBot_log.csv";
-		//	try {
-		//		StreamWriter file = new($"{path}/{fileName}", true);
-		//		file.WriteLine($"{type.ToString().EscapeForCSV()},{sender.ToString().EscapeForCSV()},{DateTime.Now.ToString().EscapeForCSV()},{message.EscapeForCSV()}");
-		//		file.Close();
-		//	} catch (Exception) { }
-		//}
 
 		public void SetTitle(string content = "") {
 			AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
@@ -2001,7 +1941,7 @@ namespace Tbot.Includes {
 					}
 				}
 			} else {
-				_logger.Log(LogLevel.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
+				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
 			}
 
 			if (nextLFbuild != LFBuildables.None) {
@@ -2074,7 +2014,7 @@ namespace Tbot.Includes {
 			var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
 			var MetalMineCost = CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
 			if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
-				_logger.Log(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
+				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
 				nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
 			}
 

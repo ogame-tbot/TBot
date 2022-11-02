@@ -9,13 +9,13 @@ using System.Threading;
 using TBot.Ogame.Infrastructure.Models;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
-using TBot.Common;
 using RestSharp;
 using Newtonsoft.Json;
 using System.Text;
 using TBot.Ogame.Infrastructure.Exceptions;
 using TBot.Ogame.Infrastructure.Enums;
 using Newtonsoft.Json.Linq;
+using TBot.Common.Logging;
 
 namespace TBot.Ogame.Infrastructure {
 
@@ -68,7 +68,7 @@ namespace TBot.Ogame.Infrastructure {
 
 		public bool ValidatePrerequisites() {
 			if (!File.Exists(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), GetExecutableName()))) {
-				_logger.Log(LogLevel.Error, LogSender.Main, $"\"{GetExecutableName()}\" not found. Cannot proceed...");
+				_logger.WriteLog(LogLevel.Error, LogSender.Main, $"\"{GetExecutableName()}\" not found. Cannot proceed...");
 				return false;
 			}
 			return true;
@@ -86,7 +86,7 @@ namespace TBot.Ogame.Infrastructure {
 
 				return true;
 			} catch (Exception e) {
-				_logger.Log(LogLevel.Information, LogSender.OGameD, $"PortAvailable({port} Error: {e.Message}");
+				_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"PortAvailable({port} Error: {e.Message}");
 				return false;
 			}
 		}
@@ -137,9 +137,9 @@ namespace TBot.Ogame.Infrastructure {
 				ogameProc.BeginErrorReadLine();
 				ogameProc.BeginOutputReadLine();
 
-				_logger.Log(LogLevel.Information, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
+				_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
 			} catch (Exception ex) {
-				_logger.Log(LogLevel.Error, LogSender.OGameD, $"Error executing ogamed instance: {ex.Message}");
+				_logger.WriteLog(LogLevel.Error, LogSender.OGameD, $"Error executing ogamed instance: {ex.Message}");
 				Environment.Exit(0);
 			}
 			return ogameProc;
@@ -156,12 +156,12 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		private void dump_ogamedProcess_Log(bool isErr, string? payload) {
-			_logger.Log(isErr ? LogLevel.Error : LogLevel.Information, LogSender.OGameD, $"[{_username}] \"{payload}\"");
+			_logger.WriteLog(isErr ? LogLevel.Error : LogLevel.Information, LogSender.OGameD, $"[{_username}] \"{payload}\"");
 		}
 
 		private bool runningRerun = false;
 		private void handle_ogamedProcess_Exited(object? sender, EventArgs e) {
-			_logger.Log(LogLevel.Information, LogSender.OGameD, $"OgameD Exited {_ogamedProcess.ExitCode}" +
+			_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Exited {_ogamedProcess.ExitCode}" +
 				$" TotalTime(ms) {Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds)}");
 			if (!runningRerun) {
 				runningRerun = true;

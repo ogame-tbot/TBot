@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TBot.Common {
+namespace TBot.Common.Logging {
 	public enum LogSender {
 		Main,
 		Tbot,
