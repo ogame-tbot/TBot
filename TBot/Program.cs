@@ -5,13 +5,19 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using Tbot.Exceptions;
 using Tbot.Includes;
-using Tbot.Model;
 using Tbot.Services;
+using TBot.Common;
+using TBot.Ogame.Infrastructure;
+using TBot.Ogame.Infrastructure.Enums;
 
 namespace Tbot {
 
@@ -35,21 +41,36 @@ namespace Tbot {
 		}
 	}
 	class Program {
-
+		private static ILoggerService<Program> _logger;
+		private static IServiceProvider _serviceProvider;
 		static DateTime startTime = DateTime.UtcNow;
 		static string settingPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
 		static dynamic mainSettings;
 
-		static TelegramMessenger telegramMessenger = null;
+		static ITelegramMessenger telegramMessenger = null;
 		static List<InstanceData> instances = new();
 		static SettingsFileWatcher settingsWatcher = null;
 
 		static void Main(string[] args) {
-			Helpers.SetTitle();
+			MainAsync(args).Wait();
+		}
+		static async Task MainAsync(string[] args) {
+			//setup our DI
+			_serviceProvider = new ServiceCollection()
+				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
+				.AddScoped<IHelpersService, HelpersService>()
+				.AddScoped<IOgameService, OgameService>()
+				.BuildServiceProvider();
+
+			_logger = _serviceProvider.GetRequiredService<ILoggerService<Program>>();
+			var ogameService = _serviceProvider.GetRequiredService<IOgameService>();
+			var helpersService = _serviceProvider.GetRequiredService<IHelpersService>();
+
+			helpersService.SetTitle();
 
 			CmdLineArgsService.DoParse(args);
 			if (CmdLineArgsService.printHelp) {
-				Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
+				_logger.Log(LogLevel.Information, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
 				Environment.Exit(0);
 			}
 
@@ -57,22 +78,20 @@ namespace Tbot {
 				settingPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
 
-			if (CmdLineArgsService.logPath.IsPresent) {
-				Helpers.logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
-			}
+			//if (CmdLineArgsService.logPath.IsPresent) { //TODO: Configure in Serilog or the library choosed
+			//	helpersService.logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
+			//}
 
-			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"Settings file	\"{settingPath}\"");
-			Helpers.LogToConsole(LogType.Info, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
+			_logger.Log(LogLevel.Information, LogSender.Tbot, $"Settings file	\"{settingPath}\"");
+			//_logger.Log(LogLevel.Information, LogSender.Tbot, $"LogPath		\"{Helpers.logPath}\"");
 
 			// Context validation
 			//	a - Ogamed binary is present on same directory ?
 			//	b - Settings file does exist ?
-			if (File.Exists(Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), OgamedService.GetExecutableName())) == false) {
-				Helpers.WriteLog(LogType.Error, LogSender.Main, $"\"{OgamedService.GetExecutableName()}\" not found. Cannot proceed...");
+			if (!ogameService.ValidatePrerequisites()) {
 				Environment.Exit(-1);
-			}
-			else if (File.Exists(settingPath) == false) {
-				Helpers.WriteLog(LogType.Error, LogSender.Main, $"\"{settingPath}\" not found. Cannot proceed...");
+			} else if (File.Exists(settingPath) == false) {
+				_logger.Log(LogLevel.Error, LogSender.Main, $"\"{settingPath}\" not found. Cannot proceed...");
 				Environment.Exit(-1);
 			}
 
@@ -88,10 +107,9 @@ namespace Tbot {
 			if (SettingsService.IsSettingSet(mainSettings, "Instances") == false) {
 				settingVersion = SettingsVersion.AllInOne;
 				// Start only an instance of TBot
-				StartTBotMain(settingPath, "MAIN", ref instances);
-			}
-			else
-			{
+				var initializedInstance = await StartTBotMain(settingPath, "MAIN");
+				instances.Add(initializedInstance);
+			} else {
 				// In this case we need a json formatted like follows:
 				//	"Instances": [
 				//		{
@@ -102,60 +120,63 @@ namespace Tbot {
 				settingVersion = SettingsVersion.MultipleInstances;
 				// Initialize all the instances of TBot found in main settings
 				ICollection json_instances = mainSettings.Instances;
-				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Initializing {json_instances.Count} instances...");
+				_logger.Log(LogLevel.Information, LogSender.Main, $"Initializing {json_instances.Count} instances...");
 				foreach (var instance in mainSettings.Instances) {
-					if ( (SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false) ) {
+					if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
 						continue;
 					}
 					string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
 					string alias = instance.Alias;
 
-					StartTBotMain(settingsPath, alias, ref instances);
+					var initializedInstance = await StartTBotMain(settingsPath, alias);
+					instances.Add(initializedInstance);
 				}
 
 				settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, settingPath);
 			}
 
-			Helpers.WriteLog(LogType.Info, LogSender.Main, $"SettingsVersion Detected {settingVersion.ToString()} and managed. Press CTRL+C to exit");
-			var exitEvt = new ManualResetEvent(false);
+			_logger.Log(LogLevel.Information, LogSender.Main, $"SettingsVersion Detected {settingVersion.ToString()} and managed. Press CTRL+C to exit");
+
+			var tcs = new TaskCompletionSource();
+
 			Console.CancelKeyPress += (sender, e) => {
-				Helpers.WriteLog(LogType.Info, LogSender.Main, "CTRL+C pressed!");
-				e.Cancel = true;
-				exitEvt.Set();
+				_logger.Log(LogLevel.Information, LogSender.Main, "CTRL+C pressed!");
+				tcs.SetResult();
 			};
 
+			await tcs.Task;
 
-			exitEvt.WaitOne();
-
-			Helpers.WriteLog(LogType.Info, LogSender.Main, "Closing up...");
+			_logger.Log(LogLevel.Information, LogSender.Main, "Closing up...");
 			foreach (var instance in instances) {
-				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
-				instance._botMain.deinit();
+				_logger.Log(LogLevel.Information, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
+				await instance._botMain.deinit();
 			}
-			Helpers.WriteLog(LogType.Info, LogSender.Main, "Goodbye!");
+			_logger.Log(LogLevel.Information, LogSender.Main, "Goodbye!");
 			instances.Clear();
 		}
 
-		private static void StartTBotMain(string settingsPath, string alias, ref List<InstanceData> instanceList) {
-			Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Initializing instance \"{alias}\" \"{settingsPath}\"");
-			
-			try {
-				if(File.Exists(settingsPath) == false) {
-					Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
-				}
-				else {
-					var tbot = new TBotMain(settingsPath, alias, telegramMessenger);
-					if (tbot.init().Result == false) {
-						Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Error initializing instance \"{alias}\"");
-					} else {
-						Helpers.WriteLog(LogType.Info, LogSender.Main, $"Instance \"{alias}\" initialized.");
-						InstanceData instance = new InstanceData(tbot, settingsPath, alias);
-						instanceList.Add(instance);
-					}
 
+		private static async Task<InstanceData> StartTBotMain(string settingsPath, string alias) {
+			_logger.Log(LogLevel.Information, LogSender.Main, $"Initializing instance \"{alias}\" \"{settingsPath}\"");
+
+			try {
+				if (File.Exists(settingsPath) == false) {
+					_logger.Log(LogLevel.Warning, LogSender.Main, $"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
+					throw new MissingConfigurationException($"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
+				} else {
+					using var scope = _serviceProvider.CreateScope();
+					var ogamedService = scope.ServiceProvider.GetRequiredService<IOgameService>();
+					var tbotLogger = scope.ServiceProvider.GetRequiredService<ILoggerService<TBotMain>>();
+					var helpersService = scope.ServiceProvider.GetRequiredService<IHelpersService>();
+					var tbot = new TBotMain(ogamedService, helpersService, tbotLogger);
+					await tbot.Init(settingsPath, alias, telegramMessenger);
+					_logger.Log(LogLevel.Information, LogSender.Main, $"Instance \"{alias}\" initialized successfully!");
+					InstanceData instance = new InstanceData(tbot, settingsPath, alias);
+					return instance;
 				}
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Warning, LogSender.Main, $"Exception happened during initialization \"{e.Message}\"");
+				_logger.Log(LogLevel.Error, LogSender.Main, $"Error initializing instance \"{{alias}}\": {e.Message}");
+				throw;
 			}
 		}
 
@@ -166,8 +187,10 @@ namespace Tbot {
 				(bool) mainSettings.TelegramMessenger.Active
 			) {
 				if (telegramMessenger == null) {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, "Activating Telegram Messenger");
-					telegramMessenger = new TelegramMessenger((string) mainSettings.TelegramMessenger.API, (string) mainSettings.TelegramMessenger.ChatId);
+					var telegramLogger = _serviceProvider.GetRequiredService<ILoggerService<TelegramMessenger>>();
+					var helpersService = _serviceProvider.GetRequiredService<IHelpersService>();
+					_logger.Log(LogLevel.Information, LogSender.Main, "Activating Telegram Messenger");
+					telegramMessenger = new TelegramMessenger(telegramLogger, helpersService, (string) mainSettings.TelegramMessenger.API, (string) mainSettings.TelegramMessenger.ChatId);
 					Thread.Sleep(1000);
 					telegramMessenger.TelegramBot();
 				}
@@ -179,19 +202,19 @@ namespace Tbot {
 					SettingsService.IsSettingSet(mainSettings.TelegramMessenger.TelegramAutoPing, "EveryHours") &&
 					(bool) mainSettings.TelegramMessenger.TelegramAutoPing.Active
 				) {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing is enabled!");
+					_logger.Log(LogLevel.Information, LogSender.Main, "Telegram Messenger AutoPing is enabled!");
 					long everyHours = (long) mainSettings.TelegramMessenger.TelegramAutoPing.EveryHours;
 					if (everyHours == 0) {
-						Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing EveryHours is 0. Setting to 1 hour.");
+						_logger.Log(LogLevel.Information, LogSender.Main, "Telegram Messenger AutoPing EveryHours is 0. Setting to 1 hour.");
 						everyHours = 1;
 					}
 
 					telegramMessenger.StartAutoPing(everyHours);
 				} else {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger AutoPing disabled.");
+					_logger.Log(LogLevel.Information, LogSender.Main, "Telegram Messenger AutoPing disabled.");
 				}
 			} else {
-				Helpers.WriteLog(LogType.Info, LogSender.Main, "Telegram Messenger disabled");
+				_logger.Log(LogLevel.Information, LogSender.Main, "Telegram Messenger disabled");
 
 				if (telegramMessenger != null) {
 					telegramMessenger.TelegramBotDisable();
@@ -200,8 +223,8 @@ namespace Tbot {
 			}
 		}
 
-		private static void OnSettingsChanged() {
-			Helpers.WriteLog(LogType.Info, LogSender.Main, "Core settings file changed.");
+		private static async void OnSettingsChanged() {
+			_logger.Log(LogLevel.Information, LogSender.Main, "Core settings file changed.");
 
 			mainSettings = SettingsService.GetSettings(settingPath);
 
@@ -211,22 +234,22 @@ namespace Tbot {
 			// Remove / Add instances
 			List<InstanceData> newInstances = new();
 			ICollection json_instances = mainSettings.Instances;
-			Helpers.WriteLog(LogType.Info, LogSender.Main, $"Detected {json_instances.Count} instances...");
+			_logger.Log(LogLevel.Information, LogSender.Main, $"Detected {json_instances.Count} instances...");
 			// Existing instances will be kept, new one will be created.
 			foreach (var instance in mainSettings.Instances) {
 				// Validate JSON first
 				if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, "Wrong element in array found. \"Settings\" and \"Alias\" are not correctly set");
+					_logger.Log(LogLevel.Information, LogSender.Main, "Wrong element in array found. \"Settings\" and \"Alias\" are not correctly set");
 					continue;
 				}
 
 				string settingsPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(settingPath), instance.Settings)).FullName;
 				string alias = instance.Alias;
 
-				Helpers.WriteLog(LogType.Info, LogSender.Main, $"Handling instance \"{alias}\" \"{settingPath}\"");
+				_logger.Log(LogLevel.Information, LogSender.Main, $"Handling instance \"{alias}\" \"{settingPath}\"");
 				// Check if settings is already in our instances List
 				if (instances.Any(c => c._botSettingsPath == settingsPath) == true) {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, $"Instance \"{settingPath}\" was already present! Doing nothing here.");
+					_logger.Log(LogLevel.Information, LogSender.Main, $"Instance \"{settingPath}\" was already present! Doing nothing here.");
 					// Already inside our list!
 					var oldInstance = instances.First(c => c._botSettingsPath == settingsPath);
 					oldInstance._alias = alias;
@@ -236,19 +259,20 @@ namespace Tbot {
 					instances.Remove(oldInstance);
 				} else {
 					// Initialize new instance. StartTBotMain will take care of checking if file exists and enqueueing inside our Collection
-					StartTBotMain(settingsPath, alias, ref newInstances);
+					var initializedInstance = await StartTBotMain(settingsPath, alias);
+					newInstances.Add(initializedInstance);
 				}
 			}
 
 			// Deinitialize instances that are no more valid
 			foreach (var instance in instances) {
 				if (newInstances.Any(c => c._botSettingsPath == instance._botSettingsPath) == false) {
-					Helpers.WriteLog(LogType.Info, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
+					_logger.Log(LogLevel.Information, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
 					// This is a very long process. Initialize a timer to print periodically what we are doing...
 					var tim = new Timer(o => {
-						Helpers.WriteLog(LogType.Info, LogSender.Main, $"Waiting for deinitialization of instance \"{instance._alias}\" \"{instance._botSettingsPath}\"...");
+						_logger.Log(LogLevel.Information, LogSender.Main, $"Waiting for deinitialization of instance \"{instance._alias}\" \"{instance._botSettingsPath}\"...");
 					}, null, 3000, Timeout.Infinite);
-					instance._botMain.deinit();
+					await instance._botMain.deinit();
 					tim.Dispose();
 				}
 			}

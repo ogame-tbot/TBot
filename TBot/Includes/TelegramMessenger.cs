@@ -1,4 +1,3 @@
-using Tbot.Model;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -12,13 +11,21 @@ using System.Linq;
 using Tbot.Services;
 using System.Timers;
 using Timer = System.Threading.Timer;
+using TBot.Ogame.Infrastructure.Models;
+using TBot.Ogame.Infrastructure.Enums;
+using TBot.Common;
+using Microsoft.Extensions.Logging;
+using TBot.Model;
 
 namespace Tbot.Includes {
 
-	class TelegramMessenger {
+	internal class TelegramMessenger : ITelegramMessenger {
 		public string Api { get; private set; }
 		public string Channel { get; private set; }
-		public ITelegramBotClient Client { get; set; }
+		public ITelegramBotClient Client { get; private set; }
+
+		private readonly ILoggerService<TelegramMessenger> _logger;
+		private readonly IHelpersService _helpersService;
 
 		CancellationTokenSource cts;
 		CancellationToken ct;
@@ -31,19 +38,24 @@ namespace Tbot.Includes {
 		private long pingHours;
 		private DateTime startTime = DateTime.UtcNow;
 
-		public TelegramMessenger(string api, string channel) {
+		public TelegramMessenger(ILoggerService<TelegramMessenger> logger,
+			IHelpersService helpersService,
+			string api,
+			string channel) {
+			_logger = logger;
+			_helpersService = helpersService;
 			Api = api;
 			Client = new TelegramBotClient(Api);
 			Channel = channel;
 		}
 
 		public void StartAutoPing(long everyHours) {
-			
+
 			DateTime now = DateTime.UtcNow;
 			DateTime roundedNextHour = now.AddHours(everyHours).AddMinutes(-now.Minute).AddSeconds(-now.Second);
 			long nextping = (long) roundedNextHour.Subtract(now).TotalMilliseconds;
 
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"Initializing AutoPing (Hours {everyHours})...");
+			_logger.Log(LogLevel.Information, LogSender.Telegram, $"Initializing AutoPing (Hours {everyHours})...");
 			StopAutoPing();
 
 			pingHours = everyHours;
@@ -72,66 +84,66 @@ namespace Tbot.Includes {
 			DateTime newTime = now.AddMilliseconds(nextping);
 			autoPingTimer.Change(nextping, Timeout.Infinite);
 
-			string pingStr = $"TBot is running since {Helpers.TimeSpanToString(upTime)}\n";
+			string pingStr = $"TBot is running since {_helpersService.TimeSpanToString(upTime)}\n";
 			foreach (var instance in instances) {
 				TimeSpan instanceUpTime = now - instance.startTime;
 				int instanceIndex = instances.IndexOf(instance);
 				pingStr += $"#{instanceIndex} " +
 					$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
-					$"since {Helpers.TimeSpanToString(instanceUpTime)}\n";
+					$"since {_helpersService.TimeSpanToString(instanceUpTime)}\n";
 			}
-			SendMessage(pingStr);
+			await SendMessage(pingStr);
 
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
+			_logger.Log(LogLevel.Information, LogSender.Telegram, $"AutoPing sent, Next ping at {newTime.ToString()}");
 
 			pingSem.Release();
 
 			return;
 		}
 
-		public void AddTbotInstance(TBotMain instance) {
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Adding instance.....");
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
+		public async Task AddTbotInstance(TBotMain instance) {
+			_logger.Log(LogLevel.Information, LogSender.Telegram, "Adding instance.....");
+			_logger.Log(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			if (instances.Contains(instance) == false) {
 				instances.Add(instance);
 
 				int instanceIndex = instances.IndexOf(instance);
-				SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
+				await SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
 
 				// Set a default instance
-				if(currInstanceIndex < 0) {
+				if (currInstanceIndex < 0) {
 					currInstanceIndex = instanceIndex;
 				}
 			}
 		}
 
-		public async void SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Sending Telegram message...");
+		public async Task SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
+			_logger.Log(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await Client.SendTextMessageAsync(
-					chatId:Channel,
+					chatId: Channel,
 					text: message,
 					parseMode: parseMode,
 					cancellationToken: cancellationToken);
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
+				_logger.Log(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
 		}
 
-		public async void SendTyping(CancellationToken cancellationToken) {
+		public async Task SendTyping(CancellationToken cancellationToken) {
 			await Client.SendChatActionAsync(
 				chatId: Channel,
 				chatAction: ChatAction.Typing,
 				cancellationToken: cancellationToken);
 		}
 
-		public async void SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
-			Helpers.WriteLog(LogType.Info, LogSender.Telegram, "Sending Telegram message...");
+		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
+			_logger.Log(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await client.SendTextMessageAsync(chat, message, parseMode);
 			} catch (Exception e) {
-				Helpers.WriteLog(LogType.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
+				_logger.Log(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
 			}
 		}
 
@@ -194,8 +206,7 @@ namespace Tbot.Includes {
 
 			if (update.Type != Telegram.Bot.Types.Enums.UpdateType.Message) {
 
-			}
-			else {
+			} else {
 				var message = update.Message;
 				var arg = "";
 				var test = "";
@@ -216,69 +227,68 @@ namespace Tbot.Includes {
 					switch (arg) {
 						case ("/setmain"):
 							if (args.Length != 2) {
-								SendMessage(botClient, message.Chat, "Invalid number of arguments. Expected 1");
+								await SendMessage(botClient, message.Chat, "Invalid number of arguments. Expected 1");
 								return;
 							}
 
-							if (Int32.TryParse(args.ElementAt(1), out int UserSelectedInstance) == true)
-							{
-								if(UserSelectedInstance >= instances.Count()) {
-									SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\" exceeds managed {instances.Count()}");
+							if (Int32.TryParse(args.ElementAt(1), out int UserSelectedInstance) == true) {
+								if (UserSelectedInstance >= instances.Count()) {
+									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\" exceeds managed {instances.Count()}");
 								} else {
 									currInstanceIndex = UserSelectedInstance;
 									var cInstance = instances.ElementAt(currInstanceIndex);
-									SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
+									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
 										$"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
 								}
 							} else {
-								SendMessage(botClient, message.Chat, $"Error parsing instance index from \"{args.ElementAt(1)}\"");
+								await SendMessage(botClient, message.Chat, $"Error parsing instance index from \"{args.ElementAt(1)}\"");
 							}
 							return;
 						case ("/getmain"):
-							if ( (currInstanceIndex < 0) || (currInstanceIndex >= instances.Count()) ) {
-								SendMessage(botClient, message.Chat, "Currently managing no instance");
+							if ((currInstanceIndex < 0) || (currInstanceIndex >= instances.Count())) {
+								await SendMessage(botClient, message.Chat, "Currently managing no instance");
 							} else {
 								var instance = instances[currInstanceIndex];
-								SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+								await SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case ("/listinstances"):
-							SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
+							await SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
 							foreach (var instance in instances) {
-								SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case ("/ping"):
 							if (args.Length != 1) {
-								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
-							SendMessage(botClient, message.Chat, "Pong");
+							await SendMessage(botClient, message.Chat, "Pong");
 							return;
 						case ("/stopautoping"):
 							if (args.Length != 1) {
-								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
 							StopAutoPing();
-							SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
+							await SendMessage(botClient, message.Chat, "TelegramAutoPing stopped!");
 							return;
 
 
 						case ("/startautoping"):
 							if (args.Length != 1) {
-								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
 							StartAutoPing(pingHours);
-							SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
+							await SendMessage(botClient, message.Chat, "TelegramAutoPing started!");
 							return;
 						case ("/help"):
 							if (args.Length != 1) {
-								SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+								await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 								return;
 							}
-							SendMessage(botClient, message.Chat,
+							await SendMessage(botClient, message.Chat,
 								"\t Core Commands\n" +
 								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
 								"/getmain - Get the current TBot instance that Telegram is managing\n" +
@@ -339,10 +349,9 @@ namespace Tbot.Includes {
 				}
 				// Check if instance is correct
 				else if ((currInstanceIndex < 0) || (currInstanceIndex >= instances.Count())) {
-					SendMessage(botClient, message.Chat, "Select an instance with /setmain !");
+					await SendMessage(botClient, message.Chat, "Select an instance with /setmain !");
 					return;
-				}
-				else if (commands.Any(x => message.Text.ToLower().Contains(x))) {
+				} else if (commands.Any(x => message.Text.ToLower().Contains(x))) {
 					//Handle /commands@botname in string if exist
 					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1)
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
@@ -358,35 +367,35 @@ namespace Tbot.Includes {
 
 							case ("/getfleets"):
 								if (args.Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								currInstance.TelegramGetFleets();
+								await currInstance.TelegramGetFleets();
 
 								return;
 
 							case ("/getcurrentauction"):
 								if (args.Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
-								currInstance.TelegramGetCurrentAuction();
+								await currInstance.TelegramGetCurrentAuction();
 
 								return;
 
 							case ("/subscribeauction"):
 								// If there is no auction in progress, then we will trigger a timer when next auction will be in place
-								currInstance.TelegramSubscribeToNextAuction();
+								await currInstance.TelegramSubscribeToNextAuction();
 
 								return;
 
 							case ("/bidauction"):
 								if (args.Length == 1) {
 									// Bid minimum amount
-									currInstance.TelegramBidAuctionMinimum();
+									await currInstance.TelegramBidAuctionMinimum();
 								} else if (args.Length < 3) {
-									SendMessage(botClient, message.Chat,
+									await SendMessage(botClient, message.Chat,
 										"To bid auction must format: <code>/bidauction 33651579 M:1000 C:1000 D:1000 </code> \n" +
 										"Or <code>/bidauction</code> to bid minimum amount to take auction", ParseMode.Html);
 									return;
@@ -398,11 +407,11 @@ namespace Tbot.Includes {
 										// If above has not thrown InvalidOperationException, then remaining can be any resource
 										resources = Resources.FromString(String.Join(' ', args.Skip(2)));
 										if (resources.TotalResources > 0)
-											currInstance.TelegramBidAuction(celestial, resources);
+											await currInstance.TelegramBidAuction(celestial, resources);
 										else
-											SendMessage(botClient, message.Chat, "Cannot bid to auction with 0 resources set!");
+											await SendMessage(botClient, message.Chat, "Cannot bid to auction with 0 resources set!");
 									} catch (Exception e) {
-										SendMessage(botClient, message.Chat, $"Error parsing bid auction command \"{e.Message}\"");
+										await SendMessage(botClient, message.Chat, $"Error parsing bid auction command \"{e.Message}\"");
 									}
 								}
 
@@ -411,21 +420,21 @@ namespace Tbot.Includes {
 
 							case ("/ghost"):
 								if (args.Length != 2) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghost 4h3m or 3m50s or 1h</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
+								duration = _helpersService.ParseDurationFromString(arg);
 
-								celestial = currInstance.TelegramGetCurrentCelestial();
-								currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
+								celestial = await currInstance.TelegramGetCurrentCelestial();
+								await currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
 
 								return;
 
 
 							case ("/ghostto"):
 								if (args.Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Duration (in hours) and mission arguments required! Format: <code>/ghostto 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
@@ -434,44 +443,44 @@ namespace Tbot.Includes {
 								Missions mission;
 
 								if (!Missions.TryParse(args[2], out mission)) {
-									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-								duration = Helpers.ParseDurationFromString(args[1]);
+								duration = _helpersService.ParseDurationFromString(args[1]);
 
-								celestial = currInstance.TelegramGetCurrentCelestial();
-								currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
+								celestial = await currInstance.TelegramGetCurrentCelestial();
+								await currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
 
 								return;
 
 							case ("/ghostmoons"):
 								if (args.Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4h3m or 3m50s or 1h <mission></code>!");
+									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostmoons 4h3m or 3m50s or 1h <mission></code>!");
 									return;
 								}
 
 								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 								Missions mission_to_do;
 								if (!Missions.TryParse(args[2], out mission_to_do)) {
-									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'. Got \"{test}\"");
+									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'. Got \"{test}\"");
 									return;
 								}
-								duration = Helpers.ParseDurationFromString(args[1]);
+								duration = _helpersService.ParseDurationFromString(args[1]);
 
 								List<Celestial> myMoons = currInstance.userData.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
 								if (myMoons.Count > 0) {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
-										SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
-										currInstance.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+										await SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
+										await currInstance.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
-											await Task.Delay(Helpers.CalcRandomInterval(IntervalType.AFewSeconds), cancellationToken);
+											await Task.Delay(_helpersService.CalcRandomInterval(IntervalType.AFewSeconds), cancellationToken);
 									}
-									SendMessage(botClient, message.Chat, "Moons FleetSave done!");
+									await SendMessage(botClient, message.Chat, "Moons FleetSave done!");
 								} else {
-									SendMessage(botClient, message.Chat, "No moons found");
+									await SendMessage(botClient, message.Chat, "No moons found");
 								}
 
 								return;
@@ -479,63 +488,63 @@ namespace Tbot.Includes {
 
 							case ("/ghostsleep"):
 								if (args.Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
-								duration = Helpers.ParseDurationFromString(args[1]);
+								duration = _helpersService.ParseDurationFromString(args[1]);
 								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 
 								if (!Missions.TryParse(args[2], out mission)) {
-									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
 
-								celestial = currInstance.TelegramGetCurrentCelestial();
+								celestial = await currInstance.TelegramGetCurrentCelestial();
 								currInstance.telegramUserData.CurrentCelestialToSave = celestial;
 								currInstance.telegramUserData.Mission = mission;
-								currInstance.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
+								await currInstance.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
 								return;
 
 
 							case ("/ghostsleepall"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
+								duration = _helpersService.ParseDurationFromString(arg);
 								test = message.Text.Split(' ')[2];
 								test = char.ToUpper(test[0]) + test.Substring(1);
 
 								if (!Missions.TryParse(test, out mission)) {
-									SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
 
-								celestial = currInstance.TelegramGetCurrentCelestial();
-								currInstance.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								celestial = await currInstance.TelegramGetCurrentCelestial();
+								await currInstance.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 
 							case ("/switch"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Speed argument required! Format: <code>5 for 50%</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Speed argument required! Format: <code>5 for 50%</code>", ParseMode.Html);
 									return;
 								}
 								test = message.Text.Split(' ')[1];
 								speed = decimal.Parse(test);
 
 								if (1 <= speed && speed <= 10) {
-									currInstance.TelegramSwitch(speed);
+									await currInstance.TelegramSwitch(speed);
 									return;
 								}
-								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
+								await SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
 								return;
 
 
 							case ("/deploy"):
 								if (message.Text.Split(' ').Length != 4) {
-									SendMessage(botClient, message.Chat, "Coordinates, celestial type and speed arguments are needed! Format: <code>/deploy 2:56:8 moon/planet 1/3/5/7/10</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Coordinates, celestial type and speed arguments are needed! Format: <code>/deploy 2:56:8 moon/planet 1/3/5/7/10</code>", ParseMode.Html);
 
 									return;
 								}
@@ -545,14 +554,14 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
 								Celestials type;
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
-									SendMessage(botClient, message.Chat, $"Celestial type argument is needed! Format: <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, $"Celestial type argument is needed! Format: <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
 									return;
 								}
 								arg = char.ToUpper(arg[0]) + arg.Substring(1);
@@ -564,18 +573,18 @@ namespace Tbot.Includes {
 								speed = decimal.Parse(test);
 
 								if (1 <= speed && speed <= 10) {
-									celestial = currInstance.TelegramGetCurrentCelestial();
-									currInstance.TelegramDeploy(celestial, coord, speed);
+									celestial = await currInstance.TelegramGetCurrentCelestial();
+									await currInstance.TelegramDeploy(celestial, coord, speed);
 									return;
 								}
-								SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
+								await SendMessage(botClient, message.Chat, $"{test} error: Speed argument must be 1 or 2 or 3 for 10%, 20%, 30% etc.");
 
 								return;
 
 
 							case ("/jumpgate"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Destination coordinates and full/auto arguments are needed (auto: keeps required cargo for resources) Format: <code>/jumpgate 2:20:8 auto</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Destination coordinates and full/auto arguments are needed (auto: keeps required cargo for resources) Format: <code>/jumpgate 2:20:8 auto</code>", ParseMode.Html);
 									return;
 								}
 
@@ -584,23 +593,23 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
 								string mode = message.Text.ToLower().Split(' ')[2];
 								if (!mode.Equals("full") && !mode.Equals("auto")) {
-									SendMessage(botClient, message.Chat, "Eerror! Format: <code>/jumpgate 2:20:8 auto/full</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Eerror! Format: <code>/jumpgate 2:20:8 auto/full</code>", ParseMode.Html);
 									return;
 								}
 
-								celestial = currInstance.TelegramGetCurrentCelestial();
-								currInstance.TelegramJumpGate(celestial, coord, mode);
+								celestial = await currInstance.TelegramGetCurrentCelestial();
+								await currInstance.TelegramJumpGate(celestial, coord, mode);
 								return;
 
 							case ("/phalanx"): {
 								if (args.Length != 3) {
-									SendMessage(botClient, message.Chat, "Error! Format: <code>2:241:9 4:100:1</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error! Format: <code>2:241:9 4:100:1</code>", ParseMode.Html);
 									return;
 								}
 
@@ -611,7 +620,7 @@ namespace Tbot.Includes {
 									coord.Position = Int32.Parse(args[1].Split(':')[2]);
 									coord.Type = Celestials.Moon;
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing origin coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing origin coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
@@ -623,18 +632,18 @@ namespace Tbot.Includes {
 									target.Position = Int32.Parse(args[2].Split(':')[2]);
 									target.Type = Celestials.Planet;
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing destination coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing destination coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
 								// Check if Origin is a valid moon
 								myCelestials = currInstance.userData.celestials.Where(p => (p.Coordinate.IsSame(coord))).ToList();
 								if (myCelestials.Count > 0) {
-									SendMessage(botClient, message.Chat, $"Phalanx from \"{myCelestials[0].Coordinate.ToString()}\" to \"{target.ToString()}\"");
-									currInstance.TelegramPhalanx(myCelestials[0], target);
+									await SendMessage(botClient, message.Chat, $"Phalanx from \"{myCelestials[0].Coordinate.ToString()}\" to \"{target.ToString()}\"");
+									await currInstance.TelegramPhalanx(myCelestials[0], target);
 
 								} else {
-									SendMessage(botClient, message.Chat, $"Origin coordinate \"{coord.ToString()}\" is not a Moon or does not belong to us!");
+									await SendMessage(botClient, message.Chat, $"Origin coordinate \"{coord.ToString()}\" is not a Moon or does not belong to us!");
 								}
 								return;
 							}
@@ -647,21 +656,21 @@ namespace Tbot.Includes {
 								Buildables buildable = Buildables.Null;
 
 								if (message.Text.Split(' ').Length < 2) {
-									SendMessage(botClient, message.Chat, $"English buildable name required such as:\n{listbuildables}");
+									await SendMessage(botClient, message.Chat, $"English buildable name required such as:\n{listbuildables}");
 									return;
 								}
 								if (message.Text.Split(' ').Length == 3) {
 									try {
 										number = Int32.Parse(message.Text.Split(' ')[2]);
 									} catch {
-										SendMessage(botClient, message.Chat, "Error while parsing number value!");
+										await SendMessage(botClient, message.Chat, "Error while parsing number value!");
 										return;
 									}
 								}
 								if (Buildables.TryParse(message.Text.Split(' ')[1], out buildable)) {
-									currInstance.TelegramBuild(buildable, number);
+									await currInstance.TelegramBuild(buildable, number);
 								} else {
-									SendMessage(botClient, message.Chat, "Error while parsing buildable value!");
+									await SendMessage(botClient, message.Chat, "Error while parsing buildable value!");
 									return;
 								}
 								return;
@@ -669,61 +678,61 @@ namespace Tbot.Includes {
 
 							case ("/cancel"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Mission argument required!");
+									await SendMessage(botClient, message.Chat, "Mission argument required!");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
 								int fleetId = Int32.Parse(arg);
 
-								currInstance.TelegramRetireFleet(fleetId);
+								await currInstance.TelegramRetireFleet(fleetId);
 								return;
 
 
 							case ("/cancelghostsleep"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
-								currInstance.TelegramCancelGhostSleep();
+								await currInstance.TelegramCancelGhostSleep();
 								return;
 
 
 							case ("/recall"):
 								if (message.Text.Split(' ').Length < 2) {
-									SendMessage(botClient, message.Chat, "Enable/disable auto fleetsave recall argument required! Format: <code>/recall true/false</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Enable/disable auto fleetsave recall argument required! Format: <code>/recall true/false</code>", ParseMode.Html);
 									return;
 								}
 
 								if (message.Text.Split(' ')[1] != "true" && message.Text.Split(' ')[1] != "false") {
-									SendMessage(botClient, message.Chat, "Argument must be <code>true</code> or <code>false</code>.");
+									await SendMessage(botClient, message.Chat, "Argument must be <code>true</code> or <code>false</code>.");
 									return;
 								}
 								string recall = message.Text.Split(' ')[1];
 
 								if (await currInstance.EditSettings(null, Feature.Null, recall))
-									SendMessage(botClient, message.Chat, $"Recall value updated to {recall}.");
+									await SendMessage(botClient, message.Chat, $"Recall value updated to {recall}.");
 								return;
 
 
 							case ("/sleep"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Time argument required!");
+									await SendMessage(botClient, message.Chat, "Time argument required!");
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = Helpers.ParseDurationFromString(arg);
+								duration = _helpersService.ParseDurationFromString(arg);
 
-								DateTime timeNow = currInstance.GetDateTime();
+								DateTime timeNow = await currInstance.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 
-								currInstance.SleepNow(WakeUpTime);
+								await currInstance.SleepNow(WakeUpTime);
 								return;
 
 
 							case ("/wakeup"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 								currInstance.WakeUpNow(null);
@@ -732,56 +741,56 @@ namespace Tbot.Includes {
 
 							case ("/msg"):
 								if (message.Text.Split(' ').Length < 2) {
-									SendMessage(botClient, message.Chat, "Need message argument!");
+									await SendMessage(botClient, message.Chat, "Need message argument!");
 									return;
 								}
 								arg = message.Text.Split(new[] { ' ' }, 2).Last();
-								currInstance.TelegramMesgAttacker(arg);
+								await currInstance.TelegramMesgAttacker(arg);
 								return;
 
 
 							case ("/minexpecargo"):
 								if (message.Text.Split(' ').Length < 2) {
-									SendMessage(botClient, message.Chat, "Need minimum cargo number argument!");
+									await SendMessage(botClient, message.Chat, "Need minimum cargo number argument!");
 									return;
 								}
 								if (!Int32.TryParse(message.Text.Split(' ')[1], out int value)) {
-									SendMessage(botClient, message.Chat, "argument must be an integer!");
+									await SendMessage(botClient, message.Chat, "argument must be an integer!");
 									return;
 								}
 
 								arg = message.Text.Split(' ')[1];
 								int cargo = Int32.Parse(arg);
 								if (await currInstance.EditSettings(null, Feature.Null, string.Empty, cargo))
-									SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
+									await SendMessage(botClient, message.Chat, $"MinPrimaryToSend value updated to {cargo}.");
 								return;
 
 
 							case ("/stopexpe"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopExpeditions();
-								SendMessage(botClient, message.Chat, "Expeditions stopped!");
+								await SendMessage(botClient, message.Chat, "Expeditions stopped!");
 								return;
 
 
 							case ("/startexpe"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeExpeditions();
-								SendMessage(botClient, message.Chat, "Expeditions initialized!");
+								await SendMessage(botClient, message.Chat, "Expeditions initialized!");
 								return;
 
 
 							case ("/collect"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
@@ -791,156 +800,156 @@ namespace Tbot.Includes {
 
 							case ("/collectdeut"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "Need minimum deut amount argument <code>/collectdeut 500000</code>");
+									await SendMessage(botClient, message.Chat, "Need minimum deut amount argument <code>/collectdeut 500000</code>");
 									return;
 								}
 								if (!Int32.TryParse(message.Text.Split(' ')[1], out int val)) {
-									SendMessage(botClient, message.Chat, "argument must be an integer!");
+									await SendMessage(botClient, message.Chat, "argument must be an integer!");
 									return;
 								}
 
 								long MinAmount = Int32.Parse(message.Text.Split(' ')[1]);
-								currInstance.TelegramCollectDeut(MinAmount);
+								await currInstance.TelegramCollectDeut(MinAmount);
 								return;
 
 
 							case ("/stopautoresearch"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopBrainAutoResearch();
-								SendMessage(botClient, message.Chat, "AutoResearch stopped!");
+								await SendMessage(botClient, message.Chat, "AutoResearch stopped!");
 								return;
 
 
 							case ("/startautoresearch"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeBrainAutoResearch();
-								SendMessage(botClient, message.Chat, "AutoResearch started!");
+								await SendMessage(botClient, message.Chat, "AutoResearch started!");
 								return;
 
 
 							case ("/stopautomine"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopBrainAutoMine();
-								SendMessage(botClient, message.Chat, "AutoMine stopped!");
+								await SendMessage(botClient, message.Chat, "AutoMine stopped!");
 								return;
 
 
 							case ("/startautomine"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeBrainAutoMine();
-								SendMessage(botClient, message.Chat, "AutoMine started!");
+								await SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
 
 
 							case ("/stoplifeformautomine"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopBrainLifeformAutoMine();
-								SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
+								await SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
 								return;
 
 
 							case ("/startlifeformautomine"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeBrainLifeformAutoMine();
-								SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
+								await SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
 								return;
 
 
 							case ("/stoplifeformautoresearch"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopBrainLifeformAutoResearch();
-								SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
+								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
 								return;
 
 
 							case ("/startlifeformautoresearch"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeBrainLifeformAutoResearch();
-								SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
+								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
 								return;
 
 
 							case ("/stopdefender"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopDefender();
-								SendMessage(botClient, message.Chat, "Defender stopped!");
+								await SendMessage(botClient, message.Chat, "Defender stopped!");
 								return;
 
 
 							case ("/startdefender"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeDefender();
-								SendMessage(botClient, message.Chat, "Defender started!");
+								await SendMessage(botClient, message.Chat, "Defender started!");
 								return;
 
 
 							case ("/stopautofarm"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.StopAutoFarm();
-								SendMessage(botClient, message.Chat, "Autofarm stopped!");
+								await SendMessage(botClient, message.Chat, "Autofarm stopped!");
 								return;
 
 
 							case ("/startautofarm"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 
 								currInstance.InitializeAutoFarm();
-								SendMessage(botClient, message.Chat, "Autofarm started!");
+								await SendMessage(botClient, message.Chat, "Autofarm started!");
 								return;
 
 
 							case ("/getinfo"):
 								args = message.Text.Split(' ');
 								if (args.Length == 1) {
-									celestial = currInstance.TelegramGetCurrentCelestial();
-									currInstance.TelegramGetInfo(celestial);
+									celestial = await currInstance.TelegramGetCurrentCelestial();
+									await currInstance.TelegramGetInfo(celestial);
 
 									return;
 								} else if ((args.Length == 2)) {
@@ -949,10 +958,10 @@ namespace Tbot.Includes {
 									try {
 										celestialID = Int32.Parse(args[1]);
 										celestial = myCelestials.Single(c => c.ID == celestialID);
-										currInstance.TelegramGetInfo(celestial);
+										await currInstance.TelegramGetInfo(celestial);
 
 									} catch (Exception e) {
-										SendMessage(botClient, message.Chat,
+										await SendMessage(botClient, message.Chat,
 											$"Invalid arguments specified for Format <code>/getinfo 321312132</code>\n" +
 											$"Error:{e.Message}");
 									}
@@ -963,15 +972,15 @@ namespace Tbot.Includes {
 									try {
 										coord = Coordinate.FromString(String.Join(' ', args.Skip(1)));
 										celestial = myCelestials.Single(c => c.Coordinate.IsSame(coord));
-										currInstance.TelegramGetInfo(celestial);
+										await currInstance.TelegramGetInfo(celestial);
 
 									} catch (Exception e) {
-										SendMessage(botClient, message.Chat,
+										await SendMessage(botClient, message.Chat,
 											$"Invalid arguments specified for Format <code>/getinfo 2:48:5 Moon/Planet</code>\n" +
 											$"Error:{e.Message}");
 									}
 								} else {
-									SendMessage(botClient, message.Chat, "Invalid number of argument specified for current command");
+									await SendMessage(botClient, message.Chat, "Invalid number of argument specified for current command");
 								}
 
 
@@ -980,14 +989,14 @@ namespace Tbot.Includes {
 
 							case ("/celestial"):
 								if (message.Text.Split(' ').Length != 3) {
-									SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/celestial 2:56:8 moon/planet</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/celestial 2:56:8 moon/planet</code>", ParseMode.Html);
 
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
-									SendMessage(botClient, message.Chat, $"Celestial type argument required! Format: <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, $"Celestial type argument required! Format: <code>/celestial 2:41:9 moon/planet</code>", ParseMode.Html);
 									return;
 								}
 
@@ -996,7 +1005,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>", ParseMode.Html);
 									return;
 								}
 
@@ -1007,13 +1016,13 @@ namespace Tbot.Includes {
 
 							case ("/editsettings"):
 								if (message.Text.Split(' ').Length < 3) {
-									SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/editsettings 2:56:8 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/editsettings 2:56:8 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if ((!arg.Equals("moon")) && (!arg.Equals("planet"))) {
-									SendMessage(botClient, message.Chat, $"Celestial type argument needed! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, $"Celestial type argument needed! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
 									return;
 								}
 
@@ -1022,7 +1031,7 @@ namespace Tbot.Includes {
 									coord.System = Int32.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
 									return;
 								}
 								var celestialType = char.ToUpper(arg[0]) + arg.Substring(1);
@@ -1031,7 +1040,7 @@ namespace Tbot.Includes {
 								if (message.Text.ToLower().Split(' ').Length > 3) {
 									arg = message.Text.ToLower().Split(' ')[3];
 									if ((!arg.Equals("AutoMine")) && (!arg.Equals("AutoResearch")) && (!arg.Equals("AutoRepatriate")) && (!arg.Equals("Expeditions"))) {
-										SendMessage(botClient, message.Chat, $"Update type argument not valid! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+										await SendMessage(botClient, message.Chat, $"Update type argument not valid! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
 										return;
 									} else {
 										switch (arg) {
@@ -1059,7 +1068,7 @@ namespace Tbot.Includes {
 
 							case ("/spycrash"):
 								if (message.Text.Split(' ').Length != 2) {
-									SendMessage(botClient, message.Chat, "<code>auto</code> or coordinate argument needed! Format: <code>/spycrash auto/2:56:8</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "<code>auto</code> or coordinate argument needed! Format: <code>/spycrash auto/2:56:8</code>", ParseMode.Html);
 									return;
 								}
 
@@ -1072,34 +1081,34 @@ namespace Tbot.Includes {
 										coord.Position = Int32.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 										target = new Coordinate() { Galaxy = coord.Galaxy, System = coord.System, Position = coord.Position, Type = Celestials.Planet };
 									} catch {
-										SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>, or <code>auto</code>", ParseMode.Html);
+										await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9</code>, or <code>auto</code>", ParseMode.Html);
 										return;
 									}
 								}
-								Celestial origin = currInstance.TelegramGetCurrentCelestial();
+								Celestial origin = await currInstance.TelegramGetCurrentCelestial();
 
-								currInstance.SpyCrash(origin, target);
+								await currInstance.SpyCrash(origin, target);
 								return;
 
 
 							case ("/attacked"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
-								bool isUnderAttack = currInstance.TelegramIsUnderAttack();
+								bool isUnderAttack = await currInstance.TelegramIsUnderAttack();
 
 								if (isUnderAttack) {
-									SendMessage(botClient, message.Chat, "Yes! You're still under attack!");
+									await SendMessage(botClient, message.Chat, "Yes! You're still under attack!");
 								} else {
-									SendMessage(botClient, message.Chat, "Nope! Your empire is safe.");
+									await SendMessage(botClient, message.Chat, "Nope! Your empire is safe.");
 								}
 								return;
 
 
 							case ("/getcelestials"):
 								if (message.Text.Split(' ').Length != 1) {
-									SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
 									return;
 								}
 								myCelestials = currInstance.userData.celestials.ToList();
@@ -1107,7 +1116,7 @@ namespace Tbot.Includes {
 								foreach (Celestial c in myCelestials) {
 									celestialStr += $"{c.Name.PadRight(16, ' ')} {c.Coordinate.ToString().PadRight(16)} {c.ID}\n";
 								}
-								SendMessage(botClient, message.Chat, celestialStr);
+								await SendMessage(botClient, message.Chat, celestialStr);
 
 								return;
 							default:
@@ -1115,23 +1124,23 @@ namespace Tbot.Includes {
 						}
 
 					} catch (ApiRequestException) {
-						SendMessage(botClient, message.Chat, $"ApiRequestException Error!\nTry /ping to check if bot still alive!");
+						await SendMessage(botClient, message.Chat, $"ApiRequestException Error!\nTry /ping to check if bot still alive!");
 						return;
 
 					} catch (FormatException) {
-						SendMessage(botClient, message.Chat, $"FormatException Error!\nYou entered an unexpected value (string instead of integer?)\nTry /ping to check if bot still alive!");
+						await SendMessage(botClient, message.Chat, $"FormatException Error!\nYou entered an unexpected value (string instead of integer?)\nTry /ping to check if bot still alive!");
 						return;
 
 					} catch (NullReferenceException) {
-						SendMessage(botClient, message.Chat, $"NullReferenceException Error!\n Something unknown went wrong!\nTry /ping to check if bot still alive!");
+						await SendMessage(botClient, message.Chat, $"NullReferenceException Error!\n Something unknown went wrong!\nTry /ping to check if bot still alive!");
 						return;
 
-					} catch(OperationCanceledException) when (cancellationToken.IsCancellationRequested == true) {
-						SendMessage(botClient, message.Chat, $"OperationCanceledException Maybe TelegramMessenger has been disabled.");
+					} catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested == true) {
+						await SendMessage(botClient, message.Chat, $"OperationCanceledException Maybe TelegramMessenger has been disabled.");
 						return;
 
 					} catch (Exception) {
-						SendMessage(botClient, message.Chat, $"Unknown Exception Error!\nTry /ping to check if bot still alive!");
+						await SendMessage(botClient, message.Chat, $"Unknown Exception Error!\nTry /ping to check if bot still alive!");
 						return;
 
 					} finally {
@@ -1160,8 +1169,7 @@ namespace Tbot.Includes {
 				};
 
 				await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, ct);
-			}
-			catch { }
+			} catch { }
 		}
 
 		public void TelegramBotDisable() {
