@@ -40,9 +40,9 @@ Each instance should be declared in the *Instances* section. A separate settings
 
 You must use different ports for each instance. Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
 
-**Hot reloading of instances is only partially supported at the moment. You can add and remove instances while the bot is running, but the feature is still in beta so there may be bugs.**
+Be warned that Ogame's servers have a limit on the number of requests per second. If you run too many instances, you may get IP banned, or end up with banned accounts. Use proxies to avoid this.
 
-## Features
+### Features
 TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
 Here follows a short explanation of each of them, read the [Wiki](https://github.com/ogame-tbot/TBot/wiki/Configuration-guide) for a more indepth explanation.
 
@@ -74,7 +74,7 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings. The settings are quite self-explainatory. **WARNING: Ogame is positively blocking IPs from datacenters. You will probably need a residential proxy in ordet to be able to login.**
 
-## Telegram
+### Telegram
 You can control and get info for TBot through a Telegram Bot. In order to enable it, you need to follow theese steps:
 * Create a new Telegram bot
   * Write "/new_bot" to [@botfather](https://t.me/botfather)
@@ -122,7 +122,7 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
     * /attacked - check if you're (still) under attack
     * /celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>
     * /getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>
-    * /editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>
+    * /editsettings - Edit JSON file to change Expeditions, Colonize, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>
     * /minexpecargo - Modify MinPrimaryToSend value inside JSON settings
     * /stopexpe - Stop sending expedition
     * /startexpe - Start sending expedition
@@ -139,9 +139,11 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
     * /stopautofarm - stop autofarm
     * /startautofarm - start autofarm
  
-## Settings Hot Reload
+### Settings Hot Reload
 
-TBot supports the editing of the settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
+TBot supports the editing of instance settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
+
+**Hot reloading of instances is only partially supported at the moment. You can add and remove instances while the bot is running, but the feature is still in beta so there may be bugs.**
   
 ## Running on Windows
 
@@ -175,7 +177,8 @@ TBot supports the editing of the settings even while it is running. It will take
   * `./TBot`
 
 ## Running on Amazon Web Services
-WARNING: Ogame is positively blocking IPs from datacenters. You probably need a residential proxy to run on AWS, or any other VPS.
+**WARNING: Ogame is positively blocking IPs from datacenters. You probably need a residential proxy to run on AWS, or any other VPS.**
+
 Some successful tests have been done to run TBot on the smallest instance of LightSail (1 vCPU, 20 GB SSD, 500 MB RAM and 1 TB outbound traffic) on Amazon Linux 2, which is free for a three month trial. In order to run it, steps should be as follow:
 * Create your account on Amazon Web Services (Credit Card required), and create a LightSail Instance running Amazon Linux 2. The smallest one fits into the "Free Tier" Program, which allows a 3 month free trial.
 * Select the ports where you want to connect, and open them in the Networking Settings on the instance's AWS Console (ex. ports 8000 - 8020 open for TCP and from any ip address if you don't know where you will be connecting from). This should make it accessible to the public internet.
