@@ -29,16 +29,18 @@ Testing and PR are very much appreciated!
 Do you like the project? Buy me a beer!
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=2QXP4KAKZRGL4)
-[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)](https://en.cryptobadges.io/donate/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)
-[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x129a661940E4eE0Aff581D0D778d6233722b6557)](https://en.cryptobadges.io/donate/0x129a661940E4eE0Aff581D0D778d6233722b6557)
 
 ## Configuration
 
 TBot supports multi-instance botting.
+
 *settings.json* handles the configuration of Telegram Bot and the bot instances.
-Each instance should be declared in the *Instances* section. A different settings file is required for each instance. An example is provided as *instance_setings.json*
-You must use different ports for each instance.
-Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use differetn cookies files.
+
+Each instance should be declared in the *Instances* section. A separate settings file is required for each instance. An example is provided as *instance_setings.json*
+
+You must use different ports for each instance. Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
+
+**Hot reloading of instances is only partially supported at the moment. You can add and remove instances while the bot is running, but the feature is still in beta so there may be bugs.**
 
 ## Features
 TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
