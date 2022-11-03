@@ -32,37 +32,45 @@ Do you like the project? Buy me a beer!
 [![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)](https://en.cryptobadges.io/donate/38eQB191TWw94aYcBmuVKuDC16DzpTvT25)
 [![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x129a661940E4eE0Aff581D0D778d6233722b6557)](https://en.cryptobadges.io/donate/0x129a661940E4eE0Aff581D0D778d6233722b6557)
 
+## Configuration
+
+TBot supports multi-instance botting.
+*settings.json* handles the configuration of Telegram Bot and the bot instances.
+Each instance should be declared in the *Instances* section. A different settings file is required for each instance. An example is provided as *instance_setings.json*
+You must use different ports for each instance.
+Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use differetn cookies files.
+
 ## Features
-TBot has a wide variety of useful features. They all can be configured and customized editing settings.json.
+TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
 Here follows a short explanation of each of them, read the [Wiki](https://github.com/ogame-tbot/TBot/wiki/Configuration-guide) for a more indepth explanation.
 
 * Defender: TBot checks periodically for incoming attacks
-  * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible. A favourite type of mission can be set in settings
-  * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in settings.json
+  * Autofleet: TBot dispatches your endangered fleet and resources on the safest mission possible. A favourite type of mission can be set in the settings
+  * MessageAttacker: TBot sends a message to the attacker(s). The message is picked randomly from the array given in the settings
   * SpyAttacker: TBot automatically spies attacker with set number of probes
   * Alarm: TBot plays a nasty sound if under attack
   * TelegramMessenger: TBot sends you a notice if under attack (requires additional configuration, see [below](#telegram))
 * Expeditions: TBot will handle them for you
   * TBot can automatically optimize expeditions for your account, sending them from one or multiple origins. Military expos are supported too, by adding a ship type to the automatically calculated optimal fleet or by manually setting the desired fleet.
 * Brain: TBot has a series of extra functionalities
-  * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings.json)
+  * AutoCargo: TBot checks wether your celestials have enough capacity to displace the resources. If not, TBot builds ships for you (preferred type taken from settings)
   * AutoRepatriate: TBot periodically repatriates all your resources to a single drop celestial. You can also specify to leave a set amount of deuterium (only on moons or both moons and planets)
-  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings.json. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
-  * AutoResearch: Tbot will develop your researches from the planet set in settings.json up to the given levels. An origin can be set in settings.json to send the necessary resources from.
+  * AutoMine: Tbot will develop your planets and moons up to the levels given in settings. A cool ROI based algorithm is present: TBot will develop your planets calculating to the most profitable building for each planet! A maximum amount of days of investment return can be set. An origin can be set in settings.json to send the necessary resources from.
+  * AutoResearch: Tbot will develop your researches from the planet set in settings up to the given levels. An origin can be set in settings to send the necessary resources from.
   * AutoMineLF: TBot will develop you LifeForms buildings up to the given levels. TBot will detect the active lifeform based on lifeform buildings present, so you must build at least a lv 1 building in order to TBot to account for that planet.
   * AutoResearchLF: TBot will research the LifeForms techs you selected up to the given level. Only researches with lv 1 or more will be researched. You must manually select the desired researches and upgrade them to lv 1 or more in order to TBot to account for them.
   * BuyOfferOfTheDay: TBot can buy the daily item from the Trader (check intervals are implemented so you can configure shorter check times when there is the specific event)
 * AutoFarm: TBot will scan one or more ranges of systems spying inactive players and attacking them with the specified type of ship if they are profitable above a given amount.
 * AutoHarvest: TBot will harvest expedition debris in your celestials' systems as well as your own DFs
 * AutoColonize: TBot will make new colonies. Input the list of coordinates of your desired colonies and TBot will do the rest.
-* SleepMode: TBot will not interact with your account between the hours specified in settings.json
+* SleepMode: TBot will not interact with your account between the hours specified in settings
   * AutoFleetSave: TBot will keep your fleets safe by dispatching them on the safest mission possible until wake up time (deploy with recall is supported!)
 * Local Proxy: Tbot allows you to play in your browser
-  * Insert the hostname of the machine you'll run TBot onto in the settings.json (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
-  * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings.json)
+  * Insert the hostname of the machine you'll run TBot onto in the settings (i.e.: localhost, or the local ip of a computer on your local network such as 192.168.X.X)
+  * Navigate with your browser to http://*hostname:port*/game/index.php (remember to change hostname and port with the ones you specified in settings)
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
-  * Fill the settings in settings.json. The settings are quite self-explainatory. WARNING: Ogame is positively blocking IPs from datacenters. You will probably need a residential proxy in ordet to be able to login.
+  * Fill the settings in settings. The settings are quite self-explainatory. **WARNING: Ogame is positively blocking IPs from datacenters. You will probably need a residential proxy in ordet to be able to login.**
 
 ## Telegram
 You can control and get info for TBot through a Telegram Bot. In order to enable it, you need to follow theese steps:
@@ -136,10 +144,10 @@ TBot supports the editing of the settings even while it is running. It will take
 ## Running on Windows
 
 * Download and unzip latest release.
-* Insert you credentials in settings.json
+* Insert you credentials in instance settings file
   * Under "Universe" type your universe name with leading capital letter, i.e.: Andromeda, Bellatrix etc...
   * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
-* Configure the bot by editing all settings.json fields
+* Configure the bot by editing all settings fields
   * All config options are sorted by feature, [check which features you](#features) want and configure them before activating
 * Make sure you have installed the [.NET 5 runtime](https://dotnet.microsoft.com/download/dotnet/5.0) for your platform
 * Run TBot.exe
@@ -155,7 +163,7 @@ TBot supports the editing of the settings even while it is running. It will take
   * `chmod +x ogamed`
 * Make TBot executable (*this is only required on first run or update*)
   * `chmod +x TBot`
-* Insert you credentials in settings.json
+* Insert you credentials in instance settings file
   * Under "Universe" type your universe name **with leading capital letter**, i.e.: Andromeda, Bellatrix etc...
   * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
 * Configure the bot by editing all settings.json fields
@@ -212,7 +220,7 @@ To configure Ninja Capthca Service follow [this guide](https://github.com/alaing
 ## Development Plans
 A web config interface should be written soon or later, as well as a database persistence.
 
-Also, a proper documentation about how to deal with settings.json would no doubt be helpful, especially for new users.
+Also, a proper documentation about how to deal with settings would no doubt be helpful, especially for new users.
 
 Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
 
