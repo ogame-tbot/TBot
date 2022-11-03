@@ -374,14 +374,5 @@
 		],
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
-	},
-	"TelegramMessenger": {
-		"Active": false,
-		"API": "",
-		"ChatId": "",
-		"TelegramAutoPing": {
-			"Active": true,
-			"EveryHours":  1
-		}
 	}
 }

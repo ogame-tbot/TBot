@@ -1,4 +1,13 @@
 {
+	"TelegramMessenger": {
+		"Active": false,
+		"API": "",
+		"ChatId": "",
+		"TelegramAutoPing": {
+			"Active": true,
+			"EveryHours": 1
+		}
+	},
 	"Instances": [
 		{
 			"Settings": "instance_settings.json",
