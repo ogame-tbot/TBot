@@ -34,9 +34,9 @@ Do you like the project? Buy me a beer!
 
 TBot supports multi-instance botting.
 
-*settings.json* handles the configuration of Telegram Bot and the bot instances.
+*settings.json* handles the configuration of Telegram Bot and of the bot instances.
 
-Each instance should be declared in the *Instances* section. A separate settings file is required for each instance. An example is provided as *instance_setings.json*
+Each instance should be declared in the *Instances* section. A separate settings file is required for each instance. An example is provided as *instance_settings.json*
 
 You must use different ports for each instance. Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
 
