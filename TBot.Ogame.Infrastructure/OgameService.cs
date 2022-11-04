@@ -37,6 +37,7 @@ namespace TBot.Ogame.Infrastructure {
 		private ProxySettings _proxySettings;
 		private string _cookiesPath;
 
+		bool _mustKill = false;	// used whenever we want to actually kill ogamed
 
 		public OgameService(ILoggerService<OgameService> logger) {
 			_logger = logger;
@@ -142,6 +143,7 @@ namespace TBot.Ogame.Infrastructure {
 				ogameProc.BeginOutputReadLine();
 
 				_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Started with PID {ogameProc.Id}");   // This would raise an exception
+				_mustKill = false;
 			} catch (Exception ex) {
 				_logger.WriteLog(LogLevel.Error, LogSender.OGameD, $"Error executing ogamed instance: {ex.Message}");
 				Environment.Exit(0);
@@ -163,12 +165,10 @@ namespace TBot.Ogame.Infrastructure {
 			_logger.WriteLog(isErr ? LogLevel.Error : LogLevel.Information, LogSender.OGameD, $"[{_username}] \"{payload}\"");
 		}
 
-		private bool runningRerun = false;
 		private void handle_ogamedProcess_Exited(object? sender, EventArgs e) {
 			_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Exited {_ogamedProcess.ExitCode}" +
 				$" TotalTime(ms) {Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds)}");
-			if (!runningRerun) {
-				runningRerun = true;
+			if (_mustKill == false) {
 				RerunOgamed();
 			} else {
 				_ogamedProcess.Dispose();
@@ -176,7 +176,6 @@ namespace TBot.Ogame.Infrastructure {
 		}
 		public void RerunOgamed() {
 			ExecuteOgamedExecutable(_credentials, _host, _port, _captchaKey, _proxySettings, _cookiesPath);
-			runningRerun = false;
 		}
 
 		public void KillOgamedExecutable(CancellationToken ct = default) {

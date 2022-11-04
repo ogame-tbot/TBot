@@ -24,7 +24,7 @@ using Telegram.Bot.Types.Enums;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Tbot.Services {
-	internal class TBotMain : IEquatable<TBotMain> {
+	internal class TBotMain : IEquatable<TBotMain>, IAsyncDisposable {
 		private readonly IOgameService _ogameService;
 		private readonly ILoggerService<TBotMain> _logger;
 		private readonly IHelpersService _helpersService;
@@ -238,10 +238,15 @@ namespace Tbot.Services {
 			return true;
 		}
 
-		public async Task deinit() {
+		public async ValueTask DisposeAsync() {
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing instance...");
 
 			settingsWatcher.deinitWatch();
+
+			if (telegramMessenger != null) {
+				log(LogLevel.Information, LogSender.Tbot, "Removing instance from telegram...");
+				await telegramMessenger.RemoveTBotInstance(this);
+			}
 
 			foreach (var sem in xaSem) {
 				log(LogLevel.Information, LogSender.Tbot, $"Deinitializing feature {sem.Key.ToString()}");
@@ -268,6 +273,9 @@ namespace Tbot.Services {
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitialization completed");
+
+			// Crucio32000: Maybe it is needed to tell the Garbage Collector to mind its own business ?
+			//GC.SuppressFinalize(this);
 		}
 
 		public bool Equals(TBotMain other) {

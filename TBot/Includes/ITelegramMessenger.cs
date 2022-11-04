@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using Tbot.Services;
 using Telegram.Bot;
@@ -12,6 +12,7 @@ namespace Tbot.Includes {
 		ITelegramBotClient Client { get; }
 
 		Task AddTbotInstance(TBotMain instance);
+		Task RemoveTBotInstance(TBotMain instance);
 		Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken);
 		Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html);
 		Task SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default);
