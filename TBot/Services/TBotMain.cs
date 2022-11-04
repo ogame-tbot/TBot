@@ -571,6 +571,13 @@ namespace Tbot.Services {
 					jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
 					jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
 				}
+
+				if (feature == Feature.Colonize || feature == Feature.Null) {
+					jsonObj["AutoColonize"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["AutoColonize"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["AutoColonize"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["AutoColonize"]["Origin"]["Type"] = "Planet";
+				}
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);

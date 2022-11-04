@@ -344,7 +344,7 @@ namespace Tbot.Services {
 								"/attacked - check if you're (still) under attack\n" +
 								"/celestial - Update program current celestial target. Format: <code>/celestial 2:45:8 Moon/Planet</code>\n" +
 								"/getinfo - Get current celestial resources and ships. Additional arg format has to be <code>/getinfo 2:45:8 Moon/Planet</code>\n" +
-								"/editsettings - Edit JSON file to change Expeditions, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
+								"/editsettings - Edit JSON file to change Expeditions, Colonize, Autominer's and Autoresearch Transport Origin, Repatriate and AutoReseach Target celestial. Format: <code>/editsettings 2:425:9 Moon</code>\n" +
 								"/minexpecargo - Modify MinPrimaryToSend value inside JSON settings\n" +
 								"/stopexpe - Stop sending expedition\n" +
 								"/startexpe - Start sending expedition\n" +
@@ -1036,13 +1036,13 @@ namespace Tbot.Services {
 
 							case "/editsettings":
 								if (message.Text.Split(' ').Length < 3) {
-									await SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/editsettings 2:56:8 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Coordinate and celestial type arguments required! Format: <code>/editsettings 2:56:8 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions/Colonize)</code>", ParseMode.Html);
 									return;
 								}
 
 								arg = message.Text.ToLower().Split(' ')[2];
 								if (!arg.Equals("moon") && !arg.Equals("planet")) {
-									await SendMessage(botClient, message.Chat, $"Celestial type argument needed! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, $"Celestial type argument needed! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions/Colonize)</code>", ParseMode.Html);
 									return;
 								}
 
@@ -1051,7 +1051,7 @@ namespace Tbot.Services {
 									coord.System = int.Parse(message.Text.Split(' ')[1].Split(':')[1]);
 									coord.Position = int.Parse(message.Text.Split(' ')[1].Split(':')[2]);
 								} catch {
-									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									await SendMessage(botClient, message.Chat, "Error while parsing coordinates! Format: <code>3:125:9 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions/Colonize)</code>", ParseMode.Html);
 									return;
 								}
 								var celestialType = char.ToUpper(arg[0]) + arg.Substring(1);
@@ -1059,8 +1059,8 @@ namespace Tbot.Services {
 								Feature updateType = Feature.Null;
 								if (message.Text.ToLower().Split(' ').Length > 3) {
 									arg = message.Text.ToLower().Split(' ')[3];
-									if (!arg.Equals("AutoMine") && !arg.Equals("AutoResearch") && !arg.Equals("AutoRepatriate") && !arg.Equals("Expeditions")) {
-										await SendMessage(botClient, message.Chat, $"Update type argument not valid! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions)</code>", ParseMode.Html);
+									if (!arg.Equals("AutoMine") && !arg.Equals("AutoResearch") && !arg.Equals("AutoRepatriate") && !arg.Equals("Expeditions") && !arg.Equals("Colonize")) {
+										await SendMessage(botClient, message.Chat, $"Update type argument not valid! Format: <code>/editsettings 2:100:3 moon/planet (AutoMine/AutoResearch/AutoRepatriate/Expeditions/Colonize)</code>", ParseMode.Html);
 										return;
 									} else {
 										switch (arg) {
@@ -1075,6 +1075,9 @@ namespace Tbot.Services {
 												break;
 											case "Expeditions":
 												updateType = Feature.Expeditions;
+												break;
+											case "Colonize":
+												updateType = Feature.Colonize;
 												break;
 											default:
 												break;
