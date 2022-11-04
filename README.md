@@ -42,7 +42,7 @@ TBot may support two modes:
 
 
 ## Single Instance
-You can get an example at 
+You can get an example at *instance_settings.json*
 
 ## Multiple Instance
 The settings json should be compiled as follows:
