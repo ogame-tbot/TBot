@@ -94,7 +94,7 @@ namespace Tbot {
 				loggerConfiguration.WriteTo.Telegram(botToken: (string) mainSettings.TelegramMessenger.API,
 					chatId: (string) mainSettings.TelegramMessenger.ChatId,
 					dateFormat: null,
-					outputTemplate: "{LogLevelEmoji:l} {LogSenderEmoji:l}: {Message:lj}{NewLine}{Exception}");
+					outputTemplate: "{LogLevelEmoji:l}{LogSenderEmoji:l} {Message:lj}{NewLine}{Exception}");
 			}
 			
 
