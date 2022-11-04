@@ -9,7 +9,6 @@ using TBot.Common.Logging.Hooks;
 using TBot.Common.Logging.TextFormatters;
 using TBot.Common.Logging.Sinks;
 using System.Reflection;
-using Serilog;
 using Serilog.Events;
 
 namespace TBot.Common.Logging {

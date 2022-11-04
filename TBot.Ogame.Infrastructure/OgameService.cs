@@ -16,6 +16,10 @@ using TBot.Ogame.Infrastructure.Exceptions;
 using TBot.Ogame.Infrastructure.Enums;
 using Newtonsoft.Json.Linq;
 using TBot.Common.Logging;
+using System.Net.Http;
+using Polly;
+using Polly.Extensions.Http;
+using Polly.Retry;
 
 namespace TBot.Ogame.Infrastructure {
 
@@ -182,14 +186,7 @@ namespace TBot.Ogame.Infrastructure {
 			}
 		}
 
-		private async Task<T> GetAsync<T>(string resource) {
-			var request = new HttpRequestMessage() {
-				Method = HttpMethod.Get,
-				RequestUri = new Uri(resource, UriKind.Relative)
-			};
-
-			var response = await _client.SendAsync(request);
-			response.EnsureSuccessStatusCode();
+		private async Task<T> ManageResponse<T>(HttpResponseMessage response) {
 			var jsonResponseContent = await response.Content.ReadAsStringAsync();
 			var result = JsonConvert.DeserializeObject<OgamedResponse>(jsonResponseContent, new JsonSerializerSettings {
 				DateTimeZoneHandling = DateTimeZoneHandling.Local,
@@ -198,41 +195,51 @@ namespace TBot.Ogame.Infrastructure {
 			if (result?.Status != "ok") {
 				throw new OgamedException($"An error has occurred: Status: {result?.Status} - Message: {result?.Message}");
 			} else {
-				if (result.Result is JObject || result.Result is JArray) {
-					return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings {
-						DateTimeZoneHandling = DateTimeZoneHandling.Local,
-						NullValueHandling = NullValueHandling.Ignore
-					});
+				if (result.Result is JObject) {
+					var jObject = result.Result as JObject;
+					return jObject.ToObject<T>();
+				}
+				else if (result.Result is JArray) {
+					var jArray = result.Result as JArray;
+					return jArray.ToObject<T>();
 				}
 			}
 			return (T) result.Result;
 		}
 
-		private async Task<T> PostAsync<T>(string resource, params KeyValuePair<string, string>[] parameters) {
-			var request = new HttpRequestMessage() {
-				Method = HttpMethod.Post,
-				RequestUri = new Uri(resource, UriKind.Relative)
-			};
-			request.Content = new FormUrlEncodedContent(parameters);
+		private AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy() {
+			return Policy.Handle<Exception>()
+				.OrTransientHttpError()
+				.WaitAndRetryAsync(3, retryCount => TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
+		}
 
-			var response = await _client.SendAsync(request);
+		private async Task<T> GetAsync<T>(string resource) {
+			var response = await GetRetryPolicy()
+				.ExecuteAsync(async () => {
+					var request = new HttpRequestMessage() {
+						Method = HttpMethod.Get,
+						RequestUri = new Uri(resource, UriKind.Relative)
+					};
+					var response = await _client.SendAsync(request);
+					return response;
+				});
 			response.EnsureSuccessStatusCode();
-			var jsonResponseContent = await response.Content.ReadAsStringAsync();
-			var result = JsonConvert.DeserializeObject<OgamedResponse>(jsonResponseContent, new JsonSerializerSettings {
-				DateTimeZoneHandling = DateTimeZoneHandling.Local,
-				NullValueHandling = NullValueHandling.Ignore
-			});
-			if (result?.Status != "ok") {
-				throw new OgamedException($"An error has occurred: Status: {result?.Status} - Message: {result?.Message}");
-			} else {
-				if (result.Result is JObject || result.Result is JArray) {
-					return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(result.Result), new JsonSerializerSettings {
-						DateTimeZoneHandling = DateTimeZoneHandling.Local,
-						NullValueHandling = NullValueHandling.Ignore
-					});
-				}
-			}
-			return (T) result.Result;
+			return await ManageResponse<T>(response);
+		}
+
+		private async Task<T> PostAsync<T>(string resource, params KeyValuePair<string, string>[] parameters) {
+			var response = await GetRetryPolicy()
+				.ExecuteAsync(async () => {
+					var request = new HttpRequestMessage() {
+						Method = HttpMethod.Post,
+						RequestUri = new Uri(resource, UriKind.Relative)
+					};
+					request.Content = new FormUrlEncodedContent(parameters);
+					var response = await _client.SendAsync(request);
+					return response;
+				});
+			response.EnsureSuccessStatusCode();
+			return await ManageResponse<T>(response);
 		}
 
 		public async Task SetUserAgent(string userAgent) {
