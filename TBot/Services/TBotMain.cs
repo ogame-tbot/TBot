@@ -137,7 +137,9 @@ namespace Tbot.Services {
 			userData.userInfo = await UpdateUserInfo();
 			userData.staff = await UpdateStaff();
 
-			log(LogLevel.Information, LogSender.Tbot, $"Server time: {GetDateTime().ToString()}");
+			var serverTime = await GetDateTime();
+
+			log(LogLevel.Information, LogSender.Tbot, $"Server time: {serverTime.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player name: {userData.userInfo.PlayerName}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player class: {userData.userInfo.Class.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player rank: {userData.userInfo.Rank}");

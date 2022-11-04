@@ -18,6 +18,7 @@ namespace Tbot.Services {
 				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
 				.AddScoped<IHelpersService, HelpersService>()
 				.AddScoped<IOgameService, OgameService>()
+				.AddScoped<ITelegramMessenger, TelegramMessenger>()
 				.AddScoped<IInstanceManager, InstanceManager>()
 				.BuildServiceProvider();
 		}

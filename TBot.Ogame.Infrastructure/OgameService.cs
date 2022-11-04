@@ -180,6 +180,7 @@ namespace TBot.Ogame.Infrastructure {
 
 		public void KillOgamedExecutable(CancellationToken ct = default) {
 			if (_ogamedProcess != null) {
+				_mustKill = true;
 				_ogamedProcess.Kill();
 				_ogamedProcess.Dispose();
 			}
@@ -212,7 +213,7 @@ namespace TBot.Ogame.Infrastructure {
 				.WaitAndRetryAsync(3, retryCount => TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
 		}
 
-		private async Task<T> GetAsync<T>(string resource) {
+		private async Task<T> GetAsync<T>(string resource, bool ensureSuccess = true) {
 			var response = await GetRetryPolicy()
 				.ExecuteAsync(async () => {
 					var request = new HttpRequestMessage() {

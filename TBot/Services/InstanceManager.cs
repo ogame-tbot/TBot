@@ -46,20 +46,14 @@ namespace Tbot.Services {
 			// Detect settings versioning by checking existence of "Instances" key
 			SettingsVersion settingVersion = SettingsVersion.Invalid;
 
-			// We are going to gather valid Instances to be inited. The execution will be like this:
-			//	Await deinit of any removed instances
-			//	Async init of good instances
 			List<TbotInstanceData> newInstances = new();
-			List<Task<TbotInstanceData>> awaitingInstances = new();
-			List<Task> deinitingInstances = new();
-			Dictionary<string, string> instancesToBeInited = new(); // Key -> Alias, Value -> settings
 
 			if (SettingsService.IsSettingSet(_mainSettings, "Instances") == false) {
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "Single instance settings detected");
 				settingVersion = SettingsVersion.AllInOne;
 
 				// Start only an instance of TBot
-				instancesToBeInited.Add("MAIN", SettingsAbsoluteFilepath);
+				newInstances.Add(await StartTBotMain(SettingsAbsoluteFilepath, "MAIN"));
 
 			} else {
 				// In this case we need a json formatted like follows:
@@ -71,6 +65,13 @@ namespace Tbot.Services {
 				// ]
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "Multiples instances settings detected");
 				settingVersion = SettingsVersion.MultipleInstances;
+
+				// We are going to gather valid Instances to be inited. The execution will be like this:
+				//	Await deinit of any removed instances
+				//	Async init of good instances
+				List<Task<TbotInstanceData>> awaitingInstances = new();
+				List<Task> deinitingInstances = new();
+				Dictionary<string, string> instancesToBeInited = new(); // Key -> Alias, Value -> settings
 
 				// Initialize all the instances of TBot found in main settings
 				ICollection json_instances = _mainSettings.Instances;
@@ -164,8 +165,8 @@ namespace Tbot.Services {
 				(bool) _mainSettings.TelegramMessenger.Active
 			) {
 				if (telegramMessenger == null) {
-					var telegramLogger = _mainSettings.GetRequiredService<ILoggerService<TelegramMessenger>>();
-					var helpersService = _mainSettings.GetRequiredService<IHelpersService>();
+					var telegramLogger = ServiceProviderFactory.ServiceProvider.GetRequiredService<ILoggerService<TelegramMessenger>>();
+					var helpersService = ServiceProviderFactory.ServiceProvider.GetRequiredService<IHelpersService>();
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, "Activating Telegram Messenger");
 					telegramMessenger = new TelegramMessenger(telegramLogger, helpersService, (string) _mainSettings.TelegramMessenger.API, (string) _mainSettings.TelegramMessenger.ChatId);
 					Thread.Sleep(1000);
