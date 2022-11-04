@@ -552,10 +552,10 @@ namespace Tbot.Services {
 				}
 
 				if (feature == Feature.Colonize || feature == Feature.Null) {
-					jsonObj["AutoColonize"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["AutoColonize"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["AutoColonize"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["AutoColonize"]["Origin"][0]["Type"] = "Planet";
+					jsonObj["AutoColonize"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["AutoColonize"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["AutoColonize"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["AutoColonize"]["Origin"]["Type"] = "Planet";
 				}
 			}
 
