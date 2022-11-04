@@ -38,7 +38,7 @@ TBot may support two modes:
   
 *settings.json* handles the configuration of Telegram Bot and of the bot instances.
 *settings.json* is passed as a command line argument as follows:
-> TBot --settings <settings.json path>
+> TBot --settings=<settings.json path>
 
 
 ## Single Instance
