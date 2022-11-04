@@ -32,15 +32,51 @@ Do you like the project? Buy me a beer!
 
 ## Configuration
 
-TBot supports multi-instance botting.
-
+TBot may support two modes:
+- Single Instance (old behaviour)
+- Multiple Instances (new behaviour. See below)
+  
 *settings.json* handles the configuration of Telegram Bot and of the bot instances.
+*settings.json* is passed as a command line argument as follows:
+> TBot --settings <settings.json path>
 
-Each instance should be declared in the *Instances* section. A separate settings file is required for each instance. An example is provided as *instance_settings.json*
 
-You must use different ports for each instance. Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
+## Single Instance
+You can get an example at 
 
-Be warned that Ogame's servers have a limit on the number of requests per second. If you run too many instances, you may get IP banned, or end up with banned accounts. Use proxies to avoid this.
+## Multiple Instance
+The settings json should be compiled as follows:
+```json
+{
+        "TelegramMessenger": {
+                "Active": true,
+                "API": "<API TOKEN ID>",
+                "ChatId": "<your chat id>",
+                "TelegramAutoPing": {
+                        "Active": true,
+                        "EveryHours": 0
+                }
+        },
+        "Instances": [
+                {
+                        "Alias": "Main something",
+                        "Settings": "<main_settings>.json"
+                },
+                {
+                        "Alias": "Another main",
+                        "Settings": "<other_main>.json"
+                }
+        ]
+}
+```
+NB: The settings should be pointing to a relative directory of this very JSON.
+  
+### Important Notices 
+You must use **different ports** for **each instance**. 
+Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
+
+  
+Be **warned** that Ogame's servers have a limit on the number of requests per second. If you run too many instances, you may get IP banned, or end up with banned accounts. Use proxies to avoid this.
 
 ### Features
 TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
