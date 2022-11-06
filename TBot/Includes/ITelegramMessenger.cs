@@ -19,7 +19,7 @@ namespace Tbot.Includes {
 		Task SendTyping(CancellationToken cancellationToken);
 		void StartAutoPing(long everyHours);
 		void StopAutoPing();
-		void TelegramBot();
-		void TelegramBotDisable();
+		Task TelegramBot();
+		Task TelegramBotDisable();
 	}
 }

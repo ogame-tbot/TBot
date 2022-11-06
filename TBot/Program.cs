@@ -35,45 +35,6 @@ namespace Tbot {
 		static void Main(string[] args) {
 			MainAsync(args).Wait();
 		}
-		private static void ConfigureSerilog(string logPath, bool telegramLogging) {
-			string outTemplate = "[{Timestamp:HH:mm:ss.fff zzz} {ThreadId} {Level:u3} {LogSender}] {Message:lj}{NewLine}{Exception}";
-			long maxFileSize = 1 * 1024 * 1024 * 10;
-			var loggerConfiguration = new LoggerConfiguration()
-			.MinimumLevel.Debug()
-			.Enrich.With(new ThreadIdEnricher())
-			// Console
-			.WriteTo.TBotColoredConsole(
-				outputTemplate: outTemplate
-			)
-			// Log file
-			.WriteTo.File(
-				path: Path.Combine(logPath, "TBot.log"),
-				buffered: false,
-				flushToDiskInterval: TimeSpan.FromHours(1),
-				rollOnFileSizeLimit: true,
-				fileSizeLimitBytes: maxFileSize,
-				retainedFileCountLimit: 10,
-				rollingInterval: RollingInterval.Day)
-			// CSV
-			.WriteTo.File(
-				path: Path.Combine(logPath, "TBot.csv"),
-				buffered: false,
-				hooks: new SerilogCSVHeaderHooks(),
-				formatter: new SerilogCSVTextFormatter(),
-				flushToDiskInterval: TimeSpan.FromHours(1),
-				rollOnFileSizeLimit: true,
-				fileSizeLimitBytes: maxFileSize,
-				rollingInterval: RollingInterval.Day);
-
-			//if (telegramLogging) {
-			//	loggerConfiguration.WriteTo.Telegram(botToken: (string) mainSettings.TelegramMessenger.API,
-			//		chatId: (string) mainSettings.TelegramMessenger.ChatId,
-			//		dateFormat: null,
-			//		outputTemplate: "{LogLevelEmoji:l}{LogSenderEmoji:l} {Message:lj}{NewLine}{Exception}");
-			//}
-			
-			Log.Logger = loggerConfiguration.CreateLogger();
-		}
 		static async Task MainAsync(string[] args) {
 
 			_logger = ServiceProviderFactory.ServiceProvider.GetRequiredService<ILoggerService<Program>>();
@@ -98,7 +59,7 @@ namespace Tbot {
 				logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
 			}
 
-			ConfigureSerilog(logPath, false);
+			_logger.ConfigureLogging(logPath);
 
 			// Context validation
 			//	a - Ogamed binary is present on same directory ?

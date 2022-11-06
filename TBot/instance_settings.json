@@ -35,6 +35,7 @@
 		"TelegramMessenger": {
 			"Active": false
 		},
+		"LogoutOnSleep": false,
 		"AutoFleetSave": {
 			"Active": true,
 			"OnlyMoons": true,

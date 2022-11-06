@@ -42,12 +42,19 @@ namespace Tbot.Services {
 		public TelegramMessenger(ILoggerService<TelegramMessenger> logger,
 			IHelpersService helpersService,
 			string api,
-			string channel) {
+			string chatId,
+			bool enableLogging) {
 			_logger = logger;
 			_helpersService = helpersService;
 			Api = api;
 			Client = new TelegramBotClient(Api);
-			Channel = channel;
+			Channel = chatId;
+
+			// Initialize Logger
+			if (enableLogging == true) {
+				_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Initializing Logging over Telegram");
+				logger.AddTelegramLogger(api, chatId);
+			}
 		}
 
 		public void StartAutoPing(long everyHours) {
@@ -1181,7 +1188,7 @@ namespace Tbot.Services {
 			} catch { }
 		}
 
-		public async void TelegramBot() {
+		public async Task TelegramBot() {
 			try {
 				cts = new CancellationTokenSource();
 				ct = cts.Token;
@@ -1195,11 +1202,19 @@ namespace Tbot.Services {
 			} catch { }
 		}
 
-		public void TelegramBotDisable() {
+		public async Task TelegramBotDisable() {
+			await instanceSem.WaitAsync(ct);
+			foreach(var instance in instances) {
+				instance.RemoveTelegramMessenger();
+			}
+			instanceSem.Release();
+
+			// First of all, remove from any instance
 			if (Client != null) {
 				cts.Cancel();
 			}
 			// We should wait for ReceiveAsync to be dismissed
+			_logger.RemoveTelegramLogger();
 		}
 	}
 }

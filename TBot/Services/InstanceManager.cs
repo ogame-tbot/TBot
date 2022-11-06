@@ -41,7 +41,7 @@ namespace Tbot.Services {
 			_mainSettings = SettingsService.GetSettings(SettingsAbsoluteFilepath);
 
 			// Initialize TelegramMessenger if enabled on main settings
-			InitializeTelegramMessenger();
+			await InitializeTelegramMessenger();
 
 			// Detect settings versioning by checking existence of "Instances" key
 			SettingsVersion settingVersion = SettingsVersion.Invalid;
@@ -158,7 +158,7 @@ namespace Tbot.Services {
 			instances.Clear();
 		}
 
-		private void InitializeTelegramMessenger() {
+		private async Task InitializeTelegramMessenger() {
 			if (
 				SettingsService.IsSettingSet(_mainSettings, "TelegramMessenger") &&
 				SettingsService.IsSettingSet(_mainSettings.TelegramMessenger, "Active") &&
@@ -168,9 +168,11 @@ namespace Tbot.Services {
 					var telegramLogger = ServiceProviderFactory.ServiceProvider.GetRequiredService<ILoggerService<TelegramMessenger>>();
 					var helpersService = ServiceProviderFactory.ServiceProvider.GetRequiredService<IHelpersService>();
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, "Activating Telegram Messenger");
-					telegramMessenger = new TelegramMessenger(telegramLogger, helpersService, (string) _mainSettings.TelegramMessenger.API, (string) _mainSettings.TelegramMessenger.ChatId);
-					Thread.Sleep(1000);
-					telegramMessenger.TelegramBot();
+					var logEnabled = SettingsService.IsSettingSet(_mainSettings.TelegramMessenger, "Logging") && (bool) _mainSettings.TelegramMessenger.Logging;
+
+					telegramMessenger = new TelegramMessenger(telegramLogger, helpersService,
+						(string) _mainSettings.TelegramMessenger.API, (string) _mainSettings.TelegramMessenger.ChatId, logEnabled);
+					await telegramMessenger.TelegramBot();
 				}
 
 				// Check autoping
@@ -195,7 +197,7 @@ namespace Tbot.Services {
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "Telegram Messenger disabled");
 
 				if (telegramMessenger != null) {
-					telegramMessenger.TelegramBotDisable();
+					await telegramMessenger.TelegramBotDisable();
 					telegramMessenger = null;
 				}
 			}

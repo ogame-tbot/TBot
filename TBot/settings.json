@@ -3,6 +3,7 @@
 		"Active": false,
 		"API": "",
 		"ChatId": "",
+        "Logging": true,
 		"TelegramAutoPing": {
 			"Active": true,
 			"EveryHours": 1

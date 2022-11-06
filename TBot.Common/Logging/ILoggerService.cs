@@ -8,5 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace TBot.Common.Logging {
 	public interface ILoggerService<T> {
 		void WriteLog(LogLevel level, LogSender source, string message);
+		void ConfigureLogging(string logPath);
+		void AddTelegramLogger(string botToken, string chatId);
+		void RemoveTelegramLogger();
 	}
 }

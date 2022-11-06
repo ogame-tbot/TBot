@@ -275,9 +275,6 @@ namespace Tbot.Services {
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitialization completed");
-
-			// Crucio32000: Maybe it is needed to tell the Garbage Collector to mind its own business ?
-			//GC.SuppressFinalize(this);
 		}
 
 		public bool Equals(TBotMain other) {
@@ -1120,6 +1117,13 @@ namespace Tbot.Services {
 			if (timers.TryGetValue("FleetSchedulerTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("FleetSchedulerTimer");
+		}
+
+		public void RemoveTelegramMessenger() {
+			if (telegramMessenger != null) {
+				log(LogLevel.Information, LogSender.Tbot, "Removing TelegramMessenger from current instance...");
+				telegramMessenger = null;
+			}
 		}
 
 		public async Task SendTelegramMessage(string fmt) {
@@ -2211,9 +2215,17 @@ namespace Tbot.Services {
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
 			await SendTelegramMessage($"Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			log(LogLevel.Information, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
-			if (!userData.isSleeping) {
-				await _ogameService.Logout();
-				log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+			if (userData.isSleeping == false) {
+				if (
+					SettingsService.IsSettingSet(settings, "SleepMode") &&
+					SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
+					(bool) settings.SleepMode.LogoutOnSleep
+				) {
+					loggedIn = false;
+					await _ogameService.Logout();
+					log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+				}
+
 				userData.isSleeping = true;
 			}
 		}
@@ -2420,9 +2432,16 @@ namespace Tbot.Services {
 					if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
 						await SendTelegramMessage($"[{userData.userInfo.PlayerName}{userData.serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
 					}
-					if (!userData.isSleeping) {
-						await _ogameService.Logout();
-						log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+					if (userData.isSleeping == false) {
+						if (
+							SettingsService.IsSettingSet(settings, "SleepMode") &&
+							SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
+							(bool) settings.SleepMode.LogoutOnSleep
+						) {
+							loggedIn = false;
+							await _ogameService.Logout();
+							log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
+						}
 						userData.isSleeping = true;
 					}
 				}
@@ -2457,8 +2476,15 @@ namespace Tbot.Services {
 
 			if (userData.isSleeping) {
 				userData.isSleeping = false;
-				await _ogameService.Login();
-				log(LogLevel.Information, LogSender.SleepMode, "Ogamed logged in again!");
+				if (
+					SettingsService.IsSettingSet(settings, "SleepMode") &&
+					SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
+					(bool) settings.SleepMode.LogoutOnSleep
+				) {
+					await _ogameService.Login();
+					loggedIn = true;
+					log(LogLevel.Information, LogSender.SleepMode, "Ogamed logged in again!");
+				}
 			}
 			InitializeFeatures();
 		}
