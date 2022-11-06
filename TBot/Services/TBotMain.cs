@@ -1420,12 +1420,12 @@ namespace Tbot.Services {
 			var payload = origin.Resources;
 			Ships ships = origin.Ships;
 			if (mode.Equals("auto")) {
-				long idealSmallCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.SmallCargo, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+				long idealSmallCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.SmallCargo, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 				if (idealSmallCargo <= origin.Ships.GetAmount(Buildables.SmallCargo)) {
 					ships.SetAmount(Buildables.SmallCargo, origin.Ships.GetAmount(Buildables.SmallCargo) - (long) idealSmallCargo);
 				} else {
-					long idealLargeCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.LargeCargo, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+					long idealLargeCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.LargeCargo, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 					if (idealLargeCargo <= origin.Ships.GetAmount(Buildables.LargeCargo)) {
 						ships.SetAmount(Buildables.LargeCargo, origin.Ships.GetAmount(Buildables.LargeCargo) - (long) idealLargeCargo);
 					} else {
@@ -1724,7 +1724,7 @@ namespace Tbot.Services {
 					continue;
 				}
 
-				long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+				long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 				Ships ships = new();
 				if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
@@ -1733,7 +1733,7 @@ namespace Tbot.Services {
 					} else {
 						ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
 					}
-					payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+					payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 					if ((long) payload.TotalResources >= (long) MinAmount) {
 						var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
@@ -2014,7 +2014,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: not enough fuel!");
 				return false;
 			}
-			if (_helpersService.CalcFleetFuelCapacity(fleetHypotesis.Ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) < fleetHypotesis.Fuel) {
+			if (_helpersService.CalcFleetFuelCapacity(fleetHypotesis.Ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) < fleetHypotesis.Fuel) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: ships don't have enough fuel capacity!");
 				return false;
 			}
@@ -3264,7 +3264,7 @@ namespace Tbot.Services {
 							attackTargetsCount++;
 							log(LogLevel.Information, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count()} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(userData.userInfo.Class).TransportableResources}.");
 							var loot = target.Report.Loot(userData.userInfo.Class);
-							var numCargo = _helpersService.CalcShipNumberForPayload(loot, cargoShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+							var numCargo = _helpersService.CalcShipNumberForPayload(loot, cargoShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 							if (SettingsService.IsSettingSet(settings.AutoFarm, "CargoSurplusPercentage") && (double) settings.AutoFarm.CargoSurplusPercentage > 0) {
 								numCargo = (long) Math.Round(numCargo + (numCargo / 100 * (double) settings.AutoFarm.CargoSurplusPercentage), 0);
 							}
@@ -4617,13 +4617,13 @@ namespace Tbot.Services {
 							preferredShip = Buildables.SmallCargo;
 						}
 
-						long idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+						long idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						Ships ships = new();
 						Ships tempShips = new();
 						tempShips.Add(preferredShip, 1);
 						var flightPrediction = _helpersService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, userData.researches, userData.serverData, userData.userInfo.Class);
 						long flightTime = flightPrediction.Time;
-						idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+						idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
 						if (buildable != Buildables.Null) {
 							int level = _helpersService.GetNextLevel(destination, buildable);
@@ -4650,7 +4650,7 @@ namespace Tbot.Services {
 										var newMissingRes = missingResources.Sum(_helpersService.CalcPrice(nextBuildable, nextLevel));
 
 										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
-											var newIdealShips = _helpersService.CalcShipNumberForPayload(newMissingRes, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+											var newIdealShips = _helpersService.CalcShipNumberForPayload(newMissingRes, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
 												idealShips = newIdealShips;
 												missingResources = newMissingRes;
@@ -4673,7 +4673,7 @@ namespace Tbot.Services {
 
 						if (SettingsService.IsSettingSet(settings.Brain.AutoMine.Transports, "RoundResources") && (bool) settings.Brain.AutoMine.Transports.RoundResources) {
 							missingResources = missingResources.Round();
-							idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+							idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						}
 
 						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
@@ -4778,7 +4778,7 @@ namespace Tbot.Services {
 
 						tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Ships);
 						tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Resources);
-						var capacity = _helpersService.CalcFleetCapacity(tempCelestial.Ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+						var capacity = _helpersService.CalcFleetCapacity(tempCelestial.Ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
 						if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool) settings.Brain.AutoCargo.ExcludeMoons) {
 							log(LogLevel.Information, LogSender.Brain, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
 							continue;
@@ -4791,7 +4791,7 @@ namespace Tbot.Services {
 						}
 						if (capacity <= tempCelestial.Resources.TotalResources && (bool) settings.Brain.AutoCargo.LimitToCapacity) {
 							long difference = tempCelestial.Resources.TotalResources - capacity;
-							int oneShipCapacity = _helpersService.CalcShipCapacity(preferredCargoShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+							int oneShipCapacity = _helpersService.CalcShipCapacity(preferredCargoShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 							neededCargos = (long) Math.Round((float) difference / (float) oneShipCapacity, MidpointRounding.ToPositiveInfinity);
 							log(LogLevel.Information, LogSender.Brain, $"{difference.ToString("N0")} more capacity is needed, {neededCargos} more {preferredCargoShip.ToString()} are needed.");
 						} else {
@@ -4939,7 +4939,7 @@ namespace Tbot.Services {
 								continue;
 							}
 
-							long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+							long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 							Ships ships = new();
 							if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
@@ -4948,7 +4948,7 @@ namespace Tbot.Services {
 								} else {
 									ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
 								}
-								payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo);
+								payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 								if (payload.TotalResources > 0) {
 									var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
@@ -5094,7 +5094,7 @@ namespace Tbot.Services {
 				return (int) SendFleetCode.GenericError;
 			}
 
-			if (_helpersService.CalcFleetFuelCapacity(ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) != 0 && _helpersService.CalcFleetFuelCapacity(ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) < fleetPrediction.Fuel) {
+			if (_helpersService.CalcFleetFuelCapacity(ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) != 0 && _helpersService.CalcFleetFuelCapacity(ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo) < fleetPrediction.Fuel) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
 				return (int) SendFleetCode.GenericError;
 			}
@@ -5415,7 +5415,7 @@ namespace Tbot.Services {
 										userData.celestials = await UpdatePlanets(UpdateTypes.Ships);
 										origins.Add(userData.celestials
 											.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-											.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo))
+											.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo))
 											.First()
 										);
 									}
@@ -5423,7 +5423,7 @@ namespace Tbot.Services {
 									userData.celestials = await UpdatePlanets(UpdateTypes.Ships);
 									origins.Add(userData.celestials
 										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-										.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo))
+										.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, userData.serverData, userData.researches.HyperspaceTechnology, userData.userInfo.Class, userData.serverData.ProbeCargo))
 										.First()
 									);
 								}
@@ -5755,13 +5755,13 @@ namespace Tbot.Services {
 						Celestial origin = dic[destination];
 						if (destination.Position == 16) {
 							ExpeditionDebris debris = (await _ogameService.GetGalaxyInfo(destination)).ExpeditionDebris;
-							long pathfindersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, userData.researches.HyperspaceTechnology, userData.userInfo.Class), origin.Ships.Pathfinder);
+							long pathfindersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class), origin.Ships.Pathfinder);
 							log(LogLevel.Information, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
 							fleetId = await SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 						} else {
 							if (userData.celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet)))) {
 								Debris debris = (userData.celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
-								long recyclersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, userData.researches.HyperspaceTechnology, userData.userInfo.Class), origin.Ships.Recycler);
+								long recyclersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class), origin.Ships.Recycler);
 								log(LogLevel.Information, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {recyclersToSend.ToString()} {Buildables.Recycler.ToString()}");
 								fleetId = await SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 							}

@@ -21,10 +21,9 @@ using Serilog.Filters;
 namespace TBot.Common.Logging {
 	public class LoggerService<T> : ILoggerService<T> {
 
-		private Dictionary<LogSender, Dictionary<LogLevel, Serilog.ILogger>> _contextLoggers = new();
-
 		private object syncObject = new object();
 		private Serilog.ILogger? _commonLogger = null;
+		private string _logPath = "";
 		private bool _telegramAdded = false;
 
 		public void WriteLog(LogLevel level, LogSender sender, string message) {
@@ -67,6 +66,7 @@ namespace TBot.Common.Logging {
 
 		public void ConfigureLogging(string logPath) {
 			lock (syncObject) {
+				_logPath = logPath;
 				string outTemplate = "[{Timestamp:HH:mm:ss.fff zzz} {ThreadId} {Level:u3} {LogSender}] {Message:lj}{NewLine}{Exception}";
 				long maxFileSize = 1 * 1024 * 1024 * 10;
 				var logConfig = new LoggerConfiguration()
@@ -97,17 +97,16 @@ namespace TBot.Common.Logging {
 					fileSizeLimitBytes: maxFileSize,
 					rollingInterval: RollingInterval.Day);
 
+				_telegramAdded = false;
 				Log.Logger = logConfig.CreateLogger();
-
-				_commonLogger = Log.Logger;
 			}
 		}
 
 		public void AddTelegramLogger(string botToken, string chatId) {
 			lock (syncObject) {
-				if ((_telegramAdded == false) && (_commonLogger != null)) {
+				if (_telegramAdded == false) {
 					Log.Logger = new LoggerConfiguration()
-						.WriteTo.Logger(_commonLogger)
+						.WriteTo.Logger(Log.Logger)
 						// Start anew with Enrichers
 						.Enrich.With(new ThreadIdEnricher())
 						.Enrich.FromLogContext()
@@ -125,12 +124,7 @@ namespace TBot.Common.Logging {
 		}
 
 		public void RemoveTelegramLogger() {
-			lock (syncObject) {
-				if ( (_telegramAdded == true) && (_commonLogger != null) ) {
-					Log.Logger = _commonLogger;
-					_telegramAdded = false;
-				}
-			}
+			ConfigureLogging(_logPath);
 		}
 	}
 }

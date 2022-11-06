@@ -29,6 +29,7 @@ namespace Tbot.Services {
 
 		CancellationTokenSource cts;
 		CancellationToken ct;
+		Task receivingTask = null;
 
 		private SemaphoreSlim instanceSem = new SemaphoreSlim(1, 1);
 		private List<TBotMain> instances = new();
@@ -146,7 +147,6 @@ namespace Tbot.Services {
 		}
 
 		public async Task SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
-			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await Client.SendTextMessageAsync(
 					chatId: Channel,
@@ -166,7 +166,6 @@ namespace Tbot.Services {
 		}
 
 		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
-			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Sending Telegram message...");
 			try {
 				await client.SendTextMessageAsync(chat, message, parseMode);
 			} catch (Exception e) {
@@ -1198,7 +1197,7 @@ namespace Tbot.Services {
 					ThrowPendingUpdates = true
 				};
 
-				await Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, ct);
+				receivingTask = Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, ct);
 			} catch { }
 		}
 
@@ -1212,6 +1211,15 @@ namespace Tbot.Services {
 			// First of all, remove from any instance
 			if (Client != null) {
 				cts.Cancel();
+				try {
+					await receivingTask;
+				} catch(OperationCanceledException) {
+
+				} finally {
+					cts.Dispose();
+					receivingTask = null;
+				}
+				
 			}
 			// We should wait for ReceiveAsync to be dismissed
 			_logger.RemoveTelegramLogger();
