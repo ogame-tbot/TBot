@@ -1354,6 +1354,7 @@ namespace Tbot.Services {
 			value2.Dispose();
 			timers.Remove("GhostSleepTimer");
 			telegramUserData.Mission = Missions.None;
+			InitializeFeatures();
 			SendTelegramMessage("Ghostsleep canceled!");
 
 			return;
