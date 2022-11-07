@@ -29,7 +29,7 @@ namespace Tbot {
 
 	class Program {
 		private static ILoggerService<Program> _logger;
-		private static IInstanceManager _settingsHandler;
+		private static IInstanceManager _instanceManager;
 		static DateTime startTime = DateTime.UtcNow;
 
 		static void Main(string[] args) {
@@ -37,12 +37,20 @@ namespace Tbot {
 		}
 		static async Task MainAsync(string[] args) {
 
-			_logger = ServiceProviderFactory.ServiceProvider.GetRequiredService<ILoggerService<Program>>();
-			_settingsHandler = ServiceProviderFactory.ServiceProvider.GetRequiredService<IInstanceManager>();
-			var ogameService = ServiceProviderFactory.ServiceProvider.GetRequiredService<IOgameService>();
-			var helpersService = ServiceProviderFactory.ServiceProvider.GetRequiredService<IHelpersService>();
+			var serviceProvider = new ServiceCollection()
+				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
+				.AddScoped<ICalculationService, CalculationService>()
+				.AddScoped<IOgameService, OgameService>()
+				.AddScoped<ITelegramMessenger, TelegramMessenger>()
+				.AddScoped<IInstanceManager, InstanceManager>()
+				.AddScoped<ITBotMain, TBotMain>()
+				.BuildServiceProvider();
 
-			helpersService.SetTitle();
+			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
+			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
+			var ogameService = serviceProvider.GetRequiredService<IOgameService>();
+
+			ConsoleHelpers.SetTitle();
 
 			CmdLineArgsService.DoParse(args);
 			if (CmdLineArgsService.printHelp) {
@@ -51,7 +59,7 @@ namespace Tbot {
 			}
 
 			if (CmdLineArgsService.settingsPath.IsPresent) {
-				_settingsHandler.SettingsAbsoluteFilepath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
+				_instanceManager.SettingsAbsoluteFilepath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
 
 			var logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
@@ -66,13 +74,13 @@ namespace Tbot {
 			//	b - Settings file does exist ?
 			if (!ogameService.ValidatePrerequisites()) {
 				Environment.Exit(-1);
-			} else if (File.Exists(_settingsHandler.SettingsAbsoluteFilepath) == false) {
-				_logger.WriteLog(LogLevel.Error, LogSender.Main, $"\"{_settingsHandler.SettingsAbsoluteFilepath}\" not found. Cannot proceed...");
+			} else if (File.Exists(_instanceManager.SettingsAbsoluteFilepath) == false) {
+				_logger.WriteLog(LogLevel.Error, LogSender.Main, $"\"{_instanceManager.SettingsAbsoluteFilepath}\" not found. Cannot proceed...");
 				Environment.Exit(-1);
 			}
 
 			// Manage settings
-			_settingsHandler.OnSettingsChanged();
+			_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
@@ -84,7 +92,7 @@ namespace Tbot {
 
 			await tcs.Task;
 
-			await _settingsHandler.DisposeAsync();
+			await _instanceManager.DisposeAsync();
 			_logger.WriteLog(LogLevel.Information, LogSender.Main, "Goodbye!");
 		}
 	}

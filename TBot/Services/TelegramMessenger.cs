@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using TBot.Common.Logging;
 using TBot.Model;
 using Tbot.Includes;
+using Tbot.Helpers;
 
 namespace Tbot.Services {
 
@@ -25,7 +26,7 @@ namespace Tbot.Services {
 		public ITelegramBotClient Client { get; private set; }
 
 		private readonly ILoggerService<TelegramMessenger> _logger;
-		private readonly IHelpersService _helpersService;
+		private readonly ICalculationService _helpersService;
 
 		CancellationTokenSource cts;
 		CancellationToken ct;
@@ -41,7 +42,7 @@ namespace Tbot.Services {
 		private DateTime startTime = DateTime.UtcNow;
 
 		public TelegramMessenger(ILoggerService<TelegramMessenger> logger,
-			IHelpersService helpersService,
+			ICalculationService helpersService,
 			string api,
 			string chatId,
 			bool enableLogging) {
@@ -94,13 +95,13 @@ namespace Tbot.Services {
 				DateTime newTime = now.AddMilliseconds(nextping);
 				autoPingTimer.Change(nextping, Timeout.Infinite);
 
-				string pingStr = $"TBot is running since {_helpersService.TimeSpanToString(upTime)}\n";
+				string pingStr = $"TBot is running since {FormattingHelper.TimeSpanToString(upTime)}\n";
 				foreach (var instance in instances) {
 					TimeSpan instanceUpTime = now - instance.startTime;
 					int instanceIndex = instances.IndexOf(instance);
 					pingStr += $"#{instanceIndex} " +
 						$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
-						$"since {_helpersService.TimeSpanToString(instanceUpTime)}\n";
+						$"since {FormattingHelper.TimeSpanToString(instanceUpTime)}\n";
 				}
 				await SendMessage(pingStr);
 
@@ -450,7 +451,7 @@ namespace Tbot.Services {
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = _helpersService.ParseDurationFromString(arg);
+								duration = FormattingHelper.ParseDurationFromString(arg);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
 								await currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
@@ -472,7 +473,7 @@ namespace Tbot.Services {
 									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
-								duration = _helpersService.ParseDurationFromString(args[1]);
+								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
 								await currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
@@ -491,7 +492,7 @@ namespace Tbot.Services {
 									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'. Got \"{test}\"");
 									return;
 								}
-								duration = _helpersService.ParseDurationFromString(args[1]);
+								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
 								List<Celestial> myMoons = currInstance.userData.celestials.Where(p => p.Coordinate.Type == Celestials.Moon).ToList();
 								if (myMoons.Count > 0) {
@@ -502,7 +503,7 @@ namespace Tbot.Services {
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
-											await Task.Delay(_helpersService.CalcRandomInterval(IntervalType.AFewSeconds), cancellationToken);
+											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), cancellationToken);
 									}
 									await SendMessage(botClient, message.Chat, "Moons FleetSave done!");
 								} else {
@@ -517,7 +518,7 @@ namespace Tbot.Services {
 									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
-								duration = _helpersService.ParseDurationFromString(args[1]);
+								duration = FormattingHelper.ParseDurationFromString(args[1]);
 								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 
 								if (!Enum.TryParse(args[2], out mission)) {
@@ -538,7 +539,7 @@ namespace Tbot.Services {
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = _helpersService.ParseDurationFromString(arg);
+								duration = FormattingHelper.ParseDurationFromString(arg);
 								test = message.Text.Split(' ')[2];
 								test = char.ToUpper(test[0]) + test.Substring(1);
 
@@ -747,7 +748,7 @@ namespace Tbot.Services {
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = _helpersService.ParseDurationFromString(arg);
+								duration = FormattingHelper.ParseDurationFromString(arg);
 
 								DateTime timeNow = await currInstance.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);

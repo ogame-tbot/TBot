@@ -17,119 +17,14 @@ using TBot.Model;
 
 namespace Tbot.Includes {
 
-	public class HelpersService : IHelpersService {
-		private readonly ILoggerService<HelpersService> _logger;
+	public class CalculationService : ICalculationService {
+		private readonly ILoggerService<CalculationService> _logger;
 		private readonly IOgameService _ogameService;
 
-		public HelpersService(ILoggerService<HelpersService> logger,
+		public CalculationService(ILoggerService<CalculationService> logger,
 			IOgameService ogameService) {
 			_logger = logger;
 			_ogameService = ogameService;
-		}
-
-		public void SetTitle(string content = "") {
-			AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
-			string info = $"{exeInfo.Name} v{exeInfo.Version}";
-			Console.Title = (content != "") ? $"{content} - {info}" : info;
-			return;
-		}
-
-		public void PlayAlarm() {
-			Console.Beep();
-			Thread.Sleep(1000);
-			Console.Beep();
-			Thread.Sleep(1000);
-			Console.Beep();
-			return;
-		}
-
-		public long ParseDurationFromString(string timeString) {
-			long duration = 0;
-			string regExp = "^(\\d{1,2}[h|H])?(\\d{1,2}[m|M])?(\\d{1,2}[s|S])?";
-
-			Regex re = new Regex(regExp);
-			Match m = re.Match(timeString);
-
-			if (m.Groups.Count == 4) {
-				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value.Remove(m.Groups[1].Value.Length - 1)) : 0;
-				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value.Remove(m.Groups[2].Value.Length - 1)) : 0;
-				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value.Remove(m.Groups[3].Value.Length - 1)) : 0;
-
-				duration = (hours * 60 * 60) + (mins * 60) + secs;
-			} else {
-				throw new Exception($"Invalid string {timeString}");
-			}
-
-			return duration;
-		}
-
-		public string TimeSpanToString(TimeSpan delta) {
-
-			return string.Format("{0} days {1:00}:{2:00}:{3:00}", delta.Days, delta.Hours, delta.Minutes, delta.Seconds);
-		}
-
-		public int CalcRandomInterval(IntervalType type) {
-			var rand = new Random();
-			return type switch {
-				IntervalType.LessThanASecond => rand.Next(500, 1000),
-				IntervalType.LessThanFiveSeconds => rand.Next(1000, 5000),
-				IntervalType.AFewSeconds => rand.Next(5000, 15000),
-				IntervalType.SomeSeconds => rand.Next(20000, 50000),
-				IntervalType.AMinuteOrTwo => rand.Next(40000, 140000),
-				IntervalType.AboutFiveMinutes => rand.Next(240000, 360000),
-				IntervalType.AboutTenMinutes => rand.Next(540000, 720000),
-				IntervalType.AboutAQuarterHour => rand.Next(840000, 960000),
-				IntervalType.AboutHalfAnHour => rand.Next(1500000, 2100000),
-				IntervalType.AboutAnHour => rand.Next(3000000, 42000000),
-				_ => rand.Next(500, 1000),
-			};
-		}
-
-		public int CalcRandomInterval(int min, int max) {
-			var rand = new Random();
-			var minMillis = min * 60 * 1000;
-			var maxMillis = max * 60 * 1000;
-			return rand.Next(minMillis, maxMillis);
-		}
-
-		public bool ShouldSleep(DateTime time, DateTime goToSleep, DateTime wakeUp) {
-			if (time >= goToSleep) {
-				if (time >= wakeUp) {
-					if (goToSleep >= wakeUp) {
-						return true;
-					} else {
-						return false;
-					}
-				} else {
-					return true;
-				}
-			} else {
-				if (time >= wakeUp) {
-					return false;
-				} else {
-					if (goToSleep >= wakeUp) {
-						return true;
-					} else {
-						return false;
-					}
-				}
-			}
-		}
-
-		public int ClampSystem(int system) {
-			if (system < 1)
-				system = 1;
-			if (system > 499)
-				system = 499;
-			return system;
-		}
-
-		public int WrapSystem(int system) {
-			if (system > 499)
-				system = 1;
-			if (system < 1)
-				system = 499;
-			return system;
 		}
 
 		public int CalcShipCapacity(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {

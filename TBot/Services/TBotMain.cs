@@ -12,6 +12,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
+using Tbot.Helpers;
 using Tbot.Includes;
 using TBot.Common.Logging;
 using TBot.Model;
@@ -24,10 +25,10 @@ using Telegram.Bot.Types.Enums;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Tbot.Services {
-	internal class TBotMain : IEquatable<TBotMain>, IAsyncDisposable {
+	internal class TBotMain : IEquatable<TBotMain>, IAsyncDisposable, ITBotMain {
 		private readonly IOgameService _ogameService;
 		private readonly ILoggerService<TBotMain> _logger;
-		private readonly IHelpersService _helpersService;
+		private readonly ICalculationService _helpersService;
 
 		private bool loggedIn = false;
 		private Dictionary<string, Timer> timers;
@@ -50,7 +51,7 @@ namespace Tbot.Services {
 
 		public TBotMain(
 			IOgameService ogameService,
-			IHelpersService helpersService,
+			ICalculationService helpersService,
 			ILoggerService<TBotMain> logger) {
 			
 			_ogameService = ogameService;
@@ -126,7 +127,7 @@ namespace Tbot.Services {
 					answer = OgameCaptchaSolver.GetCapcthaSolution(captchaChallenge.Icons, captchaChallenge.Question);
 				}
 				await _ogameService.SolveCaptcha(captchaChallenge.Id, answer);
-				await Task.Delay(_helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+				await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 				await _ogameService.Login();
 			}
 		}
@@ -181,7 +182,7 @@ namespace Tbot.Services {
 				throw;
 			}
 
-			await Task.Delay(_helpersService.CalcRandomInterval(IntervalType.LessThanASecond));
+			await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
 
 			try {
 				await _ogameService.Login();
@@ -193,7 +194,7 @@ namespace Tbot.Services {
 				throw;
 			}
 
-			await Task.Delay(_helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+			await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 
 			log(LogLevel.Information, LogSender.Tbot, "Logged in!");
 
@@ -909,7 +910,7 @@ namespace Tbot.Services {
 		public void InitializeDefender() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing defender...");
 			StopDefender(false);
-			timers.Add("DefenderTimer", new Timer(Defender, null, _helpersService.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("DefenderTimer", new Timer(Defender, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public void StopDefender(bool echo = true) {
@@ -923,7 +924,7 @@ namespace Tbot.Services {
 		private void InitializeBrainAutoCargo() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing autocargo...");
 			StopBrainAutoCargo(false);
-			timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
+			timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
 		private void StopBrainAutoCargo(bool echo = true) {
@@ -938,7 +939,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing repatriate...");
 			StopBrainRepatriate(false);
 			if (!timers.TryGetValue("RepatriateTimer", out Timer value))
-				timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+				timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		public void StopBrainRepatriate(bool echo = true) {
@@ -952,7 +953,7 @@ namespace Tbot.Services {
 		public void InitializeBrainAutoMine() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing automine...");
 			StopBrainAutoMine(false);
-			timers.Add("AutoMineTimer", new Timer(AutoMine, null, _helpersService.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("AutoMineTimer", new Timer(AutoMine, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public void StopBrainAutoMine(bool echo = true) {
@@ -971,7 +972,7 @@ namespace Tbot.Services {
 		public void InitializeBrainLifeformAutoMine() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing Lifeform autoMine...");
 			StopBrainLifeformAutoMine(false);
-			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, _helpersService.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public void StopBrainLifeformAutoMine(bool echo = true) {
@@ -990,7 +991,7 @@ namespace Tbot.Services {
 		public void InitializeBrainLifeformAutoResearch() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing Lifeform autoResearch...");
 			StopBrainLifeformAutoResearch(false);
-			timers.Add("LifeformAutoResearchTimer", new Timer(LifeformAutoResearch, null, _helpersService.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
+			timers.Add("LifeformAutoResearchTimer", new Timer(LifeformAutoResearch, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
 		}
 
 		public void StopBrainLifeformAutoResearch(bool echo = true) {
@@ -1009,7 +1010,7 @@ namespace Tbot.Services {
 		private void InitializeBrainOfferOfTheDay() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing offer of the day...");
 			StopBrainOfferOfTheDay(false);
-			timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		private void StopBrainOfferOfTheDay(bool echo = true) {
@@ -1023,7 +1024,7 @@ namespace Tbot.Services {
 		public void InitializeBrainAutoResearch() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing autoresearch...");
 			StopBrainAutoResearch(false);
-			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		public void StopBrainAutoResearch(bool echo = true) {
@@ -1037,7 +1038,7 @@ namespace Tbot.Services {
 		public void InitializeAutoFarm() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing autofarm...");
 			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
+			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
 		}
 
 		public void StopAutoFarm(bool echo = true) {
@@ -1051,7 +1052,7 @@ namespace Tbot.Services {
 		public void InitializeExpeditions() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing expeditions...");
 			StopExpeditions(false);
-			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		public void StopExpeditions(bool echo = true) {
@@ -1065,7 +1066,7 @@ namespace Tbot.Services {
 		private void InitializeHarvest() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing harvest...");
 			StopHarvest(false);
-			timers.Add("HarvestTimer", new Timer(HandleHarvest, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			timers.Add("HarvestTimer", new Timer(HandleHarvest, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		private void StopHarvest(bool echo = true) {
@@ -1079,7 +1080,7 @@ namespace Tbot.Services {
 		private void InitializeColonize() {
 			log(LogLevel.Information, LogSender.Tbot, "Initializing colonize...");
 			StopColonize(false);
-			timers.Add("ColonizeTimer", new Timer(HandleColonize, null, _helpersService.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
+			timers.Add("ColonizeTimer", new Timer(HandleColonize, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
 		}
 
 		private void StopColonize(bool echo = true) {
@@ -1641,7 +1642,7 @@ namespace Tbot.Services {
 				int playerid = userData.userInfo.PlayerID;
 				int sys = 0;
 				for (sys = fromCelestial.Coordinate.System - 2; sys <= fromCelestial.Coordinate.System + 2; sys++) {
-					sys = _helpersService.ClampSystem(sys);
+					sys = GeneralHelper.ClampSystem(sys);
 					GalaxyInfo galaxyInfo = await _ogameService.GetGalaxyInfo(fromCelestial.Coordinate.Galaxy, sys);
 					foreach (var planet in galaxyInfo.Planets) {
 						try {
@@ -1766,7 +1767,7 @@ namespace Tbot.Services {
 				userData.fleets = await UpdateFleets();
 				long interval;
 				try {
-					interval = (userData.fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = (userData.fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				} catch {
 					interval = 0;
 				}
@@ -1783,7 +1784,7 @@ namespace Tbot.Services {
 					StopHarvest();
 					StopExpeditions();
 
-					interval += _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval += RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
 					NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration * 1000);
 
@@ -1986,9 +1987,9 @@ namespace Tbot.Services {
 					fleetId != (int) SendFleetCode.NotEnoughSlots) {
 					Fleet fleet = userData.fleets.Single(fleet => fleet.ID == fleetId);
 					DateTime time = await GetDateTime();
-					var interval = ((minDuration / 2) * 1000) + _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+					var interval = ((minDuration / 2) * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					if (interval <= 0)
-						interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime newTime = time.AddMilliseconds(interval);
 					timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
 					log(LogLevel.Information, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
@@ -2099,7 +2100,7 @@ namespace Tbot.Services {
 					int playerid = userData.userInfo.PlayerID;
 					int sys = 0;
 					for (sys = origin.Coordinate.System - 5; sys <= origin.Coordinate.System + 5; sys++) {
-						sys = _helpersService.ClampSystem(sys);
+						sys = GeneralHelper.ClampSystem(sys);
 						galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 						foreach (var planet in galaxyInfo.Planets) {
 							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
@@ -2262,20 +2263,20 @@ namespace Tbot.Services {
 								// YES YES YES
 								// ASLEEP
 								// WAKE UP NEXT DAY
-								interval = (long) wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) wakeUp.AddDays(1).Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
 								// YES YES NO
 								// AWAKE
 								// GO TO SLEEP NEXT DAY
-								interval = (long) goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) goToSleep.AddDays(1).Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							}
@@ -2283,9 +2284,9 @@ namespace Tbot.Services {
 							if (goToSleep >= wakeUp) {
 								// YES NO YES
 								// THIS SHOULDNT HAPPEN
-								interval = _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2293,10 +2294,10 @@ namespace Tbot.Services {
 								// YES NO NO
 								// ASLEEP
 								// WAKE UP SAME DAY
-								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							}
@@ -2307,18 +2308,18 @@ namespace Tbot.Services {
 								// NO YES YES
 								// AWAKE
 								// GO TO SLEEP SAME DAY
-								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							} else {
 								// NO YES NO
 								// THIS SHOULDNT HAPPEN
-								interval = _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2328,20 +2329,20 @@ namespace Tbot.Services {
 								// NO NO YES
 								// ASLEEP
 								// WAKE UP SAME DAY
-								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) wakeUp.Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								GoToSleep(newTime);
 							} else {
 								// NO NO NO
 								// AWAKE
 								// GO TO SLEEP SAME DAY
-								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								interval = (long) goToSleep.Subtract(time).TotalMilliseconds + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 								if (interval <= 0)
-									interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
 								WakeUp(newTime);
 							}
@@ -2352,7 +2353,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while handling sleep mode: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
 				DateTime time = await GetDateTime();
-				long interval = _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2399,7 +2400,7 @@ namespace Tbot.Services {
 							}
 							interval *= (long) 1000;
 							if (interval <= 0)
-								interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							DateTime newTime = time.AddMilliseconds(interval);
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
@@ -2450,7 +2451,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while going to sleep: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
 				DateTime time = await GetDateTime();
-				long interval = _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2507,7 +2508,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while waking up: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
 				DateTime time = await GetDateTime();
-				long interval = _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
@@ -2557,7 +2558,7 @@ namespace Tbot.Services {
 				DateTime time = await GetDateTime();
 				if (isUnderAttack) {
 					if ((bool) settings.Defender.Alarm.Active)
-						await Task.Factory.StartNew(() => _helpersService.PlayAlarm());
+						await Task.Factory.StartNew(() => ConsoleHelpers.PlayAlarm());
 					// UpdateTitle(false, true);
 					log(LogLevel.Warning, LogSender.Defender, "ENEMY ACTIVITY!!!");
 					userData.attacks = await _ogameService.GetAttacks();
@@ -2567,9 +2568,9 @@ namespace Tbot.Services {
 				} else {
 					log(LogLevel.Information, LogSender.Defender, "Your empire is safe");
 				}
-				long interval = _helpersService.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
+				long interval = RandomizeHelper.CalcRandomInterval((int) settings.Defender.CheckIntervalMin, (int) settings.Defender.CheckIntervalMax);
 				if (interval <= 0)
-					interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.Defender, $"Next check at {newTime.ToString()}");
@@ -2578,7 +2579,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.Defender, $"An error has occurred while checking for attacks: {e.Message}");
 				log(LogLevel.Warning, LogSender.Defender, $"Stacktrace: {e.StackTrace}");
 				DateTime time = await GetDateTime();
-				long interval = _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.Defender, $"Next check at {newTime.ToString()}");
@@ -2628,9 +2629,9 @@ namespace Tbot.Services {
 						log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
 					} else {
 						var time = await GetDateTime();
-						var interval = _helpersService.CalcRandomInterval((int) settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+						var interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) settings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
 						if (interval <= 0)
-							interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
@@ -2693,7 +2694,7 @@ namespace Tbot.Services {
 					}
 					celestial = await UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 					if (celestial.Constructions.ResearchID != 0) {
-						delayResearch = (long) celestial.Constructions.ResearchCountdown * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						delayResearch = (long) celestial.Constructions.ResearchCountdown * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						log(LogLevel.Information, LogSender.Brain, "Skipping AutoResearch: there is already a research in progress.");
 						return;
 					}
@@ -2836,9 +2837,9 @@ namespace Tbot.Services {
 						userData.fleets = await UpdateFleets();
 						long interval;
 						try {
-							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						} catch {
-							interval = _helpersService.CalcRandomInterval((int) settings.AutoResearch.CheckIntervalMin, (int) settings.AutoResearch.CheckIntervalMax);
+							interval = RandomizeHelper.CalcRandomInterval((int) settings.AutoResearch.CheckIntervalMin, (int) settings.AutoResearch.CheckIntervalMax);
 						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
@@ -2849,7 +2850,7 @@ namespace Tbot.Services {
 						timers.GetValueOrDefault("AutoResearchTimer").Change(delayResearch, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
 					} else {
-						long interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
+						long interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 						Planet celestial = userData.celestials
 							.Unique()
 							.SingleOrDefault(c => c.HasCoords(new(
@@ -2865,23 +2866,23 @@ namespace Tbot.Services {
 							celestial = await UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 							var incomingFleets = _helpersService.GetIncomingFleets(celestial, userData.fleets);
 							if (celestial.Constructions.ResearchCountdown != 0)
-								interval = (long) ((long) celestial.Constructions.ResearchCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (long) ((long) celestial.Constructions.ResearchCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							else if (fleetId > (int) SendFleetCode.GenericError) {
 								var fleet = userData.fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-								interval = (fleet.ArriveIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (fleet.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							} else if (celestial.Constructions.BuildingID == (int) Buildables.ResearchLab)
-								interval = (long) ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (long) ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							else if (incomingFleets.Count() > 0) {
 								var fleet = incomingFleets
 									.OrderBy(f => (f.Mission == Missions.Transport || f.Mission == Missions.Deploy) ? f.ArriveIn : f.BackIn)
 									.First();
-								interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000) + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = (((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							} else {
-								interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
+								interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoResearch.CheckIntervalMin, (int) settings.Brain.AutoResearch.CheckIntervalMax);
 							}
 						}
 						if (interval <= 0)
-							interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoResearchTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Brain, $"Next AutoResearch check at {newTime.ToString()}");
@@ -3095,7 +3096,7 @@ namespace Tbot.Services {
 														for (int i = 0; i <= returningFleets.Length; i++) {
 															probesCount += returningFleets[i].Ships.EspionageProbe;
 															if (probesCount >= neededProbes) {
-																int interval = (int) ((1000 * returningFleets[i].BackIn) + _helpersService.CalcRandomInterval(IntervalType.LessThanASecond));
+																int interval = (int) ((1000 * returningFleets[i].BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
 																log(LogLevel.Information, LogSender.AutoFarm, $"Waiting for probes to return...");
 																await Task.Delay(interval);
 																freeSlots++;
@@ -3119,7 +3120,7 @@ namespace Tbot.Services {
 												// No slots available, wait for first fleet of any mission type to return.
 												userData.fleets = await UpdateFleets();
 												if (userData.fleets.Any()) {
-													int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + _helpersService.CalcRandomInterval(IntervalType.LessThanASecond));
+													int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
 													log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting for fleet to return...");
 													await Task.Delay(interval);
 													userData.slots = await UpdateSlots();
@@ -3190,7 +3191,7 @@ namespace Tbot.Services {
 													try {
 														await _ogameService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
 														tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
-														int interval = (int) (_helpersService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, userData.serverData, tempCelestial.Facilities) * 1000 + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+														int interval = (int) (_helpersService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, userData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 														log(LogLevel.Information, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 														await Task.Delay(interval);
 													} catch {
@@ -3213,7 +3214,7 @@ namespace Tbot.Services {
 						userData.fleets = await UpdateFleets();
 						Fleet firstReturning = _helpersService.GetFirstReturningEspionage(userData.fleets);
 						if (firstReturning != null) {
-							int interval = (int) ((1000 * firstReturning.BackIn) + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+							int interval = (int) ((1000 * firstReturning.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 							log(LogLevel.Information, LogSender.AutoFarm, $"Waiting for probes to return...");
 							await Task.Delay(interval);
 						}
@@ -3386,7 +3387,7 @@ namespace Tbot.Services {
 											try {
 												await _ogameService.BuildShips(tempCelestial, cargoShip, neededCargos);
 												tempCelestial = await UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
-												int interval = (int) (_helpersService.CalcProductionTime(cargoShip, (int) neededCargos, userData.serverData, tempCelestial.Facilities) * 1000 + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+												int interval = (int) (_helpersService.CalcProductionTime(cargoShip, (int) neededCargos, userData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 												log(LogLevel.Information, LogSender.AutoFarm, "Production succesfully started. Waiting for build order to finish...");
 												await Task.Delay(interval);
 											} catch {
@@ -3421,7 +3422,7 @@ namespace Tbot.Services {
 								userData.fleets = await UpdateFleets();
 								// No slots free, wait for first fleet to come back.
 								if (userData.fleets.Any()) {
-									int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds));
+									int interval = (int) ((1000 * userData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 									if (SettingsService.IsSettingSet(settings.AutoFarm, "MaxWaitTime") && (int) settings.AutoFarm.MaxWaitTime != 0 && interval > (int) settings.AutoFarm.MaxWaitTime) {
 										log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Time to wait greater than set {(int) settings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
 										return;
@@ -3497,9 +3498,9 @@ namespace Tbot.Services {
 						log(LogLevel.Information, LogSender.AutoFarm, $"Stopping feature.");
 					} else {
 						var time = await GetDateTime();
-						var interval = _helpersService.CalcRandomInterval((int) settings.AutoFarm.CheckIntervalMin, (int) settings.AutoFarm.CheckIntervalMax);
+						var interval = RandomizeHelper.CalcRandomInterval((int) settings.AutoFarm.CheckIntervalMin, (int) settings.AutoFarm.CheckIntervalMax);
 						if (interval <= 0)
-							interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("AutoFarmTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.AutoFarm, $"Next autofarm check at {newTime.ToString()}");
@@ -3737,7 +3738,7 @@ namespace Tbot.Services {
 								userData.lastDOIR = DOIR;
 							}
 						}
-						delayBuilding = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						delayBuilding = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						return;
 					}
 
@@ -3928,9 +3929,9 @@ namespace Tbot.Services {
 					time = await GetDateTime();
 					long interval;
 					try {
-						interval = _helpersService.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, userData.serverData, celestial.Facilities) * 1000 + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+						interval = _helpersService.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, userData.serverData, celestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					} catch {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3944,9 +3945,9 @@ namespace Tbot.Services {
 					userData.fleets = await UpdateFleets();
 					long interval;
 					try {
-						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					} catch {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3955,7 +3956,7 @@ namespace Tbot.Services {
 					timers.Add(autoMineTimer, new Timer(AutoMine, celestial, interval, Timeout.Infinite));
 					log(LogLevel.Information, LogSender.Brain, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (started) {
-					long interval = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+					long interval = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -3982,14 +3983,14 @@ namespace Tbot.Services {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						userData.fleets = await UpdateFleets();
 						var transportfleet = userData.fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-						interval = (transportfleet.ArriveIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (transportfleet.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 
 					} else {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 					}
 
 					if (interval == long.MaxValue || interval == long.MinValue)
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4094,7 +4095,7 @@ namespace Tbot.Services {
 				if (celestial.Constructions.LFResearchID != 0) {
 					log(LogLevel.Information, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a Lifeform research in production.");
 					delayProduction = true;
-					delayTime = (long) celestial.Constructions.LFResearchCountdown * (long) 1000 + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+					delayTime = (long) celestial.Constructions.LFResearchCountdown * (long) 1000 + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					return;
 				}
 				int maxResearchLevel = (int) settings.Brain.LifeformAutoResearch.MaxResearchLevel;
@@ -4193,9 +4194,9 @@ namespace Tbot.Services {
 					time = await GetDateTime();
 					userData.fleets = await UpdateFleets();
 					try {
-						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					} catch {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
 					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4205,9 +4206,9 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.Brain, $"Next Lifeform AutoResearch check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else if (started) {
-					interval = ((long) celestial.Constructions.LFResearchCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.LFResearchCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					if (interval == long.MaxValue || interval == long.MinValue)
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoResearch.CheckIntervalMin, (int) settings.Brain.LifeformAutoResearch.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4220,9 +4221,9 @@ namespace Tbot.Services {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						userData.fleets = await UpdateFleets();
 						var transportfleet = userData.fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-						interval = (transportfleet.ArriveIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (transportfleet.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
@@ -4326,9 +4327,9 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.Brain, $"Skipping {celestial.ToString()}: there is already a building (LF, robotic or nanite) in production.");
 					delayProduction = true;
 					if (celestial.Constructions.LFBuildingID != 0) {
-						delayTime = (long) celestial.Constructions.LFBuildingCountdown * (long) 1000 + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+						delayTime = (long) celestial.Constructions.LFBuildingCountdown * (long) 1000 + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					} else {
-						delayTime = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+						delayTime = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					}
 				}
 				if (delayTime == 0) {
@@ -4421,9 +4422,9 @@ namespace Tbot.Services {
 					time = await GetDateTime();
 					userData.fleets = await UpdateFleets();
 					try {
-						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					} catch {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4433,9 +4434,9 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.Brain, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 
 				} else if (started) {
-					interval = ((long) celestial.Constructions.LFBuildingCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.LFBuildingCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					if (interval == long.MaxValue || interval == long.MinValue)
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
@@ -4458,9 +4459,9 @@ namespace Tbot.Services {
 					if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 						userData.fleets = await UpdateFleets();
 						var transportfleet = userData.fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
-						interval = (transportfleet.ArriveIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = (transportfleet.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					} else {
-						interval = _helpersService.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
+						interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.LifeformAutoMine.CheckIntervalMin, (int) settings.Brain.LifeformAutoMine.CheckIntervalMax);
 					}
 
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
@@ -4475,7 +4476,7 @@ namespace Tbot.Services {
 		}
 
 		private async Task<long> CalcAutoMineTimer(Celestial celestial, Buildables buildable, int level, bool started, Buildings maxBuildings, Facilities maxFacilities, Facilities maxLunarFacilities, AutoMinerSettings autoMinerSettings) {
-			long interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
+			long interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoMine.CheckIntervalMin, (int) settings.Brain.AutoMine.CheckIntervalMax);
 			try {
 				if (celestial.Fields.Free == 0) {
 					interval = long.MaxValue;
@@ -4489,15 +4490,15 @@ namespace Tbot.Services {
 						celestial = await UpdatePlanet(celestial, UpdateTypes.Facilities);
 						interval = _helpersService.CalcProductionTime(buildable, level, userData.serverData, celestial.Facilities) * 1000;
 					} else if (buildable == Buildables.Crawler) {
-						interval = (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+						interval = (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					} else {
 						if (celestial.HasConstruction())
-							interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+							interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 						else
 							interval = 0;
 					}
 				} else if (celestial.HasConstruction()) {
-					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) _helpersService.CalcRandomInterval(IntervalType.AFewSeconds);
+					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				} else {
 					celestial = await UpdatePlanet(celestial, UpdateTypes.Buildings);
 					celestial = await UpdatePlanet(celestial, UpdateTypes.Facilities);
@@ -4547,7 +4548,7 @@ namespace Tbot.Services {
 
 						var returningExpo = _helpersService.GetFirstReturningExpedition(celestial.Coordinate, userData.fleets);
 						if (returningExpo != null) {
-							returningExpoTime = (long) (returningExpo.BackIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+							returningExpoTime = (long) (returningExpo.BackIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 							//log(LogLevel.Debug, LogSender.Brain, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
 						}
 
@@ -4561,7 +4562,7 @@ namespace Tbot.Services {
 									.SingleOrDefault() ?? new() { ID = 0 };
 							var returningExpoOrigin = _helpersService.GetFirstReturningExpedition(origin.Coordinate, userData.fleets);
 							if (returningExpoOrigin != null) {
-								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								//log(LogLevel.Debug, LogSender.Brain, $"Next expedition returning in transport origin celestial by {now.AddMilliseconds(returningExpoOriginTime).ToString()}");
 							}
 
@@ -4585,13 +4586,13 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Error, LogSender.Brain, $"AutoMineCelestial Exception: {e.Message}");
 				log(LogLevel.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
-				return interval + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+				return interval + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 			}
 			if (interval < 0)
-				interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+				interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 			if (interval == long.MaxValue)
 				return interval;
-			return interval + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+			return interval + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 		}
 
 		private async Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null) {
@@ -4848,9 +4849,9 @@ namespace Tbot.Services {
 						log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
 					} else {
 						var time = await GetDateTime();
-						var interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoCargo.CheckIntervalMin, (int) settings.Brain.AutoCargo.CheckIntervalMax);
+						var interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoCargo.CheckIntervalMin, (int) settings.Brain.AutoCargo.CheckIntervalMax);
 						if (interval <= 0)
-							interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("CapacityTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Brain, $"Next capacity check at {newTime.ToString()}");
@@ -5002,15 +5003,15 @@ namespace Tbot.Services {
 							log(LogLevel.Information, LogSender.Brain, $"Delaying...");
 							userData.fleets = await UpdateFleets();
 							var time = await GetDateTime();
-							long interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							long interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							var newTime = time.AddMilliseconds(interval);
 							timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 							log(LogLevel.Information, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
 						} else {
 							var time = await GetDateTime();
-							var interval = _helpersService.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
+							var interval = RandomizeHelper.CalcRandomInterval((int) settings.Brain.AutoRepatriate.CheckIntervalMin, (int) settings.Brain.AutoRepatriate.CheckIntervalMax);
 							if (interval <= 0)
-								interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+								interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							var newTime = time.AddMilliseconds(interval);
 							timers.GetValueOrDefault("RepatriateTimer").Change(interval, Timeout.Infinite);
 							log(LogLevel.Information, LogSender.Brain, $"Next repatriate check at {newTime.ToString()}");
@@ -5107,7 +5108,7 @@ namespace Tbot.Services {
 			) {
 				DateTime time = await GetDateTime();
 
-				if (_helpersService.ShouldSleep(time, goToSleep, wakeUp)) {
+				if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
 					log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: bed time has passed");
 					return (int) SendFleetCode.AfterSleepTime;
 				}
@@ -5225,7 +5226,7 @@ namespace Tbot.Services {
 		private async void HandleAttack(AttackerFleet attack) {
 			if (userData.celestials.Count() == 0) {
 				DateTime time = await GetDateTime();
-				long interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("DefenderTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Warning, LogSender.Defender, "Unable to handle attack at the moment: bot is still getting account info.");
@@ -5335,7 +5336,7 @@ namespace Tbot.Services {
 			}
 
 			if ((bool) settings.Defender.Autofleet.Active) {
-				var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (_helpersService.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
+				var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
 				await AutoFleetSave(attackedCelestial, false, minFlightTime, true);
 			}
 		}
@@ -5361,7 +5362,7 @@ namespace Tbot.Services {
 					if (userData.researches.Astrophysics == 0) {
 						log(LogLevel.Information, LogSender.Expeditions, "Skipping: Astrophysics not yet researched!");
 						time = await GetDateTime();
-						interval = _helpersService.CalcRandomInterval(IntervalType.AboutHalfAnHour);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutHalfAnHour);
 						newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
@@ -5541,7 +5542,7 @@ namespace Tbot.Services {
 													Position = 16,
 													Type = Celestials.DeepSpace
 												};
-												destination.System = _helpersService.WrapSystem(destination.System);
+												destination.System = GeneralHelper.WrapSystem(destination.System);
 												while (syslist.Contains(destination.System))
 													destination.System = rand.Next(origin.Coordinate.System - range, origin.Coordinate.System + range + 1);
 												syslist.Add(destination.System);
@@ -5601,13 +5602,13 @@ namespace Tbot.Services {
 
 					userData.slots = await UpdateSlots();
 					if ((orderedFleets.Count() == 0) || (userData.slots.ExpFree > 0)) {
-						interval = _helpersService.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
-						interval = (int) ((1000 * orderedFleets.First().BackIn) + _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
 					}
 					time = await GetDateTime();
 					if (interval <= 0)
-						interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					newTime = time.AddMilliseconds(interval);
 					timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
 					log(LogLevel.Information, LogSender.Expeditions, $"Next check at {newTime.ToString()}");
@@ -5616,7 +5617,7 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.Expeditions, $"HandleExpeditions exception: {e.Message}");
 				log(LogLevel.Warning, LogSender.Expeditions, $"Stacktrace: {e.StackTrace}");
-				long interval = (long) (_helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+				long interval = (long) (RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
 				var time = await GetDateTime();
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
@@ -5632,9 +5633,9 @@ namespace Tbot.Services {
 						userData.fleets = await UpdateFleets();
 						long interval;
 						try {
-							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						} catch {
-							interval = _helpersService.CalcRandomInterval((int) settings.Expeditions.CheckIntervalMin, (int) settings.Expeditions.CheckIntervalMax);
+							interval = RandomizeHelper.CalcRandomInterval((int) settings.Expeditions.CheckIntervalMin, (int) settings.Expeditions.CheckIntervalMax);
 						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
@@ -5713,7 +5714,7 @@ namespace Tbot.Services {
 										Position = 16,
 										Type = Celestials.DeepSpace
 									};
-									destination.System = _helpersService.WrapSystem(destination.System);
+									destination.System = GeneralHelper.WrapSystem(destination.System);
 
 									destinations.Add(destination);
 								}
@@ -5786,11 +5787,11 @@ namespace Tbot.Services {
 							.First()
 							.BackIn ?? 0) * 1000;
 					} else {
-						interval = (int) _helpersService.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+						interval = (int) RandomizeHelper.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
 					}
 					var time = await GetDateTime();
 					if (interval <= 0)
-						interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime newTime = time.AddMilliseconds(interval);
 					timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 					log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
@@ -5798,10 +5799,10 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.Harvest, $"HandleHarvest exception: {e.Message}");
 				log(LogLevel.Warning, LogSender.Harvest, $"Stacktrace: {e.StackTrace}");
-				long interval = (int) _helpersService.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
+				long interval = (int) RandomizeHelper.CalcRandomInterval((int) settings.AutoHarvest.CheckIntervalMin, (int) settings.AutoHarvest.CheckIntervalMax);
 				var time = await GetDateTime();
 				if (interval <= 0)
-					interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
@@ -5814,7 +5815,7 @@ namespace Tbot.Services {
 						log(LogLevel.Information, LogSender.Harvest, $"Delaying...");
 						var time = await GetDateTime();
 						userData.fleets = await UpdateFleets();
-						long interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 						log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
@@ -5838,7 +5839,7 @@ namespace Tbot.Services {
 				}
 
 				if ((bool) settings.AutoColonize.Active) {
-					long interval = _helpersService.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+					long interval = RandomizeHelper.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
 					log(LogLevel.Information, LogSender.Colonize, "Checking if a new planet is needed...");
 
 					userData.researches = await UpdateResearches();
@@ -5956,20 +5957,20 @@ namespace Tbot.Services {
 
 					DateTime time = await GetDateTime();
 					if (interval <= 0) {
-						interval = _helpersService.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					}
 
 					DateTime newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("ColonizeTimer").Change(interval + _helpersService.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
+					timers.GetValueOrDefault("ColonizeTimer").Change(interval + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
 					log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
 				}
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.Colonize, $"HandleColonize exception: {e.Message}");
 				log(LogLevel.Warning, LogSender.Colonize, $"Stacktrace: {e.StackTrace}");
-				long interval = _helpersService.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+				long interval = RandomizeHelper.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
 				DateTime time = await GetDateTime();
 				if (interval <= 0)
-					interval = _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
@@ -5984,9 +5985,9 @@ namespace Tbot.Services {
 						userData.fleets = await UpdateFleets();
 						long interval;
 						try {
-							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + _helpersService.CalcRandomInterval(IntervalType.SomeSeconds);
+							interval = (userData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						} catch {
-							interval = _helpersService.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
+							interval = RandomizeHelper.CalcRandomInterval((int) settings.AutoColonize.CheckIntervalMin, (int) settings.AutoColonize.CheckIntervalMax);
 						}
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,9 @@ namespace Tbot.Services {
 
 		private void initWatch() {
 			p = new PhysicalFileProvider(Path.GetDirectoryName(_absFpToWatch));
+			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+				p.UseActivePolling = true;
+			}
 			changeToken = p.Watch(Path.GetFileName(_absFpToWatch));
 			changeCallback = changeToken.RegisterChangeCallback(onChanged, default);
 		}

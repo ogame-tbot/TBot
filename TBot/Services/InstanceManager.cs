@@ -20,16 +20,26 @@ namespace Tbot.Services {
 		public string SettingsAbsoluteFilepath { get; set; } = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
 		static dynamic _mainSettings;
 
-		private IOgameService _ogameService;
-		private ILoggerService<InstanceManager> _logger;
+		private readonly IOgameService _ogameService;
+		private readonly ILoggerService<InstanceManager> _logger;
+		private readonly ILoggerService<TelegramMessenger> _telegramLogger;
+		private readonly IServiceScopeFactory _scopeFactory;
+		private readonly ICalculationService _helpersService;
 
 		static ITelegramMessenger telegramMessenger = null;
 		static SemaphoreSlim instancesSem = new SemaphoreSlim(1, 1);
 		static List<TbotInstanceData> instances = new();
 		static SettingsFileWatcher settingsWatcher = null;
-		public InstanceManager(ILoggerService<InstanceManager> logger, IOgameService ogameService) {
+		public InstanceManager(ILoggerService<InstanceManager> logger,
+			IOgameService ogameService,
+			IServiceScopeFactory serviceScopeFactory,
+			ILoggerService<TelegramMessenger> telegramLogger,
+			ICalculationService helpersService) {
 			_logger = logger;
 			_ogameService = ogameService;
+			_scopeFactory = serviceScopeFactory;
+			_telegramLogger = telegramLogger;
+			_helpersService = helpersService;
 		}
 
 		public async void OnSettingsChanged() {
@@ -150,8 +160,9 @@ namespace Tbot.Services {
 			List<Task> deinitTasks = new();
 			foreach (var instance in instances) {
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Deinitializing instance \"{instance._alias}\" \"{instance._botSettingsPath}\"");
-				deinitTasks.Add(instance._botMain.DisposeAsync().AsTask());
+				deinitTasks.Add(instance.Deinitialize());
 			}
+			await Task.WhenAll(deinitTasks);
 			foreach (var task in deinitTasks) {
 				await task;
 			}
@@ -165,12 +176,10 @@ namespace Tbot.Services {
 				(bool) _mainSettings.TelegramMessenger.Active
 			) {
 				if (telegramMessenger == null) {
-					var telegramLogger = ServiceProviderFactory.ServiceProvider.GetRequiredService<ILoggerService<TelegramMessenger>>();
-					var helpersService = ServiceProviderFactory.ServiceProvider.GetRequiredService<IHelpersService>();
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, "Activating Telegram Messenger");
 					var logEnabled = SettingsService.IsSettingSet(_mainSettings.TelegramMessenger, "Logging") && (bool) _mainSettings.TelegramMessenger.Logging;
 
-					telegramMessenger = new TelegramMessenger(telegramLogger, helpersService,
+					telegramMessenger = new TelegramMessenger(_telegramLogger, _helpersService,
 						(string) _mainSettings.TelegramMessenger.API, (string) _mainSettings.TelegramMessenger.ChatId, logEnabled);
 					await telegramMessenger.TelegramBot();
 				}
@@ -212,14 +221,12 @@ namespace Tbot.Services {
 					_logger.WriteLog(LogLevel.Warning, LogSender.Main, $"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
 					throw new MissingConfigurationException($"Instance \"{alias}\" cannot be initialized. \"{settingsPath}\" does not exist");
 				} else {
-					using var scope = ServiceProviderFactory.ServiceProvider.CreateScope();
-					var ogamedService = scope.ServiceProvider.GetRequiredService<IOgameService>();
-					var tbotLogger = scope.ServiceProvider.GetRequiredService<ILoggerService<TBotMain>>();
-					var helpersService = scope.ServiceProvider.GetRequiredService<IHelpersService>();
-					var tbot = new TBotMain(ogamedService, helpersService, tbotLogger);
-					await tbot.Init(settingsPath, alias, telegramMessenger);
+
+					var scope = _scopeFactory.CreateScope();
+					var tBotInstance = scope.ServiceProvider.GetRequiredService<ITBotMain>();
+					await tBotInstance.Init(settingsPath, alias, telegramMessenger);
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Instance \"{alias}\" initialized successfully!");
-					var instance = new TbotInstanceData(tbot, settingsPath, alias);
+					var instance = new TbotInstanceData(tBotInstance, scope, settingsPath, alias);
 					return instance;
 				}
 			} catch (Exception e) {

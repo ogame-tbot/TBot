@@ -7,7 +7,7 @@ using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Includes {
-	public interface IHelpersService {
+	public interface ICalculationService {
 		bool AreThereIncomingResources(Celestial celestial, List<Fleet> fleets);
 		long CalcCrystalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1);
 		long CalcCrystalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1);
@@ -58,8 +58,6 @@ namespace Tbot.Includes {
 		Resources CalcPrice(Buildables buildable, int level);
 		long CalcProductionTime(Buildables buildable, int level, int speed = 1, Facilities facilities = null, int cumulativeLabLevel = 0, bool isDiscoverer = false, bool hasTechnocrat = false);
 		long CalcProductionTime(Buildables buildable, int level, ServerData serverData, Facilities facilities, int cumulativeLabLevel = 0);
-		int CalcRandomInterval(int min, int max);
-		int CalcRandomInterval(IntervalType type);
 		float CalcROI(Planet planet, Buildables buildable, Researches researches = null, int speedFactor = 1, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false);
 		int CalcShipCapacity(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
 		int CalcShipConsumption(Buildables buildable, int impulseDrive, int hyperspaceDrive, double deuteriumSaveFactor, CharacterClass playerClass = CharacterClass.NoClass);
@@ -70,7 +68,6 @@ namespace Tbot.Includes {
 		int CalcShipSpeed(Buildables buildable, Researches researches, CharacterClass playerClass = CharacterClass.NoClass);
 		int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, CharacterClass playerClass = CharacterClass.NoClass);
 		int CalcSlowestSpeed(Ships fleet, Researches researches, CharacterClass playerClass = CharacterClass.NoClass);
-		int ClampSystem(int system);
 		Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets);
 		Fleet GetFirstReturningEspionage(List<Fleet> fleets);
 		Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets);
@@ -106,10 +103,7 @@ namespace Tbot.Includes {
 		bool isUnlocked(Celestial celestial, LFBuildables buildable);
 		bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber);
 		List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials);
-		long ParseDurationFromString(string timeString);
-		void PlayAlarm();
-		void SetTitle(string content = "");
-		bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
+				bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
 		bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
 		bool ShouldBuildEnergySource(Planet planet);
 		bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1, Researches researches = null);
@@ -125,8 +119,5 @@ namespace Tbot.Includes {
 		bool ShouldBuildTerraformer(Planet celestial, Researches researches, int maxLevel = 10);
 		bool ShouldResearchEnergyTech(List<Planet> planets, int energyTech, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
 		bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
-		bool ShouldSleep(DateTime time, DateTime goToSleep, DateTime wakeUp);
-		string TimeSpanToString(TimeSpan delta);
-		int WrapSystem(int system);
 	}
 }
