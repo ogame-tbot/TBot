@@ -1190,6 +1190,7 @@ namespace Tbot.Services {
 
 		public async Task TelegramBot() {
 			try {
+				await instanceSem.WaitAsync();
 				cts = new CancellationTokenSource();
 				ct = cts.Token;
 
@@ -1199,28 +1200,34 @@ namespace Tbot.Services {
 				};
 
 				receivingTask = Client.ReceiveAsync(HandleUpdateAsync, HandleErrorAsync, receiverOptions, ct);
-			} catch { }
+			} finally {
+				instanceSem.Release();
+			}
 		}
 
 		public async Task TelegramBotDisable() {
-			await instanceSem.WaitAsync(ct);
-			foreach(var instance in instances) {
-				instance.RemoveTelegramMessenger();
+			try {
+
+				await instanceSem.WaitAsync(ct);
+				foreach (var instance in instances) {
+					instance.RemoveTelegramMessenger();
+				}
+			} finally {
+				instanceSem.Release();
 			}
-			instanceSem.Release();
 
 			// First of all, remove from any instance
 			if (Client != null) {
 				cts.Cancel();
 				try {
 					await receivingTask;
-				} catch(OperationCanceledException) {
+				} catch (OperationCanceledException) {
 
 				} finally {
 					cts.Dispose();
 					receivingTask = null;
 				}
-				
+
 			}
 			// We should wait for ReceiveAsync to be dismissed
 			_logger.RemoveTelegramLogger();
