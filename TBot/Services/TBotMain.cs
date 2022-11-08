@@ -3086,7 +3086,13 @@ namespace Tbot.Services {
 									if (target.State == FarmState.FailedProbesRequired)
 										neededProbes *= 9;
 
-									long totalProbesInAllCelestials = closestCelestials.Sum(c => c.Ships.EspionageProbe);
+									await UpdatePlanets(UpdateTypes.Ships);
+
+									await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
+
+									userData.fleets = await UpdateFleets();
+									var probesInMission = userData.fleets.Select(c => c.Ships).Sum(c => c.EspionageProbe);
+									long totalProbesInAllCelestials = closestCelestials.Sum(c => c.Ships.EspionageProbe) + probesInMission;
 									KeyValuePair<Celestial, int> minBackIn = new KeyValuePair<Celestial, int>(null, int.MaxValue);
 									foreach (var closest in closestCelestials) {
 										// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
@@ -3114,7 +3120,7 @@ namespace Tbot.Services {
 												if (celestialProbes[closest.ID] + returningProbes >= neededProbes) {
 													var returningFleets = espionageMissions.OrderBy(f => f.BackIn).ToArray();
 													long probesCount = 0;
-													for (int i = 0; i <= returningFleets.Length; i++) {
+													for (int i = 0; i < returningFleets.Length; i++) {
 														probesCount += returningFleets[i].Ships.EspionageProbe;
 														if (probesCount >= neededProbes) {
 															if (minBackIn.Value > returningFleets[i].BackIn)
@@ -3131,7 +3137,7 @@ namespace Tbot.Services {
 												continue;
 
 											//If total probes of all the planets is greater than the needed, then avoid building new ones.
-											if (totalProbesInAllCelestials > (totalSlotsForProbing - slotsToLeaveFree) * neededProbes) {
+											if (totalProbesInAllCelestials > totalSlotsForProbing * neededProbes) {
 												log(LogLevel.Warning, LogSender.AutoFarm, $"There should be enough probes in other planets, so avoiding build new ones in {closest.Coordinate.ToString()}");
 												continue;
 											}
@@ -3162,7 +3168,7 @@ namespace Tbot.Services {
 
 									if (bestOrigin == null) {
 										if (minBackIn.Value != int.MaxValue) {
-											int interval = (int) ((1000 * minBackIn.Value) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
+											int interval = (int) ((1000 * minBackIn.Value) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
 											log(LogLevel.Information, LogSender.AutoFarm, $"Not enough free slots {freeSlots}/{slotsToLeaveFree}. Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
 											await Task.Delay(interval);
 											bestOrigin = await UpdatePlanet(minBackIn.Key, UpdateTypes.Ships);

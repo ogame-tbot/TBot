@@ -229,6 +229,8 @@ namespace Tbot.Services {
 				"/getcurrentauction",
 				"/bidauction",
 				"/subscribeauction",
+				"/stopautofarm",
+				"/startautofarm"
 			};
 
 			if (update.Type != UpdateType.Message) {
