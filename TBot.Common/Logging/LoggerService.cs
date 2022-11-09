@@ -22,8 +22,9 @@ namespace TBot.Common.Logging {
 	public class LoggerService<T> : ILoggerService<T> {
 
 		private object syncObject = new object();
-		private Serilog.ILogger? _commonLogger = null;
 		private string _logPath = "";
+
+		private LoggingLevelSwitch _telegramLevelSwitch = new LoggingLevelSwitch();
 		private bool _telegramAdded = false;
 
 		public void WriteLog(LogLevel level, LogSender sender, string message) {
@@ -97,7 +98,10 @@ namespace TBot.Common.Logging {
 					fileSizeLimitBytes: maxFileSize,
 					rollingInterval: RollingInterval.Day);
 
+				// Telegram default values
+				_telegramLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 				_telegramAdded = false;
+
 				Log.Logger = logConfig.CreateLogger();
 			}
 		}
@@ -107,11 +111,13 @@ namespace TBot.Common.Logging {
 				if (_telegramAdded == false) {
 					Log.Logger = new LoggerConfiguration()
 						.WriteTo.Logger(Log.Logger)
+						// Control telegram level
+						.MinimumLevel.ControlledBy(_telegramLevelSwitch)
 						// Start anew with Enrichers
 						.Enrich.With(new ThreadIdEnricher())
 						.Enrich.FromLogContext()
 						.WriteTo.Logger(
-							c => c.Filter.Equals(Matching.WithProperty("TelegramEnabled"))
+							c => c.Filter.Equals(Matching.WithProperty<bool>("TelegramEnabled", p => p == true))
 							).WriteTo.Telegram(botToken: botToken,
 								chatId: chatId,
 								dateFormat: null,
@@ -125,6 +131,24 @@ namespace TBot.Common.Logging {
 
 		public void RemoveTelegramLogger() {
 			ConfigureLogging(_logPath);
+		}
+
+		public bool IsTelegramLoggerEnabled() {
+			return _telegramAdded;
+		}
+
+		public void SetTelegramLoggerLogLevel(LogEventLevel logLevel) {
+			lock (syncObject) {
+				if (logLevel != _telegramLevelSwitch.MinimumLevel) {
+					WriteLog(LogLevel.Warning, LogSender.Main, $"Telegram log level changed from {_telegramLevelSwitch.MinimumLevel.ToString()}" +
+						$" into {logLevel.ToString()}");
+				}
+				_telegramLevelSwitch.MinimumLevel = logLevel;
+			}
+		}
+
+		public LogEventLevel GetTelegramLoggerLevel() {
+			return _telegramLevelSwitch.MinimumLevel;
 		}
 	}
 }

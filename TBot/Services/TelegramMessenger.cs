@@ -17,6 +17,7 @@ using TBot.Common.Logging;
 using TBot.Model;
 using Tbot.Includes;
 using Tbot.Helpers;
+using Serilog.Events;
 
 namespace Tbot.Services {
 
@@ -181,6 +182,8 @@ namespace Tbot.Services {
 				"/setmain",
 				"/getmain",
 				"/listinstances",
+				"/loglevel",
+				"/setloglevel",
 				"/ping",
 				"/stopautoping",
 				"/startautoping",
@@ -287,6 +290,28 @@ namespace Tbot.Services {
 								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
+						case "/loglevel":
+							if (_logger.IsTelegramLoggerEnabled() == true) {
+								await SendMessage(botClient, message.Chat, $"Telegram Logger Enabled. LogLevel is {_logger.GetTelegramLoggerLevel()}");
+							}
+							else {
+								await SendMessage(botClient, message.Chat, "Telegram Logger is disabled.");
+							}
+							
+							return;
+						case "/setloglevel":
+							if (args.Length != 2) {
+								await SendMessage(botClient, message.Chat, "Usage is <code>/setloglevel Debug|Information|Warning|Error</code>");
+								return;
+							}
+							
+							if (Enum.TryParse<LogEventLevel>(args[1], true, out LogEventLevel newLevel) == true) {
+								await SendMessage(botClient, message.Chat, $"Enabling Telegram logger with level {newLevel.ToString()}");
+								_logger.AddTelegramLogger(Api, Channel);
+								_logger.SetTelegramLoggerLogLevel(newLevel);
+								await SendMessage(botClient, message.Chat, $"Telegram logger enabled! Level: {newLevel.ToString()}");
+							}
+							return;
 						case "/ping":
 							if (args.Length != 1) {
 								await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
@@ -322,6 +347,8 @@ namespace Tbot.Services {
 								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
 								"/getmain - Get the current TBot instance that Telegram is managing\n" +
 								"/listinstances - List TBot main instances\n" +
+								"/loglevel - Get current log level on telegram logging\n" +
+								"/setloglevel - Set log level on telegram logging and enables it. Format <code>/setloglevel Debug|Information|Warning|Error </code>\n" +
 								"/ping - Ping bot\n" +
 								"/stopautoping - stop telegram autoping\n" +
 								"/startautoping - start telegram autoping [Receive message every X hours]\n" +
@@ -468,10 +495,8 @@ namespace Tbot.Services {
 								}
 								arg = message.Text.Split(' ')[1];
 
-								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 								Missions mission;
-
-								if (!Enum.TryParse(args[2], out mission)) {
+								if (!Enum.TryParse(args[2], true, out mission)) {
 									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
@@ -488,9 +513,8 @@ namespace Tbot.Services {
 									return;
 								}
 
-								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 								Missions mission_to_do;
-								if (!Enum.TryParse(args[2], out mission_to_do)) {
+								if (!Enum.TryParse(args[2], true, out mission_to_do)) {
 									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'. Got \"{test}\"");
 									return;
 								}
@@ -521,9 +545,8 @@ namespace Tbot.Services {
 									return;
 								}
 								duration = FormattingHelper.ParseDurationFromString(args[1]);
-								args[2] = char.ToUpper(args[2][0]) + args[2].Substring(1);
 
-								if (!Enum.TryParse(args[2], out mission)) {
+								if (!Enum.TryParse(args[2], true,out mission)) {
 									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
@@ -536,17 +559,15 @@ namespace Tbot.Services {
 
 
 							case "/ghostsleepall":
-								if (message.Text.Split(' ').Length != 3) {
+								if (args.Length != 3) {
 									await SendMessage(botClient, message.Chat, "Duration (in hours) argument required! Format: <code>/ghostsleep 4h3m or 3m50s or 1h Harvest</code>", ParseMode.Html);
 									return;
 								}
 								arg = message.Text.Split(' ')[1];
-								duration = FormattingHelper.ParseDurationFromString(arg);
-								test = message.Text.Split(' ')[2];
-								test = char.ToUpper(test[0]) + test.Substring(1);
+								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
-								if (!Enum.TryParse(test, out mission)) {
-									await SendMessage(botClient, message.Chat, $"{test} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
+								if (!Enum.TryParse(args[2], true, out mission)) {
+									await SendMessage(botClient, message.Chat, $"{args[2]} error: Mission argument must be 'Harvest', 'Deploy', 'Transport', 'Spy' or 'Colonize'");
 									return;
 								}
 
