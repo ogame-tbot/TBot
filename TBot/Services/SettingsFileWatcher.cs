@@ -28,9 +28,6 @@ namespace Tbot.Services {
 
 		private void initWatch() {
 			p = new PhysicalFileProvider(Path.GetDirectoryName(_absFpToWatch));
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-				p.UseActivePolling = true;
-			}
 			changeToken = p.Watch(Path.GetFileName(_absFpToWatch));
 			changeCallback = changeToken.RegisterChangeCallback(onChanged, default);
 		}
