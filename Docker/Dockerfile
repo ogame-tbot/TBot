@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="Crucio32000" \
     name="tbotogame" \
-    version="0.1" \
+    version="0.2" \
     description="TBot image"
 
 ENV CLEAN_DOCKER_CACHE=1
@@ -17,11 +17,12 @@ RUN apt-get install -y wget --fix-missing
 # See https://docs.microsoft.com/it-it/dotnet/core/install/linux-scripted-manual 
 # See https://github.com/dotnet/core/blob/main/Documentation/build-and-install-rhel6-prerequisites.md
 # Script allows to install end-of-cycle versions
+ARG DOTNET_VERSION=6.0.10
 RUN apt-get install -y ca-certificates --fix-missing
 RUN update-ca-certificates
 RUN apt-get install -y libicu-dev libssl-dev --fix-missing
 RUN wget https://dot.net/v1/dotnet-install.sh --no-check-certificate && chmod +x dotnet-install.sh
-RUN ./dotnet-install.sh -c 5.0 --install-dir /dotnet
+RUN ./dotnet-install.sh --runtime dotnet --version ${DOTNET_VERSION} --install-dir /dotnet
 ENV DOTNET_ROOT /dotnet
 ENV PATH "$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
 
