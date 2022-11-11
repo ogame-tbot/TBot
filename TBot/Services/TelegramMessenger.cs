@@ -18,6 +18,7 @@ using TBot.Model;
 using Tbot.Includes;
 using Tbot.Helpers;
 using Serilog.Events;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Tbot.Services {
 
@@ -165,6 +166,16 @@ namespace Tbot.Services {
 				chatId: Channel,
 				chatAction: ChatAction.Typing,
 				cancellationToken: cancellationToken);
+		}
+
+		public async Task SendReplyMarkup(string text, IEnumerable<IEnumerable<InlineKeyboardButton>> buttons, CancellationToken ct) {
+			var inlineKeyboard = new InlineKeyboardMarkup(buttons);
+			await Client.SendTextMessageAsync(
+				chatId: Channel,
+				text: text,
+				replyMarkup: inlineKeyboard,
+				cancellationToken: ct
+			);
 		}
 
 		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {

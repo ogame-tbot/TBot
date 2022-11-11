@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -215,11 +216,6 @@ namespace Tbot.Services {
 			userData.lastDOIR = 0;
 			userData.nextDOIR = 0;
 
-			InitializeTimers();
-
-			features = new();
-			InitializeFeatures(Features.AllFeatures);
-
 			log(LogLevel.Information, LogSender.Tbot, "Initializing data...");
 			userData.celestials = await GetPlanets();
 			userData.researches = await UpdateResearches();
@@ -232,6 +228,9 @@ namespace Tbot.Services {
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Initializing features...");
+			InitializeTimers();
+			features = new();
+			InitializeFeatures(Features.AllFeatures);
 			InitializeSleepMode();
 
 			// Up and running. Lets initialize notification for settings file
@@ -284,13 +283,15 @@ namespace Tbot.Services {
 			return object.ReferenceEquals(this, other);
 		}
 
-		private void log(LogLevel logLevel, LogSender sender, string format) {
+		public override string ToString() {
 			if (loggedIn && (userData.userInfo != null) && (userData.serverData != null))
-				_logger.WriteLog(logLevel, sender, $"[{userData.userInfo.PlayerName}@{userData.serverData.Name}] {format}");
-			else if (instanceAlias != "MAIN")
-				_logger.WriteLog(logLevel, sender, $"[{instanceAlias}] {format}");
+				return $"{userData.userInfo.PlayerName}@{userData.serverData.Name}";
 			else
-				_logger.WriteLog(logLevel, sender, format);
+				return $"{instanceAlias}";
+		}
+
+		private void log(LogLevel logLevel, LogSender sender, string format) {
+			_logger.WriteLog(logLevel, sender, $"[{ToString()}] {format}");
 		}
 
 		private bool HandleStartStopFeatures(Feature feature, bool currentValue) {

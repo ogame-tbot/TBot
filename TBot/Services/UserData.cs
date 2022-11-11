@@ -10,7 +10,7 @@ using TBot.Ogame.Infrastructure.Models;
 namespace Tbot.Services {
 
 	// Data required by TBotMain instances
-	class UserData {
+	public class UserData {
 		public Server serverInfo = new();
 		public ServerData serverData;
 		public UserInfo userInfo;
