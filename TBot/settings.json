@@ -3,11 +3,15 @@
 		"Active": false,
 		"API": "",
 		"ChatId": "",
-        "Logging": true,
+		"Logging": true,
 		"TelegramAutoPing": {
 			"Active": true,
 			"EveryHours": 1
 		}
+	},
+	"WebUI": {
+		"Urls": "http://localhost:8091,https://localhost:8092",
+		"MaxLogsToShow": 2000
 	},
 	"Instances": [
 		{

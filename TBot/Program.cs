@@ -20,10 +20,12 @@ using Tbot.Services;
 using TBot.Common.Logging;
 using TBot.Common.Logging.Enrichers;
 using TBot.Common.Logging.Hooks;
+using TBot.Common.Logging.Hubs;
 using TBot.Common.Logging.Sinks;
 using TBot.Common.Logging.TextFormatters;
 using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.WebUI;
 
 namespace Tbot {
 
@@ -37,14 +39,15 @@ namespace Tbot {
 		}
 		static async Task MainAsync(string[] args) {
 
-			var serviceProvider = new ServiceCollection()
+			var serviceCollection = WebApp.GetServiceCollection()
 				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
 				.AddScoped<ICalculationService, CalculationService>()
 				.AddScoped<IOgameService, OgameService>()
 				.AddScoped<ITelegramMessenger, TelegramMessenger>()
 				.AddScoped<IInstanceManager, InstanceManager>()
-				.AddScoped<ITBotMain, TBotMain>()
-				.BuildServiceProvider();
+				.AddScoped<ITBotMain, TBotMain>();
+
+			var serviceProvider = WebApp.Build();
 
 			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
 			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
@@ -84,11 +87,17 @@ namespace Tbot {
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
+			CancellationTokenSource cts = new CancellationTokenSource();
+
+			
 
 			Console.CancelKeyPress += (sender, e) => {
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "CTRL+C pressed!");
+				cts.Cancel();
 				tcs.SetResult();
 			};
+
+			await WebApp.Main(cts.Token);
 
 			await tcs.Task;
 

@@ -14,6 +14,7 @@ using Tbot.Exceptions;
 using Tbot.Models;
 using System.Collections;
 using TBot.Ogame.Infrastructure.Enums;
+using Tbot.Common.Settings;
 
 namespace Tbot.Services {
 	internal class InstanceManager : IInstanceManager {

@@ -1,0 +1,45 @@
+@using Newtonsoft.Json
+@using TBot.Common.Logging
+@model LogJson
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+<script src="~/js/logging.js" asp-append-version="true"></script>
+<link rel="stylesheet" href="~/css/logging.css" asp-append-version="true" />
+
+<div class="container">
+    <div class="filters-box w-100 mb-2 mb-md-0" style="overflow:hidden">
+        <div class="row">
+            <div class="col-12 col-md-6">
+                <input class="mb-2 mb-md-0" type="text" id="logsearch" name="logsearch" placeholder="Search...">
+            </div>
+            <div id="logsendercol" class="col-6 col-md-3">
+                <select id="logsenderfilter" name="logsenderfilter" onchange="applyFilter()" ">
+                    <option value="">All</option>
+                    @foreach (var logSender in Enum.GetNames(typeof(LogSender)))
+                    {
+                    <option value="@logSender">@logSender</option>
+                    }
+                </select>
+            </div>
+            <div id="loglevelcol" class="col-6 col-md-3" style="text-align:right;">
+                <select id="loglevelfilter" name="loglevelfilter" onchange="applyFilter()">
+                    <option value="Trace">Trace</option>
+                    <option value="Debug">Debug</option>
+                    <option value="Information">Information</option>
+                    <option value="Warning">Warning</option>
+                    <option value="Error">Error</option>
+                </select>
+            </div>
+            
+        </div>
+    </div>
+
+    <span style="font-size:8pt" id="maxElements"></span>
+
+    <div id="logsDiv">
+    </div>
+</div>
+
+<script type="text/javascript">
+    var logModel = @Html.Raw(Model.Content);
+    Initialize("/realTimeLog", @Model.MaxLogsToShow, logModel);
+</script>
