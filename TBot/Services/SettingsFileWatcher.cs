@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
-namespace Tbot.Includes {
+namespace Tbot.Services {
 	public class SettingsFileWatcher {
 
 		private Action _watchFunc;
@@ -32,7 +33,7 @@ namespace Tbot.Includes {
 		}
 
 		public void deinitWatch() {
-			if (changeCallback != null ) {
+			if (changeCallback != null) {
 				changeCallback.Dispose();
 				changeCallback = null;
 			}

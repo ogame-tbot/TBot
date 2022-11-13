@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using Tbot.Model;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Includes {
 	public static class Extensions {

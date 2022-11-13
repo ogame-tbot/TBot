@@ -127,6 +127,8 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
     * /setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>
     * /getmain - Get the current TBot instance that Telegram is managing
     * /listinstances - List TBot main instances
+    * /loglevel - Get current log level on telegram logging
+	* /setloglevel - Set log level on telegram logging and enables it. Format <code>/setloglevel Debug|Information|Warning|Error </code>
     * /ping - Ping bot
     * /stopautoping - stop telegram autoping
     * /startautoping - start telegram autoping [Receive message every X hours]
