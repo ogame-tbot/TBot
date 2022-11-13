@@ -30,7 +30,7 @@ jobs:
         go-version: '~1.18.0'
       
     - name: Build TBot win64
-      run: dotnet publish -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
+      run: dotnet publish TBot -c Release -r win-x64 -o publish/win64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed win64
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
@@ -44,7 +44,7 @@ jobs:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-win64.zip publish/win64/
 
     - name: Build TBot win32
-      run: dotnet publish -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
+      run: dotnet publish TBot -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed win32
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
@@ -57,7 +57,7 @@ jobs:
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-win32.zip publish/win32/
         
-    - name: Build TBot linux64
+    - name: Build TBot TBot linux64
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linux64
       run: | 
@@ -73,7 +73,7 @@ jobs:
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linux64.zip publish/linux64/
         
-    - name: Build TBot linuxarm
+    - name: Build TBot TBot linuxarm
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linuxarm
       run: | 
@@ -89,7 +89,7 @@ jobs:
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linuxarm.zip publish/linuxarm/
 
-    - name: Build TBot linuxarm64
+    - name: Build TBot TBot linuxarm64
       run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed linuxarm64
       run: | 
@@ -105,7 +105,7 @@ jobs:
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip publish/linuxarm64/
         
-    - name: Build TBot osx64
+    - name: Build TBot TBot osx64
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed osx64
       run: | 
