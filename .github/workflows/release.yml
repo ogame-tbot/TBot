@@ -120,10 +120,26 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-osx64.zip publish/osx64/
+	
+	- name: Build TBot TBot osx-arm64
+      run: dotnet publish -c Release -r osx-arm64 -o publish/osx-arm64/ -p:PublishSingleFile=true --self-contained false
+    - name: Build ogamed osx-arm64
+      run: | 
+        cd ${{ github.workspace }}/ogame/cmd/ogamed
+        env GOOS=darwin GOARCH=amd64 go build -o ogamed
+        cd ${{ github.workspace }}
+        mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx-arm64/
+        chmod +x ${{ github.workspace }}/publish/osx-arm64/TBot
+        chmod +x ${{ github.workspace }}/publish/osx-arm64/ogamed
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/publish/osx-arm64/
+    - name: Package osx-arm64
+      uses: montudor/action-zip@v1
+      with:
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-osx-arm64.zip publish/osx-arm64/
         
     - name: Draft Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win32.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx64.zip
+        artifacts: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win32.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx-arm64.zip
         draft: true
         token: ${{ secrets.GITHUB_TOKEN }}
