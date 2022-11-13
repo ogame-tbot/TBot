@@ -33,7 +33,7 @@ namespace Tbot.Workers {
 
 			if (WaitFleetsReturn) {
 
-				_tbotInstance.UserData.fleets = await UpdateFleets();
+				_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 				long interval;
 				try {
 					interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -414,7 +414,7 @@ namespace Tbot.Workers {
 			try {
 				await _tbotInstance.OgamedInstance.CancelFleet(fleet);
 				await Task.Delay((int) IntervalType.AFewSeconds);
-				_tbotInstance.UserData.fleets = await UpdateFleets();
+				_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 				Fleet recalledFleet = _tbotInstance.UserData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
 				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
 					_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");

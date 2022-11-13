@@ -37,7 +37,7 @@ namespace Tbot.Workers {
 				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
 				if (isUnderAttack) {
 					if ((bool) _tbotInstance.InstanceSettings.Defender.Alarm.Active)
-						await Task.Factory.StartNew(() => ConsoleHelpers.PlayAlarm());
+						await Task.Factory.StartNew(() => ConsoleHelpers.PlayAlarm(), _ct);
 					// UpdateTitle(false, true);
 					DoLog(LogLevel.Warning, "ENEMY ACTIVITY!!!");
 					_tbotInstance.UserData.attacks = await _tbotInstance.OgamedInstance.GetAttacks();

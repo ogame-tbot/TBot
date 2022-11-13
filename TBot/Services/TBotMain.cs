@@ -1837,12 +1837,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while waking up: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await ITBotHelper.GetDateTime(this);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await CheckCelestials();
+				await ITBotHelper.CheckCelestials(this);
 			}
 		}
 		

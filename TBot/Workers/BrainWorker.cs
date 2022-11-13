@@ -35,7 +35,7 @@ namespace Tbot.Workers {
 
 			suffix = feat switch {
 				Feature.BrainAutoMine => "AutoMineTimer-",
-				Feature.BrainLifeformAutoMine => "LifeformAutoMineTimer",
+				Feature.BrainLifeformAutoMine => "LifeformAutoMineTimer-",
 				Feature.BrainLifeformAutoResearch => "LifeformAutoResearchTimer-",
 				_ => "Brain-"
 			};
@@ -44,10 +44,10 @@ namespace Tbot.Workers {
 
 
 		public override async Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
-			await InitializeFeature(Feature.BrainAutobuildCargo,	AutoBuildCargo, dueTime, period, ct);
-			await InitializeFeature(Feature.BrainAutoRepatriate,	AutoRepatriate, dueTime, period, ct);
-			await InitializeFeature(Feature.BrainAutoMine,			AutoMine, dueTime, period, ct);
-			await InitializeFeature(Feature.BrainAutoResearch,		AutoResearch, dueTime, period, ct);
+			await InitializeFeature(Feature.BrainAutobuildCargo,		AutoBuildCargo, dueTime, period, ct);
+			await InitializeFeature(Feature.BrainAutoRepatriate,		AutoRepatriate, dueTime, period, ct);
+			await InitializeFeature(Feature.BrainAutoMine,				AutoMine, dueTime, period, ct);
+			await InitializeFeature(Feature.BrainAutoResearch,			AutoResearch, dueTime, period, ct);
 
 			await InitializeFeature(Feature.BrainLifeformAutoMine,		LifeformAutoMine, dueTime, period, ct);
 			await InitializeFeature(Feature.BrainLifeformAutoResearch,	LifeformAutoResearch, dueTime, period, ct);

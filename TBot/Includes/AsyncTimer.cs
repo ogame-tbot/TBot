@@ -75,7 +75,7 @@ namespace Tbot.Includes {
 			_cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
 			_scheduledAction = Task.Run(async () => {
-				// Change thread name so Htop will show it
+				// Change thread name so TaskManager will show it
 				Thread.CurrentThread.Name = $"AT_{_name}";
 				IsRunning = true;
 				CancellationToken ct = _cts.Token;

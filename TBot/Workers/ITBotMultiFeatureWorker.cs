@@ -75,8 +75,13 @@ namespace Tbot.Workers {
 
 		public override async Task StopWorker() {
 			var features = _featuresTimer.Keys;
+			List<Task> tasks = new();
 			foreach (var ft in features) {
-				await StopFeature(ft);
+				tasks.Add(StopFeature(ft));
+			}
+
+			foreach (var ft in tasks) {
+				await ft;
 			}
 		}
 
