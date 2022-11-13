@@ -120,8 +120,8 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-osx64.zip publish/osx64/
-	
-	- name: Build TBot TBot osx-arm64
+        
+    - name: Build TBot TBot osx-arm64
       run: dotnet publish -c Release -r osx-arm64 -o publish/osx-arm64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed osx-arm64
       run: | 

@@ -145,8 +145,8 @@ jobs:
       with:
         name: TBot-${{ env.SNAP_VERSION }}-osx64
         path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx64.zip
-	
-	- name: Build TBot osx-arm64
+        
+    - name: Build TBot osx-arm64
       run: dotnet publish TBot -c Release -r osx-arm64 -o publish/osx-arm64/ -p:PublishSingleFile=true --self-contained false
     - name: Build ogamed osx-arm64
       run: | 
