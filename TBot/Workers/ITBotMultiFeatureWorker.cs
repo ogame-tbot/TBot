@@ -57,6 +57,14 @@ namespace Tbot.Workers {
 			if (_featuresTimer.Remove(feat, out AsyncTimer timer)) {
 				await timer.DisposeAsync();
 			}
+
+			// Stop also all the timers
+			var remainingTimers = timers.Where(c => c.Key.StartsWith(GetFeatureTimersSuffix(feat)));
+			foreach(var tim in remainingTimers) {
+				DoLog(LogLevel.Information, GetLogSenderFromFeature(feat), $"Deleting feature {feat.ToString()} timer {tim.Key}...");
+				tim.Value.Dispose();
+				timers.Remove(tim.Key);
+			}
 		}
 
 		public void ChangeFeaturePeriod(Feature feat, TimeSpan dueTime, TimeSpan period) {
@@ -74,5 +82,6 @@ namespace Tbot.Workers {
 
 		public abstract string GetWorkerName();
 		public abstract LogSender GetLogSenderFromFeature(Feature feat);
+		public abstract string GetFeatureTimersSuffix(Feature feat);
 	}
 }

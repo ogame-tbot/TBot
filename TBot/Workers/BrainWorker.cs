@@ -30,6 +30,17 @@ namespace Tbot.Workers {
 			};
 			return sender;
 		}
+		public override string GetFeatureTimersSuffix(Feature feat) {
+			string suffix = "Brain-";
+
+			suffix = feat switch {
+				Feature.BrainAutoMine => "AutoMineTimer-",
+				Feature.BrainLifeformAutoMine => "LifeformAutoMineTimer",
+				Feature.BrainLifeformAutoResearch => "LifeformAutoResearchTimer-",
+				_ => "Brain-"
+			};
+			return suffix;
+		}
 
 
 		public override async Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {

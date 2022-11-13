@@ -1256,7 +1256,7 @@ namespace Tbot.Services {
 			}
 
 			FleetPrediction fleetPrediction = _helpersService.CalcFleetPrediction(celestial.Coordinate, destination, celestial.Ships, Missions.Deploy, speed, userData.researches, userData.serverData, userData.userInfo.Class);
-			int fleetId = await SendFleet(celestial, celestial.Ships, destination, Missions.Deploy, speed, payload, userData.userInfo.Class, true);
+			int fleetId = await _fleetScheduler.SendFleet(celestial, celestial.Ships, destination, Missions.Deploy, speed, payload, userData.userInfo.Class, true);
 
 			if (fleetId != (int) SendFleetCode.GenericError ||
 				fleetId != (int) SendFleetCode.AfterSleepTime ||
