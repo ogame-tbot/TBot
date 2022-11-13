@@ -27,17 +27,21 @@ using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
 using TBot.WebUI;
 
-namespace Tbot {
+namespace Tbot
+{
 
-	class Program {
+	class Program
+	{
 		private static ILoggerService<Program> _logger;
 		private static IInstanceManager _instanceManager;
 		static DateTime startTime = DateTime.UtcNow;
 
-		static void Main(string[] args) {
+		static void Main(string[] args)
+		{
 			MainAsync(args).Wait();
 		}
-		static async Task MainAsync(string[] args) {
+		static async Task MainAsync(string[] args)
+		{
 
 			var serviceCollection = WebApp.GetServiceCollection()
 				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
@@ -56,17 +60,20 @@ namespace Tbot {
 			ConsoleHelpers.SetTitle();
 
 			CmdLineArgsService.DoParse(args);
-			if (CmdLineArgsService.printHelp) {
+			if (CmdLineArgsService.printHelp)
+			{
 				ColoredConsoleWriter.LogToConsole(LogLevel.Information, LogSender.Tbot, $"{System.AppDomain.CurrentDomain.FriendlyName} {CmdLineArgsService.helpStr}");
 				Environment.Exit(0);
 			}
 
-			if (CmdLineArgsService.settingsPath.IsPresent) {
+			if (CmdLineArgsService.settingsPath.IsPresent)
+			{
 				_instanceManager.SettingsAbsoluteFilepath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
 
 			var logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
-			if (CmdLineArgsService.logPath.IsPresent == true) {
+			if (CmdLineArgsService.logPath.IsPresent == true)
+			{
 				logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
 			}
 
@@ -75,9 +82,12 @@ namespace Tbot {
 			// Context validation
 			//	a - Ogamed binary is present on same directory ?
 			//	b - Settings file does exist ?
-			if (!ogameService.ValidatePrerequisites()) {
+			if (!ogameService.ValidatePrerequisites())
+			{
 				Environment.Exit(-1);
-			} else if (File.Exists(_instanceManager.SettingsAbsoluteFilepath) == false) {
+			}
+			else if (File.Exists(_instanceManager.SettingsAbsoluteFilepath) == false)
+			{
 				_logger.WriteLog(LogLevel.Error, LogSender.Main, $"\"{_instanceManager.SettingsAbsoluteFilepath}\" not found. Cannot proceed...");
 				Environment.Exit(-1);
 			}
@@ -89,9 +99,8 @@ namespace Tbot {
 			var tcs = new TaskCompletionSource();
 			CancellationTokenSource cts = new CancellationTokenSource();
 
-			
-
-			Console.CancelKeyPress += (sender, e) => {
+			Console.CancelKeyPress += (sender, e) =>
+			{
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "CTRL+C pressed!");
 				cts.Cancel();
 				tcs.SetResult();
