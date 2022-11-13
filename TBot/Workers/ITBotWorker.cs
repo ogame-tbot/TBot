@@ -13,42 +13,55 @@ using TBot.Model;
 using Microsoft.Extensions.DependencyInjection;
 using static System.Formats.Asn1.AsnWriter;
 using TBot.Ogame.Infrastructure;
+using Tbot.Includes;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Tbot.Workers {
-	public abstract class ITBotWorker {
-		
-		protected Timer _timer;
-		protected SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-		protected ILoggerService<ITBotWorker> _logger;
-		protected CancellationToken _ct;
-		protected UserData _userData;
-		protected IOgameService _ogameService;
+	public abstract class ITBotWorker : ITBotWorkerCommon {
 
-		public void Init(IServiceScopeFactory serviceScopeFactory, CancellationToken ct, UserData userData, IOgameService ogameService) {
-			var scope = serviceScopeFactory.CreateScope();
-			_logger = scope.ServiceProvider.GetRequiredService<ILoggerService<ITBotWorker>>();
+		private AsyncTimer _timer;
+
+		public ITBotWorker(ITBotMain parentInstance) :
+			base(parentInstance, parentInstance.FleetScheduler, parentInstance.HelperService) {
+
+		}
+
+		public ITBotWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
+			base(parentInstance, fleetScheduler, helpersService) {
+
+		}
+
+		public async Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
+
+			_tbotInstance.log(LogLevel.Information, LogSender.Tbot, $"Starting Worker \"{GetWorkerName()}\"..");
+
 			_ct = ct;
-			_userData = userData;
-			_ogameService = ogameService;
-			_logger.WriteLog(LogLevel.Information, LogSender.Tbot, $"Initializing Worker \"{GetWorkerName()}\"..");
+
+			//TimeSpan periodSpan = TimeSpan.FromMilliseconds(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+			_timer = new AsyncTimer(Execute, $"{_tbotInstance.InstanceAlias.Substring(0, 6)}{GetWorkerName()}");
+			await _timer.StartAsync(period, dueTime, ct);
 		}
 
-		public void StartWorker(IServiceScopeFactory serviceScopeFactory, CancellationToken ct) {
-
-			_logger.WriteLog(LogLevel.Information, LogSender.Tbot, $"Starting Worker \"{GetWorkerName()}\"..");
-			_timer = new Timer(Execute, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
-		}
-		public async void StopWorker() {
-			_logger.WriteLog(LogLevel.Information, LogSender.Tbot, $"Closing Worker \"{GetWorkerName()}\"..");
+		public async Task StopWorker() {
+			_tbotInstance.log(LogLevel.Information, LogSender.Tbot, $"Closing Worker \"{GetWorkerName()}\"..");
 			if (_timer != null) {
 				await _timer.DisposeAsync();
 				_timer = null;
 			}
 		}
 
-		protected abstract void Execute(object state);
+		public void ChangeWorkerPeriod(TimeSpan period) {
+			_timer.ChangeTimings(period, TimeSpan.Zero);
+		}
+
+		public void DoLog(LogLevel level , string format) {
+			_tbotInstance.log(level, GetLogSender(), format);
+		}
+
+		protected abstract Task Execute(CancellationToken ct);
 		public abstract string GetWorkerName();
 		public abstract Feature GetFeature();
+		public abstract LogSender GetLogSender();
 	}
 }

@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Tbot.Includes {
-	internal interface ITelegramMessenger {
+	public interface ITelegramMessenger {
 		string Api { get; }
 		string Channel { get; }
 		ITelegramBotClient Client { get; }

@@ -1,0 +1,653 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Tbot.Helpers;
+using Tbot.Includes;
+using TBot.Common.Logging;
+using Tbot.Services;
+using TBot.Ogame.Infrastructure.Enums;
+using TBot.Ogame.Infrastructure.Models;
+using System.ComponentModel.Design;
+using TBot.Model;
+using System.Threading;
+using System.Globalization;
+
+namespace Tbot.Workers {
+	public class FleetScheduler : IFleetScheduler {
+		private readonly object _fleetLock = new();
+		private readonly ITBotMain _tbotInstance;
+		private readonly ICalculationService _calcService;
+
+		private Dictionary<string, Timer> timers;
+		public FleetScheduler(ITBotMain tbotInstance, ICalculationService helpService) {
+			_tbotInstance = tbotInstance;
+			_calcService = helpService;
+		}
+
+		public async Task AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false) {
+			DateTime departureTime = await ITBotHelper.GetDateTime(_tbotInstance);
+			long duration = minDuration;
+
+			if (WaitFleetsReturn) {
+
+				_tbotInstance.UserData.fleets = await UpdateFleets();
+				long interval;
+				try {
+					interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+				} catch {
+					interval = 0;
+				}
+
+				if (interval > 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value))) {
+					//Stop features which are sending fleets
+					// StopColonize();
+					// StopBrainAutoResearch();
+					// StopBrainAutoMine();
+					// StopBrainLifeformAutoMine();
+					// StopBrainLifeformAutoResearch();
+					// StopBrainRepatriate();
+					// StopAutoFarm();
+					// StopHarvest();
+					// StopExpeditions();
+
+					interval += RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
+					_tbotInstance.NextWakeUpTime = TimeToGhost.AddMilliseconds(minDuration * 1000);
+
+					if (saveall)
+						timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturnAll, null, interval, Timeout.Infinite));
+					else
+						timers.Add("GhostSleepTimer", new Timer(GhostandSleepAfterFleetsReturn, null, interval, Timeout.Infinite));
+
+					_tbotInstance.log(LogLevel.Information, LogSender.SleepMode, $"Fleets active, Next check at {TimeToGhost.ToString()}");
+					await _tbotInstance.SendTelegramMessage($"Waiting for fleets return, delaying ghosting at {TimeToGhost.ToString()}");
+
+					return;
+				} else if (interval == 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value2))) {
+
+					_tbotInstance.log(LogLevel.Information, LogSender.SleepMode, $"No fleets active, Ghosting now.");
+					_tbotInstance.NextWakeUpTime = departureTime.AddMilliseconds(minDuration * 1000);
+					if (saveall)
+						GhostandSleepAfterFleetsReturnAll(null);
+					else
+						GhostandSleepAfterFleetsReturn(null);
+
+					return;
+				} else if (timers.TryGetValue("GhostSleepTimer", out Timer value3)) {
+					await _tbotInstance.SendTelegramMessage($"GhostSleep already planned, try /cancelghostsleep");
+					return;
+				}
+			}
+
+			celestial = await ITBotHelper.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Ships);
+			if (celestial.Ships.GetMovableShips().IsEmpty()) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fleet to save!");
+				if (fromTelegram)
+					await _tbotInstance.SendTelegramMessage($"{celestial.ToString()}: there is no fleet!");
+				return;
+			}
+
+			celestial = await ITBotHelper.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
+			Celestial destination = new() { ID = 0 };
+			if (!forceUnsafe)
+				forceUnsafe = (bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceUnsafe; //not used anymore
+
+
+			if (celestial.Resources.Deuterium == 0) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
+				if (fromTelegram)
+					await _tbotInstance.SendTelegramMessage($"{celestial.ToString()}: there is no fuel!");
+				return;
+			}
+
+			long maxDeuterium = celestial.Resources.Deuterium;
+
+			if (isSleepTimeFleetSave) {
+				if (DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp)) {
+					if (departureTime >= wakeUp)
+						wakeUp = wakeUp.AddDays(1);
+					minDuration = (long) wakeUp.Subtract(departureTime).TotalSeconds;
+				} else {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Could not plan fleetsave from {celestial.ToString()}: unable to parse comeback time");
+					return;
+				}
+			}
+
+			var payload = celestial.Resources;
+			if ((long) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.DeutToLeave > 0)
+				payload.Deuterium -= (long) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.DeutToLeave;
+			if (payload.Deuterium < 0)
+				payload.Deuterium = 0;
+
+			FleetHypotesis possibleFleet = new();
+			int fleetId = (int) SendFleetCode.GenericError;
+			bool AlreadySent = false; //permit to swith to Harvest mission if not enough fuel to Deploy if celestial far away
+
+			//Doing DefaultMission or telegram /ghostto mission
+			Missions mission;
+			if (!Missions.TryParse(_tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.DefaultMission, out mission)) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Error: Could not parse 'DefaultMission' from settings, value set to Harvest.");
+				mission = Missions.Harvest;
+			}
+
+			if (TelegramMission != Missions.None)
+				mission = TelegramMission;
+
+			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+			if (fleetHypotesis.Count() > 0) {
+				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+					if (CheckFuel(fleet, celestial)) {
+						fleetId = await SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, _tbotInstance.UserData.userInfo.Class, true);
+
+						if (fleetId != (int) SendFleetCode.GenericError ||
+							fleetId != (int) SendFleetCode.AfterSleepTime ||
+							fleetId != (int) SendFleetCode.NotEnoughSlots) {
+							possibleFleet = fleet;
+							AlreadySent = true;
+							break;
+						}
+					}
+				}
+			}
+
+			//If /ghostto -> leaving function if failed
+			if (fromTelegram && !AlreadySent && mission == Missions.Harvest && fleetHypotesis.Count() == 0) {
+				await _tbotInstance.SendTelegramMessage($"No debris field found for {mission}, try to /spycrash.");
+				return;
+			} else if (fromTelegram && !AlreadySent && fleetHypotesis.Count() >= 0) {
+				await _tbotInstance.SendTelegramMessage($"Available fuel: {celestial.Resources.Deuterium}\nNo destination found for {mission}, try to reduce ghost time.");
+				return;
+			}
+
+			//Doing Deploy
+			if (!AlreadySent) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible, checking next mission..");
+				if (mission == Missions.Harvest) { mission = Missions.Deploy; } else { mission = Missions.Harvest; };
+				mission = Missions.Deploy;
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				if (fleetHypotesis.Count > 0) {
+					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+						if (CheckFuel(fleet, celestial)) {
+							fleetId = await SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, _tbotInstance.UserData.userInfo.Class, true);
+
+							if (fleetId != (int) SendFleetCode.GenericError ||
+								fleetId != (int) SendFleetCode.AfterSleepTime ||
+								fleetId != (int) SendFleetCode.AfterSleepTime ||
+								fleetId != (int) SendFleetCode.NotEnoughSlots) {
+								possibleFleet = fleet;
+								AlreadySent = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			//Doing colonize
+			if (!AlreadySent && celestial.Ships.ColonyShip > 0) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Colonize destination...");
+				mission = Missions.Colonize;
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				if (fleetHypotesis.Count > 0) {
+					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+						if (CheckFuel(fleet, celestial)) {
+							fleetId = await SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, _tbotInstance.UserData.userInfo.Class, true);
+
+							if (fleetId != (int) SendFleetCode.GenericError ||
+								fleetId != (int) SendFleetCode.AfterSleepTime ||
+								fleetId != (int) SendFleetCode.NotEnoughSlots) {
+								possibleFleet = fleet;
+								AlreadySent = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			//Doing Spy
+			if (!AlreadySent && celestial.Ships.EspionageProbe > 0) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Spy destination...");
+				mission = Missions.Spy;
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				if (fleetHypotesis.Count > 0) {
+					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
+						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
+						if (CheckFuel(fleet, celestial)) {
+							fleetId = await SendFleet(fleet.Origin, fleet.Ships, fleet.Destination, fleet.Mission, fleet.Speed, payload, _tbotInstance.UserData.userInfo.Class, true);
+
+							if (fleetId != (int) SendFleetCode.GenericError ||
+								fleetId != (int) SendFleetCode.AfterSleepTime ||
+								fleetId != (int) SendFleetCode.NotEnoughSlots) {
+								possibleFleet = fleet;
+								AlreadySent = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			//Doing switch
+			bool hasMoon = _tbotInstance.UserData.celestials.Count(c => c.HasCoords(new Coordinate(celestial.Coordinate.Galaxy, celestial.Coordinate.System, celestial.Coordinate.Position, Celestials.Moon))) == 1;
+			if (!AlreadySent && hasMoon && !timers.TryGetValue("GhostSleepTimer", out Timer val)) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible (missing fuel?), checking for switch if has Moon");
+				//var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+				//Random randomSpeed = new Random();
+				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
+				decimal speed = 10;
+				AlreadySent = await TelegramSwitch(speed, celestial);
+			}
+
+			if (!AlreadySent) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.Coordinate.ToString()} no suitable destination found, you gonna get hit!");
+				await _tbotInstance.SendTelegramMessage($"Fleetsave from {celestial.Coordinate.ToString()} No destination found!, you gonna get hit!");
+				return;
+			}
+
+
+			if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.Recall && AlreadySent) {
+				if (fleetId != (int) SendFleetCode.GenericError ||
+					fleetId != (int) SendFleetCode.AfterSleepTime ||
+					fleetId != (int) SendFleetCode.NotEnoughSlots) {
+					Fleet fleet = _tbotInstance.UserData.fleets.Single(fleet => fleet.ID == fleetId);
+					DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+					var interval = ((minDuration / 2) * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
+					if (interval <= 0)
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+					DateTime newTime = time.AddMilliseconds(interval);
+					timers.Add($"RecallTimer-{fleetId.ToString()}", new Timer(RetireFleet, fleet, interval, Timeout.Infinite));
+					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"The fleet will be recalled at {newTime.ToString()}");
+					if (fromTelegram)
+						await _tbotInstance.SendTelegramMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}, recalled at {newTime.ToString()}");
+				}
+			} else {
+				if (fleetId != (int) SendFleetCode.GenericError ||
+					fleetId != (int) SendFleetCode.AfterSleepTime ||
+					fleetId != (int) SendFleetCode.NotEnoughSlots) {
+					Fleet fleet = _tbotInstance.UserData.fleets.Single(fleet => fleet.ID == fleetId);
+					DateTime returntime = (DateTime) fleet.BackTime;
+					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
+					if (fromTelegram)
+						await _tbotInstance.SendTelegramMessage($"Fleet {fleetId} send to {possibleFleet.Mission} on {possibleFleet.Destination.ToString()}, arrive at {possibleFleet.Duration.ToString()}, returned at {returntime.ToString()} fuel consumed: {possibleFleet.Fuel.ToString("#,#", CultureInfo.InvariantCulture)}");
+				}
+			}
+		}
+
+		public async Task<int> SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Resources payload = null, CharacterClass playerClass = CharacterClass.NoClass, bool force = false) {
+			_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Sending fleet from {origin.Coordinate.ToString()} to {destination.ToString()}. Mission: {mission.ToString()}. Speed: {(speed * 10).ToString()}% Ships: {ships.ToString()}");
+
+			if (playerClass == CharacterClass.NoClass)
+				playerClass = _tbotInstance.UserData.userInfo.Class;
+
+			if (!ships.HasMovableFleet()) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: there are no ships to send");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (mission == Missions.Expedition && ships.IsOnlyProbes()) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: cannot send an expedition with no ships");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (origin.Coordinate.IsSame(destination)) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: origin and destination are the same");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (destination.Galaxy <= 0 || destination.Galaxy > _tbotInstance.UserData.serverData.Galaxies || destination.Position <= 0 || destination.Position > 17) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (destination.System <= 0 || destination.System > _tbotInstance.UserData.serverData.Systems) {
+				if (_tbotInstance.UserData.serverData.DonutGalaxy) {
+					if (destination.System <= 0) {
+						destination.System += _tbotInstance.UserData.serverData.Systems;
+					} else if (destination.System > _tbotInstance.UserData.serverData.Systems) {
+						destination.System -= _tbotInstance.UserData.serverData.Systems;
+					}
+				} else {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: invalid destination");
+					return (int) SendFleetCode.GenericError;
+				}
+			}
+
+			/*
+			if (
+				playerClass != CharacterClass.General && (
+					speed == Speeds.FivePercent ||
+					speed == Speeds.FifteenPercent ||
+					speed == Speeds.TwentyfivePercent ||
+					speed == Speeds.ThirtyfivePercent ||
+					speed == Speeds.FourtyfivePercent ||
+					speed == Speeds.FiftyfivePercent ||
+					speed == Speeds.SixtyfivePercent ||
+					speed == Speeds.SeventyfivePercent ||
+					speed == Speeds.EightyfivePercent ||
+					speed == Speeds.NinetyfivePercent
+				)
+			) {*/
+
+			if (!_calcService.GetValidSpeedsForClass(playerClass).Any(s => s == speed)) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
+				return (int) SendFleetCode.GenericError;
+			}
+			FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight time (one-way): {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
+
+			var flightTime = mission switch {
+				Missions.Deploy => fleetPrediction.Time,
+				Missions.Expedition => (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
+				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
+			};
+			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight time (full trip): {TimeSpan.FromSeconds(flightTime).ToString()}");
+			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight fuel: {fleetPrediction.Fuel.ToString()}");
+
+			origin = await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Resources);
+			if (origin.Resources.Deuterium < fleetPrediction.Fuel) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: not enough deuterium!");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (_calcService.CalcFleetFuelCapacity(ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo) != 0 && _calcService.CalcFleetFuelCapacity(ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo) < fleetPrediction.Fuel) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: ships don't have enough fuel capacity!");
+				return (int) SendFleetCode.GenericError;
+			}
+			if (
+			(bool) _tbotInstance.InstanceSettings.SleepMode.Active &&
+			DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep) &&
+			DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp) &&
+			!force
+			) {
+				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: bed time has passed");
+					return (int) SendFleetCode.AfterSleepTime;
+				}
+				if (goToSleep >= wakeUp) {
+					wakeUp = wakeUp.AddDays(1);
+				}
+				if (goToSleep < time) {
+					goToSleep = goToSleep.AddDays(1);
+				}
+				if (wakeUp < time) {
+					wakeUp = wakeUp.AddDays(1);
+				}
+				_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"goToSleep : {goToSleep.ToString()}");
+				_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"wakeUp : {wakeUp.ToString()}");
+				DateTime returnTime = time.AddSeconds(flightTime);
+				_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"returnTime : {returnTime.ToString()}");
+
+				if (returnTime >= goToSleep && returnTime <= wakeUp) {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: it would come back during sleep time");
+					return (int) SendFleetCode.AfterSleepTime;
+				}
+			}
+			_tbotInstance.UserData.slots = await ITBotHelper.UpdateSlots(_tbotInstance);
+			int slotsToLeaveFree = (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree;
+			if (_tbotInstance.UserData.slots.Free == 0) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				return (int) SendFleetCode.NotEnoughSlots;
+			} else if (_tbotInstance.UserData.slots.Free > slotsToLeaveFree || force) {
+				if (payload == null)
+					payload = new();
+				try {
+					Fleet fleet = await _tbotInstance.OgamedInstance.SendFleet(origin, ships, destination, mission, speed, payload);
+					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Fleet succesfully sent");
+					_tbotInstance.UserData.fleets = await _tbotInstance.OgamedInstance.GetFleets();
+					_tbotInstance.UserData.slots = await ITBotHelper.UpdateSlots(_tbotInstance);
+					return fleet.ID;
+				} catch (Exception e) {
+					_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, $"Unable to send fleet: an exception has occurred: {e.Message}");
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
+					return (int) SendFleetCode.GenericError;
+				}
+			} else {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet, no slots available");
+				return (int) SendFleetCode.NotEnoughSlots;
+			}
+		}
+
+		public async Task CancelFleet(Fleet fleet) {
+			//_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Recalling fleet id {fleet.ID} originally from {fleet.Origin.ToString()} to {fleet.Destination.ToString()} with mission: {fleet.Mission.ToString()}. Start time: {fleet.StartTime.ToString()} - Arrival time: {fleet.ArrivalTime.ToString()} - Ships: {fleet.Ships.ToString()}");
+			_tbotInstance.UserData.slots = await ITBotHelper.UpdateSlots(_tbotInstance);
+			try {
+				await _tbotInstance.OgamedInstance.CancelFleet(fleet);
+				await Task.Delay((int) IntervalType.AFewSeconds);
+				_tbotInstance.UserData.fleets = await UpdateFleets();
+				Fleet recalledFleet = _tbotInstance.UserData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
+				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
+					_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
+				} else {
+					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+						await _tbotInstance.SendTelegramMessage($"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
+					}
+					return;
+				}
+			} catch (Exception e) {
+				_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, $"Unable to recall fleet: an exception has occurred: {e.Message}");
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
+				return;
+			} finally {
+				if (timers.TryGetValue($"RecallTimer-{fleet.ID.ToString()}", out Timer value)) {
+					value.Dispose();
+					timers.Remove($"RecallTimer-{fleet.ID.ToString()}");
+				}
+
+			}
+		}
+		public async Task<List<Fleet>> UpdateFleets() {
+			try {
+				return await _tbotInstance.OgamedInstance.GetFleets();
+			} catch (Exception e) {
+				_tbotInstance.log(LogLevel.Debug, LogSender.Tbot, $"UpdateFleets() Exception: {e.Message}");
+				_tbotInstance.log(LogLevel.Debug, LogSender.Tbot, $"UpdateFleets() Exception: {e.Message}");
+				_tbotInstance.log(LogLevel.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
+				return new();
+			}
+		}
+
+		private void RetireFleet(object fleet) {
+			CancelFleet((Fleet) fleet).Wait();
+		}
+
+
+		private async void GhostandSleepAfterFleetsReturnAll(object state) {
+			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("GhostSleepTimer");
+
+
+			var celestialsToFleetsave = await ITBotHelper.UpdateCelestials(_tbotInstance);
+			celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
+			if (celestialsToFleetsave.Count == 0)
+				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
+
+			foreach (Celestial celestial in celestialsToFleetsave)
+				await AutoFleetSave(celestial, false, duration, false, false, _tbotInstance.TelegramUserData.Mission, true);
+
+			await _tbotInstance.SleepNow(_tbotInstance.NextWakeUpTime);
+		}
+
+		private async void GhostandSleepAfterFleetsReturn(object state) {
+			if (timers.TryGetValue("GhostSleepTimer", out Timer value))
+				value.Dispose();
+			timers.Remove("GhostSleepTimer");
+
+			await AutoFleetSave(_tbotInstance.TelegramUserData.CurrentCelestialToSave, false, duration, false, false, _tbotInstance.TelegramUserData.Mission, true);
+
+			await _tbotInstance.SleepNow(_tbotInstance.NextWakeUpTime);
+		}
+
+		private bool CheckFuel(FleetHypotesis fleetHypotesis, Celestial celestial) {
+			if (celestial.Resources.Deuterium < fleetHypotesis.Fuel) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: not enough fuel!");
+				return false;
+			}
+			if (_calcService.CalcFleetFuelCapacity(fleetHypotesis.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo) < fleetHypotesis.Fuel) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: ships don't have enough fuel capacity!");
+				return false;
+			}
+			return true;
+		}
+
+		private async Task<List<FleetHypotesis>> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
+			var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+			List<FleetHypotesis> possibleFleets = new();
+			List<Coordinate> possibleDestinations = new();
+			GalaxyInfo galaxyInfo = new();
+			origin = await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Resources);
+			origin = await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Ships);
+
+			switch (mission) {
+				case Missions.Spy:
+					if (origin.Ships.EspionageProbe == 0) {
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"No espionageprobe available, skipping to next mission...");
+						break;
+					}
+					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
+					foreach (var currentSpeed in validSpeeds) {
+						FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+
+						FleetHypotesis fleetHypotesis = new() {
+							Origin = origin,
+							Destination = destination,
+							Ships = origin.Ships.GetMovableShips(),
+							Mission = mission,
+							Speed = currentSpeed,
+							Duration = fleetPrediction.Time,
+							Fuel = fleetPrediction.Fuel
+						};
+						if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+							possibleFleets.Add(fleetHypotesis);
+							break;
+						}
+					}
+					break;
+
+				case Missions.Colonize:
+					if (origin.Ships.ColonyShip == 0) {
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"No colony ship available, skipping to next mission...");
+						break;
+					}
+					galaxyInfo = await _tbotInstance.OgamedInstance.GetGalaxyInfo(origin.Coordinate);
+					int pos = 1;
+					foreach (var planet in galaxyInfo.Planets) {
+						if (planet == null)
+							possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
+						pos = +1;
+					}
+
+					if (possibleDestinations.Count() > 0) {
+						foreach (var possibleDestination in possibleDestinations) {
+							foreach (var currentSpeed in validSpeeds) {
+								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+
+								FleetHypotesis fleetHypotesis = new() {
+									Origin = origin,
+									Destination = possibleDestination,
+									Ships = origin.Ships.GetMovableShips(),
+									Mission = mission,
+									Speed = currentSpeed,
+									Duration = fleetPrediction.Time,
+									Fuel = fleetPrediction.Fuel
+								};
+								if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+									possibleFleets.Add(fleetHypotesis);
+									break;
+								}
+							}
+						}
+					}
+					break;
+
+				case Missions.Harvest:
+					if (origin.Ships.Recycler == 0) {
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"No recycler available, skipping to next mission...");
+						break;
+					}
+					int playerid = _tbotInstance.UserData.userInfo.PlayerID;
+					int sys = 0;
+					for (sys = origin.Coordinate.System - 5; sys <= origin.Coordinate.System + 5; sys++) {
+						sys = GeneralHelper.ClampSystem(sys);
+						galaxyInfo = await _tbotInstance.OgamedInstance.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
+						foreach (var planet in galaxyInfo.Planets) {
+							if (planet != null && planet.Debris != null && planet.Debris.Resources.TotalResources > 0) {
+								possibleDestinations.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Debris));
+							}
+						}
+					}
+
+
+					if (possibleDestinations.Count() > 0) {
+						foreach (var possibleDestination in possibleDestinations) {
+							foreach (var currentSpeed in validSpeeds) {
+								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+
+								FleetHypotesis fleetHypotesis = new() {
+									Origin = origin,
+									Destination = possibleDestination,
+									Ships = origin.Ships.GetMovableShips(),
+									Mission = mission,
+									Speed = currentSpeed,
+									Duration = fleetPrediction.Time,
+									Fuel = fleetPrediction.Fuel
+								};
+								if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+									possibleFleets.Add(fleetHypotesis);
+									break;
+								}
+							}
+						}
+					}
+					break;
+
+				case Missions.Deploy:
+					possibleDestinations = _tbotInstance.UserData.celestials
+						.Where(planet => planet.ID != origin.ID)
+						.Where(planet => (planet.Coordinate.Type == Celestials.Moon))
+						.Select(planet => planet.Coordinate)
+						.ToList();
+
+					if (possibleDestinations.Count == 0) {
+						possibleDestinations = _tbotInstance.UserData.celestials
+							.Where(planet => planet.ID != origin.ID)
+							.Select(planet => planet.Coordinate)
+							.ToList();
+					}
+
+					foreach (var possibleDestination in possibleDestinations) {
+						foreach (var currentSpeed in validSpeeds) {
+							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+
+							FleetHypotesis fleetHypotesis = new() {
+								Origin = origin,
+								Destination = possibleDestination,
+								Ships = origin.Ships.GetMovableShips(),
+								Mission = mission,
+								Speed = currentSpeed,
+								Duration = fleetPrediction.Time,
+								Fuel = fleetPrediction.Fuel
+							};
+							if (fleetHypotesis.Duration >= minFlightTime && fleetHypotesis.Fuel <= maxFuel) {
+								possibleFleets.Add(fleetHypotesis);
+								break;
+							}
+						}
+					}
+					break;
+
+				default:
+					break;
+			}
+
+			if (possibleFleets.Count() > 0) {
+				return possibleFleets;
+
+			} else {
+				return new List<FleetHypotesis>();
+			}
+		}
+	}
+}
