@@ -32,7 +32,7 @@ namespace Tbot.Workers {
 
 		}
 
-		public async Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
+		public override async Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 
 			_tbotInstance.log(LogLevel.Information, LogSender.Tbot, $"Starting Worker \"{GetWorkerName()}\"..");
 
@@ -43,7 +43,7 @@ namespace Tbot.Workers {
 			await _timer.StartAsync(period, dueTime, ct);
 		}
 
-		public async Task StopWorker() {
+		public override async Task StopWorker() {
 			_tbotInstance.log(LogLevel.Information, LogSender.Tbot, $"Closing Worker \"{GetWorkerName()}\"..");
 			if (_timer != null) {
 				await _timer.DisposeAsync();
