@@ -7,7 +7,7 @@ OGame Bot
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/ogame-tbot/TBot)](https://github.com/ogame-tbot/TBot/releases/latest)
 [![Discord](https://img.shields.io/discord/801453618770214923)](https://discord.gg/NZSaY4aQ7J)
 
-TBot is a .NET 5 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
+TBot is a .NET 6 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
 TBot supports Ogame **v9.0.7**!
 A basic LifeForm support is provided.
@@ -191,7 +191,7 @@ TBot supports the editing of instance settings even while it is running. It will
   * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
 * Configure the bot by editing all settings fields
   * All config options are sorted by feature, [check which features you](#features) want and configure them before activating
-* Make sure you have installed the [.NET 5 runtime](https://dotnet.microsoft.com/download/dotnet/5.0) for your platform
+* Make sure you have installed the [.NET 6 runtime](https://dotnet.microsoft.com/download/dotnet/6.0) for your platform
 * Run TBot.exe
 
 ## Running on Linux/MacOS
@@ -210,7 +210,7 @@ TBot supports the editing of instance settings even while it is running. It will
   * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
 * Configure the bot by editing all settings.json fields
   * All config options are sorted by feature, [check which features](#features) you want and configure them before activating
-* Make sure you have installed the [.NET 5 runtime](https://dotnet.microsoft.com/download/dotnet/5.0) for your platform
+* Make sure you have installed the [.NET 6 runtime](https://dotnet.microsoft.com/download/dotnet/6.0) for your platform
 * Run TBot
   * `./TBot`
 
@@ -230,11 +230,11 @@ $ ssh -i ~/pem/<my>.pem ec2-user@<instance's public ip-address>
 sudo yum update
 ```
 
-* Install the .NET 5 tuntime, which can be done using [these instructions for CentOs](https://docs.servicestack.net/deploy-netcore-to-amazon-linux-2-ami), and which is something like
+* Install the .NET 6 tuntime, which can be done using [these instructions for CentOs](https://docs.servicestack.net/deploy-netcore-to-amazon-linux-2-ami), and which is something like
 ```
 $ sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-$ sudo yum install aspnetcore-runtime-5.0
-$ sudo yum install dotnet-sdk-5.0
+$ sudo yum install aspnetcore-runtime-6.0
+$ sudo yum install dotnet-sdk-6.0
 ```
 
 * Upload your TBot files, which were previously downloaded and setup correctly. You can do this by using something like FileZilla using sftp and the same credentials as the ssh connection and then copy your TBot folder into the user's home directory in the server. Make sure your settings file has the public ip of the aws instance and the port where you want to connect.

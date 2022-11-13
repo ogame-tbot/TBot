@@ -25,197 +25,11 @@ namespace Tbot.Includes {
 			IOgameService ogameService) {
 			_logger = logger;
 			_ogameService = ogameService;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
+		}
+
 		public int CalcShipCapacity(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-
-			int bonus = (hyperspaceTech * serverData.CargoHyperspaceTechMultiplier);
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-					LogType.Debug => ConsoleColor.White,
-					_ => ConsoleColor.Gray
-				};
-
-			Console.WriteLine($"[{DateTime.Now.ToLongTimeString()}|{type.ToString()}|{sender.ToString()}] {message}");
-			Console.ForegroundColor = ConsoleColor.Gray;
-		}
-
-		public static string logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
-		public static void LogToFile(LogType type, LogSender sender, string message) {
-			string path = logPath;
-			DirectoryInfo dir = new(path);
-			if (!dir.Exists)
-				dir.Create();
-			string fileName = $"{DateTime.Now.Year.ToString()}{DateTime.Now.Month.ToString()}{DateTime.Now.Day.ToString()}_TBot.log";
-			try {
-				StreamWriter file = new($"{path}/{fileName}", true);
-		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData,  int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			return CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
-			} catch (Exception) { }
-		}
-		public long CalcFleetCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-		public static void LogToCSV(LogType type, LogSender sender, string message) {
-			string path = logPath;
-			DirectoryInfo dir = new(path);
-			if (!dir.Exists)
-				dir.Create();
-			string fileName = "TBot_log.csv";
-					int oneCargo = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
-				StreamWriter file = new($"{path}/{fileName}", true);
-				file.WriteLine($"{type.ToString().EscapeForCSV()},{sender.ToString().EscapeForCSV()},{DateTime.Now.ToString().EscapeForCSV()},{message.EscapeForCSV()}");
-				file.Close();
-			} catch (Exception) { }
-		}
-
-		public long CalcFleetFuelCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			AssemblyName exeInfo = Assembly.GetExecutingAssembly().GetName();
-			string info = $"{exeInfo.Name} v{exeInfo.Version}";
-			Console.Title = (content != "") ? $"{content} - {info}" : info;
-			return;
-		}
-
-					int oneCargo = CalcShipFuelCapacity(buildable, serverData, hyperspaceTech, playerClass, probeCargo);
-			Console.Beep();
-			Thread.Sleep(1000);
-			Console.Beep();
-			Thread.Sleep(1000);
-			Console.Beep();
-			return;
-		}
-
-		public static long ParseDurationFromString(string timeString) {
-			long duration = 0;
-			string regExp = "^(\\d{1,2}[h|H])?(\\d{1,2}[m|M])?(\\d{1,2}[s|S])?";
-
-			Regex re = new Regex(regExp);
-			Match m = re.Match(timeString);
-
-			if (m.Groups.Count == 4) {
-				int hours = m.Groups[1].Success ? Int32.Parse(m.Groups[1].Value.Remove(m.Groups[1].Value.Length - 1)) : 0;
-				int mins = m.Groups[2].Success ? Int32.Parse(m.Groups[2].Value.Remove(m.Groups[2].Value.Length - 1)) : 0;
-				int secs = m.Groups[3].Success ? Int32.Parse(m.Groups[3].Value.Remove(m.Groups[3].Value.Length - 1)) : 0;
-
-				duration = (hours * 60 * 60) + (mins * 60) + secs;
-			} else {
-				throw new Exception($"Invalid string {timeString}");
-			}
-
-			return duration;
-		}
-
-		public static string TimeSpanToString(TimeSpan delta) {
-
-			return string.Format("{0} days {1:00}:{2:00}:{3:00}", delta.Days, delta.Hours, delta.Minutes, delta.Seconds);
-		}
-
-		public static int CalcRandomInterval(IntervalType type) {
-			var rand = new Random();
-			return type switch {
-				IntervalType.LessThanASecond => rand.Next(500, 1000),
-				IntervalType.LessThanFiveSeconds => rand.Next(1000, 5000),
-				IntervalType.AFewSeconds => rand.Next(5000, 15000),
-				IntervalType.SomeSeconds => rand.Next(20000, 50000),
-				IntervalType.AMinuteOrTwo => rand.Next(40000, 140000),
-				IntervalType.AboutFiveMinutes => rand.Next(240000, 360000),
-				IntervalType.AboutTenMinutes => rand.Next(540000, 720000),
-				IntervalType.AboutAQuarterHour => rand.Next(840000, 960000),
-				IntervalType.AboutHalfAnHour => rand.Next(1500000, 2100000),
-				IntervalType.AboutAnHour => rand.Next(3000000, 42000000),
-				_ => rand.Next(500, 1000),
-			};
-		}
-
-		public static int CalcRandomInterval(int min, int max) {
-			var rand = new Random();
-			var minMillis = min * 60 * 1000;
-			var maxMillis = max * 60 * 1000;
-			return rand.Next(minMillis, maxMillis);
-		}
-
-		public static bool ShouldSleep(DateTime time, DateTime goToSleep, DateTime wakeUp) {
-			if (time >= goToSleep) {
-				if (time >= wakeUp) {
-					if (goToSleep >= wakeUp) {
-						return true;
-					} else {
-						return false;
-					}
-				} else {
-					return true;
-				}
-			} else {
-				if (time >= wakeUp) {
-					return false;
-				} else {
-					if (goToSleep >= wakeUp) {
-						return true;
-					} else {
-						return false;
-					}
-				}
-			}
-		}
-
-		public static int ClampSystem(int system) {
-			if (system < 1)
-				system = 1;
-			if (system > 499)
-				system = 499;
-			return system;
-		}
-
-		public static int WrapSystem(int system) {
-			if(system > 499)
-				system = 1;
-			if (system < 1)
-				system = 499;
-			return system;
-		}
-
-		public static int CalcShipCapacity(Buildables buildable, int hyperspaceTech, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			int baseCargo;
-			int bonus = (hyperspaceTech * 5);
+			int bonus = (hyperspaceTech * serverData.CargoHyperspaceTechMultiplier);
 			switch (buildable) {
 				case Buildables.SmallCargo:
 					baseCargo = 5000;
@@ -276,32 +90,32 @@ namespace Tbot.Includes {
 			return baseCargo * (bonus + 100) / 100;
 		}
 
-		public static int CalcShipFuelCapacity(Buildables buildable, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			return CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
+		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			return CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 		}
 
-		public static long CalcFleetCapacity(Ships fleet, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public long CalcFleetCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			long total = 0;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					int oneCargo = CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
+					int oneCargo = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 					total += oneCargo * qty;
 				}
 			}
 			return total;
 		}
 
-		public static long CalcFleetFuelCapacity(Ships fleet, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public long CalcFleetFuelCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			long total = 0;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					int oneCargo = CalcShipFuelCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
+					int oneCargo = CalcShipFuelCapacity(buildable, serverData, hyperspaceTech, playerClass, probeCargo);
 					total += oneCargo * qty;
 				}
 			}
@@ -495,11 +309,11 @@ namespace Tbot.Includes {
 					else if (impulseDrive >= 17)
 						baseConsumption *= 2;
 					break;
-		public long CalcShipNumberForPayload(Resources payload, Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCapacity = 0) {
-			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
+				case Buildables.EspionageProbe:
+					baseConsumption = 1;
 					break;
 				case Buildables.Bomber:
-		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+					baseConsumption = 700;
 					if (hyperspaceDrive >= 8)
 						baseConsumption *= 3 / 2;
 					break;
@@ -529,7 +343,7 @@ namespace Tbot.Includes {
 				return 1;
 			} else {
 				return (int) fuelConsumption;
-			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
+			}
 		}
 
 		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
@@ -681,11 +495,11 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public static long CalcShipNumberForPayload(Resources payload, Buildables buildable, int hyperspaceTech, CharacterClass playerClass = CharacterClass.NoClass, int probeCapacity = 0) {
-			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
+		public long CalcShipNumberForPayload(Resources payload, Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCapacity = 0) {
+			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
 		}
 
-		public static Ships CalcIdealExpeditionShips(Buildables buildable, int ecoSpeed, float topOnePoints, int hyperspaceTech, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			var fleet = new Ships();
 
 			int ecoSpeed = serverData.Speed;
@@ -715,7 +529,7 @@ namespace Tbot.Includes {
 			else
 				freightCap *= 2;
 
-			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, playerClass, probeCargo);
+			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 			int cargoNumber = (int) Math.Round((float) freightCap / (float) oneCargoCapacity, MidpointRounding.ToPositiveInfinity);
 
 			fleet = fleet.Add(buildable, cargoNumber);
@@ -1838,7 +1652,7 @@ namespace Tbot.Includes {
 				return rez;
 			} else if (buildable == LFBuildables.NeuroCalibrationCentre) {
 				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 }, { "Skyscraper", 5 } };
-				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
+				return rez;
 			} else if (buildable == LFBuildables.HighEnergySmelting) {
 				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 } };
 				return rez;
@@ -1911,8 +1725,8 @@ namespace Tbot.Includes {
 				return rez;
 			} else if (buildable == LFBuildables.MicrochipAssemblyLine) {
 				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 } };
-				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
-				nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
+				return rez;
+			} else if (buildable == LFBuildables.ProductionAssemblyHall) {
 				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
 				return rez;
 			} else if (buildable == LFBuildables.HighPerformanceSynthesiser) {
@@ -2024,7 +1838,7 @@ namespace Tbot.Includes {
 					}
 				}
 			} else {
-				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
+				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
 			}
 
 			if (nextLFbuild != LFBuildables.None) {
@@ -2097,8 +1911,8 @@ namespace Tbot.Includes {
 			var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
 			var MetalMineCost = CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
 			if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
-				Helpers.WriteLog(LogType.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
-				nextLFbuild = GetLessExpensiveLFBuilding(srvc, planet, planet.LFtype, nextlvlcost, maxTechFactory);
+				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
+				nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
 			}
 
 			return nextLFbuild;
