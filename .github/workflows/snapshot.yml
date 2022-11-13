@@ -18,7 +18,7 @@ jobs:
         submodules: recursive
     - name: Setup Version ID
       run: |
-        VERSION=`git describe --tags --abbrev=0` || VERSION="SNAPSHOT-`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
+        VERSION=`git describe --tags --abbrev=0` || VERSION="`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
