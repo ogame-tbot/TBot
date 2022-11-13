@@ -18,7 +18,7 @@ jobs:
         submodules: recursive
     - name: Setup Version ID
       run: |
-        VERSION=`git describe --tags --abbrev=0` || VERSION="`git rev-parse --short HEAD`" ; echo "VERSION=$VERSION" >> $GITHUB_ENV
+        SNAP_VERSION=`git describe --tags --abbrev=0` || SNAP_VERSION="`git rev-parse --short HEAD`" ; echo "VERSION=SNAP_VERSION" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
@@ -41,7 +41,7 @@ jobs:
     - name: Package win64
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-win64.zip publish/win64/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-win64.zip publish/win64/
     - name: Upload win64
       uses: actions/upload-artifact@v2
       with:
@@ -59,12 +59,12 @@ jobs:
     - name: Package win32
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-win32.zip publish/win32/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-win32.zip publish/win32/
     - name: Upload win32
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-win32
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win32.zip
+        name: TBot-${{ env.SNAP_VERSION }}-win32
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win32.zip
         
     - name: Build TBot linux64
       run: dotnet publish -c Release -r linux-x64 -o publish/linux64/ -p:PublishSingleFile=true --self-contained false
@@ -79,12 +79,12 @@ jobs:
     - name: Package linux64
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-linux64.zip publish/linux64/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linux64.zip publish/linux64/
     - name: Upload linux64
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-linux64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linux64.zip
+        name: TBot-${{ env.SNAP_VERSION }}-linux64
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linux64.zip
         
     - name: Build TBot linuxarm
       run: dotnet publish -c Release -r linux-arm -o publish/linuxarm/ -p:PublishSingleFile=true --self-contained false
@@ -99,12 +99,12 @@ jobs:
     - name: Package linuxarm
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm.zip publish/linuxarm/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linuxarm.zip publish/linuxarm/
     - name: Upload linuxarm
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-linuxarm
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm.zip
+        name: TBot-${{ env.SNAP_VERSION }}-linuxarm
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm.zip
 
     - name: Build TBot linuxarm64
       run: dotnet publish -c Release -r linux-arm64 -o publish/linuxarm64/ -p:PublishSingleFile=true --self-contained false
@@ -119,12 +119,12 @@ jobs:
     - name: Package linuxarm64
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-linuxarm64.zip publish/linuxarm64/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip publish/linuxarm64/
     - name: Upload linuxarm64
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-linuxarm64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-linuxarm64.zip
+        name: TBot-${{ env.SNAP_VERSION }}-linuxarm64
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip
         
     - name: Build TBot osx64
       run: dotnet publish -c Release -r osx-x64 -o publish/osx64/ -p:PublishSingleFile=true --self-contained false
@@ -139,9 +139,9 @@ jobs:
     - name: Package osx64
       uses: montudor/action-zip@v1
       with:
-        args: zip -qq -r TBot-${{ env.VERSION }}-osx64.zip publish/osx64/
+        args: zip -qq -r TBot-${{ env.SNAP_VERSION }}-osx64.zip publish/osx64/
     - name: Upload osx64
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-osx64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-osx64.zip
+        name: TBot-${{ env.SNAP_VERSION }}-osx64
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx64.zip
