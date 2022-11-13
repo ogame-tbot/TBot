@@ -45,8 +45,8 @@ jobs:
     - name: Upload win64
       uses: actions/upload-artifact@v2
       with:
-        name: TBot-${{ env.VERSION }}-win64
-        path: ${{ github.workspace }}/TBot-${{ env.VERSION }}-win64.zip
+        name: TBot-${{ env.SNAP_VERSION }}-win64
+        path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win64.zip
 
     - name: Build TBot win32
       run: dotnet publish TBot -c Release -r win-x86 -o publish/win32/ -p:PublishSingleFile=true --self-contained false
