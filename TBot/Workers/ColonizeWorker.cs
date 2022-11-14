@@ -14,10 +14,13 @@ using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
-	public class TBotColonizeWorker : ITBotWorker {
+	public class ColonizeWorker : WorkerBase {
 
-		public TBotColonizeWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
+		public ColonizeWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
 			base(parentInstance, fleetScheduler, helpersService) {
+		}
+		public ColonizeWorker(ITBotMain parentInstance) :
+			base(parentInstance) {
 		}
 
 		public override string GetWorkerName() {
@@ -45,7 +48,7 @@ namespace Tbot.Workers {
 					long interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMax);
 					_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "Checking if a new planet is needed...");
 
-					_tbotInstance.UserData.researches = await ITBotHelper.UpdateResearches(_tbotInstance);
+					_tbotInstance.UserData.researches = await TBotOgamedBridge.UpdateResearches(_tbotInstance);
 					var maxPlanets = _helpersService.CalcMaxPlanets(_tbotInstance.UserData.researches);
 					var currentPlanets = _tbotInstance.UserData.celestials.Where(c => c.Coordinate.Type == Celestials.Planet).Count();
 					var slotsToLeaveFree = (int) (_tbotInstance.InstanceSettings.AutoColonize.SlotsToLeaveFree ?? 0);
@@ -67,7 +70,7 @@ namespace Tbot.Workers {
 								Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.AutoColonize.Origin.Type)
 							);
 							Celestial origin = _tbotInstance.UserData.celestials.Single(c => c.HasCoords(originCoords));
-							await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Ships);
+							await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Ships);
 
 							var neededColonizers = maxPlanets - currentPlanets - slotsToLeaveFree;
 
@@ -115,8 +118,8 @@ namespace Tbot.Workers {
 									_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "No valid coordinate in target list.");
 								}
 							} else {
-								await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Productions);
-								await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Facilities);
+								await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Productions);
+								await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Facilities);
 								if (origin.Productions.Any()) {
 									_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed. {origin.Productions.Where(p => p.ID == (int) Buildables.ColonyShip).Sum(p => p.Nbr)} colony ship(s) already in production.");
 									foreach (var prod in origin.Productions) {
@@ -131,10 +134,10 @@ namespace Tbot.Workers {
 									}
 								} else {
 									_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"{neededColonizers} colony ship(s) needed.");
-									await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Resources);
+									await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Resources);
 									var cost = _helpersService.CalcPrice(Buildables.ColonyShip, neededColonizers - (int) origin.Ships.ColonyShip);
 									if (origin.Resources.IsEnoughFor(cost)) {
-										await ITBotHelper.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Constructions);
+										await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Constructions);
 										if (origin.HasConstruction() && (origin.Constructions.BuildingID == (int) Buildables.Shipyard || origin.Constructions.BuildingID == (int) Buildables.NaniteFactory)) {
 											_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Unable to build colony ship: {((Buildables) origin.Constructions.BuildingID).ToString()} is in construction");
 											interval = (long) origin.Constructions.BuildingCountdown * (long) 1000;
@@ -158,7 +161,7 @@ namespace Tbot.Workers {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "No new planet is needed.");
 					}
 
-					DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+					DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 					if (interval <= 0) {
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 					}
@@ -171,7 +174,7 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.Colonize, $"HandleColonize exception: {e.Message}");
 				_tbotInstance.log(LogLevel.Warning, LogSender.Colonize, $"Stacktrace: {e.StackTrace}");
 				long interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMax);
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				if (interval <= 0)
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
@@ -184,7 +187,7 @@ namespace Tbot.Workers {
 					}
 					if (delay) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Delaying...");
-						var time = await ITBotHelper.GetDateTime(_tbotInstance);
+						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval;
 						try {
@@ -196,7 +199,7 @@ namespace Tbot.Workers {
 						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
 					}
-					await ITBotHelper.CheckCelestials(_tbotInstance);
+					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 				}
 			}
 		}

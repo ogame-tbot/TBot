@@ -12,14 +12,16 @@ using Tbot.Helpers;
 using TBot.Model;
 using Tbot.Includes;
 
-namespace Tbot.Workers {
-	internal class BuyOfferOfTheDayWorker : ITBotWorker {
+namespace Tbot.Workers.Brain {
+	internal class BuyOfferOfTheDayWorker : WorkerBase {
 
 		public BuyOfferOfTheDayWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
 			base(parentInstance, fleetScheduler, helpersService) {
 		}
-		protected override async Task Execute(CancellationToken ct)
-		{
+		public BuyOfferOfTheDayWorker(ITBotMain parentInstance) :
+			base(parentInstance) {
+		}
+		protected override async Task Execute(CancellationToken ct) {
 			bool stop = false;
 			try {
 
@@ -52,15 +54,16 @@ namespace Tbot.Workers {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
+						await StopWorker();
 					} else {
-						var time = await ITBotHelper.GetDateTime(_tbotInstance);
+						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
 						if (interval <= 0)
 							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("OfferOfTheDayTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-						await ITBotHelper.CheckCelestials(_tbotInstance);
+						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 					}
 				}
 			}

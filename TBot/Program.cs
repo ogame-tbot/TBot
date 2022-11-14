@@ -17,6 +17,7 @@ using Tbot.Exceptions;
 using Tbot.Helpers;
 using Tbot.Includes;
 using Tbot.Services;
+using Tbot.Workers;
 using TBot.Common.Logging;
 using TBot.Common.Logging.Enrichers;
 using TBot.Common.Logging.Hooks;
@@ -41,6 +42,8 @@ namespace Tbot {
 				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
 				.AddScoped<ICalculationService, CalculationService>()
 				.AddScoped<IOgameService, OgameService>()
+				.AddScoped<IFleetScheduler, FleetScheduler>()
+				.AddScoped<IWorkerFactory, WorkerFactory>()
 				.AddScoped<ITelegramMessenger, TelegramMessenger>()
 				.AddScoped<IInstanceManager, InstanceManager>()
 				.AddScoped<ITBotMain, TBotMain>()

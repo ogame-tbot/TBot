@@ -23,11 +23,10 @@ namespace Tbot.Services {
 		IOgameService OgamedInstance { get; }
 		ICalculationService HelperService { get; }
 		IFleetScheduler FleetScheduler { get; }
+		long SleepDuration { get; set; }
 		DateTime NextWakeUpTime { get; set;}
 		void log(LogLevel logLevel, LogSender sender, string format);
 		Task SendTelegramMessage(string fmt);
-
-
 		Task SleepNow(DateTime WakeUpTime);
 	}
 }

@@ -14,10 +14,13 @@ using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
-	public class TBotHarvestWorker : ITBotWorker {
+	public class HarvestWorker : WorkerBase {
 
-		public TBotHarvestWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
+		public HarvestWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
 			base(parentInstance, fleetScheduler, helpersService) {
+		}
+		public HarvestWorker(ITBotMain parentInstance) :
+			base(parentInstance) {
 		}
 
 		public override string GetWorkerName() {
@@ -50,8 +53,8 @@ namespace Tbot.Workers {
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 
 					foreach (Planet planet in _tbotInstance.UserData.celestials.Where(c => c is Planet)) {
-						Planet tempCelestial = await ITBotHelper.UpdatePlanet(_tbotInstance, planet, UpdateTypes.Fast) as Planet;
-						tempCelestial = await ITBotHelper.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Ships) as Planet;
+						Planet tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, planet, UpdateTypes.Fast) as Planet;
+						tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Ships) as Planet;
 						Moon moon = new() {
 							Ships = new()
 						};
@@ -59,7 +62,7 @@ namespace Tbot.Workers {
 						bool hasMoon = _tbotInstance.UserData.celestials.Count(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) == 1;
 						if (hasMoon) {
 							moon = _tbotInstance.UserData.celestials.Unique().Single(c => c.HasCoords(new Coordinate(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Moon))) as Moon;
-							moon = await ITBotHelper.UpdatePlanet(_tbotInstance, moon, UpdateTypes.Ships) as Moon;
+							moon = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, moon, UpdateTypes.Ships) as Moon;
 						}
 
 						if ((bool) _tbotInstance.InstanceSettings.AutoHarvest.HarvestOwnDF) {
@@ -68,7 +71,7 @@ namespace Tbot.Workers {
 								continue;
 							if (_tbotInstance.UserData.fleets.Any(f => f.Mission == Missions.Harvest && f.Destination == dest))
 								continue;
-							tempCelestial = await ITBotHelper.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Debris) as Planet;
+							tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Debris) as Planet;
 							if (tempCelestial.Debris != null && tempCelestial.Debris.Resources.TotalResources >= (long) _tbotInstance.InstanceSettings.AutoHarvest.MinimumResourcesOwnDF) {
 								if (moon.Ships.Recycler >= tempCelestial.Debris.RecyclersNeeded)
 									dic.Add(dest, moon);
@@ -170,7 +173,7 @@ namespace Tbot.Workers {
 					} else {
 						interval = (int) RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMax);
 					}
-					var time = await ITBotHelper.GetDateTime(_tbotInstance);
+					var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 					if (interval <= 0)
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime newTime = time.AddMilliseconds(interval);
@@ -181,7 +184,7 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.Harvest, $"HandleHarvest exception: {e.Message}");
 				_tbotInstance.log(LogLevel.Warning, LogSender.Harvest, $"Stacktrace: {e.StackTrace}");
 				long interval = (int) RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMax);
-				var time = await ITBotHelper.GetDateTime(_tbotInstance);
+				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				if (interval <= 0)
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
@@ -194,14 +197,14 @@ namespace Tbot.Workers {
 					}
 					if (delay) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Delaying...");
-						var time = await ITBotHelper.GetDateTime(_tbotInstance);
+						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
 						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 					}
-					await ITBotHelper.CheckCelestials(_tbotInstance);
+					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 				}
 			}
 		}

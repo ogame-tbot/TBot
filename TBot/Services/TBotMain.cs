@@ -32,6 +32,7 @@ namespace Tbot.Services {
 		private readonly IFleetScheduler _fleetScheduler;
 		private readonly ILoggerService<TBotMain> _logger;
 		private readonly ICalculationService _helpersService;
+		private readonly IWorkerFactory _workerFactory;
 		
 		private dynamic settings;
 		private string settingsPath;
@@ -39,15 +40,14 @@ namespace Tbot.Services {
 		private ITelegramMessenger telegramMessenger;
 
 		private bool loggedIn = false;
-		private Dictionary<string, Timer> timers;
-		private ConcurrentDictionary<Feature, bool> features;
-		private ConcurrentDictionary<Feature, SemaphoreSlim> xaSem = new();
+		private Dictionary<string, Timer> timers = new();
+		private ConcurrentDictionary<Feature, ITBotWorker> workers = new();
+		private CancellationTokenSource cts = new();
 
 
 		public UserData userData = new();
 		public TelegramUserData telegramUserData = new();
 
-		public long duration;
 		public DateTime startTime = DateTime.UtcNow;
 		public SettingsFileWatcher settingsWatcher;
 
@@ -95,17 +95,21 @@ namespace Tbot.Services {
 				return _fleetScheduler;
 			}
 		}
+		public long SleepDuration { get; set; }
 		public DateTime NextWakeUpTime { get; set; }
 
 		public TBotMain(
 			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
 			ICalculationService helpersService,
+			IWorkerFactory workerFactory,
 			ILoggerService<TBotMain> logger) {
 
 			_ogameService = ogameService;
 			_logger = logger;
 			_helpersService = helpersService;
-			_fleetScheduler = new FleetScheduler(this, helpersService);
+			_fleetScheduler = fleetScheduler;
+			_workerFactory = workerFactory;
 		}
 
 		private Credentials GetCredentialsFromSettings() {
@@ -182,12 +186,12 @@ namespace Tbot.Services {
 		}
 
 		private async Task InitUserData() {
-			userData.serverInfo = await ITBotHelper.UpdateServerInfo(this);
-			userData.serverData = await ITBotHelper.UpdateServerData(this);
-			userData.userInfo = await ITBotHelper.UpdateUserInfo(this);
-			userData.staff = await ITBotHelper.UpdateStaff(this);
+			userData.serverInfo = await TBotOgamedBridge.UpdateServerInfo(this);
+			userData.serverData = await TBotOgamedBridge.UpdateServerData(this);
+			userData.userInfo = await TBotOgamedBridge.UpdateUserInfo(this);
+			userData.staff = await TBotOgamedBridge.UpdateStaff(this);
 
-			var serverTime = await ITBotHelper.GetDateTime(this);
+			var serverTime = await TBotOgamedBridge.GetDateTime(this);
 
 			log(LogLevel.Information, LogSender.Tbot, $"Server time: {serverTime.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player name: {userData.userInfo.PlayerName}");
@@ -195,24 +199,6 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, $"Player rank: {userData.userInfo.Rank}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player points: {userData.userInfo.Points}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player honour points: {userData.userInfo.HonourPoints}");
-		}
-
-		private void InitializeTimers() {
-			timers = new Dictionary<string, Timer>();
-
-			xaSem[Feature.Defender] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.Brain] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.BrainAutobuildCargo] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.BrainAutoRepatriate] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.BrainAutoMine] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.BrainLifeformAutoMine] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.BrainOfferOfTheDay] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.AutoFarm] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.Expeditions] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.Harvest] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.Colonize] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.FleetScheduler] = new SemaphoreSlim(1, 1);
-			xaSem[Feature.SleepMode] = new SemaphoreSlim(1, 1);
 		}
 
 		public async Task<bool> Init(string settingPath,
@@ -265,8 +251,8 @@ namespace Tbot.Services {
 			userData.nextDOIR = 0;
 
 			log(LogLevel.Information, LogSender.Tbot, "Initializing data...");
-			userData.celestials = await ITBotHelper.GetPlanets(this);
-			userData.researches = await ITBotHelper.UpdateResearches(this);
+			userData.celestials = await TBotOgamedBridge.GetPlanets(this);
+			userData.researches = await TBotOgamedBridge.UpdateResearches(this);
 			userData.scheduledFleets = new();
 			userData.farmTargets = new();
 
@@ -276,8 +262,6 @@ namespace Tbot.Services {
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Initializing features...");
-			InitializeTimers();
-			features = new();
 			InitializeFeatures(Features.AllFeatures);
 			InitializeSleepMode();
 
@@ -298,13 +282,20 @@ namespace Tbot.Services {
 				await telegramMessenger.RemoveTBotInstance(this);
 			}
 
-			foreach (var sem in xaSem) {
-				log(LogLevel.Information, LogSender.Tbot, $"Deinitializing feature {sem.Key.ToString()}");
-				await sem.Value.WaitAsync();
+			// Deinitialize workers
+			List<Task> deInitTasks = new();
+			foreach (var worker in workers) {
+				log(LogLevel.Information, LogSender.Tbot, $"Deinitializing worker {worker.Value.GetWorkerName()}");
+
+				deInitTasks.Add(worker.Value.StopWorker());
 			}
+			foreach(var aTask in deInitTasks) {
+				await aTask;
+			}
+			deInitTasks.Clear();
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing timers...");
-			foreach (KeyValuePair<string, Timer> entry in timers) {
+			foreach (var entry in timers) {
 				log(LogLevel.Information, LogSender.Tbot, $"Disposing timer \"{entry.Key}\"");
 				entry.Value.Dispose();
 			}
@@ -342,213 +333,10 @@ namespace Tbot.Services {
 			_logger.WriteLog(logLevel, sender, $"[{ToString()}] {format}");
 		}
 
-		private bool HandleStartStopFeatures(Feature feature, bool currentValue) {
-			if (userData.isSleeping && (bool) settings.SleepMode.Active)
-				switch (feature) {
-					case Feature.Defender:
-						if (currentValue)
-							StopDefender();
-						return false;
-					case Feature.Brain:
-						return false;
-					case Feature.BrainAutobuildCargo:
-						if (currentValue)
-							StopBrainAutoCargo();
-						return false;
-					case Feature.BrainAutoRepatriate:
-						if (currentValue)
-							StopBrainRepatriate();
-						return false;
-					case Feature.BrainAutoMine:
-						if (currentValue)
-							StopBrainAutoMine();
-						return false;
-					case Feature.BrainLifeformAutoMine:
-						if (currentValue)
-							StopBrainLifeformAutoMine();
-						return false;
-					case Feature.BrainLifeformAutoResearch:
-						if (currentValue)
-							StopBrainLifeformAutoResearch();
-						return false;
-					case Feature.BrainOfferOfTheDay:
-						if (currentValue)
-							StopBrainOfferOfTheDay();
-						return false;
-					case Feature.BrainAutoResearch:
-						if (currentValue)
-							StopBrainAutoResearch();
-						return false;
-					case Feature.AutoFarm:
-						if (currentValue)
-							StopAutoFarm();
-						return false;
-					case Feature.Expeditions:
-						if (currentValue)
-							StopExpeditions();
-						return false;
-					case Feature.Harvest:
-						if (currentValue)
-							StopHarvest();
-						return false;
-					case Feature.Colonize:
-						if (currentValue)
-							StopColonize();
-						return false;
-					case Feature.FleetScheduler:
-						if (currentValue)
-							StopFleetScheduler();
-						return false;
-					case Feature.SleepMode:
-						if (!currentValue)
-							InitializeSleepMode();
-						return true;
-
-					default:
-						return false;
-				}
-
-			switch (feature) {
-				case Feature.Defender:
-					if ((bool) settings.Defender.Active) {
-						InitializeDefender();
-						return true;
-					} else {
-						if (currentValue)
-							StopDefender();
-						return false;
-					}
-				case Feature.Brain:
-					if ((bool) settings.Brain.Active)
-						return true;
-					else
-						return false;
-				case Feature.BrainAutobuildCargo:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoCargo.Active) {
-						InitializeBrainAutoCargo();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainAutoCargo();
-						return false;
-					}
-				case Feature.BrainAutoRepatriate:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoRepatriate.Active) {
-						InitializeBrainRepatriate();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainRepatriate();
-						return false;
-					}
-				case Feature.BrainAutoMine:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoMine.Active) {
-						InitializeBrainAutoMine();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainAutoMine();
-						return false;
-					}
-				case Feature.BrainLifeformAutoMine:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoMine.Active) {
-						InitializeBrainLifeformAutoMine();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainLifeformAutoMine();
-						return false;
-					}
-				case Feature.BrainLifeformAutoResearch:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.LifeformAutoResearch.Active) {
-						InitializeBrainLifeformAutoResearch();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainLifeformAutoResearch();
-						return false;
-					}
-				case Feature.BrainOfferOfTheDay:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.BuyOfferOfTheDay.Active) {
-						InitializeBrainOfferOfTheDay();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainOfferOfTheDay();
-						return false;
-					}
-				case Feature.BrainAutoResearch:
-					if ((bool) settings.Brain.Active && (bool) settings.Brain.AutoResearch.Active) {
-						InitializeBrainAutoResearch();
-						return true;
-					} else {
-						if (currentValue)
-							StopBrainAutoResearch();
-						return false;
-					}
-				case Feature.AutoFarm:
-					if ((bool) settings.AutoFarm.Active) {
-						InitializeAutoFarm();
-						return true;
-					} else {
-						if (currentValue)
-							StopAutoFarm();
-						return false;
-					}
-				case Feature.Expeditions:
-					if ((bool) settings.Expeditions.Active) {
-						InitializeExpeditions();
-						return true;
-					} else {
-						if (currentValue)
-							StopExpeditions();
-						return false;
-					}
-				case Feature.Harvest:
-					if ((bool) settings.AutoHarvest.Active) {
-						InitializeHarvest();
-						return true;
-					} else {
-						if (currentValue)
-							StopHarvest();
-						return false;
-					}
-				case Feature.Colonize:
-					if ((bool) settings.AutoColonize.Active) {
-						InitializeColonize();
-						return true;
-					} else {
-						if (currentValue)
-							StopHarvest();
-						return false;
-					}
-				case Feature.FleetScheduler:
-					if (!currentValue) {
-						InitializeFleetScheduler();
-						return true;
-					} else {
-						StopFleetScheduler();
-						return false;
-					}
-				case Feature.SleepMode:
-					if ((bool) settings.SleepMode.Active) {
-						InitializeSleepMode();
-						return true;
-					} else {
-						if (currentValue)
-							StopSleepMode();
-						return false;
-					}
-				default:
-					return false;
-			}
-		}
-
 		private void InitializeFeatures(List<Feature> featuresToInitialize = null) {
 			if (featuresToInitialize == null) {
 				featuresToInitialize = new List<Feature>() {
 					Feature.Defender,
-					Feature.Brain,
 					Feature.BrainAutobuildCargo,
 					Feature.BrainAutoRepatriate,
 					Feature.BrainAutoMine,
@@ -562,8 +350,31 @@ namespace Tbot.Services {
 					Feature.Colonize,
 				};
 			}
-			foreach (Feature feat in featuresToInitialize) {
-				features.AddOrUpdate(feat, false, HandleStartStopFeatures);
+
+			foreach(var feat in featuresToInitialize) {
+				long dueTime = feat switch {
+					Feature.Defender => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+					Feature.BrainAutobuildCargo => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
+					Feature.BrainAutoRepatriate => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					Feature.BrainAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+					Feature.BrainLifeformAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+					Feature.BrainLifeformAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+					Feature.BrainOfferOfTheDay => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					Feature.BrainAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					Feature.AutoFarm => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
+					Feature.Expeditions => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					Feature.Harvest => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					Feature.Colonize => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+					_ => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds)
+				};
+
+				if (workers.TryGetValue(feat, out var worker)) {
+					worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
+				} else {
+					ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this);
+					workers.TryAdd(feat, newWorker);
+					newWorker.StartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
+				}
 			}
 		}
 
@@ -637,20 +448,20 @@ namespace Tbot.Services {
 
 		public async Task WaitFeature() {
 			await Task.WhenAll(
-				xaSem[Feature.Brain].WaitAsync(),
-				xaSem[Feature.Expeditions].WaitAsync(),
-				xaSem[Feature.Harvest].WaitAsync(),
-				xaSem[Feature.Colonize].WaitAsync(),
-				xaSem[Feature.AutoFarm].WaitAsync());
+				_workerFactory.GetWorker(Feature.BrainAutoMine).WaitWorker(), // Any of the brain is fine
+				_workerFactory.GetWorker(Feature.Expeditions).WaitWorker(),
+				_workerFactory.GetWorker(Feature.Harvest).WaitWorker(),
+				_workerFactory.GetWorker(Feature.Colonize).WaitWorker(),
+				_workerFactory.GetWorker(Feature.AutoFarm).WaitWorker());
 
 		}
 
 		public void releaseFeature() {
-			xaSem[Feature.Brain].Release();
-			xaSem[Feature.Expeditions].Release();
-			xaSem[Feature.Harvest].Release();
-			xaSem[Feature.Colonize].Release();
-			xaSem[Feature.AutoFarm].Release();
+			_workerFactory.GetWorker(Feature.Brain).ReleaseWorker();
+			_workerFactory.GetWorker(Feature.Expeditions).ReleaseWorker();
+			_workerFactory.GetWorker(Feature.Harvest).ReleaseWorker();
+			_workerFactory.GetWorker(Feature.Colonize).ReleaseWorker();
+			_workerFactory.GetWorker(Feature.AutoFarm).ReleaseWorker();
 		}
 
 		private async void OnSettingsChanged() {
@@ -668,207 +479,24 @@ namespace Tbot.Services {
 			};
 
 			// Wait on feature to be locked
-			foreach (var feature in featuresToHandle) {
-				log(LogLevel.Information, LogSender.Tbot, $"Waiting on feature {feature.ToString()}...");
-				await xaSem[feature].WaitAsync();
-				log(LogLevel.Information, LogSender.Tbot, $"Feature {feature.ToString()} locked for settings reload!");
+			var workersToWait = workers.Where(c => featuresToHandle.Contains(c.Key));
+			foreach (var worker in workersToWait) {
+				log(LogLevel.Information, LogSender.Tbot, $"Waiting on feature {worker.Key.ToString()}...");
+				await worker.Value.WaitWorker();
+				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} locked for settings reload!");
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
 			settings = SettingsService.GetSettings(settingsPath);
 
 			// Release features lock!
-			foreach (var feature in featuresToHandle) {
-				log(LogLevel.Information, LogSender.Tbot, $"Unlocking feature {feature.ToString()}...");
-				xaSem[feature].Release();
-				log(LogLevel.Information, LogSender.Tbot, $"Feature {feature.ToString()} unlocked!");
+			foreach (var worker in workersToWait) {
+				log(LogLevel.Information, LogSender.Tbot, $"Unlocking feature {worker.Key.ToString()}...");
+				worker.Value.ReleaseWorker();
+				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} unlocked!");
 			}
 
 			InitializeSleepMode();
-		}
-
-		public void InitializeDefender() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing defender...");
-			StopDefender(false);
-			timers.Add("DefenderTimer", new Timer(Defender, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
-		}
-
-		public void StopDefender(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping defender...");
-			if (timers.TryGetValue("DefenderTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("DefenderTimer");
-		}
-
-		private void InitializeBrainAutoCargo() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing autocargo...");
-			StopBrainAutoCargo(false);
-			timers.Add("CapacityTimer", new Timer(AutoBuildCargo, null, RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
-		}
-
-		private void StopBrainAutoCargo(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping autocargo...");
-			if (timers.TryGetValue("CapacityTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("CapacityTimer");
-		}
-
-		public void InitializeBrainRepatriate() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing repatriate...");
-			StopBrainRepatriate(false);
-			if (!timers.TryGetValue("RepatriateTimer", out Timer value))
-				timers.Add("RepatriateTimer", new Timer(AutoRepatriate, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		public void StopBrainRepatriate(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping repatriate...");
-			if (timers.TryGetValue("RepatriateTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("RepatriateTimer");
-		}
-
-		public void InitializeBrainAutoMine() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing automine...");
-			StopBrainAutoMine(false);
-			timers.Add("AutoMineTimer", new Timer(AutoMine, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
-		}
-
-		public void StopBrainAutoMine(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping automine...");
-			if (timers.TryGetValue("AutoMineTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("AutoMineTimer");
-			foreach (var celestial in userData.celestials) {
-				if (timers.TryGetValue($"AutoMineTimer-{celestial.ID.ToString()}", out value))
-					value.Dispose();
-				timers.Remove($"AutoMineTimer-{celestial.ID.ToString()}");
-			}
-		}
-
-		public void InitializeBrainLifeformAutoMine() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing Lifeform autoMine...");
-			StopBrainLifeformAutoMine(false);
-			timers.Add("LifeformAutoMineTimer", new Timer(LifeformAutoMine, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
-		}
-
-		public void StopBrainLifeformAutoMine(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping Lifeform autoMine...");
-			if (timers.TryGetValue("LifeformAutoMineTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("LifeformAutoMineTimer");
-			foreach (var celestial in userData.celestials) {
-				if (timers.TryGetValue($"LifeformAutoMineTimer-{celestial.ID.ToString()}", out value))
-					value.Dispose();
-				timers.Remove($"LifeformAutoMineTimer-{celestial.ID.ToString()}");
-			}
-		}
-
-		public void InitializeBrainLifeformAutoResearch() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing Lifeform autoResearch...");
-			StopBrainLifeformAutoResearch(false);
-			timers.Add("LifeformAutoResearchTimer", new Timer(LifeformAutoResearch, null, RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite));
-		}
-
-		public void StopBrainLifeformAutoResearch(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping Lifeform autoResearch...");
-			if (timers.TryGetValue("LifeformAutoResearchTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("LifeformAutoResearchTimer");
-			foreach (var celestial in userData.celestials) {
-				if (timers.TryGetValue($"LifeformAutoResearchTimer-{celestial.ID.ToString()}", out value))
-					value.Dispose();
-				timers.Remove($"LifeformAutoResearchTimer-{celestial.ID.ToString()}");
-			}
-		}
-
-		private void InitializeBrainOfferOfTheDay() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing offer of the day...");
-			StopBrainOfferOfTheDay(false);
-			timers.Add("OfferOfTheDayTimer", new Timer(BuyOfferOfTheDay, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		private void StopBrainOfferOfTheDay(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping offer of the day...");
-			if (timers.TryGetValue("OfferOfTheDayTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("OfferOfTheDayTimer");
-		}
-
-		public void InitializeBrainAutoResearch() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing autoresearch...");
-			StopBrainAutoResearch(false);
-			timers.Add("AutoResearchTimer", new Timer(AutoResearch, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		public void StopBrainAutoResearch(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping autoresearch...");
-			if (timers.TryGetValue("AutoResearchTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("AutoResearchTimer");
-		}
-
-		public void InitializeAutoFarm() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing autofarm...");
-			StopAutoFarm(false);
-			timers.Add("AutoFarmTimer", new Timer(AutoFarm, null, RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo), Timeout.Infinite));
-		}
-
-		public void StopAutoFarm(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping autofarm...");
-			if (timers.TryGetValue("AutoFarmTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("AutoFarmTimer");
-		}
-
-		public void InitializeExpeditions() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing expeditions...");
-			StopExpeditions(false);
-			timers.Add("ExpeditionsTimer", new Timer(HandleExpeditions, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		public void StopExpeditions(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping expeditions...");
-			if (timers.TryGetValue("ExpeditionsTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("ExpeditionsTimer");
-		}
-
-		private void InitializeHarvest() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing harvest...");
-			StopHarvest(false);
-			timers.Add("HarvestTimer", new Timer(HandleHarvest, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		private void StopHarvest(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping harvest...");
-			if (timers.TryGetValue("HarvestTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("HarvestTimer");
-		}
-
-		private void InitializeColonize() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing colonize...");
-			StopColonize(false);
-			timers.Add("ColonizeTimer", new Timer(HandleColonize, null, RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds), Timeout.Infinite));
-		}
-
-		private void StopColonize(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping colonize...");
-			if (timers.TryGetValue("ColonizeTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("ColonizeTimer");
 		}
 
 		private void InitializeSleepMode() {
@@ -883,21 +511,6 @@ namespace Tbot.Services {
 			if (timers.TryGetValue("SleepModeTimer", out Timer value))
 				value.Dispose();
 			timers.Remove("SleepModeTimer");
-		}
-
-		private void InitializeFleetScheduler() {
-			log(LogLevel.Information, LogSender.Tbot, "Initializing fleet scheduler...");
-			userData.scheduledFleets = new();
-			StopFleetScheduler(false);
-			timers.Add("FleetSchedulerTimer", new Timer(HandleScheduledFleet, null, Timeout.Infinite, Timeout.Infinite));
-		}
-
-		private void StopFleetScheduler(bool echo = true) {
-			if (echo)
-				log(LogLevel.Information, LogSender.Tbot, "Stopping fleet scheduler...");
-			if (timers.TryGetValue("FleetSchedulerTimer", out Timer value))
-				value.Dispose();
-			timers.Remove("FleetSchedulerTimer");
 		}
 
 		public void RemoveTelegramMessenger() {
@@ -932,12 +545,12 @@ namespace Tbot.Services {
 			Resources cost = _helpersService.CalcPrice(buildable, 1);
 			foreach (Celestial celestial in userData.celestials.Where(c => c is Planet).ToList()) {
 				List<decimal> MaxNumber = new();
-				await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Constructions);
+				await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Constructions);
 				if ((int) celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory || (int) celestial.Constructions.BuildingID == (int) Buildables.Shipyard) {
 					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction\n";
 					continue;
 				}
-				await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Resources);
+				await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
 				Resources resources = celestial.Resources;
 				if (num == 0) {
 					if (cost.Metal > 0)
@@ -1145,7 +758,7 @@ namespace Tbot.Services {
 		}
 
 		public void TelegramCollect() {
-			timers.Add("TelegramCollect", new Timer(AutoRepatriate, null, 3000, Timeout.Infinite));
+			_workerFactory.GetWorker(Feature.BrainAutoRepatriate).RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(3000));
 
 			return;
 		}
@@ -1188,8 +801,8 @@ namespace Tbot.Services {
 				return;
 			}
 
-			origin = await ITBotHelper.UpdatePlanet(this, origin, UpdateTypes.Resources);
-			origin = await ITBotHelper.UpdatePlanet(this, origin, UpdateTypes.Ships);
+			origin = await TBotOgamedBridge.UpdatePlanet(this, origin, UpdateTypes.Resources);
+			origin = await TBotOgamedBridge.UpdatePlanet(this, origin, UpdateTypes.Ships);
 
 			if (origin.Ships.GetMovableShips().IsEmpty()) {
 				await SendTelegramMessage($"No ships on {origin.Coordinate}, did you /celestial?");
@@ -1240,8 +853,8 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramDeploy(Celestial celestial, Coordinate destination, decimal speed) {
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: No ships!");
@@ -1298,8 +911,8 @@ namespace Tbot.Services {
 				dest.Type = Celestials.Planet;
 			}
 
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from {celestial.Coordinate.ToString()}: No ships!");
@@ -1332,7 +945,7 @@ namespace Tbot.Services {
 		}
 
 		public async void TelegramSetCurrentCelestial(Coordinate coord, string celestialType, Feature updateType = Feature.Null, bool editsettings = false) {
-			userData.celestials = await ITBotHelper.UpdateCelestials(this);
+			userData.celestials = await TBotOgamedBridge.UpdateCelestials(this);
 
 			//check if no error in submitted celestial (belongs to the current player)
 			telegramUserData.CurrentCelestial = userData.celestials
@@ -1380,8 +993,8 @@ namespace Tbot.Services {
 
 		public async Task TelegramGetInfo(Celestial celestial) {
 
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
+			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
 			string result = "";
 			string resources = $"{celestial.Resources.Metal.ToString("#,#", CultureInfo.InvariantCulture)} Metal\n" +
 								$"{celestial.Resources.Crystal.ToString("#,#", CultureInfo.InvariantCulture)} Crystal\n" +
@@ -1399,60 +1012,6 @@ namespace Tbot.Services {
 				"Ships:\n" +
 				$"{ships}");
 
-			return;
-		}
-
-		public async Task SpyCrash(Celestial fromCelestial, Coordinate target = null) {
-			decimal speed = Speeds.HundredPercent;
-			fromCelestial = await ITBotHelper.UpdatePlanet(this, fromCelestial, UpdateTypes.Ships);
-			fromCelestial = await ITBotHelper.UpdatePlanet(this, fromCelestial, UpdateTypes.Resources);
-			var payload = fromCelestial.Resources;
-			Random random = new Random();
-
-			if (fromCelestial.Ships.EspionageProbe == 0 || payload.Deuterium < 1) {
-				log(LogLevel.Information, LogSender.FleetScheduler, $"No probes or no Fuel on {fromCelestial.Coordinate.ToString()}!");
-				await SendTelegramMessage($"No probes or no Fuel on {fromCelestial.Coordinate.ToString()}!");
-				return;
-			}
-			// spycrash auto part
-			if (target == null) {
-				List<Coordinate> spycrash = new();
-				int playerid = userData.userInfo.PlayerID;
-				int sys = 0;
-				for (sys = fromCelestial.Coordinate.System - 2; sys <= fromCelestial.Coordinate.System + 2; sys++) {
-					sys = GeneralHelper.ClampSystem(sys);
-					GalaxyInfo galaxyInfo = await _ogameService.GetGalaxyInfo(fromCelestial.Coordinate.Galaxy, sys);
-					foreach (var planet in galaxyInfo.Planets) {
-						try {
-							if (planet != null && !planet.Administrator && !planet.Inactive && !planet.StrongPlayer && !planet.Newbie && !planet.Banned && !planet.Vacation) {
-								if (planet.Player.ID != playerid) { //exclude player planet
-									spycrash.Add(new(planet.Coordinate.Galaxy, planet.Coordinate.System, planet.Coordinate.Position, Celestials.Planet));
-								}
-							}
-						} catch (NullReferenceException) {
-							continue;
-						}
-					}
-				}
-
-				if (spycrash.Count() == 0) {
-					await SendTelegramMessage($"No planet to spycrash on could be found over system -2 -> +2");
-					return;
-				} else {
-					target = spycrash[random.Next(spycrash.Count())];
-				}
-			}
-			var attackingShips = new Ships().Add(Buildables.EspionageProbe, 1);
-
-			int fleetId = await SendFleet(fromCelestial, attackingShips, target, Missions.Attack, speed);
-
-			if (fleetId != (int) SendFleetCode.GenericError ||
-				fleetId != (int) SendFleetCode.AfterSleepTime ||
-				fleetId != (int) SendFleetCode.NotEnoughSlots) {
-				log(LogLevel.Information, LogSender.FleetScheduler, $"EspionageProbe sent to crash on {target.ToString()}");
-
-				await SendTelegramMessage($"EspionageProbe sent to crash on {target.ToString()}");
-			}
 			return;
 		}
 
@@ -1484,11 +1043,11 @@ namespace Tbot.Services {
 					continue;
 				}
 
-				var tempCelestial = await ITBotHelper.UpdatePlanet(this, celestial, UpdateTypes.Fast);
+				var tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Fast);
 				userData.fleets = await _fleetScheduler.UpdateFleets();
 
-				tempCelestial = await ITBotHelper.UpdatePlanet(this, tempCelestial, UpdateTypes.Resources);
-				tempCelestial = await ITBotHelper.UpdatePlanet(this, tempCelestial, UpdateTypes.Ships);
+				tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, tempCelestial, UpdateTypes.Resources);
+				tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, tempCelestial, UpdateTypes.Ships);
 
 				Buildables preferredShip = Buildables.LargeCargo;
 				if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
@@ -1515,7 +1074,7 @@ namespace Tbot.Services {
 					payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 					if ((long) payload.TotalResources >= (long) MinAmount) {
-						var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+						var fleetId = await _fleetScheduler.SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
 						if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 							continue;
 						}
@@ -1537,11 +1096,10 @@ namespace Tbot.Services {
 			}
 		}
 
-
 		public async Task SleepNow(DateTime WakeUpTime) {
 			long interval;
 
-			DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+			DateTime time = await TBotOgamedBridge.GetDateTime(this);
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
 			await SendTelegramMessage($"Going to sleep, Waking Up at {WakeUpTime.ToString()}");
@@ -1561,7 +1119,6 @@ namespace Tbot.Services {
 			}
 		}
 
-
 		private async void HandleSleepMode(object state) {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value)) {
 				return;
@@ -1570,7 +1127,7 @@ namespace Tbot.Services {
 			try {
 				await WaitFeature();
 
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(this);
 
 				if (!(bool) settings.SleepMode.Active) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Sleep mode is disabled");
@@ -1682,12 +1239,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while handling sleep mode: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(this);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await CheckCelestials();
+				await TBotOgamedBridge.CheckCelestials(this);
 			} finally {
 				releaseFeature();
 			}
@@ -1699,7 +1256,7 @@ namespace Tbot.Services {
 				bool delayed = false;
 				if ((bool) settings.SleepMode.PreventIfThereAreFleets && userData.fleets.Count() > 0) {
 					if (DateTime.TryParse((string) settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string) settings.SleepMode.GoToSleep, out DateTime goToSleep)) {
-						DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+						DateTime time = await TBotOgamedBridge.GetDateTime(this);
 						if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
 							goToSleep = goToSleep.AddDays(1);
 						if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
@@ -1748,12 +1305,12 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
 
 					if ((bool) settings.SleepMode.AutoFleetSave.Active) {
-						var celestialsToFleetsave = await UpdatePlanets(UpdateTypes.Ships);
+						var celestialsToFleetsave = await TBotOgamedBridge.UpdatePlanets(this, UpdateTypes.Ships);
 						if ((bool) settings.SleepMode.AutoFleetSave.OnlyMoons)
 							celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
 						foreach (Celestial celestial in celestialsToFleetsave.OrderByDescending(c => c.Ships.GetFleetPoints())) {
 							try {
-								await AutoFleetSave(celestial, true);
+								await _fleetScheduler.AutoFleetSave(celestial, true);
 							} catch (Exception e) {
 								_logger.WriteLog(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while fleetsaving: {e.Message}");
 							}
@@ -1761,7 +1318,7 @@ namespace Tbot.Services {
 					}
 
 					if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
-						await SendTelegramMessage($"[{userData.userInfo.PlayerName}{userData.serverData.Name}] Going to sleep, Waking Up at {state.ToString()}");
+						await SendTelegramMessage($"Going to sleep, Waking Up at {state.ToString()}");
 					}
 					if (userData.isSleeping == false) {
 						if (
@@ -1780,12 +1337,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while going to sleep: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(this);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await CheckCelestials();
+				await TBotOgamedBridge.CheckCelestials(this);
 			}
 		}
 
@@ -1837,12 +1394,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while waking up: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await ITBotHelper.GetDateTime(this);
+				DateTime time = await TBotOgamedBridge.GetDateTime(this);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await ITBotHelper.CheckCelestials(this);
+				await TBotOgamedBridge.CheckCelestials(this);
 			}
 		}
 		
@@ -1853,7 +1410,7 @@ namespace Tbot.Services {
 				await SendTelegramMessage($"Unable to recall fleet! Already recalled?");
 				return;
 			}
-			RetireFleet(ToRecallFleet);
+			await _fleetScheduler.RetireFleet(ToRecallFleet);
 		}
 
 		public async Task TelegramMesgAttacker(string message) {

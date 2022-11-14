@@ -15,7 +15,7 @@ using TBot.Model;
 
 namespace Tbot.Workers
 {
-    public abstract class ITBotHelper
+    public static class ITBotHelper
     {
 		public static async Task<DateTime> GetDateTime(ITBotMain tbotInstance) {
 			try {

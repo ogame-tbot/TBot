@@ -52,15 +52,15 @@ namespace Tbot.Includes {
 			}
 		}
 
-		private Task? _scheduledAction;
-		private CancellationTokenSource? _cts;
+		private Task _scheduledAction = null;
+		private CancellationTokenSource _cts = null;
 
 		public AsyncTimer(AsyncTimerCallback callback, string name) {
 			_callback = callback;
 			_name = name;
 		}
 
-		public async Task StartAsync(TimeSpan period, TimeSpan dueTime, CancellationToken ct) {
+		public async Task StartAsync(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 
 			await StopAsync();
 
@@ -82,13 +82,18 @@ namespace Tbot.Includes {
 
 				try {
 					while (true) {
-						await Task.Delay(DueTime, ct);
+						if (DueTime != TimeSpan.Zero) {
+							await Task.Delay(DueTime, ct);
+						}
 
 						// USER CALLBACK START HERE
 						await _callback(ct);
 						// USER CALLBACK END HERE
 
-
+						if (Period == Timeout.InfiniteTimeSpan) {
+							// Exit
+							break;
+						}
 						await Task.Delay(Period, ct);
 
 						ct.ThrowIfCancellationRequested();
@@ -113,10 +118,27 @@ namespace Tbot.Includes {
 			}
 		}
 
+		public async Task RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
+			await StopAsync();
+			await StartAsync(ct, period, dueTime);
+		}
+
 		public void ChangeTimings(TimeSpan period, TimeSpan dueTime) {
 			lock (_changeLock) {
 				_dueTime = dueTime;
 				_period = period;
+			}
+		}
+
+		public void ChangePeriod(TimeSpan period) {
+			lock (_changeLock) {
+				_period = period;
+			}
+		}
+
+		public void ChangeDueTime(TimeSpan dueTime) {
+			lock (_changeLock) {
+				_dueTime = dueTime;
 			}
 		}
 

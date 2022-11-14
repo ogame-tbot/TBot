@@ -15,10 +15,15 @@ using Tbot.Includes;
 using System.Timers;
 
 namespace Tbot.Workers {
-	internal class TBotDefenderWorker : ITBotWorker {
+	internal class DefenderWorker : WorkerBase {
 
-		public TBotDefenderWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
+		public DefenderWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
 			base(parentInstance, fleetScheduler, helpersService) {
+
+		}
+
+		public DefenderWorker(ITBotMain parentInstance)
+			: base(parentInstance) {
 
 		}
 
@@ -34,7 +39,7 @@ namespace Tbot.Workers {
 				await FakeActivity();
 				_tbotInstance.UserData.fleets = await _tbotInstance.FleetScheduler.UpdateFleets();
 				bool isUnderAttack = await _tbotInstance.OgamedInstance.IsUnderAttack();
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				if (isUnderAttack) {
 					if ((bool) _tbotInstance.InstanceSettings.Defender.Alarm.Active)
 						await Task.Factory.StartNew(() => ConsoleHelpers.PlayAlarm(), _ct);
@@ -55,16 +60,16 @@ namespace Tbot.Workers {
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
-				await ITBotHelper.CheckCelestials(_tbotInstance);
+				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 			} catch (Exception e) {
 				DoLog(LogLevel.Warning, $"An error has occurred while checking for attacks: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
-				await ITBotHelper.CheckCelestials(_tbotInstance);
+				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 			} finally {
 
 			}
@@ -95,11 +100,11 @@ namespace Tbot.Workers {
 				.SingleOrDefault() ?? new() { ID = 0 };
 
 			if (celestial.ID != 0) {
-				celestial = await ITBotHelper.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Defences);
+				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Defences);
 			}
 			randomCelestial = _tbotInstance.UserData.celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
 			if (randomCelestial.ID != 0) {
-				randomCelestial = await ITBotHelper.UpdatePlanet(_tbotInstance, randomCelestial, UpdateTypes.Defences);
+				randomCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, randomCelestial, UpdateTypes.Defences);
 			}
 
 			return;
@@ -107,7 +112,7 @@ namespace Tbot.Workers {
 
 		private async void HandleAttack(AttackerFleet attack) {
 			if (_tbotInstance.UserData.celestials.Count() == 0) {
-				DateTime time = await ITBotHelper.GetDateTime(_tbotInstance);
+				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
@@ -117,7 +122,7 @@ namespace Tbot.Workers {
 			}
 
 			Celestial attackedCelestial = _tbotInstance.UserData.celestials.Unique().SingleOrDefault(planet => planet.HasCoords(attack.Destination));
-			attackedCelestial = await ITBotHelper.UpdatePlanet(_tbotInstance, attackedCelestial, UpdateTypes.Ships);
+			attackedCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, attackedCelestial, UpdateTypes.Ships);
 
 			try {
 				if ((_tbotInstance.InstanceSettings.Defender.WhiteList as long[]).Any()) {
@@ -177,7 +182,7 @@ namespace Tbot.Workers {
 			DoLog(LogLevel.Warning, $"The attack is composed by: {attack.Ships.ToString()}");
 
 			if ((bool) _tbotInstance.InstanceSettings.Defender.SpyAttacker.Active) {
-				_tbotInstance.UserData.slots = await ITBotHelper.UpdateSlots(_tbotInstance);
+				_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
 				if (attackedCelestial.Ships.EspionageProbe == 0) {
 					DoLog(LogLevel.Warning, "Could not spy attacker: no probes available.");
 				} else {
