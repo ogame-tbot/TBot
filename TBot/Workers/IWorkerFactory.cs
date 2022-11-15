@@ -12,5 +12,6 @@ namespace Tbot.Workers {
 		ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance);
 		ITBotWorker GetWorker(Feature feat);
 		IAutoMineWorker GetAutoMineWorker();
+		IAutoRepatriateWorker GetAutoRepatriateWorker();
 	}
 }

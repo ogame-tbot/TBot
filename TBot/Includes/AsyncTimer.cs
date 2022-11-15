@@ -100,8 +100,6 @@ namespace Tbot.Includes {
 					}
 				} catch (OperationCanceledException) {
 					// OK!
-				} catch (Exception ex) {
-					throw ex;
 				} finally {
 					IsRunning = false;
 				}
@@ -112,8 +110,11 @@ namespace Tbot.Includes {
 		public async Task StopAsync() {
 			if ((_cts != null) && (_scheduledAction != null)) {
 				_cts.Cancel();
-				await _scheduledAction;
 				_cts = null;
+			}
+
+			if (_scheduledAction != null) {
+				await _scheduledAction;
 				_scheduledAction = null;
 			}
 		}

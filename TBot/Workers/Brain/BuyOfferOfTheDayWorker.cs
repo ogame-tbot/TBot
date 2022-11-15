@@ -25,26 +25,17 @@ namespace Tbot.Workers.Brain {
 			bool stop = false;
 			try {
 
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
 				if (_tbotInstance.UserData.isSleeping) {
 					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: Sleep Mode Active!");
 					return;
 				}
-
-				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.Active) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
-					if (_tbotInstance.UserData.isSleeping) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: Sleep Mode Active!");
-						return;
-					}
-					try {
-						await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
-					} catch {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
-					}
-
-				} else {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: feature disabled");
+				try {
+					await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
+					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
+					stop = true;
+				} catch {
+					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
 					stop = true;
 				}
 			} catch (Exception e) {
@@ -66,6 +57,15 @@ namespace Tbot.Workers.Brain {
 						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 					}
 				}
+			}
+		}
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (
+					(bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.Active
+				);
+			} catch (Exception) {
+				return false;
 			}
 		}
 		public override string GetWorkerName() {

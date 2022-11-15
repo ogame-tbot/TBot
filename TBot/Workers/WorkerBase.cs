@@ -116,6 +116,7 @@ namespace Tbot.Workers {
 			}
 		}
 
+		public abstract bool IsWorkerEnabledBySettings();
 		public abstract string GetWorkerName();
 		public abstract Feature GetFeature();
 		public abstract LogSender GetLogSender();
@@ -136,16 +137,21 @@ namespace Tbot.Workers {
 				DoLog(LogLevel.Debug, $"Sleeping... Ending {GetWorkerName()}");
 				await EndExecution();
 				return;
+			} else if (IsWorkerEnabledBySettings() == false) {
+				DoLog(LogLevel.Information, $"{GetWorkerName()} not enabled by settings. Ending...");
+				await EndExecution();
+				return;
 			}
 
 			try {
 				await _sem.WaitAsync(ct);
+
+				ct.ThrowIfCancellationRequested();
+
 				await Execute();
 				
 			} catch(OperationCanceledException) {
-
-			} catch(Exception ex) {
-				throw ex;
+				// OK
 			} finally {
 				_sem.Release();
 			}

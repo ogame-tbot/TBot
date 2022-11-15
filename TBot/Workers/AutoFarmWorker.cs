@@ -22,7 +22,13 @@ namespace Tbot.Workers {
 		public AutoFarmWorker(ITBotMain parentInstance) :
 			base(parentInstance) {
 		}
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.AutoFarm.Active;
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "AutoFarm";
 		}

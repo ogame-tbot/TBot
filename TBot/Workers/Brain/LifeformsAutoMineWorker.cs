@@ -26,6 +26,15 @@ namespace Tbot.Workers.Brain {
 			_autoMineWorker = autoMineWorker;
 		}
 
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (
+					(bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Active
+				);
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "LifeformsAutoMine";
 		}
@@ -261,6 +270,5 @@ namespace Tbot.Workers.Brain {
 				}
 			}
 		}
-
 	}
 }

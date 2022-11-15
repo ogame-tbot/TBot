@@ -22,7 +22,13 @@ namespace Tbot.Workers {
 		public HarvestWorker(ITBotMain parentInstance) :
 			base(parentInstance) {
 		}
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.AutoHarvest.Active;
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "Harvest";
 		}
@@ -38,11 +44,6 @@ namespace Tbot.Workers {
 			bool stop = false;
 			bool delay = false;
 			try {
-
-				if (_tbotInstance.UserData.isSleeping) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Harvest, "Skipping: Sleep Mode Active!");
-					return;
-				}
 
 				if ((bool) _tbotInstance.InstanceSettings.AutoHarvest.Active) {
 					_tbotInstance.log(LogLevel.Information, LogSender.Harvest, "Detecting harvest targets");

@@ -31,11 +31,6 @@ namespace Tbot.Workers {
 			try {
 				DoLog(LogLevel.Information, "Checking attacks...");
 
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
-
 				await FakeActivity();
 				_tbotInstance.UserData.fleets = await _tbotInstance.FleetScheduler.UpdateFleets();
 				bool isUnderAttack = await _tbotInstance.OgamedInstance.IsUnderAttack();
@@ -72,6 +67,13 @@ namespace Tbot.Workers {
 				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 			} finally {
 
+			}
+		}
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.Defender.Active;
+			} catch (Exception) {
+				return false;
 			}
 		}
 		public override string GetWorkerName() {

@@ -8,5 +8,6 @@ using System.Threading.Tasks;
 namespace Tbot.Workers.Brain {
 	public interface IAutoRepatriateWorker {
 		Task Collect();
+		Task CollectDeut(long minAmount = 0);
 	}
 }
