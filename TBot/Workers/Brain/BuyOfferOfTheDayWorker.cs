@@ -23,28 +23,20 @@ namespace Tbot.Workers.Brain {
 		}
 		protected override async Task Execute() {
 			bool stop = false;
-			try {
 
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
-				if (_tbotInstance.UserData.isSleeping) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: Sleep Mode Active!");
-					return;
-				}
-				try {
-					await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
-					stop = true;
-				} catch {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
-					stop = true;
-				}
-			} catch (Exception e) {
-				_tbotInstance.log(LogLevel.Error, LogSender.Brain, $"BuyOfferOfTheDay Exception: {e.Message}");
-				_tbotInstance.log(LogLevel.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
+			_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
+			try {
+				await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
+				stop = true;
+			} catch {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
+				// FIX ME. Check if request has been succesfull or not. For now, we consider it has so just one execution is enough
+				stop = true;
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
+						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping BuyOfferOfTheDay.");
 						await EndExecution();
 					} else {
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
@@ -76,7 +68,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Defender;
+			return LogSender.Brain;
 		}
 	}
 }

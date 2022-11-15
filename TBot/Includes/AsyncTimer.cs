@@ -78,25 +78,22 @@ namespace Tbot.Includes {
 				// Change thread name so TaskManager will show it
 				Thread.CurrentThread.Name = $"AT_{_name}";
 				IsRunning = true;
-				CancellationToken ct = _cts.Token;
 
 				try {
-					while (true) {
+					while (ct.IsCancellationRequested == false) {
 						if (DueTime != TimeSpan.Zero) {
-							await Task.Delay(DueTime, ct);
+							await Task.Delay(DueTime, _cts.Token);
 						}
 
 						// USER CALLBACK START HERE
-						await _callback(ct);
+						await _callback(_cts.Token);
 						// USER CALLBACK END HERE
 
 						if (Period == Timeout.InfiniteTimeSpan) {
 							// Exit
 							break;
 						}
-						await Task.Delay(Period, ct);
-
-						ct.ThrowIfCancellationRequested();
+						await Task.Delay(Period, _cts.Token);
 					}
 				} catch (OperationCanceledException) {
 					// OK!
@@ -108,13 +105,12 @@ namespace Tbot.Includes {
 		}
 
 		public async Task StopAsync() {
-			if ((_cts != null) && (_scheduledAction != null)) {
-				_cts.Cancel();
-				_cts = null;
-			}
-
 			if (_scheduledAction != null) {
+				if (_cts != null) {
+					_cts.Cancel();
+				}
 				await _scheduledAction;
+				_cts = null;
 				_scheduledAction = null;
 			}
 		}

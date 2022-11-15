@@ -475,6 +475,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
 			// Wait on feature to be shut down
+			cts.Cancel();
 			foreach (var worker in workers) {
 				log(LogLevel.Information, LogSender.Tbot, $"Stopping feature {worker.Key.ToString()}...");
 				await worker.Value.StopWorker();
@@ -484,6 +485,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
 			InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
 
+			cts = new();
 			// If wakeUp, then all features will be restored
 			InitializeSleepMode();
 		}

@@ -46,7 +46,7 @@ namespace Tbot.Workers {
 			try {
 
 				if ((bool) _tbotInstance.InstanceSettings.AutoHarvest.Active) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Harvest, "Detecting harvest targets");
+					DoLog(LogLevel.Information, "Detecting harvest targets");
 
 					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
 					var dic = new Dictionary<Coordinate, Celestial>();
@@ -83,7 +83,7 @@ namespace Tbot.Workers {
 								else if (tempCelestial.Ships.Recycler > 0)
 									dic.Add(dest, tempCelestial);
 								else
-									_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Skipping harvest in {dest.ToString()}: not enough recyclers.");
+									DoLog(LogLevel.Information, $"Skipping harvest in {dest.ToString()}: not enough recyclers.");
 							}
 						}
 
@@ -123,7 +123,7 @@ namespace Tbot.Workers {
 									else if (tempCelestial.Ships.Pathfinder > 0)
 										dic.Add(dest, tempCelestial);
 									else
-										_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Skipping harvest in {dest.ToString()}: not enough pathfinders.");
+										DoLog(LogLevel.Information, $"Skipping harvest in {dest.ToString()}: not enough pathfinders.");
 								}
 							}
 						}
@@ -134,7 +134,7 @@ namespace Tbot.Workers {
 					_tbotInstance.UserData.celestials = newCelestials;
 
 					if (dic.Count() == 0)
-						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, "Skipping harvest: there are no fields to harvest.");
+						DoLog(LogLevel.Information, "Skipping harvest: there are no fields to harvest.");
 
 					foreach (Coordinate destination in dic.Keys) {
 						var fleetId = (int) SendFleetCode.GenericError;
@@ -142,13 +142,13 @@ namespace Tbot.Workers {
 						if (destination.Position == 16) {
 							ExpeditionDebris debris = (await _tbotInstance.OgamedInstance.GetGalaxyInfo(destination)).ExpeditionDebris;
 							long pathfindersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class), origin.Ships.Pathfinder);
-							_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
+							DoLog(LogLevel.Information, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
 							fleetId = await _fleetScheduler.SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 						} else {
 							if (_tbotInstance.UserData.celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet)))) {
 								Debris debris = (_tbotInstance.UserData.celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
 								long recyclersToSend = Math.Min(_helpersService.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class), origin.Ships.Recycler);
-								_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {recyclersToSend.ToString()} {Buildables.Recycler.ToString()}");
+								DoLog(LogLevel.Information, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {recyclersToSend.ToString()} {Buildables.Recycler.ToString()}");
 								fleetId = await _fleetScheduler.SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 							}
 						}
@@ -179,31 +179,32 @@ namespace Tbot.Workers {
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
-					_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
+					DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 				}
 			} catch (Exception e) {
-				_tbotInstance.log(LogLevel.Warning, LogSender.Harvest, $"HandleHarvest exception: {e.Message}");
-				_tbotInstance.log(LogLevel.Warning, LogSender.Harvest, $"Stacktrace: {e.StackTrace}");
+				DoLog(LogLevel.Warning, $"HandleHarvest exception: {e.Message}");
+				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 				long interval = (int) RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoHarvest.CheckIntervalMax);
 				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				if (interval <= 0)
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(interval);
-				_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
+				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Stopping feature.");
+						DoLog(LogLevel.Information, $"Stopping feature.");
+						await EndExecution();
 					}
 					if (delay) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Delaying...");
+						DoLog(LogLevel.Information, $"Delaying...");
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						ChangeWorkerPeriod(interval);
-						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
+						DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 					}
 					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 				}

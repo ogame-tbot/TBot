@@ -262,7 +262,7 @@ namespace Tbot.Workers {
 													delay = true;
 													return;
 												}
-												await Task.Delay((int) IntervalType.AFewSeconds);
+												await Task.Delay((int) IntervalType.AFewSeconds, _ct);
 											} else {
 												DoLog(LogLevel.Information, "Unable to send expeditions: no expedition slots available.");
 												break;
@@ -318,6 +318,7 @@ namespace Tbot.Workers {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						DoLog(LogLevel.Information, $"Stopping feature.");
+						await EndExecution();
 					}
 					if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");

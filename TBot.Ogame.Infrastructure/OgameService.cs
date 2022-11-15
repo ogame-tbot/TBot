@@ -454,6 +454,7 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		public async Task BuyOfferOfTheDay() {
+			// When already bought, the return is {"Status":"error","Code":400,"Message":"Offer already accepted","Result":null}
 			await GetAsync<object>("/bot/buy-offer-of-the-day");
 		}
 

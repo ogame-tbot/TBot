@@ -175,12 +175,12 @@ namespace Tbot.Workers {
 			if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
 				await _tbotInstance.SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null)
-					await Task.Delay(1000);
+					await Task.Delay(1000, _ct);
 				await _tbotInstance.SendTelegramMessage($"The attack is composed by: {attack.Ships.ToString()}");
 			}
 			DoLog(LogLevel.Warning, $"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attackedCelestial.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 			if (attack.Ships != null)
-				await Task.Delay(1000);
+				await Task.Delay(1000, _ct);
 			DoLog(LogLevel.Warning, $"The attack is composed by: {attack.Ships.ToString()}");
 
 			if ((bool) _tbotInstance.InstanceSettings.Defender.SpyAttacker.Active) {

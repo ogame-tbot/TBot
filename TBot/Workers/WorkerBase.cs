@@ -70,14 +70,14 @@ namespace Tbot.Workers {
 			await StartWorker(ct, Timeout.InfiniteTimeSpan, dueTime);
 		}
 		public async Task StopWorker() {
+			// Stop also all the timers
+			RemoveAllTimers();
 			if (_timer != null) {
 				DoLog(LogLevel.Information, $"Closing Worker \"{GetWorkerName()}\"..");
 				await _timer.DisposeAsync();
+				DoLog(LogLevel.Information, $"Worker \"{GetWorkerName()}\" closed!");
 				_timer = null;
 			}
-
-			// Stop also all the timers
-			RemoveAllTimers();
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
@@ -126,8 +126,6 @@ namespace Tbot.Workers {
 		protected async Task EndExecution() {
 			// This is meant to be called within the worker callback
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
-			// Delete all timers
-			RemoveAllTimers();
 			await StopWorker();
 		}
 

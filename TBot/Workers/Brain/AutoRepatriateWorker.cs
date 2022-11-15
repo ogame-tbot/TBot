@@ -236,6 +236,7 @@ namespace Tbot.Workers.Brain {
 					} else {
 						if (stop) {
 							DoLog(LogLevel.Information, $"Stopping feature.");
+							await EndExecution();
 						} else if (delay) {
 							DoLog(LogLevel.Information, $"Delaying...");
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
