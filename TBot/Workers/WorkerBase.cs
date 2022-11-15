@@ -60,8 +60,10 @@ namespace Tbot.Workers {
 
 			_ct = ct;
 
-			//TimeSpan periodSpan = TimeSpan.FromMilliseconds(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
-			_timer = new AsyncTimer(ExecutionWrapper, $"{_tbotInstance.InstanceAlias.Substring(0, 6)}{GetWorkerName()}");
+			// TimeSpan periodSpan = TimeSpan.FromMilliseconds(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+			// ThreadName cannot be longer than 16 bytes, so
+			string cutAlias = (_tbotInstance.InstanceAlias.Length > 6 ? _tbotInstance.InstanceAlias.Substring(0, 6) : _tbotInstance.InstanceAlias);
+			_timer = new AsyncTimer(ExecutionWrapper, $"{cutAlias}{GetWorkerName()}");
 			await _timer.StartAsync(ct, period, dueTime);
 		}
 		public async Task StartWorker(CancellationToken ct, TimeSpan dueTime) {
@@ -75,7 +77,7 @@ namespace Tbot.Workers {
 			}
 
 			// Stop also all the timers
-			await RemoveAllTimers();
+			RemoveAllTimers();
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
@@ -91,7 +93,6 @@ namespace Tbot.Workers {
 		}
 		public async void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 			DoLog(LogLevel.Information, $"Restarting Worker \"{GetWorkerName()}\"...");
-			await StopWorker();
 			await StartWorker(ct, period, dueTime);
 		}
 		public bool IsWorkerRunning() {
@@ -108,7 +109,11 @@ namespace Tbot.Workers {
 			}
 		}
 		public void ReleaseWorker() {
-			_sem.Release();
+			if (_sem.CurrentCount == 1) {
+				DoLog(LogLevel.Warning, $"{GetWorkerName()} already released...");
+			} else {
+				_sem.Release();
+			}
 		}
 
 		public abstract string GetWorkerName();
@@ -121,13 +126,15 @@ namespace Tbot.Workers {
 			// This is meant to be called within the worker callback
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
 			// Delete all timers
-			await RemoveAllTimers();
+			RemoveAllTimers();
+			await StopWorker();
 		}
 
 		private async Task ExecutionWrapper(CancellationToken ct) {
 
 			if (_tbotInstance.UserData.isSleeping == true) {
-				DoLog(LogLevel.Debug, "Sleeping...");
+				DoLog(LogLevel.Debug, $"Sleeping... Ending {GetWorkerName()}");
+				await EndExecution();
 				return;
 			}
 
@@ -144,14 +151,12 @@ namespace Tbot.Workers {
 			}
 		}
 
-		private async Task RemoveAllTimers() {
-			await WaitWorker();
+		private void RemoveAllTimers() {
 			foreach (var tim in timers) {
 				DoLog(LogLevel.Information, $"Deleting timer \"{tim.Key}\" for worker \"{GetWorkerName()}\"");
 				tim.Value.Dispose();
 			}
 			timers.Clear();
-			ReleaseWorker();
 		}
 	}
 }

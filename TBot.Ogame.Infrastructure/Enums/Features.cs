@@ -19,7 +19,6 @@ namespace TBot.Ogame.Infrastructure.Enums {
 						Feature.Expeditions,
 						Feature.Colonize,
 						Feature.Harvest,
-						Feature.FleetScheduler,
 						Feature.SleepMode,
 					};
 	}

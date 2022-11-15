@@ -34,10 +34,7 @@ namespace Tbot.Services {
 		private readonly ILoggerService<TBotMain> _logger;
 		private readonly ICalculationService _helpersService;
 		private readonly IWorkerFactory _workerFactory;
-		
-		private dynamic settings;
-		private string settingsPath;
-		private string instanceAlias;
+
 		private ITelegramMessenger telegramMessenger;
 
 		private bool loggedIn = false;
@@ -54,19 +51,9 @@ namespace Tbot.Services {
 
 		public event EventHandler OnError;
 
-		public dynamic InstanceSettings {
-			private set {
-				settings = value;
-			}
-			get {
-				return settings;
-			}
-		}
-		public string InstanceAlias {
-			get {
-				return instanceAlias;
-			}
-		}
+		public dynamic InstanceSettings { get; private set; }
+		private string InstanceSettingsPath { get; set; }
+		public string InstanceAlias { get; private set; }
 		public UserData UserData {
 			set {
 				userData = value;
@@ -128,31 +115,31 @@ namespace Tbot.Services {
 
 		private Credentials GetCredentialsFromSettings() {
 			return new() {
-				Universe = ((string) settings.Credentials.Universe).FirstCharToUpper(),
-				Username = (string) settings.Credentials.Email,
-				Password = (string) settings.Credentials.Password,
-				Language = ((string) settings.Credentials.Language).ToLower(),
-				IsLobbyPioneers = (bool) settings.Credentials.LobbyPioneers,
-				BasicAuthUsername = (string) settings.Credentials.BasicAuth.Username,
-				BasicAuthPassword = (string) settings.Credentials.BasicAuth.Password
+				Universe = ((string) InstanceSettings.Credentials.Universe).FirstCharToUpper(),
+				Username = (string) InstanceSettings.Credentials.Email,
+				Password = (string) InstanceSettings.Credentials.Password,
+				Language = ((string) InstanceSettings.Credentials.Language).ToLower(),
+				IsLobbyPioneers = (bool) InstanceSettings.Credentials.LobbyPioneers,
+				BasicAuthUsername = (string) InstanceSettings.Credentials.BasicAuth.Username,
+				BasicAuthPassword = (string) InstanceSettings.Credentials.BasicAuth.Password
 			};
 		}
 
 		private async Task InitializeOgame() {
-			string host = (string) settings.General.Host ?? "localhost";
-			string port = (string) settings.General.Port ?? "8080";
+			string host = (string) InstanceSettings.General.Host ?? "localhost";
+			string port = (string) InstanceSettings.General.Port ?? "8080";
 			if (!_ogameService.IsPortAvailable(host, int.Parse(port))) {
 				throw new Exception("Port " + port + " is not available");
 			}
 
-			string captchaKey = (string) settings.General.CaptchaAPIKey ?? "";
+			string captchaKey = (string) InstanceSettings.General.CaptchaAPIKey ?? "";
 			ProxySettings proxy = new();
-			string cookiesPath = "cookies" + (string) settings.Credentials.Email + ".txt";
+			string cookiesPath = "cookies" + (string) InstanceSettings.Credentials.Email + ".txt";
 
-			if ((bool) settings.General.Proxy.Enabled && (string) settings.General.Proxy.Address != "") {
+			if ((bool) InstanceSettings.General.Proxy.Enabled && (string) InstanceSettings.General.Proxy.Address != "") {
 				log(LogLevel.Information, LogSender.Tbot, "Initializing proxy");
-				string proxyType = ((string) settings.General.Proxy.Type).ToLower();
-				string proxyAddress = (string) settings.General.Proxy.Address;
+				string proxyType = ((string) InstanceSettings.General.Proxy.Type).ToLower();
+				string proxyAddress = (string) InstanceSettings.General.Proxy.Address;
 				if (proxyType == "https") {
 					proxyType = "http";
 				}
@@ -160,23 +147,23 @@ namespace Tbot.Services {
 					proxyAddress = "http://" + proxyAddress;
 				}
 				if (proxyType == "socks5" || proxyType == "http") {
-					proxy.Enabled = (bool) settings.General.Proxy.Enabled;
+					proxy.Enabled = (bool) InstanceSettings.General.Proxy.Enabled;
 					proxy.Address = proxyAddress;
 					proxy.Type = proxyType;
-					proxy.Username = (string) settings.General.Proxy.Username ?? "";
-					proxy.Password = (string) settings.General.Proxy.Password ?? "";
+					proxy.Username = (string) InstanceSettings.General.Proxy.Username ?? "";
+					proxy.Password = (string) InstanceSettings.General.Proxy.Password ?? "";
 				} else {
 					log(LogLevel.Warning, LogSender.Tbot, "Unable to initialize proxy: unsupported proxy type");
 					log(LogLevel.Warning, LogSender.Tbot, "Press enter to continue");
 				}
 			}
 
-			if (SettingsService.IsSettingSet(settings.General, "CookiesPath") && (string) settings.General.CookiesPath != "") {
+			if (SettingsService.IsSettingSet(InstanceSettings.General, "CookiesPath") && (string) InstanceSettings.General.CookiesPath != "") {
 				// Cookies are defined relative to the settings file
-				cookiesPath = Path.Combine(Path.GetDirectoryName(settingsPath), (string) settings.General.CookiesPath);
+				cookiesPath = Path.Combine(Path.GetDirectoryName(InstanceSettingsPath), (string) InstanceSettings.General.CookiesPath);
 			}
 			_ogameService.Initialize(GetCredentialsFromSettings(), proxy, (string) host, int.Parse(port), (string) captchaKey, cookiesPath);
-			await _ogameService.SetUserAgent((string) settings.General.UserAgent);
+			await _ogameService.SetUserAgent((string) InstanceSettings.General.UserAgent);
 		}
 
 		private async Task ResolveCaptcha() {
@@ -219,9 +206,9 @@ namespace Tbot.Services {
 			string alias,
 			ITelegramMessenger telegramHandler) {
 
-			settingsPath = settingPath;
-			instanceAlias = alias;
-			settings = SettingsService.GetSettings(settingPath);
+			InstanceSettingsPath = settingPath;
+			InstanceAlias = alias;
+			InstanceSettings = SettingsService.GetSettings(settingPath);
 
 			telegramMessenger = telegramHandler;
 			try {
@@ -274,15 +261,15 @@ namespace Tbot.Services {
 
 			if (userData.celestials.Count == 1) {
 				await EditSettings(userData.celestials.First());
-				settings = SettingsService.GetSettings(settingsPath);
+				InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Initializing features...");
-			InitializeFeatures(Features.AllFeatures);
+			//InitializeFeatures();
 			InitializeSleepMode();
 
 			// Up and running. Lets initialize notification for settings file
-			settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, settingsPath);
+			settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, InstanceSettingsPath);
 		}
 
 		public async ValueTask DisposeAsync() {
@@ -342,32 +329,15 @@ namespace Tbot.Services {
 			if (loggedIn && (userData.userInfo != null) && (userData.serverData != null))
 				return $"{userData.userInfo.PlayerName}@{userData.serverData.Name}";
 			else
-				return $"{instanceAlias}";
+				return $"{InstanceAlias}";
 		}
 
 		public void log(LogLevel logLevel, LogSender sender, string format) {
 			_logger.WriteLog(logLevel, sender, $"[{ToString()}] {format}");
 		}
 
-		private async void InitializeFeatures(List<Feature> featuresToInitialize = null) {
-			if (featuresToInitialize == null) {
-				featuresToInitialize = new List<Feature>() {
-					Feature.Defender,
-					Feature.BrainAutobuildCargo,
-					Feature.BrainAutoRepatriate,
-					Feature.BrainAutoMine,
-					Feature.BrainLifeformAutoMine,
-					Feature.BrainLifeformAutoResearch,
-					Feature.BrainOfferOfTheDay,
-					Feature.BrainAutoResearch,
-					Feature.AutoFarm,
-					Feature.Expeditions,
-					Feature.Harvest,
-					Feature.Colonize,
-				};
-			}
-
-			foreach(var feat in featuresToInitialize) {
+		private async void InitializeFeatures() {
+			foreach(var feat in Features.AllFeatures) {
 				await InitializeFeature(feat);
 			}
 		}
@@ -394,8 +364,12 @@ namespace Tbot.Services {
 				worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
 			} else {
 				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this);
-				workers.TryAdd(feat, newWorker);
-				await newWorker.StartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
+				if (newWorker != null) {
+					workers.TryAdd(feat, newWorker);
+					await newWorker.StartWorker(cts.Token, TimeSpan.FromMilliseconds(dueTime));
+				} else {
+					log(LogLevel.Warning, LogSender.Tbot, $"Cannot start worker for {feat.ToString()}");
+				}
 			}
 		}
 
@@ -407,7 +381,7 @@ namespace Tbot.Services {
 
 		public async Task<bool> EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
 			await Task.Delay(500, cts.Token);
-			var file = System.IO.File.ReadAllText(Path.GetFullPath(settingsPath));
+			var file = System.IO.File.ReadAllText(Path.GetFullPath(InstanceSettingsPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -468,67 +442,48 @@ namespace Tbot.Services {
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			System.IO.File.WriteAllText(Path.GetFullPath(settingsPath), output);
+			System.IO.File.WriteAllText(Path.GetFullPath(InstanceSettingsPath), output);
 
 			return true;
 		}
 
 		public async Task WaitFeature() {
+			List<Task> tasks = new List<Task>();
+			foreach(var feat in Features.AllFeatures) {
+				ITBotWorker worker = _workerFactory.GetWorker(feat);
+				if (worker != null) {
+					tasks.Add(worker.WaitWorker());
+				}
+			}
 			await Task.WhenAll(
-				_workerFactory.GetWorker(Feature.BrainAutoMine).WaitWorker(), // Any of the brain is fine
-				_workerFactory.GetWorker(Feature.Expeditions).WaitWorker(),
-				_workerFactory.GetWorker(Feature.Harvest).WaitWorker(),
-				_workerFactory.GetWorker(Feature.Colonize).WaitWorker(),
-				_workerFactory.GetWorker(Feature.AutoFarm).WaitWorker());
-
+				tasks.ToArray()
+			);
 		}
 
 		public void releaseFeature() {
-			_workerFactory.GetWorker(Feature.BrainAutoMine).ReleaseWorker();
-			_workerFactory.GetWorker(Feature.Expeditions).ReleaseWorker();
-			_workerFactory.GetWorker(Feature.Harvest).ReleaseWorker();
-			_workerFactory.GetWorker(Feature.Colonize).ReleaseWorker();
-			_workerFactory.GetWorker(Feature.AutoFarm).ReleaseWorker();
+			foreach (var feat in Features.AllFeatures) {
+				ITBotWorker worker = _workerFactory.GetWorker(feat);
+				if (worker != null) {
+					worker.ReleaseWorker();
+				}
+			}
 		}
 
 		private async void OnSettingsChanged() {
 
 			log(LogLevel.Information, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
-			List<Feature> featuresToHandle = new List<Feature>{
-				Feature.Defender,
-				Feature.BrainAutobuildCargo,
-				Feature.BrainAutoRepatriate,
-				Feature.BrainAutoMine,
-				Feature.BrainLifeformAutoMine,
-				Feature.BrainLifeformAutoResearch,
-				Feature.BrainOfferOfTheDay,
-				Feature.BrainAutoResearch,
-				Feature.Expeditions,
-				Feature.Harvest,
-				Feature.Colonize,
-				Feature.AutoFarm,
-				Feature.SleepMode
-			};
-
-			// Wait on feature to be locked
-			var workersToWait = workers.Where(c => featuresToHandle.Contains(c.Key));
-			foreach (var worker in workersToWait) {
-				log(LogLevel.Information, LogSender.Tbot, $"Waiting on feature {worker.Key.ToString()}...");
-				await worker.Value.WaitWorker();
-				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} locked for settings reload!");
+			// Wait on feature to be shut down
+			foreach (var worker in workers) {
+				log(LogLevel.Information, LogSender.Tbot, $"Stopping feature {worker.Key.ToString()}...");
+				await worker.Value.StopWorker();
+				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} stopped for settings reload!");
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
-			settings = SettingsService.GetSettings(settingsPath);
+			InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
 
-			// Release features lock!
-			foreach (var worker in workersToWait) {
-				log(LogLevel.Information, LogSender.Tbot, $"Unlocking feature {worker.Key.ToString()}...");
-				worker.Value.ReleaseWorker();
-				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} unlocked!");
-			}
-
+			// If wakeUp, then all features will be restored
 			InitializeSleepMode();
 		}
 
@@ -1007,14 +962,14 @@ namespace Tbot.Services {
 				Celestial celestial;
 				celestial = userData.celestials
 					.Unique()
-					.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoMine.Transports.Origin.Galaxy)
-					.Where(c => c.Coordinate.System == (int) settings.Brain.AutoMine.Transports.Origin.System)
-					.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoMine.Transports.Origin.Position)
-					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoMine.Transports.Origin.Type))
+					.Where(c => c.Coordinate.Galaxy == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
+					.Where(c => c.Coordinate.System == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.System)
+					.Where(c => c.Coordinate.Position == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) InstanceSettings.Brain.AutoMine.Transports.Origin.Type))
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
-					await SendTelegramMessage("Error! Could not parse Celestial from JSON settings. Need <code>/editsettings</code>");
+					await SendTelegramMessage("Error! Could not parse Celestial from JSON InstanceSettings. Need <code>/editsettings</code>");
 					return new Celestial();
 				}
 
@@ -1055,14 +1010,14 @@ namespace Tbot.Services {
 
 			Celestial cel = userData.celestials
 					.Unique()
-					.Where(c => c.Coordinate.Galaxy == (int) settings.Brain.AutoRepatriate.Target.Galaxy)
-					.Where(c => c.Coordinate.System == (int) settings.Brain.AutoRepatriate.Target.System)
-					.Where(c => c.Coordinate.Position == (int) settings.Brain.AutoRepatriate.Target.Position)
-					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) settings.Brain.AutoRepatriate.Target.Type))
+					.Where(c => c.Coordinate.Galaxy == (int) InstanceSettings.Brain.AutoRepatriate.Target.Galaxy)
+					.Where(c => c.Coordinate.System == (int) InstanceSettings.Brain.AutoRepatriate.Target.System)
+					.Where(c => c.Coordinate.Position == (int) InstanceSettings.Brain.AutoRepatriate.Target.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) InstanceSettings.Brain.AutoRepatriate.Target.Type))
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 			if (cel.ID == 0) {
-				await SendTelegramMessage("Error! Could not parse auto repatriate Celestial from JSON settings. Need <code>/editsettings</code>");
+				await SendTelegramMessage("Error! Could not parse auto repatriate Celestial from JSON InstanceSettings. Need <code>/editsettings</code>");
 				return;
 			} else {
 				destinationCoordinate = cel.Coordinate;
@@ -1083,7 +1038,7 @@ namespace Tbot.Services {
 				tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, tempCelestial, UpdateTypes.Ships);
 
 				Buildables preferredShip = Buildables.LargeCargo;
-				if (!Enum.TryParse<Buildables>((string) settings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
+				if (!Enum.TryParse<Buildables>((string) InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
 					preferredShip = Buildables.LargeCargo;
 				}
 				Resources payload = tempCelestial.Resources;
@@ -1139,9 +1094,9 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 			if (userData.isSleeping == false) {
 				if (
-					SettingsService.IsSettingSet(settings, "SleepMode") &&
-					SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
-					(bool) settings.SleepMode.LogoutOnSleep
+					SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
+					SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
+					(bool) InstanceSettings.SleepMode.LogoutOnSleep
 				) {
 					loggedIn = false;
 					await _ogameService.Logout();
@@ -1162,13 +1117,13 @@ namespace Tbot.Services {
 
 				DateTime time = await TBotOgamedBridge.GetDateTime(this);
 
-				if (!(bool) settings.SleepMode.Active) {
+				if (!(bool) InstanceSettings.SleepMode.Active) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Sleep mode is disabled");
 					WakeUp(null);
-				} else if (!DateTime.TryParse((string) settings.SleepMode.GoToSleep, out DateTime goToSleep)) {
+				} else if (!DateTime.TryParse((string) InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep)) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
 					WakeUp(null);
-				} else if (!DateTime.TryParse((string) settings.SleepMode.WakeUp, out DateTime wakeUp)) {
+				} else if (!DateTime.TryParse((string) InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp)) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
 					WakeUp(null);
 				} else if (goToSleep == wakeUp) {
@@ -1287,8 +1242,8 @@ namespace Tbot.Services {
 			try {
 				userData.fleets = await _fleetScheduler.UpdateFleets();
 				bool delayed = false;
-				if ((bool) settings.SleepMode.PreventIfThereAreFleets && userData.fleets.Count() > 0) {
-					if (DateTime.TryParse((string) settings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string) settings.SleepMode.GoToSleep, out DateTime goToSleep)) {
+				if ((bool) InstanceSettings.SleepMode.PreventIfThereAreFleets && userData.fleets.Count() > 0) {
+					if (DateTime.TryParse((string) InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string) InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep)) {
 						DateTime time = await TBotOgamedBridge.GetDateTime(this);
 						if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
 							goToSleep = goToSleep.AddDays(1);
@@ -1325,7 +1280,7 @@ namespace Tbot.Services {
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
 							log(LogLevel.Information, LogSender.SleepMode, $"Fleets active, Next check at {newTime.ToString()}");
-							if ((bool) settings.SleepMode.TelegramMessenger.Active) {
+							if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active) {
 								await SendTelegramMessage($"Fleets active, Next check at {newTime.ToString()}");
 							}
 						}
@@ -1337,9 +1292,9 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.SleepMode, "Going to sleep...");
 					log(LogLevel.Information, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
 
-					if ((bool) settings.SleepMode.AutoFleetSave.Active) {
+					if ((bool) InstanceSettings.SleepMode.AutoFleetSave.Active) {
 						var celestialsToFleetsave = await TBotOgamedBridge.UpdatePlanets(this, UpdateTypes.Ships);
-						if ((bool) settings.SleepMode.AutoFleetSave.OnlyMoons)
+						if ((bool) InstanceSettings.SleepMode.AutoFleetSave.OnlyMoons)
 							celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
 						foreach (Celestial celestial in celestialsToFleetsave.OrderByDescending(c => c.Ships.GetFleetPoints())) {
 							try {
@@ -1350,14 +1305,14 @@ namespace Tbot.Services {
 						}
 					}
 
-					if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
+					if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active && state != null) {
 						await SendTelegramMessage($"Going to sleep, Waking Up at {state.ToString()}");
 					}
 					if (userData.isSleeping == false) {
 						if (
-							SettingsService.IsSettingSet(settings, "SleepMode") &&
-							SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
-							(bool) settings.SleepMode.LogoutOnSleep
+							SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
+							SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
+							(bool) InstanceSettings.SleepMode.LogoutOnSleep
 						) {
 							loggedIn = false;
 							await _ogameService.Logout();
@@ -1398,9 +1353,9 @@ namespace Tbot.Services {
 			if (userData.isSleeping) {
 				userData.isSleeping = false;
 				if (
-					SettingsService.IsSettingSet(settings, "SleepMode") &&
-					SettingsService.IsSettingSet(settings.SleepMode, "LogoutOnSleep") &&
-					(bool) settings.SleepMode.LogoutOnSleep
+					SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
+					SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
+					(bool) InstanceSettings.SleepMode.LogoutOnSleep
 				) {
 					await _ogameService.Login();
 					loggedIn = true;
@@ -1413,7 +1368,7 @@ namespace Tbot.Services {
 		private async void WakeUp(object state) {
 			try {
 				log(LogLevel.Information, LogSender.SleepMode, "Waking Up...");
-				if ((bool) settings.SleepMode.TelegramMessenger.Active && state != null) {
+				if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active && state != null) {
 					await SendTelegramMessage($"Waking up");
 					await SendTelegramMessage($"Going to sleep at {state.ToString()}");
 				}

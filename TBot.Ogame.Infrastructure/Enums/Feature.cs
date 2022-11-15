@@ -14,12 +14,11 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		BrainOfferOfTheDay = 5,
 		Expeditions = 6,
 		Harvest = 7,
-		FleetScheduler = 8,
-		SleepMode = 9,
-		BrainAutoResearch = 10,
-		Colonize = 11,
-		AutoFarm = 12,
-		BrainLifeformAutoMine = 13,
-		BrainLifeformAutoResearch = 14,
+		SleepMode = 8,
+		BrainAutoResearch = 9,
+		Colonize = 10,
+		AutoFarm = 11,
+		BrainLifeformAutoMine = 12,
+		BrainLifeformAutoResearch = 13,
 	}
 }

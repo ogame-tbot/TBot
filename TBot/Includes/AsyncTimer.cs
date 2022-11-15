@@ -68,7 +68,7 @@ namespace Tbot.Includes {
 				throw new ArgumentOutOfRangeException(nameof(dueTime), "due time must be equal or greater than zero");
 			DueTime = dueTime;
 
-			if (period < TimeSpan.Zero)
+			if ((period < TimeSpan.Zero) && (period != Timeout.InfiniteTimeSpan))
 				throw new ArgumentOutOfRangeException(nameof(period), "period must be equal or greater than zero");
 			Period = period;
 
