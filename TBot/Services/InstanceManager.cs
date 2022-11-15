@@ -156,6 +156,10 @@ namespace Tbot.Services {
 					// If settings is set as to throw if an instance fails, then do it
 					// For now, let's keep old behaviour
 					continue;
+				} catch (UnableToLoginException) {
+					// If settings is set as to throw if an instance fails, then do it
+					// For now, let's keep old behaviour
+					continue;
 				}
 			}
 

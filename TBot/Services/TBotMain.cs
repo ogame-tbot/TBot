@@ -238,6 +238,8 @@ namespace Tbot.Services {
 			} catch (OgamedException oe) {
 				log(LogLevel.Warning, LogSender.Tbot, $"Unable to login (\"{oe.Message}\"). Checking captcha...");
 				await ResolveCaptcha();
+			} catch (System.Net.Http.HttpRequestException) {
+				throw new UnableToLoginException("Unable to login");
 			} catch (Exception e) {
 				log(LogLevel.Error, LogSender.Tbot, $"Unable to login. (\"{e.Message}\")");
 				throw;
