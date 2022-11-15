@@ -167,7 +167,7 @@ namespace Tbot.Workers {
 					}
 
 					DateTime newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("ColonizeTimer").Change(interval + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds), Timeout.Infinite);
+					ChangeWorkerPeriod(interval);
 					_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
 				}
 			} catch (Exception e) {
@@ -178,12 +178,13 @@ namespace Tbot.Workers {
 				if (interval <= 0)
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
-				timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+				ChangeWorkerPeriod(interval);
 				_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Stopping feature.");
+						await EndExecution();
 					}
 					if (delay) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Delaying...");
@@ -196,7 +197,7 @@ namespace Tbot.Workers {
 							interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMax);
 						}
 						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("ColonizeTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
 					}
 					await TBotOgamedBridge.CheckCelestials(_tbotInstance);

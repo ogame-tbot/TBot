@@ -32,11 +32,6 @@ namespace Tbot.Workers.Brain {
 			try {
 				DoLog(LogLevel.Information, "Running autoresearch...");
 
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
-
 				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Active) {
 					_tbotInstance.UserData.researches = await _tbotInstance.OgamedInstance.GetResearches();
 					Planet celestial;
@@ -211,6 +206,7 @@ namespace Tbot.Workers.Brain {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						DoLog(LogLevel.Information, $"Stopping feature.");
+						await EndExecution();
 					} else if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);

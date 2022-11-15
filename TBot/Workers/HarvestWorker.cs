@@ -177,7 +177,7 @@ namespace Tbot.Workers {
 					if (interval <= 0)
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+					ChangeWorkerPeriod(interval);
 					_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 				}
 			} catch (Exception e) {
@@ -188,7 +188,7 @@ namespace Tbot.Workers {
 				if (interval <= 0)
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
-				timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+				ChangeWorkerPeriod(interval);
 				_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
@@ -201,7 +201,7 @@ namespace Tbot.Workers {
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("HarvestTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.Harvest, $"Next check at {newTime.ToString()}");
 					}
 					await TBotOgamedBridge.CheckCelestials(_tbotInstance);

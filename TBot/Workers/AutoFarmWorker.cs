@@ -40,11 +40,6 @@ namespace Tbot.Workers {
 
 				_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Running autofarm...");
 
-				if (_tbotInstance.UserData.isSleeping) {
-					_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Skipping: Sleep Mode Active!");
-					return;
-				}
-
 				if ((bool) _tbotInstance.InstanceSettings.AutoFarm.Active) {
 					// If not enough slots are free, the farmer cannot run.
 					_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
@@ -715,13 +710,14 @@ namespace Tbot.Workers {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Stopping feature.");
+						await EndExecution();
 					} else {
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMax);
 						if (interval <= 0)
 							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("AutoFarmTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Next autofarm check at {newTime.ToString()}");
 						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 					}

@@ -134,7 +134,6 @@ namespace Tbot.Workers.Brain {
 							Resources xCostBuildable = await _tbotInstance.OgamedInstance.GetPrice(buildable, level);
 
 							if (celestial.Resources.IsBuildable(xCostBuildable)) {
-								bool result = false;
 								DoLog(LogLevel.Information, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 								try {
 									await _tbotInstance.OgamedInstance.BuildCancelable(celestial, buildable);
@@ -193,11 +192,11 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
-				string autoMineTimer = $"LifeformAutoMine{celestial.ID.ToString()}";
+				string autoMineTimer = $"LifeformAutoMine-{celestial.ID.ToString()}";
 				DateTime newTime;
 				if (stop) {
 					DoLog(LogLevel.Information, $"Stopping Lifeform AutoMine check for {celestial.ToString()}.");
-					if (timers.TryGetValue($"LifeformAutoMine{celestial.ID.ToString()}", out Timer value))
+					if (timers.TryGetValue($"LifeformAutoMine-{celestial.ID.ToString()}", out Timer value))
 						value.Dispose();
 					timers.Remove(autoMineTimer);
 				} else if (delayProduction) {

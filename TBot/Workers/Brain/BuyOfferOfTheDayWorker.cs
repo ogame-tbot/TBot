@@ -54,7 +54,7 @@ namespace Tbot.Workers.Brain {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
-						await StopWorker();
+						await EndExecution();
 					} else {
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);

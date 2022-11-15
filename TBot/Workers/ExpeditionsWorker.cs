@@ -55,7 +55,7 @@ namespace Tbot.Workers {
 						time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutHalfAnHour);
 						newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 						return;
 					}
@@ -301,7 +301,7 @@ namespace Tbot.Workers {
 					if (interval <= 0)
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					newTime = time.AddMilliseconds(interval);
-					timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 				}
@@ -311,7 +311,7 @@ namespace Tbot.Workers {
 				long interval = (long) (RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
 				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 				DateTime newTime = time.AddMilliseconds(interval);
-				timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+				ChangeWorkerPeriod(interval);
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
@@ -329,7 +329,7 @@ namespace Tbot.Workers {
 							interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Expeditions.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Expeditions.CheckIntervalMax);
 						}
 						var newTime = time.AddMilliseconds(interval);
-						timers.GetValueOrDefault("ExpeditionsTimer").Change(interval, Timeout.Infinite);
+						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 					}
 					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
