@@ -46,13 +46,7 @@ namespace Tbot.Workers.Brain {
 
 		protected override async Task Execute() {
 			try {
-				// Wait for the thread semaphore to avoid the concurrency with itself
 				DoLog(LogLevel.Information, "Running Lifeform autoresearch...");
-
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
 
 				if (((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Active)) {
 					AutoMinerSettings autoMinerSettings = new() {

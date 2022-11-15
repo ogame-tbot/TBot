@@ -123,10 +123,10 @@ namespace Tbot.Workers {
 
 
 
-		protected async Task EndExecution() {
-			// This is meant to be called within the worker callback
+		protected Task EndExecution() {
+			// This is meant to be called within the worker callback, so we can't await _timer to end
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
-			await StopWorker();
+			return Task.CompletedTask;
 		}
 
 		private async Task ExecutionWrapper(CancellationToken ct) {
@@ -142,7 +142,7 @@ namespace Tbot.Workers {
 			}
 
 			try {
-				await _sem.WaitAsync(ct);
+				await WaitWorker();
 
 				ct.ThrowIfCancellationRequested();
 
@@ -151,7 +151,7 @@ namespace Tbot.Workers {
 			} catch(OperationCanceledException) {
 				// OK
 			} finally {
-				_sem.Release();
+				ReleaseWorker();
 			}
 		}
 

@@ -265,7 +265,7 @@ namespace Tbot.Workers.Brain {
 						value.Dispose();
 
 					newTime = time.AddMilliseconds(interval);
-					ChangeWorkerPeriod(delayTime);
+					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
