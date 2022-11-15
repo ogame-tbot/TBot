@@ -23,15 +23,10 @@ namespace Tbot.Workers.Brain {
 			base(parentInstance) {
 		}
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			bool stop = false;
 			try {
 				DoLog(LogLevel.Information, "Running autocargo...");
-
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
 
 				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.Active) {
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
@@ -138,13 +133,14 @@ namespace Tbot.Workers.Brain {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						DoLog(LogLevel.Information, $"Stopping feature.");
+						await EndExecution();
 					} else {
 						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMax);
 						if (interval <= 0)
 							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
-						ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
+						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next capacity check at {newTime.ToString()}");
 						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 					}

@@ -34,7 +34,7 @@ namespace Tbot.Workers {
 			return LogSender.Colonize;
 		}
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			bool stop = false;
 			bool delay = false;
 			try {

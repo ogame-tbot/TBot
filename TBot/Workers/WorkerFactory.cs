@@ -14,7 +14,7 @@ namespace Tbot.Workers {
 	public class WorkerFactory : IWorkerFactory {
 
 		// This is going to be replaced with ServiceProvider
-		private ConcurrentDictionary<Feature, ITBotWorker> _workers;
+		private ConcurrentDictionary<Feature, ITBotWorker> _workers = new();
 
 		private SemaphoreSlim _brain = new SemaphoreSlim(1, 1);
 

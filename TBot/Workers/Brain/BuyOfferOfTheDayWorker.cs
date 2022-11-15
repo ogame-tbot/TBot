@@ -21,7 +21,7 @@ namespace Tbot.Workers.Brain {
 		public BuyOfferOfTheDayWorker(ITBotMain parentInstance) :
 			base(parentInstance) {
 		}
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			bool stop = false;
 			try {
 

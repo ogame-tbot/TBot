@@ -3,6 +3,7 @@ using TBot.Ogame.Infrastructure.Models;
 
 namespace TBot.Ogame.Infrastructure {
 	public interface IOgameService {
+		event EventHandler OnError;
 		void Initialize(Credentials credentials,
 				ProxySettings proxySettings,
 				string host = "127.0.0.1",

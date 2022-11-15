@@ -15,7 +15,7 @@ using TBot.Model;
 
 namespace Tbot.Workers
 {
-    public static class ITBotHelper
+    public static class TBotOgamedBridge
     {
 		public static async Task<DateTime> GetDateTime(ITBotMain tbotInstance) {
 			try {

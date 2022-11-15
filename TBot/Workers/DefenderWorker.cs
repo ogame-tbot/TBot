@@ -27,7 +27,7 @@ namespace Tbot.Workers {
 
 		}
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			try {
 				DoLog(LogLevel.Information, "Checking attacks...");
 

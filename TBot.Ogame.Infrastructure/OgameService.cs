@@ -27,7 +27,7 @@ namespace TBot.Ogame.Infrastructure {
 
 		private readonly ILoggerService<OgameService> _logger;
 		private HttpClient _client;
-		private Process _ogamedProcess;
+		private Process? _ogamedProcess;
 		private string _username;
 
 		private Credentials _credentials;
@@ -36,6 +36,8 @@ namespace TBot.Ogame.Infrastructure {
 		private string _captchaKey;
 		private ProxySettings _proxySettings;
 		private string _cookiesPath;
+
+		public event EventHandler OnError;
 
 		bool _mustKill = false;	// used whenever we want to actually kill ogamed
 
@@ -166,12 +168,25 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		private void handle_ogamedProcess_Exited(object? sender, EventArgs e) {
+			var totalRunTime = Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds);
 			_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Exited {_ogamedProcess.ExitCode}" +
-				$" TotalTime(ms) {Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds)}");
+				$" TotalTime(ms) {totalRunTime}");
+
+			// If total run time is very low, then OGameD encountered a serious problem
 			if (_mustKill == false) {
-				RerunOgamed();
+				if (totalRunTime > 500) {
+					Task.Delay(1000).Wait();
+					RerunOgamed();
+				} else {
+					_ogamedProcess.Dispose();
+					_ogamedProcess = null;
+					if (OnError != null) {
+						OnError(this, EventArgs.Empty);
+					}
+				}
 			} else {
 				_ogamedProcess.Dispose();
+				_ogamedProcess = null;
 			}
 		}
 		public void RerunOgamed() {
@@ -183,6 +198,7 @@ namespace TBot.Ogame.Infrastructure {
 				_mustKill = true;
 				_ogamedProcess.Kill();
 				_ogamedProcess.Dispose();
+				_ogamedProcess = null;
 			}
 		}
 

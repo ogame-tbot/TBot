@@ -18,13 +18,16 @@ using System.Globalization;
 namespace Tbot.Workers {
 	public class FleetScheduler : IFleetScheduler {
 		private readonly object _fleetLock = new();
-		private readonly ITBotMain _tbotInstance;
+		private ITBotMain _tbotInstance = null;
 		private readonly ICalculationService _calcService;
 
-		private Dictionary<string, Timer> timers;
-		public FleetScheduler(ITBotMain tbotInstance, ICalculationService helpService) {
-			_tbotInstance = tbotInstance;
+		private Dictionary<string, Timer> timers = new();
+		public FleetScheduler(ICalculationService helpService) {
 			_calcService = helpService;
+		}
+
+		public void SetTBotInstance(ITBotMain tbotInstance) {
+			_tbotInstance = tbotInstance;
 		}
 
 		public async Task SpyCrash(Celestial fromCelestial, Coordinate target = null) {
@@ -97,15 +100,22 @@ namespace Tbot.Workers {
 
 				if (interval > 0 && (!timers.TryGetValue("GhostSleepTimer", out Timer value))) {
 					//Stop features which are sending fleets
-					// StopColonize();
-					// StopBrainAutoResearch();
-					// StopBrainAutoMine();
-					// StopBrainLifeformAutoMine();
-					// StopBrainLifeformAutoResearch();
-					// StopBrainRepatriate();
-					// StopAutoFarm();
-					// StopHarvest();
-					// StopExpeditions();
+					List<Feature> features = new List<Feature> {
+						Feature.Colonize,
+						Feature.BrainAutoRepatriate,
+						Feature.BrainAutoMine,
+						Feature.BrainAutoResearch,
+						Feature.BrainAutoMine,
+						Feature.BrainLifeformAutoMine,
+						Feature.BrainLifeformAutoResearch,
+						Feature.AutoFarm,
+						Feature.Harvest,
+						Feature.Expeditions
+					};
+					foreach(var feat in features) {
+						await _tbotInstance.StopFeature(feat);
+					}
+					
 
 					interval += RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					DateTime TimeToGhost = departureTime.AddMilliseconds(interval);
@@ -294,7 +304,7 @@ namespace Tbot.Workers {
 				//Random randomSpeed = new Random();
 				//decimal speed = validSpeeds[randomSpeed.Next(validSpeeds.Count)];
 				decimal speed = 10;
-				AlreadySent = await TelegramSwitch(speed, celestial);
+				AlreadySent = await _tbotInstance.TelegramSwitch(speed, celestial);
 			}
 
 			if (!AlreadySent) {
@@ -502,8 +512,8 @@ namespace Tbot.Workers {
 			}
 		}
 
-		public async Task RetireFleet(Fleet fleet) {
-			await CancelFleet(fleet);
+		public async void RetireFleet(object fleet) {
+			await CancelFleet((Fleet)fleet);
 		}
 
 

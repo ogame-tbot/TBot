@@ -19,6 +19,7 @@ using Tbot.Includes;
 using Tbot.Helpers;
 using Serilog.Events;
 using Telegram.Bot.Types.ReplyMarkups;
+using Tbot.Workers;
 
 namespace Tbot.Services {
 
@@ -494,7 +495,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(arg);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
 
 								return;
 
@@ -514,7 +515,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, mission, true);
 
 								return;
 
@@ -536,7 +537,7 @@ namespace Tbot.Services {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										await SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
-										await currInstance.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+										await currInstance.FleetScheduler.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
@@ -565,7 +566,7 @@ namespace Tbot.Services {
 								celestial = await currInstance.TelegramGetCurrentCelestial();
 								currInstance.telegramUserData.CurrentCelestialToSave = celestial;
 								currInstance.telegramUserData.Mission = mission;
-								await currInstance.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
 								return;
 
 
@@ -583,7 +584,7 @@ namespace Tbot.Services {
 								}
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 
@@ -784,7 +785,7 @@ namespace Tbot.Services {
 								arg = message.Text.Split(' ')[1];
 								duration = FormattingHelper.ParseDurationFromString(arg);
 
-								DateTime timeNow = await currInstance.GetDateTime();
+								DateTime timeNow = await TBotOgamedBridge.GetDateTime(currInstance);
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 
 								await currInstance.SleepNow(WakeUpTime);
@@ -833,7 +834,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopExpeditions();
+								await currInstance.StopFeature(Feature.Expeditions);
 								await SendMessage(botClient, message.Chat, "Expeditions stopped!");
 								return;
 
@@ -844,7 +845,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeExpeditions();
+								await currInstance.InitializeFeature(Feature.Expeditions);
 								await SendMessage(botClient, message.Chat, "Expeditions initialized!");
 								return;
 
@@ -880,7 +881,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainAutoResearch();
+								await currInstance.StopFeature(Feature.BrainAutoResearch);
 								await SendMessage(botClient, message.Chat, "AutoResearch stopped!");
 								return;
 
@@ -891,7 +892,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainAutoResearch();
+								await currInstance.InitializeFeature(Feature.BrainAutoResearch);
 								await SendMessage(botClient, message.Chat, "AutoResearch started!");
 								return;
 
@@ -902,7 +903,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainAutoMine();
+								await currInstance.StopFeature(Feature.BrainAutoMine);
 								await SendMessage(botClient, message.Chat, "AutoMine stopped!");
 								return;
 
@@ -913,7 +914,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainAutoMine();
+								await currInstance.InitializeFeature(Feature.BrainAutoMine);
 								await SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
 
@@ -924,7 +925,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainLifeformAutoMine();
+								await currInstance.StopFeature(Feature.BrainLifeformAutoMine);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
 								return;
 
@@ -935,7 +936,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainLifeformAutoMine();
+								await currInstance.InitializeFeature(Feature.BrainLifeformAutoMine);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
 								return;
 
@@ -946,7 +947,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainLifeformAutoResearch();
+								await currInstance.StopFeature(Feature.BrainLifeformAutoResearch);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
 								return;
 
@@ -957,7 +958,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainLifeformAutoResearch();
+								await currInstance.InitializeFeature(Feature.BrainLifeformAutoResearch);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
 								return;
 
@@ -968,7 +969,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopDefender();
+								await currInstance.StopFeature(Feature.Defender);
 								await SendMessage(botClient, message.Chat, "Defender stopped!");
 								return;
 
@@ -979,7 +980,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeDefender();
+								await currInstance.InitializeFeature(Feature.Defender);
 								await SendMessage(botClient, message.Chat, "Defender started!");
 								return;
 
@@ -990,7 +991,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopAutoFarm();
+								await currInstance.StopFeature(Feature.AutoFarm);
 								await SendMessage(botClient, message.Chat, "Autofarm stopped!");
 								return;
 
@@ -1001,7 +1002,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeAutoFarm();
+								await currInstance.InitializeFeature(Feature.AutoFarm);
 								await SendMessage(botClient, message.Chat, "Autofarm started!");
 								return;
 
@@ -1151,7 +1152,7 @@ namespace Tbot.Services {
 								}
 								Celestial origin = await currInstance.TelegramGetCurrentCelestial();
 
-								await currInstance.SpyCrash(origin, target);
+								await currInstance.FleetScheduler.SpyCrash(origin, target);
 								return;
 
 

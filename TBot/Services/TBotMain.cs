@@ -13,6 +13,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
+using Tbot.Exceptions;
 using Tbot.Helpers;
 using Tbot.Includes;
 using Tbot.Workers;
@@ -49,7 +50,9 @@ namespace Tbot.Services {
 		public TelegramUserData telegramUserData = new();
 
 		public DateTime startTime = DateTime.UtcNow;
-		public SettingsFileWatcher settingsWatcher;
+		public SettingsFileWatcher settingsWatcher = null;
+
+		public event EventHandler OnError;
 
 		public dynamic InstanceSettings {
 			private set {
@@ -110,6 +113,17 @@ namespace Tbot.Services {
 			_helpersService = helpersService;
 			_fleetScheduler = fleetScheduler;
 			_workerFactory = workerFactory;
+
+			_fleetScheduler.SetTBotInstance(this);  // Avoid circular dependency
+
+			_ogameService.OnError += _ogameService_OnError;
+		}
+
+		private void _ogameService_OnError(object sender, EventArgs e) {
+			log(LogLevel.Information, LogSender.Tbot, "Ogamed encountered an error.");
+			if (OnError != null) {
+				OnError(this, EventArgs.Empty);
+			}
 		}
 
 		private Credentials GetCredentialsFromSettings() {
@@ -168,7 +182,7 @@ namespace Tbot.Services {
 		private async Task ResolveCaptcha() {
 
 			var captchaChallenge = await _ogameService.GetCaptchaChallenge();
-			if (captchaChallenge.Id == "") {
+			if (captchaChallenge.Id.Length == 0) {
 				log(LogLevel.Warning, LogSender.Tbot, "No captcha found. Unable to login.");
 				log(LogLevel.Warning, LogSender.Tbot, "Please check your credentials, language and universe name.");
 				log(LogLevel.Warning, LogSender.Tbot, "If your credentials are correct try refreshing your IP address.");
@@ -201,7 +215,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, $"Player honour points: {userData.userInfo.HonourPoints}");
 		}
 
-		public async Task<bool> Init(string settingPath,
+		public async Task Init(string settingPath,
 			string alias,
 			ITelegramMessenger telegramHandler) {
 
@@ -241,7 +255,7 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.Tbot, "Account in vacation mode");
 				loggedIn = false;
 				await _ogameService.Logout();
-				return false;
+				throw new AccountInVacationModeException("Account is in vacation mode");
 			}
 
 			if (telegramMessenger != null) {
@@ -267,16 +281,16 @@ namespace Tbot.Services {
 
 			// Up and running. Lets initialize notification for settings file
 			settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, settingsPath);
-
-
-			return true;
 		}
 
 		public async ValueTask DisposeAsync() {
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing instance...");
 
-			settingsWatcher.deinitWatch();
-
+			if (settingsWatcher != null) {
+				settingsWatcher.deinitWatch();
+				settingsWatcher = null;
+			}
+			
 			if (telegramMessenger != null) {
 				log(LogLevel.Information, LogSender.Tbot, "Removing instance from telegram...");
 				await telegramMessenger.RemoveTBotInstance(this);
@@ -333,7 +347,7 @@ namespace Tbot.Services {
 			_logger.WriteLog(logLevel, sender, $"[{ToString()}] {format}");
 		}
 
-		private void InitializeFeatures(List<Feature> featuresToInitialize = null) {
+		private async void InitializeFeatures(List<Feature> featuresToInitialize = null) {
 			if (featuresToInitialize == null) {
 				featuresToInitialize = new List<Feature>() {
 					Feature.Defender,
@@ -352,34 +366,45 @@ namespace Tbot.Services {
 			}
 
 			foreach(var feat in featuresToInitialize) {
-				long dueTime = feat switch {
-					Feature.Defender => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
-					Feature.BrainAutobuildCargo => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
-					Feature.BrainAutoRepatriate => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					Feature.BrainAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
-					Feature.BrainLifeformAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
-					Feature.BrainLifeformAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
-					Feature.BrainOfferOfTheDay => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					Feature.BrainAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					Feature.AutoFarm => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
-					Feature.Expeditions => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					Feature.Harvest => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					Feature.Colonize => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
-					_ => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds)
-				};
+				await InitializeFeature(feat);
+			}
+		}
 
-				if (workers.TryGetValue(feat, out var worker)) {
-					worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
-				} else {
-					ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this);
-					workers.TryAdd(feat, newWorker);
-					newWorker.StartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
-				}
+		public async Task InitializeFeature(Feature feat) {
+			long dueTime = feat switch {
+				Feature.Defender => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+				Feature.BrainAutobuildCargo => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
+				Feature.BrainAutoRepatriate => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.BrainAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+				Feature.BrainLifeformAutoMine => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+				Feature.BrainLifeformAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
+				Feature.BrainOfferOfTheDay => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.BrainAutoResearch => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.AutoFarm => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
+				Feature.Expeditions => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.Harvest => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.Colonize => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				_ => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds)
+			};
+
+			// Its ok to add an infinite period time, since each worker will change its period accordingly after first execution
+			if (workers.TryGetValue(feat, out var worker)) {
+				worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
+			} else {
+				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this);
+				workers.TryAdd(feat, newWorker);
+				await newWorker.StartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
+			}
+		}
+
+		public async Task StopFeature(Feature feat) {
+			if (workers.TryGetValue(feat, out var worker)) {
+				await worker.StopWorker();
 			}
 		}
 
 		public async Task<bool> EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
-			await Task.Delay(500);
+			await Task.Delay(500, cts.Token);
 			var file = System.IO.File.ReadAllText(Path.GetFullPath(settingsPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
@@ -457,7 +482,7 @@ namespace Tbot.Services {
 		}
 
 		public void releaseFeature() {
-			_workerFactory.GetWorker(Feature.Brain).ReleaseWorker();
+			_workerFactory.GetWorker(Feature.BrainAutoMine).ReleaseWorker();
 			_workerFactory.GetWorker(Feature.Expeditions).ReleaseWorker();
 			_workerFactory.GetWorker(Feature.Harvest).ReleaseWorker();
 			_workerFactory.GetWorker(Feature.Colonize).ReleaseWorker();
@@ -470,7 +495,13 @@ namespace Tbot.Services {
 
 			List<Feature> featuresToHandle = new List<Feature>{
 				Feature.Defender,
-				Feature.Brain,
+				Feature.BrainAutobuildCargo,
+				Feature.BrainAutoRepatriate,
+				Feature.BrainAutoMine,
+				Feature.BrainLifeformAutoMine,
+				Feature.BrainLifeformAutoResearch,
+				Feature.BrainOfferOfTheDay,
+				Feature.BrainAutoResearch,
 				Feature.Expeditions,
 				Feature.Harvest,
 				Feature.Colonize,
@@ -1410,7 +1441,7 @@ namespace Tbot.Services {
 				await SendTelegramMessage($"Unable to recall fleet! Already recalled?");
 				return;
 			}
-			await _fleetScheduler.RetireFleet(ToRecallFleet);
+			_fleetScheduler.RetireFleet(ToRecallFleet);
 		}
 
 		public async Task TelegramMesgAttacker(string message) {

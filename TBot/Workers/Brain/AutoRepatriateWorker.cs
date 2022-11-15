@@ -14,7 +14,7 @@ using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers.Brain {
-	public class AutoRepatriateWorker : WorkerBase {
+	public class AutoRepatriateWorker : WorkerBase, IAutoRepatriateWorker {
 		public AutoRepatriateWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
 			base(parentInstance, fleetScheduler, helpersService) {
 		}
@@ -23,16 +23,16 @@ namespace Tbot.Workers.Brain {
 			base(parentInstance) {
 		}
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
+			await Collect();
+		}
+
+		public async Task Collect() {
 			bool stop = false;
 			bool delay = false;
 			try {
 				DoLog(LogLevel.Information, "Repatriating resources...");
 
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
 				if (((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Active) || (timers.TryGetValue("TelegramCollect", out Timer value))) {
 					//DoLog(LogLevel.Information, LogSender.Telegram, $"Telegram collect initated..");
 					if (_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target) {

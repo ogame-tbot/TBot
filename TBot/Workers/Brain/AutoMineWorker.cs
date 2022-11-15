@@ -169,7 +169,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			try {
 				DoLog(LogLevel.Information, "Running automine...");
 
@@ -489,9 +489,7 @@ namespace Tbot.Workers.Brain {
 				DateTime newTime;
 				if (stop) {
 					DoLog(LogLevel.Information, $"Stopping AutoMine check for {celestial.ToString()}.");
-					if (timers.TryGetValue($"AutoMine-{celestial.ID.ToString()}", out Timer value))
-						value.Dispose();
-					timers.Remove(autoMineTimer);
+					await EndExecution();
 				} else if (delayProduction) {
 					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Productions);
 					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
@@ -503,8 +501,6 @@ namespace Tbot.Workers.Brain {
 					} catch {
 						interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMax);
 					}
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
-						value.Dispose();
 					newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
@@ -518,16 +514,11 @@ namespace Tbot.Workers.Brain {
 					} catch {
 						interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMax);
 					}
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
-						value.Dispose();
 					newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (started) {
 					long interval = (long) celestial.Constructions.BuildingCountdown * (long) 1000 + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
-
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
-						value.Dispose();
 
 					newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
@@ -536,8 +527,6 @@ namespace Tbot.Workers.Brain {
 						_tbotInstance.UserData.nextDOIR = 0;
 					}
 				} else if (delayBuilding > 0) {
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
-						value.Dispose();
 
 					newTime = time.AddMilliseconds(delayBuilding);
 					ChangeWorkerPeriod(delayBuilding);
@@ -557,9 +546,6 @@ namespace Tbot.Workers.Brain {
 
 					if (interval == long.MaxValue || interval == long.MinValue)
 						interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMax);
-
-					if (timers.TryGetValue(autoMineTimer, out Timer value))
-						value.Dispose();
 
 					newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);

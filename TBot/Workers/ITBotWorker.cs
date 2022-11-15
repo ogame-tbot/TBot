@@ -11,9 +11,13 @@ using TBot.Ogame.Infrastructure.Enums;
 namespace Tbot.Workers {
 	public interface ITBotWorker {
 
+		TimeSpan DueTime { get; }
+		TimeSpan Period { get;  }
+
 		void DoLog(LogLevel level, string format);
 
 		Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime);
+		Task StartWorker(CancellationToken ct, TimeSpan dueTime);
 		Task StopWorker();
 		void ChangeWorkerPeriod(TimeSpan period);
 		void ChangeWorkerPeriod(long periodMs);

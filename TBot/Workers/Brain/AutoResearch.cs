@@ -24,7 +24,7 @@ namespace Tbot.Workers.Brain {
 			base(parentInstance) {
 			_autoMineWorker = autoMineWorker;
 		}
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			int fleetId = (int) SendFleetCode.GenericError;
 			bool stop = false;
 			bool delay = false;

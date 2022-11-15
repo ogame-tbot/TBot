@@ -36,7 +36,7 @@ namespace Tbot.Workers.Brain {
 			return LogSender.Brain;
 		}
 
-		protected override async Task Execute(CancellationToken ct) {
+		protected override async Task Execute() {
 			try {
 				// Wait for the thread semaphore to avoid the concurrency with itself
 				DoLog(LogLevel.Information, "Running Lifeform autoresearch...");

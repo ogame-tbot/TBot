@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using Microsoft.Extensions.Logging;
 using Tbot.Includes;
 using Tbot.Services;
@@ -27,6 +26,17 @@ namespace Tbot.Workers {
 		private SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
 		private AsyncTimer _timer = null;
 
+		public TimeSpan DueTime {
+			get {
+				return (_timer != null) ? _timer.DueTime : TimeSpan.Zero;
+			}
+		}
+		public TimeSpan Period {
+			get {
+				return (_timer != null) ? _timer.Period : TimeSpan.Zero;
+			}
+		}
+
 		public WorkerBase(ITBotMain parentInstance) : this(parentInstance, parentInstance.FleetScheduler, parentInstance.HelperService) {
 
 		}
@@ -37,7 +47,7 @@ namespace Tbot.Workers {
 			_helpersService = helpersService;
 		}
 
-		protected abstract Task Execute(CancellationToken ct);
+		protected abstract Task Execute();
 		public void DoLog(LogLevel level, string format) {
 			_tbotInstance.log(level, GetLogSender(), format);
 		}
@@ -54,6 +64,9 @@ namespace Tbot.Workers {
 			_timer = new AsyncTimer(ExecutionWrapper, $"{_tbotInstance.InstanceAlias.Substring(0, 6)}{GetWorkerName()}");
 			await _timer.StartAsync(ct, period, dueTime);
 		}
+		public async Task StartWorker(CancellationToken ct, TimeSpan dueTime) {
+			await StartWorker(ct, Timeout.InfiniteTimeSpan, dueTime);
+		}
 		public async Task StopWorker() {
 			if (_timer != null) {
 				DoLog(LogLevel.Information, $"Closing Worker \"{GetWorkerName()}\"..");
@@ -62,13 +75,7 @@ namespace Tbot.Workers {
 			}
 
 			// Stop also all the timers
-			await WaitWorker();
-			foreach (var tim in timers) {
-				DoLog(LogLevel.Information, $"Deleting timer \"{tim.Key}\" for worker \"{GetWorkerName()}\"");
-				tim.Value.Dispose();
-			}
-			timers.Clear();
-			ReleaseWorker();
+			await RemoveAllTimers();
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
@@ -76,10 +83,10 @@ namespace Tbot.Workers {
 		public void ChangeWorkerPeriod(TimeSpan period) {
 			_timer.ChangePeriod(period);
 		}
-		void ChangeWorkerDueTime(TimeSpan dueTime) {
+		public void ChangeWorkerDueTime(TimeSpan dueTime) {
 			_timer.ChangeDueTime(dueTime);
 		}
-		void ChangeWorkerDueTime(long dueTimeMs) {
+		public void ChangeWorkerDueTime(long dueTimeMs) {
 			_timer.ChangeDueTime(TimeSpan.FromMilliseconds(dueTimeMs));
 		}
 		public async void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
@@ -110,7 +117,12 @@ namespace Tbot.Workers {
 
 
 
-
+		protected async Task EndExecution() {
+			// This is meant to be called within the worker callback
+			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
+			// Delete all timers
+			await RemoveAllTimers();
+		}
 
 		private async Task ExecutionWrapper(CancellationToken ct) {
 
@@ -121,7 +133,7 @@ namespace Tbot.Workers {
 
 			try {
 				await _sem.WaitAsync(ct);
-				await Execute(ct);
+				await Execute();
 				
 			} catch(OperationCanceledException) {
 
@@ -130,6 +142,16 @@ namespace Tbot.Workers {
 			} finally {
 				_sem.Release();
 			}
+		}
+
+		private async Task RemoveAllTimers() {
+			await WaitWorker();
+			foreach (var tim in timers) {
+				DoLog(LogLevel.Information, $"Deleting timer \"{tim.Key}\" for worker \"{GetWorkerName()}\"");
+				tim.Value.Dispose();
+			}
+			timers.Clear();
+			ReleaseWorker();
 		}
 	}
 }
