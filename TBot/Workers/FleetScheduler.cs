@@ -20,21 +20,25 @@ namespace Tbot.Workers {
 	public class FleetScheduler : IFleetScheduler {
 		private readonly object _fleetLock = new();
 		private ITBotMain _tbotInstance = null;
+		private ITBotOgamedBridge _tbotOgameBridge;
 		private readonly IOgameService _ogameService;
 		private readonly ICalculationService _calcService;
-		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		
 
 		private Dictionary<string, Timer> timers = new();
-		public FleetScheduler(ICalculationService helpService,
-			IOgameService ogameService,
-			ITBotOgamedBridge tbotOgameBridge) {
+		public FleetScheduler(
+			ICalculationService helpService,
+			IOgameService ogameService) {
 			_calcService = helpService;
 			_ogameService = ogameService;
-			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public void SetTBotInstance(ITBotMain tbotInstance) {
 			_tbotInstance = tbotInstance;
+		}
+
+		public void SetTBotOgameBridge(ITBotOgamedBridge tbotOgameBridge) {
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public async Task SpyCrash(Celestial fromCelestial, Coordinate target = null) {

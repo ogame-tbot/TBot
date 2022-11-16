@@ -30,8 +30,9 @@ namespace Tbot.Workers.Brain {
 			ITBotOgamedBridge tbotOGameBridge) :
 			base(parentInstance) {
 			_autoMineWorker = autoMineWorker;
-			_calculationService = calculationService;
+			_ogameService = ogameService;
 			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
 			_calculationService = calculationService;
 			_tbotOgameBridge = tbotOGameBridge;
 		}

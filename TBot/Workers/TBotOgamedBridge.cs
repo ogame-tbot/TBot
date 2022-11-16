@@ -19,7 +19,8 @@ namespace Tbot.Workers
 		private readonly ITBotMain _tbotInstance;
 		private readonly IOgameService _ogameService;
 
-		public TBotOgamedBridge(ITBotMain tbotInstance,
+		public TBotOgamedBridge(
+			ITBotMain tbotInstance,
 			IOgameService ogameService) {
 			_ogameService = ogameService;
 			_tbotInstance = tbotInstance;

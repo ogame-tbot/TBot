@@ -99,12 +99,26 @@ namespace Tbot.Services {
 
 				// Initialize all the instances of TBot found in main settings
 				ICollection json_instances = _mainSettings.Instances;
-				_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Initializing {json_instances.Count} instances...");
+				List<InitInstanceData> uniqueInstances = new();
+
+				// Extract unique values
 				foreach (var instance in _mainSettings.Instances) {
+					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.Settings)).FullName;
+					string alias = instance.Alias;
+
+					if(uniqueInstances.Any(c => c.SettingsPath == cInstanceSettingPath) == false) {
+						uniqueInstances.Add(new InitInstanceData(alias, cInstanceSettingPath));
+					}
+				}
+
+				_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Read {json_instances.Count} instances. Unique instaces #{uniqueInstances.Count}");
+
+				// Check if they are already inited or must be inited
+				foreach (var instance in uniqueInstances) {
 					if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
 						continue;
 					}
-					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.Settings)).FullName;
+					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.SettingsPath)).FullName;
 					string alias = instance.Alias;
 
 					// Check if already initialized. if that so, update alias and keep going
@@ -116,7 +130,7 @@ namespace Tbot.Services {
 						newInstances.Add(foundInstance);
 					} else {
 						_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Enqueueing initialization of instance \"{alias}\" \"{cInstanceSettingPath}\"");
-						instancesToBeInited.Add(new InitInstanceData(alias, cInstanceSettingPath));
+						instancesToBeInited.Add(instance);
 					}
 				}
 			}

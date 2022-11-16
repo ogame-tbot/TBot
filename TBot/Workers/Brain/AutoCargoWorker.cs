@@ -33,7 +33,6 @@ namespace Tbot.Workers.Brain {
 		}
 
 		protected override async Task Execute() {
-			bool stop = false;
 			try {
 				DoLog(LogLevel.Information, "Running autocargo...");
 

@@ -104,7 +104,9 @@ namespace Tbot.Services {
 			_workerFactory = workerFactory;
 			_tbotOgameBridge = new TBotOgamedBridge(this, _ogameService);
 
-			_fleetScheduler.SetTBotInstance(this);  // Avoid circular dependency
+			// Avoid circular dependency
+			_fleetScheduler.SetTBotInstance(this);
+			_fleetScheduler.SetTBotOgameBridge(_tbotOgameBridge);
 
 			_ogameService.OnError += _ogameService_OnError;
 		}
@@ -267,8 +269,7 @@ namespace Tbot.Services {
 				InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
 			}
 
-			log(LogLevel.Information, LogSender.Tbot, "Initializing features...");
-			//InitializeFeatures();
+			// SleepMode will know if features must be enabled or not
 			InitializeSleepMode();
 
 			// Up and running. Lets initialize notification for settings file
@@ -650,7 +651,7 @@ namespace Tbot.Services {
 					Celestial celestial = null;
 
 					log(LogLevel.Information, LogSender.Tbot, "Finding input for Minimum Bid into Auction...");
-					foreach (var item in auction.Resources) {
+					foreach (KeyValuePair<string, AuctionResourcesValue> item in auction.Resources) {
 						var planetIdStr = item.Key;
 						var planetResources = item.Value;
 
