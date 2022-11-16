@@ -174,6 +174,8 @@ namespace Tbot.Services {
 			// Finally, swap lists
 			instances.Clear();
 			instances = newInstances;
+
+			instancesSem.Release();
 		}
 
 		public async ValueTask DisposeAsync() {
