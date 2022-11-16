@@ -22,33 +22,33 @@ namespace Tbot.Workers.Brain {
 			base(parentInstance) {
 		}
 		protected override async Task Execute() {
-			bool stop = false;
+			bool stop = true;
 
 			_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
-			try {
-				await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
+			OfferOfTheDayStatus sts = await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
+
+			if (sts == OfferOfTheDayStatus.OfferOfTheDayBougth) {
 				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
-				stop = true;
-			} catch {
+			} else if (sts == OfferOfTheDayStatus.OfferOfTheDayAlreadyBought){
 				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
-				// FIX ME. Check if request has been succesfull or not. For now, we consider it has so just one execution is enough
-				stop = true;
-			} finally {
-				if (!_tbotInstance.UserData.isSleeping) {
-					if (stop) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping BuyOfferOfTheDay.");
-						await EndExecution();
-					} else {
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
-						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
-						if (interval <= 0)
-							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
-						var newTime = time.AddMilliseconds(interval);
-						ChangeWorkerPeriod(interval);
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
-					}
-				}
+			} else {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day unknown error.");
+				stop = false;
+			}
+			
+			
+			if (stop) {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping BuyOfferOfTheDay.");
+				await EndExecution();
+			} else {
+				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+				if (interval <= 0)
+					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+				var newTime = time.AddMilliseconds(interval);
+				ChangeWorkerPeriod(interval);
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
+				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
 			}
 		}
 		public override bool IsWorkerEnabledBySettings() {

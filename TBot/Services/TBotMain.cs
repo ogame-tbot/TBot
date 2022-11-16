@@ -293,9 +293,7 @@ namespace Tbot.Services {
 
 				deInitTasks.Add(worker.Value.StopWorker());
 			}
-			foreach(var aTask in deInitTasks) {
-				await aTask;
-			}
+			await Task.WhenAll(deInitTasks);
 			deInitTasks.Clear();
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing timers...");

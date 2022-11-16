@@ -129,9 +129,7 @@ namespace Tbot.Services {
 					deinitingInstances.Add(deInstance._botMain.DisposeAsync().AsTask());
 				}
 			}
-			foreach (var deInstance in deinitingInstances) {
-				await deInstance;
-			}
+			await Task.WhenAll(deinitingInstances);
 
 			// Now Async initialize "validated" instances
 			foreach (var instanceToBeInited in instancesToBeInited) {
@@ -185,9 +183,6 @@ namespace Tbot.Services {
 				deinitTasks.Add(instance.Deinitialize());
 			}
 			await Task.WhenAll(deinitTasks);
-			foreach (var task in deinitTasks) {
-				await task;
-			}
 			instances.Clear();
 		}
 
