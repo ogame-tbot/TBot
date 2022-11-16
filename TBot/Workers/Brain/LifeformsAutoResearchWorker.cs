@@ -12,17 +12,27 @@ using System.Threading;
 using Tbot.Helpers;
 using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	public class LifeformsAutoResearchWorker : WorkerBase {
 		private readonly IAutoMineWorker _autoMineWorker;
-		public LifeformsAutoResearchWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService, IAutoMineWorker autoMineWorker) :
-			base(parentInstance, fleetScheduler, helpersService) {
-			_autoMineWorker = autoMineWorker;
-		}
-		public LifeformsAutoResearchWorker(ITBotMain parentInstance, IAutoMineWorker autoMineWorker) :
+		private readonly IOgameService _ogameService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public LifeformsAutoResearchWorker(ITBotMain parentInstance,
+			IAutoMineWorker autoMineWorker,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
 			_autoMineWorker = autoMineWorker;
+			_ogameService = ogameService;
+			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public override string GetWorkerName() {
@@ -55,21 +65,21 @@ namespace Tbot.Workers.Brain {
 					LFBuildings maxLFBuildings = new();
 
 					foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
-						var cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFBuildings);
-						cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFTechs);
-						cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
+						var cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFTechs);
+						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 
 						if (cel.LFtype == LFTypes.None) {
 							DoLog(LogLevel.Information, $"Skipping {cel.ToString()}: No Lifeform active on this planet.");
 							continue;
 						}
-						var nextLFTechToBuild = _helpersService.GetNextLFTechToBuild(cel, maxResearchLevel);
+						var nextLFTechToBuild = _calculationService.GetNextLFTechToBuild(cel, maxResearchLevel);
 						if (nextLFTechToBuild != LFTechno.None) {
-							var level = _helpersService.GetNextLevel(cel, nextLFTechToBuild);
-							Resources nextLFTechCost = await _tbotInstance.OgamedInstance.GetPrice(nextLFTechToBuild, level);
-							var isLessCostLFTechToBuild = await _helpersService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
+							var level = _calculationService.GetNextLevel(cel, nextLFTechToBuild);
+							Resources nextLFTechCost = await _ogameService.GetPrice(nextLFTechToBuild, level);
+							var isLessCostLFTechToBuild = await _calculationService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
 							if (isLessCostLFTechToBuild != LFTechno.None) {
-								level = _helpersService.GetNextLevel(cel, isLessCostLFTechToBuild);
+								level = _calculationService.GetNextLevel(cel, isLessCostLFTechToBuild);
 								nextLFTechToBuild = isLessCostLFTechToBuild;
 							}
 
@@ -91,7 +101,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}
@@ -108,10 +118,10 @@ namespace Tbot.Workers.Brain {
 			long interval = 0;
 			try {
 				DoLog(LogLevel.Information, $"Running Lifeform AutoResearch on {celestial.ToString()}");
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Fast);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFTechs);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFTechs);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFResearchID != 0) {
 					DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: there is already a Lifeform research in production.");
@@ -121,30 +131,30 @@ namespace Tbot.Workers.Brain {
 				}
 				int maxResearchLevel = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxResearchLevel;
 				if (celestial is Planet) {
-					buildable = _helpersService.GetNextLFTechToBuild(celestial, maxResearchLevel);
+					buildable = _calculationService.GetNextLFTechToBuild(celestial, maxResearchLevel);
 
 					if (buildable != LFTechno.None) {
-						level = _helpersService.GetNextLevel(celestial, buildable);
-						Resources nextLFTechCost = await _tbotInstance.OgamedInstance.GetPrice(buildable, level);
-						var isLessCostLFTechToBuild = await _helpersService.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost, maxResearchLevel);
+						level = _calculationService.GetNextLevel(celestial, buildable);
+						Resources nextLFTechCost = await _ogameService.GetPrice(buildable, level);
+						var isLessCostLFTechToBuild = await _calculationService.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost, maxResearchLevel);
 						if (isLessCostLFTechToBuild != LFTechno.None) {
-							level = _helpersService.GetNextLevel(celestial, isLessCostLFTechToBuild);
+							level = _calculationService.GetNextLevel(celestial, isLessCostLFTechToBuild);
 							buildable = isLessCostLFTechToBuild;
 						}
 						DoLog(LogLevel.Information, $"Best Lifeform Research for {celestial.ToString()}: {buildable.ToString()}");
 
-						Resources xCostBuildable = await _tbotInstance.OgamedInstance.GetPrice(buildable, level);
+						Resources xCostBuildable = await _ogameService.GetPrice(buildable, level);
 
 						if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 							DoLog(LogLevel.Information, $"Lifeform Research {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 							try {
-								await _tbotInstance.OgamedInstance.BuildCancelable(celestial, (LFTechno) buildable);
-								celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+								await _ogameService.BuildCancelable(celestial, (LFTechno) buildable);
+								celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 								if (celestial.Constructions.LFResearchID == (int) buildable) {
 									started = true;
 									DoLog(LogLevel.Information, "Lifeform Research succesfully started.");
 								} else {
-									celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFTechs);
+									celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFTechs);
 									if (celestial.GetLevel(buildable) != level)
 										DoLog(LogLevel.Warning, "Unable to start Lifeform Research construction: an unknown error has occurred");
 									else {
@@ -161,7 +171,7 @@ namespace Tbot.Workers.Brain {
 
 							if ((bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Transports.Active) {
 								_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-								if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+								if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 									Celestial origin = _tbotInstance.UserData.celestials
 											.Unique()
 											.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
@@ -192,7 +202,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Error, $"LifeformAutoResearch Celestial Exception: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
-				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				var time = await _tbotOgameBridge.GetDateTime();
 				string autoMineTimer = $"LifeformsAutoResearch{celestial.ID.ToString()}";
 				DateTime newTime;
 				if (stop) {
@@ -202,13 +212,13 @@ namespace Tbot.Workers.Brain {
 					timers.Remove(autoMineTimer);
 				} else if (delayProduction) {
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					newTime = time.AddMilliseconds(delayTime);
 					ChangeWorkerPeriod(delayTime);
 					DoLog(LogLevel.Information, $"Next Lifeform Research check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (delay) {
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 					try {
 						interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);

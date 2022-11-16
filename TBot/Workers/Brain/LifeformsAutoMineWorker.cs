@@ -12,18 +12,28 @@ using Microsoft.Extensions.Logging;
 using Tbot.Helpers;
 using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	public class LifeformsAutoMineWorker : WorkerBase {
 		private readonly IAutoMineWorker _autoMineWorker;
-		public LifeformsAutoMineWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService, IAutoMineWorker autoMineWorker) :
-			base(parentInstance, fleetScheduler, helpersService) {
-			_autoMineWorker = autoMineWorker;
-		}
+		private readonly IOgameService _ogameService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
 
-		public LifeformsAutoMineWorker(ITBotMain parentInstance, IAutoMineWorker autoMineWorker) :
+		public LifeformsAutoMineWorker(ITBotMain parentInstance,
+			IAutoMineWorker autoMineWorker,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOGameBridge) :
 			base(parentInstance) {
 			_autoMineWorker = autoMineWorker;
+			_calculationService = calculationService;
+			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
+			_tbotOgameBridge = tbotOGameBridge;
 		}
 
 		public override string GetWorkerName() {
@@ -54,7 +64,7 @@ namespace Tbot.Workers.Brain {
 					List<Celestial> celestialsToMine = new();
 					LFBuildings maxLFBuildings = new();
 					foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
-						var cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
+						var cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
 
 						if ((int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.StartFromCrystalMineLvl > (int) cel.Buildings.CrystalMine) {
 							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()} did not reach required CrystalMine level. Skipping..");
@@ -64,11 +74,11 @@ namespace Tbot.Workers.Brain {
 						int maxPopuFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
 						int maxFoodFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
-						cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFBuildings);
-						cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourcesProduction);
-						var nextLFBuilding = await _helpersService.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
+						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+						var nextLFBuilding = await _calculationService.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory);
 						if (nextLFBuilding != LFBuildables.None) {
-							var lv = _helpersService.GetNextLevel(celestial, nextLFBuilding);
+							var lv = _calculationService.GetNextLevel(celestial, nextLFBuilding);
 							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Mine: {nextLFBuilding.ToString()} lv {lv.ToString()}.");
 
 							celestialsToMine.Add(celestial);
@@ -88,7 +98,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}
@@ -109,11 +119,11 @@ namespace Tbot.Workers.Brain {
 				int maxFoodFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 
 				DoLog(LogLevel.Information, $"Running Lifeform AutoMine on {celestial.ToString()}");
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourcesProduction);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFBuildings);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 
 				if (celestial.Constructions.LFBuildingID != 0 || celestial.Constructions.BuildingID == (int) Buildables.RoboticsFactory || celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 					DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: there is already a building (LF, robotic or nanite) in production.");
@@ -126,23 +136,23 @@ namespace Tbot.Workers.Brain {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = await _helpersService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
+						buildable = await _calculationService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
 
 						if (buildable != LFBuildables.None) {
-							level = _helpersService.GetNextLevel(celestial, buildable);
+							level = _calculationService.GetNextLevel(celestial, buildable);
 							DoLog(LogLevel.Information, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
-							Resources xCostBuildable = await _tbotInstance.OgamedInstance.GetPrice(buildable, level);
+							Resources xCostBuildable = await _ogameService.GetPrice(buildable, level);
 
 							if (celestial.Resources.IsBuildable(xCostBuildable)) {
 								DoLog(LogLevel.Information, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 								try {
-									await _tbotInstance.OgamedInstance.BuildCancelable(celestial, buildable);
-									celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+									await _ogameService.BuildCancelable(celestial, buildable);
+									celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 									if (celestial.Constructions.LFBuildingID == (int) buildable) {
 										started = true;
 										DoLog(LogLevel.Information, "Building succesfully started.");
 									} else {
-										celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.LFBuildings);
+										celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
 										if (celestial.GetLevel(buildable) != level)
 											DoLog(LogLevel.Warning, "Unable to start building construction: an unknown error has occurred");
 										else {
@@ -159,7 +169,7 @@ namespace Tbot.Workers.Brain {
 
 								if ((bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Transports.Active) {
 									_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-									if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+									if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 										Celestial origin = _tbotInstance.UserData.celestials
 												.Unique()
 												.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
@@ -191,7 +201,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Error, $"LifeformAutoMine Celestial Exception: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
-				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				var time = await _tbotOgameBridge.GetDateTime();
 				string autoMineTimer = $"LifeformAutoMine-{celestial.ID.ToString()}";
 				DateTime newTime;
 				if (stop) {
@@ -201,7 +211,7 @@ namespace Tbot.Workers.Brain {
 					timers.Remove(autoMineTimer);
 				} else if (delayProduction) {
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					if (timers.TryGetValue(autoMineTimer, out Timer value))
 						value.Dispose();
 					newTime = time.AddMilliseconds(delayTime);
@@ -209,7 +219,7 @@ namespace Tbot.Workers.Brain {
 					DoLog(LogLevel.Information, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (delay) {
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 					try {
 						interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);

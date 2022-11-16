@@ -17,8 +17,6 @@ namespace Tbot.Workers {
 
 	public abstract class WorkerBase : ITBotWorker {
 		protected readonly ITBotMain _tbotInstance;
-		protected readonly IFleetScheduler _fleetScheduler;
-		protected readonly ICalculationService _helpersService;
 
 		protected CancellationToken _ct = CancellationToken.None;
 		protected Dictionary<string, Timer> timers = new();
@@ -37,14 +35,8 @@ namespace Tbot.Workers {
 			}
 		}
 
-		public WorkerBase(ITBotMain parentInstance) : this(parentInstance, parentInstance.FleetScheduler, parentInstance.HelperService) {
-
-		}
-
-		public WorkerBase(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) {
+		public WorkerBase(ITBotMain parentInstance) {
 			_tbotInstance = parentInstance;
-			_fleetScheduler = fleetScheduler;
-			_helpersService = helpersService;
 		}
 
 		protected abstract Task Execute();

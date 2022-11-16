@@ -34,6 +34,7 @@ namespace Tbot.Services {
 		private readonly ILoggerService<TBotMain> _logger;
 		private readonly ICalculationService _helpersService;
 		private readonly IWorkerFactory _workerFactory;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
 
 		private ITelegramMessenger telegramMessenger;
 
@@ -100,6 +101,7 @@ namespace Tbot.Services {
 			_helpersService = helpersService;
 			_fleetScheduler = fleetScheduler;
 			_workerFactory = workerFactory;
+			_tbotOgameBridge = new TBotOgamedBridge(this, _ogameService);
 
 			_fleetScheduler.SetTBotInstance(this);  // Avoid circular dependency
 
@@ -187,12 +189,12 @@ namespace Tbot.Services {
 		}
 
 		private async Task InitUserData() {
-			userData.serverInfo = await TBotOgamedBridge.UpdateServerInfo(this);
-			userData.serverData = await TBotOgamedBridge.UpdateServerData(this);
-			userData.userInfo = await TBotOgamedBridge.UpdateUserInfo(this);
-			userData.staff = await TBotOgamedBridge.UpdateStaff(this);
+			userData.serverInfo = await _tbotOgameBridge.UpdateServerInfo();
+			userData.serverData = await _tbotOgameBridge.UpdateServerData();
+			userData.userInfo = await _tbotOgameBridge.UpdateUserInfo();
+			userData.staff = await _tbotOgameBridge.UpdateStaff();
 
-			var serverTime = await TBotOgamedBridge.GetDateTime(this);
+			var serverTime = await _tbotOgameBridge.GetDateTime();
 
 			log(LogLevel.Information, LogSender.Tbot, $"Server time: {serverTime.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player name: {userData.userInfo.PlayerName}");
@@ -248,14 +250,14 @@ namespace Tbot.Services {
 			}
 
 			if (telegramMessenger != null) {
-				await telegramMessenger.AddTbotInstance(this);
+				await telegramMessenger.AddTbotInstance(this, _tbotOgameBridge);
 			}
 			userData.lastDOIR = 0;
 			userData.nextDOIR = 0;
 
 			log(LogLevel.Information, LogSender.Tbot, "Initializing data...");
-			userData.celestials = await TBotOgamedBridge.GetPlanets(this);
-			userData.researches = await TBotOgamedBridge.UpdateResearches(this);
+			userData.celestials = await _tbotOgameBridge.GetPlanets();
+			userData.researches = await _tbotOgameBridge.UpdateResearches();
 			userData.scheduledFleets = new();
 			userData.farmTargets = new();
 
@@ -292,9 +294,7 @@ namespace Tbot.Services {
 
 				deInitTasks.Add(worker.Value.StopWorker());
 			}
-			foreach(var aTask in deInitTasks) {
-				await aTask;
-			}
+
 			deInitTasks.Clear();
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing timers...");
@@ -363,7 +363,7 @@ namespace Tbot.Services {
 			if (workers.TryGetValue(feat, out var worker)) {
 				worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
 			} else {
-				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this);
+				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this, _tbotOgameBridge);
 				if (newWorker != null) {
 					workers.TryAdd(feat, newWorker);
 					await newWorker.StartWorker(cts.Token, TimeSpan.FromMilliseconds(dueTime));
@@ -533,12 +533,12 @@ namespace Tbot.Services {
 			Resources cost = _helpersService.CalcPrice(buildable, 1);
 			foreach (Celestial celestial in userData.celestials.Where(c => c is Planet).ToList()) {
 				List<decimal> MaxNumber = new();
-				await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Constructions);
+				await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 				if ((int) celestial.Constructions.BuildingID == (int) Buildables.NaniteFactory || (int) celestial.Constructions.BuildingID == (int) Buildables.Shipyard) {
 					results += $"{celestial.Coordinate.ToString()}: Shipyard or Nanite in construction\n";
 					continue;
 				}
-				await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
+				await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 				Resources resources = celestial.Resources;
 				if (num == 0) {
 					if (cost.Metal > 0)
@@ -789,8 +789,8 @@ namespace Tbot.Services {
 				return;
 			}
 
-			origin = await TBotOgamedBridge.UpdatePlanet(this, origin, UpdateTypes.Resources);
-			origin = await TBotOgamedBridge.UpdatePlanet(this, origin, UpdateTypes.Ships);
+			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
+			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
 
 			if (origin.Ships.GetMovableShips().IsEmpty()) {
 				await SendTelegramMessage($"No ships on {origin.Coordinate}, did you /celestial?");
@@ -841,8 +841,8 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramDeploy(Celestial celestial, Coordinate destination, decimal speed) {
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Ships);
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"[Deploy] From {celestial.Coordinate.ToString()}: No ships!");
@@ -899,8 +899,8 @@ namespace Tbot.Services {
 				dest.Type = Celestials.Planet;
 			}
 
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Ships);
 
 			if (celestial.Ships.GetMovableShips().IsEmpty()) {
 				log(LogLevel.Warning, LogSender.FleetScheduler, $"[Switch] Skipping fleetsave from {celestial.Coordinate.ToString()}: No ships!");
@@ -933,7 +933,7 @@ namespace Tbot.Services {
 		}
 
 		public async void TelegramSetCurrentCelestial(Coordinate coord, string celestialType, Feature updateType = Feature.Null, bool editsettings = false) {
-			userData.celestials = await TBotOgamedBridge.UpdateCelestials(this);
+			userData.celestials = await _tbotOgameBridge.UpdateCelestials();
 
 			//check if no error in submitted celestial (belongs to the current player)
 			telegramUserData.CurrentCelestial = userData.celestials
@@ -981,8 +981,8 @@ namespace Tbot.Services {
 
 		public async Task TelegramGetInfo(Celestial celestial) {
 
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Resources);
-			celestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Ships);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Ships);
 			string result = "";
 			string resources = $"{celestial.Resources.Metal.ToString("#,#", CultureInfo.InvariantCulture)} Metal\n" +
 								$"{celestial.Resources.Crystal.ToString("#,#", CultureInfo.InvariantCulture)} Crystal\n" +
@@ -1031,11 +1031,11 @@ namespace Tbot.Services {
 					continue;
 				}
 
-				var tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, celestial, UpdateTypes.Fast);
+				var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
 				userData.fleets = await _fleetScheduler.UpdateFleets();
 
-				tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, tempCelestial, UpdateTypes.Resources);
-				tempCelestial = await TBotOgamedBridge.UpdatePlanet(this, tempCelestial, UpdateTypes.Ships);
+				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
 
 				Buildables preferredShip = Buildables.LargeCargo;
 				if (!Enum.TryParse<Buildables>((string) InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
@@ -1087,7 +1087,7 @@ namespace Tbot.Services {
 		public async Task SleepNow(DateTime WakeUpTime) {
 			long interval;
 
-			DateTime time = await TBotOgamedBridge.GetDateTime(this);
+			DateTime time = await _tbotOgameBridge.GetDateTime();
 			interval = (long) WakeUpTime.Subtract(time).TotalMilliseconds;
 			timers.Add("TelegramSleepModeTimer", new Timer(WakeUpNow, null, interval, Timeout.Infinite));
 			await SendTelegramMessage($"Going to sleep, Waking Up at {WakeUpTime.ToString()}");
@@ -1115,7 +1115,7 @@ namespace Tbot.Services {
 			try {
 				await WaitFeature();
 
-				DateTime time = await TBotOgamedBridge.GetDateTime(this);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 
 				if (!(bool) InstanceSettings.SleepMode.Active) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Sleep mode is disabled");
@@ -1227,12 +1227,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while handling sleep mode: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await TBotOgamedBridge.GetDateTime(this);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await TBotOgamedBridge.CheckCelestials(this);
+				await _tbotOgameBridge.CheckCelestials();
 			} finally {
 				releaseFeature();
 			}
@@ -1244,7 +1244,7 @@ namespace Tbot.Services {
 				bool delayed = false;
 				if ((bool) InstanceSettings.SleepMode.PreventIfThereAreFleets && userData.fleets.Count() > 0) {
 					if (DateTime.TryParse((string) InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp) && DateTime.TryParse((string) InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep)) {
-						DateTime time = await TBotOgamedBridge.GetDateTime(this);
+						DateTime time = await _tbotOgameBridge.GetDateTime();
 						if (time >= goToSleep && time >= wakeUp && goToSleep < wakeUp)
 							goToSleep = goToSleep.AddDays(1);
 						if (time >= goToSleep && time >= wakeUp && goToSleep >= wakeUp)
@@ -1293,7 +1293,7 @@ namespace Tbot.Services {
 					log(LogLevel.Information, LogSender.SleepMode, $"Waking Up at {state.ToString()}");
 
 					if ((bool) InstanceSettings.SleepMode.AutoFleetSave.Active) {
-						var celestialsToFleetsave = await TBotOgamedBridge.UpdatePlanets(this, UpdateTypes.Ships);
+						var celestialsToFleetsave = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
 						if ((bool) InstanceSettings.SleepMode.AutoFleetSave.OnlyMoons)
 							celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Moon).ToList();
 						foreach (Celestial celestial in celestialsToFleetsave.OrderByDescending(c => c.Ships.GetFleetPoints())) {
@@ -1325,12 +1325,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while going to sleep: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await TBotOgamedBridge.GetDateTime(this);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await TBotOgamedBridge.CheckCelestials(this);
+				await _tbotOgameBridge.CheckCelestials();
 			}
 		}
 
@@ -1382,12 +1382,12 @@ namespace Tbot.Services {
 			} catch (Exception e) {
 				log(LogLevel.Warning, LogSender.SleepMode, $"An error has occurred while waking up: {e.Message}");
 				log(LogLevel.Warning, LogSender.SleepMode, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await TBotOgamedBridge.GetDateTime(this);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
-				await TBotOgamedBridge.CheckCelestials(this);
+				await _tbotOgameBridge.CheckCelestials();
 			}
 		}
 		

@@ -24,6 +24,14 @@ using Tbot.Workers;
 namespace Tbot.Services {
 
 	internal class TelegramMessenger : ITelegramMessenger {
+		private class InstanceWithBridge {
+			public InstanceWithBridge(TBotMain instance, ITBotOgamedBridge tBotOgamedBridge) {
+				Instance = instance;
+				TBotOGamedBridge = tBotOgamedBridge;
+			}
+			public TBotMain Instance { get; set; }
+			public ITBotOgamedBridge TBotOGamedBridge { get; set; }
+		}
 		public string Api { get; private set; }
 		public string Channel { get; private set; }
 		public ITelegramBotClient Client { get; private set; }
@@ -36,7 +44,7 @@ namespace Tbot.Services {
 		Task receivingTask = null;
 
 		private SemaphoreSlim instanceSem = new SemaphoreSlim(1, 1);
-		private List<TBotMain> instances = new();
+		private List<InstanceWithBridge> instances = new();
 		private int currInstanceIndex = -1;
 
 		private Timer autoPingTimer;
@@ -99,9 +107,10 @@ namespace Tbot.Services {
 				autoPingTimer.Change(nextping, Timeout.Infinite);
 
 				string pingStr = $"TBot is running since {FormattingHelper.TimeSpanToString(upTime)}\n";
-				foreach (var instance in instances) {
+				foreach (var instanceWithBridge in instances) {
+					var instance = instanceWithBridge.Instance;
 					TimeSpan instanceUpTime = now - instance.startTime;
-					int instanceIndex = instances.IndexOf(instance);
+					int instanceIndex = instances.IndexOf(instanceWithBridge);
 					pingStr += $"#{instanceIndex} " +
 						$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
 						$"since {FormattingHelper.TimeSpanToString(instanceUpTime)}\n";
@@ -117,16 +126,17 @@ namespace Tbot.Services {
 			return;
 		}
 
-		public async Task AddTbotInstance(TBotMain instance) {
+		public async Task AddTbotInstance(TBotMain instance, ITBotOgamedBridge tbotOgamedBridge) {
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Adding instance.....");
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			await instanceSem.WaitAsync(ct);
 
-			if (instances.Contains(instance) == false) {
-				instances.Add(instance);
+			if (!instances.Any(i => i.Instance.InstanceAlias == instance.InstanceAlias)) {
+				var instanceWithBridge = new InstanceWithBridge(instance, tbotOgamedBridge);
+				instances.Add(instanceWithBridge);
 
-				int instanceIndex = instances.IndexOf(instance);
+				int instanceIndex = instances.IndexOf(instanceWithBridge);
 				await SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
 
 				// Set a default instance
@@ -142,8 +152,8 @@ namespace Tbot.Services {
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			await instanceSem.WaitAsync(ct);
-
-			if (instances.Remove(instance) == false) {
+			var instanceToRemove = instances.FirstOrDefault(i => i.Instance.InstanceAlias == instance.InstanceAlias);
+			if (instanceToRemove == null || !instances.Remove(instanceToRemove)) {
 				_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"Error removing [{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 			}
 
@@ -280,7 +290,7 @@ namespace Tbot.Services {
 									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\" exceeds managed {instances.Count()}");
 								} else {
 									currInstanceIndex = UserSelectedInstance;
-									var cInstance = instances.ElementAt(currInstanceIndex);
+									var cInstance = instances.ElementAt(currInstanceIndex).Instance;
 									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
 										$"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
 								}
@@ -292,14 +302,15 @@ namespace Tbot.Services {
 							if (currInstanceIndex < 0 || currInstanceIndex >= instances.Count()) {
 								await SendMessage(botClient, message.Chat, "Currently managing no instance");
 							} else {
-								var instance = instances[currInstanceIndex];
+								var instance = instances[currInstanceIndex].Instance;
 								await SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case "/listinstances":
 							await SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
-							foreach (var instance in instances) {
-								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+							foreach (var instanceWithBridge in instances) {
+								var instance = instanceWithBridge.Instance;
+								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instanceWithBridge)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case "/loglevel":
@@ -424,7 +435,7 @@ namespace Tbot.Services {
 					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1)
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 
-					TBotMain currInstance = instances.ElementAt(currInstanceIndex);
+					TBotMain currInstance = instances.ElementAt(currInstanceIndex).Instance;
 					args = message.Text.ToLower().Split(' ');
 					arg = args.ElementAt(0);
 
@@ -784,8 +795,8 @@ namespace Tbot.Services {
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = FormattingHelper.ParseDurationFromString(arg);
-
-								DateTime timeNow = await TBotOgamedBridge.GetDateTime(currInstance);
+								var instanceWithBridge = instances.First(i => i.Instance.InstanceAlias == currInstance.InstanceAlias);
+								DateTime timeNow = await instanceWithBridge.TBotOGamedBridge.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 
 								await currInstance.SleepNow(WakeUpTime);
@@ -1245,7 +1256,7 @@ namespace Tbot.Services {
 
 				await instanceSem.WaitAsync(ct);
 				foreach (var instance in instances) {
-					instance.RemoveTelegramMessenger();
+					instance.Instance.RemoveTelegramMessenger();
 				}
 			} finally {
 				instanceSem.Release();

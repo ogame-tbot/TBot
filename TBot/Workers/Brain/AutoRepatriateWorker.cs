@@ -15,12 +15,17 @@ using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers.Brain {
 	public class AutoRepatriateWorker : WorkerBase, IAutoRepatriateWorker {
-		public AutoRepatriateWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-		}
-
-		public AutoRepatriateWorker(ITBotMain parentInstance) :
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public AutoRepatriateWorker(ITBotMain parentInstance,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
+			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		protected override async Task Execute() {
@@ -47,9 +52,9 @@ namespace Tbot.Workers.Brain {
 							Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
 						);
 						List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
-						List<Celestial> celestialsToExclude = _helpersService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Exclude, _tbotInstance.UserData.celestials);
+						List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Exclude, _tbotInstance.UserData.celestials);
 
-						foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials.OrderBy(c => _helpersService.CalcDistance(c.Coordinate, destinationCoordinate, _tbotInstance.UserData.serverData)).ToList()) {
+						foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials.OrderBy(c => _calculationService.CalcDistance(c.Coordinate, destinationCoordinate, _tbotInstance.UserData.serverData)).ToList()) {
 							if (celestialsToExclude.Has(celestial)) {
 								DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: celestial in exclude list.");
 								continue;
@@ -59,10 +64,10 @@ namespace Tbot.Workers.Brain {
 								continue;
 							}
 
-							var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Fast);
+							var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
 
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.SkipIfIncomingTransport && _helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets) && (!timers.TryGetValue("TelegramCollect", out Timer value2))) {
+							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.SkipIfIncomingTransport && _calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets) && (!timers.TryGetValue("TelegramCollect", out Timer value2))) {
 								DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: there is a transport incoming.");
 								continue;
 							}
@@ -71,8 +76,8 @@ namespace Tbot.Workers.Brain {
 								continue;
 							}
 
-							tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Resources);
-							tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Ships);
+							tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+							tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
 
 							Buildables preferredShip = Buildables.SmallCargo;
 							if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
@@ -96,7 +101,7 @@ namespace Tbot.Workers.Brain {
 								continue;
 							}
 
-							long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+							long idealShips = _calculationService.CalcShipNumberForPayload(payload, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 
 							Ships ships = new();
 							if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
@@ -105,7 +110,7 @@ namespace Tbot.Workers.Brain {
 								} else {
 									ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
 								}
-								payload = _helpersService.CalcMaxTransportableResources(ships, payload, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+								payload = _calculationService.CalcMaxTransportableResources(ships, payload, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 
 								if (payload.TotalResources > 0) {
 									var fleetId = await _fleetScheduler.SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
@@ -158,13 +163,13 @@ namespace Tbot.Workers.Brain {
 						} else if (delay) {
 							DoLog(LogLevel.Information, $"Delaying...");
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-							var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+							var time = await _tbotOgameBridge.GetDateTime();
 							long interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							var newTime = time.AddMilliseconds(interval);
 							ChangeWorkerPeriod(interval);
 							DoLog(LogLevel.Information, $"Next repatriate check at {newTime.ToString()}");
 						} else {
-							var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+							var time = await _tbotOgameBridge.GetDateTime();
 							var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.CheckIntervalMax);
 							if (interval <= 0)
 								interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
@@ -173,7 +178,7 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Information, $"Next repatriate check at {newTime.ToString()}");
 						}
 					}
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}

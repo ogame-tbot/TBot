@@ -11,15 +11,18 @@ using TBot.Ogame.Infrastructure.Enums;
 using Tbot.Helpers;
 using TBot.Model;
 using Tbot.Includes;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	internal class BuyOfferOfTheDayWorker : WorkerBase {
-
-		public BuyOfferOfTheDayWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-		}
-		public BuyOfferOfTheDayWorker(ITBotMain parentInstance) :
+		private readonly IOgameService _ogameService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public BuyOfferOfTheDayWorker(ITBotMain parentInstance,
+			IOgameService ogameService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
+			_ogameService = ogameService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 		protected override async Task Execute() {
 			bool stop = false;
@@ -37,7 +40,7 @@ namespace Tbot.Workers.Brain {
 						return;
 					}
 					try {
-						await _tbotInstance.OgamedInstance.BuyOfferOfTheDay();
+						await _ogameService.BuyOfferOfTheDay();
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
 					} catch {
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
@@ -56,14 +59,14 @@ namespace Tbot.Workers.Brain {
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
 						await EndExecution();
 					} else {
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
 						if (interval <= 0)
 							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+						await _tbotOgameBridge.CheckCelestials();
 					}
 				}
 			}

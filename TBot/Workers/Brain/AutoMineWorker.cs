@@ -10,17 +10,27 @@ using Tbot.Includes;
 using Tbot.Services;
 using TBot.Common.Logging;
 using TBot.Model;
+using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers.Brain {
 	public class AutoMineWorker : WorkerBase, IAutoMineWorker {
-		public AutoMineWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-		}
 
-		public AutoMineWorker(ITBotMain parentInstance) :
+		private readonly ICalculationService _calculationService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly IOgameService _ogameService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public AutoMineWorker(ITBotMain parentInstance,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
+			_calculationService = calculationService;
+			_fleetScheduler = fleetScheduler;
+			_ogameService = ogameService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public override string GetWorkerName() {
@@ -48,26 +58,26 @@ namespace Tbot.Workers.Brain {
 					if ((long) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.DeutToLeave > 0)
 						resToLeave.Deuterium = (long) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.DeutToLeave;
 
-					origin = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Resources);
+					origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
 					if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
-						origin = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, origin, UpdateTypes.Ships);
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
 						Buildables preferredShip = Buildables.SmallCargo;
 						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.CargoType, true, out preferredShip)) {
 							DoLog(LogLevel.Warning, "Unable to parse CargoType. Falling back to default SmallCargo");
 							preferredShip = Buildables.SmallCargo;
 						}
 
-						long idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						long idealShips = _calculationService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						Ships ships = new();
 						Ships tempShips = new();
 						tempShips.Add(preferredShip, 1);
-						var flightPrediction = _helpersService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+						var flightPrediction = _calculationService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 						long flightTime = flightPrediction.Time;
-						idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						idealShips = _calculationService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
 						if (buildable != Buildables.Null) {
-							int level = _helpersService.GetNextLevel(destination, buildable);
-							long buildTime = _helpersService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, destination.Facilities);
+							int level = _calculationService.GetNextLevel(destination, buildable);
+							long buildTime = _calculationService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, destination.Facilities);
 							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
@@ -77,24 +87,24 @@ namespace Tbot.Workers.Brain {
 									}
 									var nextBuildable = Buildables.Null;
 									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
-										tempCelestial.Resources.Energy += _helpersService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
-										tempCelestial.ResourcesProduction.Energy.Available += _helpersService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
-										tempCelestial.Resources.Energy -= _helpersService.GetRequiredEnergyDelta(buildable, level);
-										tempCelestial.ResourcesProduction.Energy.Available -= _helpersService.GetRequiredEnergyDelta(buildable, level);
-										nextBuildable = _helpersService.GetNextBuildingToBuild(tempCelestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings, 1);
+										tempCelestial.Resources.Energy += _calculationService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+										tempCelestial.ResourcesProduction.Energy.Available += _calculationService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+										tempCelestial.Resources.Energy -= _calculationService.GetRequiredEnergyDelta(buildable, level);
+										tempCelestial.ResourcesProduction.Energy.Available -= _calculationService.GetRequiredEnergyDelta(buildable, level);
+										nextBuildable = _calculationService.GetNextBuildingToBuild(tempCelestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings, 1);
 									} else {
-										nextBuildable = _helpersService.GetNextLunarFacilityToBuild(tempCelestial as Moon, _tbotInstance.UserData.researches, maxLunarFacilities);
+										nextBuildable = _calculationService.GetNextLunarFacilityToBuild(tempCelestial as Moon, _tbotInstance.UserData.researches, maxLunarFacilities);
 									}
 									if ((nextBuildable != Buildables.Null) && (buildable != Buildables.SolarSatellite)) {
-										var nextLevel = _helpersService.GetNextLevel(tempCelestial, nextBuildable);
-										var newMissingRes = missingResources.Sum(_helpersService.CalcPrice(nextBuildable, nextLevel));
+										var nextLevel = _calculationService.GetNextLevel(tempCelestial, nextBuildable);
+										var newMissingRes = missingResources.Sum(_calculationService.CalcPrice(nextBuildable, nextLevel));
 
 										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
-											var newIdealShips = _helpersService.CalcShipNumberForPayload(newMissingRes, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+											var newIdealShips = _calculationService.CalcShipNumberForPayload(newMissingRes, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
 												idealShips = newIdealShips;
 												missingResources = newMissingRes;
-												buildTime += _helpersService.CalcProductionTime(nextBuildable, nextLevel, _tbotInstance.UserData.serverData, tempCelestial.Facilities);
+												buildTime += _calculationService.CalcProductionTime(nextBuildable, nextLevel, _tbotInstance.UserData.serverData, tempCelestial.Facilities);
 												DoLog(LogLevel.Information, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
 												level = nextLevel;
 												buildable = nextBuildable;
@@ -113,16 +123,16 @@ namespace Tbot.Workers.Brain {
 
 						if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Brain.AutoMine.Transports, "RoundResources") && (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.RoundResources) {
 							missingResources = missingResources.Round();
-							idealShips = _helpersService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+							idealShips = _calculationService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						}
 
 						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
 							ships.Add(preferredShip, idealShips);
 
 							if (destination.Coordinate.Type == Celestials.Planet) {
-								destination = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, destination, UpdateTypes.ResourceSettings);
-								destination = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, destination, UpdateTypes.Buildings);
-								destination = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, destination, UpdateTypes.ResourcesProduction);
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourceSettings);
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.Buildings);
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourcesProduction);
 
 								float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
 								float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
@@ -209,20 +219,20 @@ namespace Tbot.Workers.Brain {
 						DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
 
-					List<Celestial> celestialsToExclude = _helpersService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoMine.Exclude, _tbotInstance.UserData.celestials);
+					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoMine.Exclude, _tbotInstance.UserData.celestials);
 					List<Celestial> celestialsToMine = new();
 					foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
-						var cel = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
-						var nextMine = _helpersService.GetNextMineToBuild(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 100, 100, 100, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull, true, int.MaxValue);
-						var lv = _helpersService.GetNextLevel(cel, nextMine);
-						var DOIR = _helpersService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+						var cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+						var nextMine = _calculationService.GetNextMineToBuild(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 100, 100, 100, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull, true, int.MaxValue);
+						var lv = _calculationService.GetNextLevel(cel, nextMine);
+						var DOIR = _calculationService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 						DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Mine: {nextMine.ToString()} lv {lv.ToString()}; DOIR: {DOIR.ToString()}.");
 						if (DOIR < _tbotInstance.UserData.nextDOIR || _tbotInstance.UserData.nextDOIR == 0) {
 							_tbotInstance.UserData.nextDOIR = DOIR;
 						}
 						celestialsToMine.Add(cel);
 					}
-					celestialsToMine = celestialsToMine.OrderBy(cel => _helpersService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull)).ToList();
+					celestialsToMine = celestialsToMine.OrderBy(cel => _calculationService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull)).ToList();
 					celestialsToMine.AddRange(_tbotInstance.UserData.celestials.Where(c => c is Moon));
 
 					foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.RandomOrder ? celestialsToMine.Shuffle().ToList() : celestialsToMine) {
@@ -241,7 +251,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}
@@ -256,15 +266,15 @@ namespace Tbot.Workers.Brain {
 			bool delayProduction = false;
 			try {
 				DoLog(LogLevel.Information, $"Running AutoMine on {celestial.ToString()}");
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Fast);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourcesProduction);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourceSettings);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Productions);
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Ships);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourceSettings);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Ships);
 				if (
 					(!SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Brain.AutoMine, "BuildCrawlers") || (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
@@ -276,11 +286,11 @@ namespace Tbot.Workers.Brain {
 					!celestial.Productions.Any(p => p.ID == (int) Buildables.Crawler) &&
 					celestial.Constructions.BuildingID != (int) Buildables.Shipyard &&
 					celestial.Constructions.BuildingID != (int) Buildables.NaniteFactory &&
-					celestial.Ships.Crawler < _helpersService.CalcMaxCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist) &&
-					_helpersService.CalcOptimalCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData) > celestial.Ships.Crawler
+					celestial.Ships.Crawler < _calculationService.CalcMaxCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist) &&
+					_calculationService.CalcOptimalCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData) > celestial.Ships.Crawler
 				) {
 					buildable = Buildables.Crawler;
-					level = _helpersService.CalcOptimalCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData);
+					level = _calculationService.CalcOptimalCrawlers(celestial as Planet, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData);
 				} else {
 					if (celestial.Fields.Free == 0) {
 						DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: not enough fields available.");
@@ -297,8 +307,8 @@ namespace Tbot.Workers.Brain {
 						) {
 							var buildingBeingBuilt = (Buildables) celestial.Constructions.BuildingID;
 
-							var levelBeingBuilt = _helpersService.GetNextLevel(celestial, buildingBeingBuilt);
-							var DOIR = _helpersService.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+							var levelBeingBuilt = _calculationService.GetNextLevel(celestial, buildingBeingBuilt);
+							var DOIR = _calculationService.CalcDaysOfInvestmentReturn(celestial as Planet, buildingBeingBuilt, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 							if (DOIR > _tbotInstance.UserData.lastDOIR) {
 								_tbotInstance.UserData.lastDOIR = DOIR;
 							}
@@ -309,22 +319,22 @@ namespace Tbot.Workers.Brain {
 
 					if (celestial is Planet) {
 
-						buildable = _helpersService.GetNextBuildingToBuild(celestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings);
-						level = _helpersService.GetNextLevel(celestial as Planet, buildable, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+						buildable = _calculationService.GetNextBuildingToBuild(celestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings);
+						level = _calculationService.GetNextLevel(celestial as Planet, buildable, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
 					} else {
-						buildable = _helpersService.GetNextLunarFacilityToBuild(celestial as Moon, _tbotInstance.UserData.researches, maxLunarFacilities);
-						level = _helpersService.GetNextLevel(celestial as Moon, buildable, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+						buildable = _calculationService.GetNextLunarFacilityToBuild(celestial as Moon, _tbotInstance.UserData.researches, maxLunarFacilities);
+						level = _calculationService.GetNextLevel(celestial as Moon, buildable, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
 					}
 				}
 
 				if (buildable != Buildables.Null && level > 0) {
 					DoLog(LogLevel.Information, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
 					if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
-						float DOIR = _helpersService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+						float DOIR = _calculationService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 						DoLog(LogLevel.Debug, $"Days of investment return: {Math.Round(DOIR, 2).ToString()} days.");
 					}
 
-					Resources xCostBuildable = _helpersService.CalcPrice(buildable, level);
+					Resources xCostBuildable = _calculationService.CalcPrice(buildable, level);
 					if (celestial is Moon)
 						xCostBuildable.Deuterium += (long) autoMinerSettings.DeutToLeaveOnMoons;
 
@@ -332,8 +342,8 @@ namespace Tbot.Workers.Brain {
 						if (xCostBuildable.Energy > celestial.ResourcesProduction.Energy.CurrentProduction) {
 							DoLog(LogLevel.Information, $"Not enough energy to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 							buildable = Buildables.SolarSatellite;
-							level = _helpersService.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
-							xCostBuildable = _helpersService.CalcPrice(buildable, level);
+							level = _calculationService.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+							xCostBuildable = _calculationService.CalcPrice(buildable, level);
 						}
 					}
 
@@ -343,7 +353,7 @@ namespace Tbot.Workers.Brain {
 							if (!celestial.HasProduction()) {
 								DoLog(LogLevel.Information, $"Building {level.ToString()} x {buildable.ToString()} on {celestial.ToString()}");
 								try {
-									await _tbotInstance.OgamedInstance.BuildShips(celestial, buildable, level);
+									await _ogameService.BuildShips(celestial, buildable, level);
 									result = true;
 								} catch { }
 							} else {
@@ -353,26 +363,26 @@ namespace Tbot.Workers.Brain {
 						} else {
 							DoLog(LogLevel.Information, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
 							try {
-								await _tbotInstance.OgamedInstance.BuildConstruction(celestial, buildable);
+								await _ogameService.BuildConstruction(celestial, buildable);
 								result = true;
 							} catch { }
 						}
 
 						if (result) {
 							if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
-								float DOIR = _helpersService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+								float DOIR = _calculationService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 								if (DOIR > _tbotInstance.UserData.lastDOIR) {
 									_tbotInstance.UserData.lastDOIR = DOIR;
 								}
 							}
 							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
-								celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Productions);
+								celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
 								try {
 									if (celestial.Productions.First().ID == (int) buildable) {
 										started = true;
 										DoLog(LogLevel.Information, $"{celestial.Productions.First().Nbr.ToString()}x {buildable.ToString()} succesfully started.");
 									} else {
-										celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources);
+										celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 										if (celestial.Resources.Energy >= 0) {
 											started = true;
 											DoLog(LogLevel.Information, $"{level.ToString()}x {buildable.ToString()} succesfully built");
@@ -385,13 +395,13 @@ namespace Tbot.Workers.Brain {
 									DoLog(LogLevel.Information, $"Unable to determine if the production has started.");
 								}
 							} else {
-								celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+								celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 								if (celestial.Constructions.BuildingID == (int) buildable) {
 									started = true;
 									DoLog(LogLevel.Information, "Building succesfully started.");
 								} else {
-									celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
-									celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
+									celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+									celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities);
 									if (celestial.GetLevel(buildable) != level)
 										DoLog(LogLevel.Warning, "Unable to start building construction: an unknown error has occurred");
 									else {
@@ -404,7 +414,7 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Warning, "Unable to start building construction: a network error has occurred");
 					} else {
 						if (buildable == Buildables.MetalMine || buildable == Buildables.CrystalMine || buildable == Buildables.DeuteriumSynthesizer) {
-							float DOIR = _helpersService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+							float DOIR = _calculationService.CalcDaysOfInvestmentReturn(celestial as Planet, buildable, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 							if (DOIR < _tbotInstance.UserData.nextDOIR || _tbotInstance.UserData.nextDOIR == 0) {
 								_tbotInstance.UserData.nextDOIR = DOIR;
 							}
@@ -417,7 +427,7 @@ namespace Tbot.Workers.Brain {
 						}
 						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Active) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-							if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+							if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 								Celestial origin = _tbotInstance.UserData.celestials
 										.Unique()
 										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
@@ -443,7 +453,7 @@ namespace Tbot.Workers.Brain {
 				} else {
 					DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: nothing to build.");
 					if (celestial.Coordinate.Type == Celestials.Planet) {
-						var nextDOIR = _helpersService.CalcNextDaysOfInvestmentReturn(celestial as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+						var nextDOIR = _calculationService.CalcNextDaysOfInvestmentReturn(celestial as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 						if (
 							(celestial as Planet).HasFacilities(maxFacilities) && (
 								(celestial as Planet).HasMines(maxBuildings) ||
@@ -451,8 +461,8 @@ namespace Tbot.Workers.Brain {
 							)
 						) {
 							if (nextDOIR > autoMinerSettings.MaxDaysOfInvestmentReturn) {
-								var nextMine = _helpersService.GetNextMineToBuild(celestial as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 100, 100, 100, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull, autoMinerSettings.OptimizeForStart, float.MaxValue);
-								var nexMineLevel = _helpersService.GetNextLevel(celestial, nextMine);
+								var nextMine = _calculationService.GetNextMineToBuild(celestial as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 100, 100, 100, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull, autoMinerSettings.OptimizeForStart, float.MaxValue);
+								var nexMineLevel = _calculationService.GetNextLevel(celestial, nextMine);
 								if (nextDOIR < _tbotInstance.UserData.nextDOIR || _tbotInstance.UserData.nextDOIR == 0) {
 									_tbotInstance.UserData.nextDOIR = nextDOIR;
 								}
@@ -479,20 +489,20 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Error, $"AutoMineCelestial Exception: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
-				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				var time = await _tbotOgameBridge.GetDateTime();
 				string autoMineTimer = $"AutoMine-{celestial.ID.ToString()}";
 				DateTime newTime;
 				if (stop) {
 					DoLog(LogLevel.Information, $"Stopping AutoMine check for {celestial.ToString()}.");
 					await EndExecution();
 				} else if (delayProduction) {
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Productions);
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities);
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					long interval;
 					try {
-						interval = _helpersService.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, _tbotInstance.UserData.serverData, celestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
+						interval = _calculationService.CalcProductionTime((Buildables) celestial.Productions.First().ID, celestial.Productions.First().Nbr, _tbotInstance.UserData.serverData, celestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					} catch {
 						interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoMine.CheckIntervalMax);
 					}
@@ -501,7 +511,7 @@ namespace Tbot.Workers.Brain {
 					DoLog(LogLevel.Information, $"Next AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				} else if (delay) {
 					DoLog(LogLevel.Information, $"Delaying...");
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 					long interval;
 					try {
@@ -562,12 +572,12 @@ namespace Tbot.Workers.Brain {
 					DoLog(LogLevel.Information, $"Stopping AutoMine check for {celestial.ToString()}: not enough fields available.");
 				}
 
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 				if (started) {
 					if (buildable == Buildables.SolarSatellite) {
-						celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Productions);
-						celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
-						interval = _helpersService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, celestial.Facilities) * 1000;
+						celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
+						celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities);
+						interval = _calculationService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, celestial.Facilities) * 1000;
 					} else if (buildable == Buildables.Crawler) {
 						interval = (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 					} else {
@@ -579,19 +589,19 @@ namespace Tbot.Workers.Brain {
 				} else if (celestial.HasConstruction()) {
 					interval = ((long) celestial.Constructions.BuildingCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				} else {
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Buildings);
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities);
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities);
 
 					if (buildable != Buildables.Null) {
-						var price = _helpersService.CalcPrice(buildable, level);
+						var price = _calculationService.CalcPrice(buildable, level);
 						var productionTime = long.MaxValue;
 						var transportTime = long.MaxValue;
 						var returningExpoTime = long.MaxValue;
 						var transportOriginTime = long.MaxValue;
 						var returningExpoOriginTime = long.MaxValue;
 
-						celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourcesProduction);
-						DateTime now = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+						DateTime now = await _tbotOgameBridge.GetDateTime();
 						if (
 							celestial.Coordinate.Type == Celestials.Planet &&
 							(price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity || price.Metal <= celestial.Resources.Metal) &&
@@ -618,14 +628,14 @@ namespace Tbot.Workers.Brain {
 						}
 
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-						var incomingFleets = _helpersService.GetIncomingFleetsWithResources(celestial, _tbotInstance.UserData.fleets);
+						var incomingFleets = _calculationService.GetIncomingFleetsWithResources(celestial, _tbotInstance.UserData.fleets);
 						if (incomingFleets.Any()) {
 							var fleet = incomingFleets.First();
 							transportTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;
 							//DoLog(LogLevel.Debug, $"Next fleet with resources arriving by {now.AddMilliseconds(transportTime).ToString()}");
 						}
 
-						var returningExpo = _helpersService.GetFirstReturningExpedition(celestial.Coordinate, _tbotInstance.UserData.fleets);
+						var returningExpo = _calculationService.GetFirstReturningExpedition(celestial.Coordinate, _tbotInstance.UserData.fleets);
 						if (returningExpo != null) {
 							returningExpoTime = (long) (returningExpo.BackIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 							//DoLog(LogLevel.Debug, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
@@ -639,13 +649,13 @@ namespace Tbot.Workers.Brain {
 									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Position)
 									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
-							var returningExpoOrigin = _helpersService.GetFirstReturningExpedition(origin.Coordinate, _tbotInstance.UserData.fleets);
+							var returningExpoOrigin = _calculationService.GetFirstReturningExpedition(origin.Coordinate, _tbotInstance.UserData.fleets);
 							if (returningExpoOrigin != null) {
 								returningExpoOriginTime = (long) (returningExpoOrigin.BackIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo);
 								//DoLog(LogLevel.Debug, $"Next expedition returning in transport origin celestial by {now.AddMilliseconds(returningExpoOriginTime).ToString()}");
 							}
 
-							var incomingOriginFleets = _helpersService.GetIncomingFleetsWithResources(origin, _tbotInstance.UserData.fleets);
+							var incomingOriginFleets = _calculationService.GetIncomingFleetsWithResources(origin, _tbotInstance.UserData.fleets);
 							if (incomingOriginFleets.Any()) {
 								var fleet = incomingOriginFleets.First();
 								transportOriginTime = ((fleet.Mission == Missions.Transport || fleet.Mission == Missions.Deploy) && !fleet.ReturnFlight ? (long) fleet.ArriveIn : (long) fleet.BackIn) * 1000;

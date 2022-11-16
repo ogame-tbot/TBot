@@ -10,16 +10,26 @@ using Tbot.Includes;
 using Tbot.Services;
 using TBot.Common.Logging;
 using TBot.Model;
+using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 	public class ExpeditionsWorker : WorkerBase {
-		public ExpeditionsWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-		}
-		public ExpeditionsWorker(ITBotMain parentInstance) :
+		private readonly IOgameService _ogameService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public ExpeditionsWorker(ITBotMain parentInstance,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
+			_ogameService = ogameService;
+			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public override string GetWorkerName() {
@@ -49,10 +59,10 @@ namespace Tbot.Workers {
 				}
 
 				if ((bool) _tbotInstance.InstanceSettings.Expeditions.Active) {
-					_tbotInstance.UserData.researches = await TBotOgamedBridge.UpdateResearches(_tbotInstance);
+					_tbotInstance.UserData.researches = await _tbotOgameBridge.UpdateResearches();
 					if (_tbotInstance.UserData.researches.Astrophysics == 0) {
 						DoLog(LogLevel.Information, "Skipping: Astrophysics not yet researched!");
-						time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						time = await _tbotOgameBridge.GetDateTime();
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutHalfAnHour);
 						newTime = time.AddMilliseconds(interval);
 						ChangeWorkerPeriod(interval);
@@ -60,9 +70,9 @@ namespace Tbot.Workers {
 						return;
 					}
 
-					_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
-					_tbotInstance.UserData.fleets = await _tbotInstance.FleetScheduler.UpdateFleets();
-					_tbotInstance.UserData.serverData = await _tbotInstance.OgamedInstance.GetServerData();
+					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
+					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+					_tbotInstance.UserData.serverData = await _ogameService.GetServerData();
 					int expsToSend;
 					if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Expeditions, "WaitForAllExpeditions") && (bool) _tbotInstance.InstanceSettings.Expeditions.WaitForAllExpeditions) {
 						if (_tbotInstance.UserData.slots.ExpInUse == 0)
@@ -96,7 +106,7 @@ namespace Tbot.Workers {
 											Celestial customOrigin = _tbotInstance.UserData.celestials
 												.Unique()
 												.Single(planet => planet.HasCoords(customOriginCoords));
-											customOrigin = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, customOrigin, UpdateTypes.Ships);
+											customOrigin = await _tbotOgameBridge.UpdatePlanet(customOrigin, UpdateTypes.Ships);
 											origins.Add(customOrigin);
 										}
 									} catch (Exception e) {
@@ -104,18 +114,18 @@ namespace Tbot.Workers {
 										DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 										DoLog(LogLevel.Warning, "Unable to parse custom origin");
 
-										_tbotInstance.UserData.celestials = await TBotOgamedBridge.UpdatePlanets(_tbotInstance, UpdateTypes.Ships);
+										_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
 										origins.Add(_tbotInstance.UserData.celestials
 											.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-											.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
+											.OrderByDescending(planet => _calculationService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
 											.First()
 										);
 									}
 								} else {
-									_tbotInstance.UserData.celestials = await TBotOgamedBridge.UpdatePlanets(_tbotInstance, UpdateTypes.Ships);
+									_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
 									origins.Add(_tbotInstance.UserData.celestials
 										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
-										.OrderByDescending(planet => _helpersService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
+										.OrderByDescending(planet => _calculationService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
 										.First()
 									);
 								}
@@ -177,7 +187,7 @@ namespace Tbot.Workers {
 												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) _tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep);
 											}
 											DoLog(LogLevel.Warning, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)}");
-											fleet = _helpersService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+											fleet = _calculationService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend);
 												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
@@ -245,7 +255,7 @@ namespace Tbot.Workers {
 													Type = Celestials.DeepSpace
 												};
 											}
-											_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+											_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 											Resources payload = new();
 											if ((long) _tbotInstance.InstanceSettings.Expeditions.FuelToCarry > 0) {
 												payload.Deuterium = (long) _tbotInstance.InstanceSettings.Expeditions.FuelToCarry;
@@ -291,25 +301,25 @@ namespace Tbot.Workers {
 							.ToList();
 					}
 
-					_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 					if ((orderedFleets.Count() == 0) || (_tbotInstance.UserData.slots.ExpFree > 0)) {
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
 						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
 					}
-					time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+					time = await _tbotOgameBridge.GetDateTime();
 					if (interval <= 0)
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 					newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			} catch (Exception e) {
 				DoLog(LogLevel.Warning, $"HandleExpeditions exception: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 				long interval = (long) (RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
-				var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				var time = await _tbotOgameBridge.GetDateTime();
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(interval);
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
@@ -320,7 +330,7 @@ namespace Tbot.Workers {
 					}
 					if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval;
 						try {
@@ -332,7 +342,7 @@ namespace Tbot.Workers {
 						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
 					}
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}

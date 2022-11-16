@@ -12,15 +12,24 @@ using Microsoft.Extensions.Logging;
 using Tbot.Helpers;
 using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers {
 	public class AutoFarmWorker : WorkerBase {
-
-		public AutoFarmWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-		}
-		public AutoFarmWorker(ITBotMain parentInstance) :
+		private readonly IOgameService _ogameService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public AutoFarmWorker(ITBotMain parentInstance,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
+			_ogameService = ogameService;
+			_fleetScheduler = fleetScheduler;
+			_calculationService = calculationService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		public override string GetWorkerName() {
@@ -42,7 +51,7 @@ namespace Tbot.Workers {
 
 				if ((bool) _tbotInstance.InstanceSettings.AutoFarm.Active) {
 					// If not enough slots are free, the farmer cannot run.
-					_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 
 					int freeSlots = _tbotInstance.UserData.slots.Free;
 					int slotsToLeaveFree = (int) _tbotInstance.InstanceSettings.AutoFarm.SlotsToLeaveFree;
@@ -54,7 +63,7 @@ namespace Tbot.Workers {
 
 					try {
 						// Prune all reports older than KeepReportFor and all reports of state AttackSent: information no longer actual.
-						var newTime = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var newTime = await _tbotOgameBridge.GetDateTime();
 						var removeReports = _tbotInstance.UserData.farmTargets.Where(t => t.State == FarmState.AttackSent || (t.Report != null && DateTime.Compare(t.Report.Date.AddMinutes((double) _tbotInstance.InstanceSettings.AutoFarm.KeepReportFor), newTime) < 0)).ToList();
 						foreach (var remove in removeReports) {
 							var updateReport = remove;
@@ -65,11 +74,11 @@ namespace Tbot.Workers {
 						}
 
 						// Keep local record of _tbotInstance.UserData.celestials, to be updated by autofarmer itself, to reduce ogamed calls.
-						var localCelestials = await TBotOgamedBridge.UpdateCelestials(_tbotInstance);
+						var localCelestials = await _tbotOgameBridge.UpdateCelestials();
 						Dictionary<int, long> celestialProbes = new Dictionary<int, long>();
 						foreach (var celestial in localCelestials) {
-							Celestial tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Fast);
-							tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Ships);
+							Celestial tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+							tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
 							celestialProbes.Add(tempCelestial.ID, tempCelestial.Ships.EspionageProbe);
 						}
 
@@ -107,7 +116,7 @@ namespace Tbot.Workers {
 								if (excludeSystem == true)
 									continue;
 
-								var galaxyInfo = await _tbotInstance.OgamedInstance.GetGalaxyInfo(galaxy, system);
+								var galaxyInfo = await _ogameService.GetGalaxyInfo(galaxy, system);
 								var planets = galaxyInfo.Planets.Where(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation);
 								List<Celestial> scannedTargets = planets.Cast<Celestial>().ToList();
 								await _fleetScheduler.UpdateFleets();
@@ -207,10 +216,10 @@ namespace Tbot.Workers {
 									}
 
 									// Send spy probe from closest celestial with available probes to the target.
-									List<Celestial> tempCelestials = (_tbotInstance.InstanceSettings.AutoFarm.Origin.Length > 0) ? _helpersService.ParseCelestialsList(_tbotInstance.InstanceSettings.AutoFarm.Origin, _tbotInstance.UserData.celestials) : _tbotInstance.UserData.celestials;
+									List<Celestial> tempCelestials = (_tbotInstance.InstanceSettings.AutoFarm.Origin.Length > 0) ? _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.AutoFarm.Origin, _tbotInstance.UserData.celestials) : _tbotInstance.UserData.celestials;
 									List<Celestial> closestCelestials = tempCelestials
 										.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
-										.OrderBy(c => _helpersService.CalcDistance(c.Coordinate, target.Celestial.Coordinate, _tbotInstance.UserData.serverData)).ToList();
+										.OrderBy(c => _calculationService.CalcDistance(c.Coordinate, target.Celestial.Coordinate, _tbotInstance.UserData.serverData)).ToList();
 
 									Celestial bestOrigin = null;
 									int neededProbes = (int) _tbotInstance.InstanceSettings.AutoFarm.NumProbes;
@@ -219,7 +228,7 @@ namespace Tbot.Workers {
 									if (target.State == FarmState.FailedProbesRequired)
 										neededProbes *= 9;
 
-									await TBotOgamedBridge.UpdatePlanets(_tbotInstance, UpdateTypes.Ships);
+									await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
 
 									await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
 
@@ -230,7 +239,7 @@ namespace Tbot.Workers {
 									foreach (var closest in closestCelestials) {
 										// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
 										if (celestialProbes[closest.ID] < neededProbes) {
-											var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, closest, UpdateTypes.Ships);
+											var tempCelestial = await _tbotOgameBridge.UpdatePlanet(closest, UpdateTypes.Ships);
 											celestialProbes.Remove(closest.ID);
 											celestialProbes.Add(closest.ID, tempCelestial.Ships.EspionageProbe);
 										}
@@ -247,7 +256,7 @@ namespace Tbot.Workers {
 										// If there are no free slots, update the minimum time to wait for current missions return.
 										// If there are no free slots, wait for probes to come back to current celestial.
 										if (freeSlots <= slotsToLeaveFree) {
-											var espionageMissions = _helpersService.GetMissionsInProgress(closest.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets);
+											var espionageMissions = _calculationService.GetMissionsInProgress(closest.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets);
 											if (espionageMissions.Any()) {
 												var returningProbes = espionageMissions.Sum(f => f.Ships.EspionageProbe);
 												if (celestialProbes[closest.ID] + returningProbes >= neededProbes) {
@@ -276,14 +285,14 @@ namespace Tbot.Workers {
 											}
 
 											//If there is no bestOrigin, check if can be a good origin (it has enough resources to build probes)
-											var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, closest, UpdateTypes.Constructions);
+											var tempCelestial = await _tbotOgameBridge.UpdatePlanet(closest, UpdateTypes.Constructions);
 											if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 												Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 												continue;
 											}
 											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
-											tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Productions);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
 											if (tempCelestial.Productions.Any(p => p.ID == (int) Buildables.EspionageProbe)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: Probes already building.");
 												continue;
@@ -291,8 +300,8 @@ namespace Tbot.Workers {
 
 											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
 											var buildProbes = neededProbes - celestialProbes[closest.ID];
-											var cost = _helpersService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
-											tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Resources);
+											var cost = _calculationService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 											if (tempCelestial.Resources.IsEnoughFor(cost)) {
 												bestOrigin = closest;
 											}
@@ -304,7 +313,7 @@ namespace Tbot.Workers {
 											int interval = (int) ((1000 * minBackIn.Value) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Not enough free slots {freeSlots}/{slotsToLeaveFree}. Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
 											await Task.Delay(interval);
-											bestOrigin = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, minBackIn.Key, UpdateTypes.Ships);
+											bestOrigin = await _tbotOgameBridge.UpdatePlanet(minBackIn.Key, UpdateTypes.Ships);
 											freeSlots++;
 										} else {
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"No origin found to spy from. There are not enough probes or enough resources to build them. Using closest celestial as best origin.");
@@ -316,7 +325,7 @@ namespace Tbot.Workers {
 
 
 									if (freeSlots <= slotsToLeaveFree) {
-										_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+										_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 										freeSlots = _tbotInstance.UserData.slots.Free;
 									}
 
@@ -328,7 +337,7 @@ namespace Tbot.Workers {
 											int interval = (int) ((1000 * _tbotInstance.UserData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting {TimeSpan.FromMilliseconds(interval)} for fleet to return...");
 											await Task.Delay(interval);
-											_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+											_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 											freeSlots = _tbotInstance.UserData.slots.Free;
 										} else {
 											_tbotInstance.log(LogLevel.Error, LogSender.AutoFarm, "Error: No fleet slots available and no fleets returning!");
@@ -336,18 +345,18 @@ namespace Tbot.Workers {
 										}
 									}
 
-									if (_helpersService.GetMissionsInProgress(bestOrigin.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
+									if (_calculationService.GetMissionsInProgress(bestOrigin.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
 										break;
 									}
-									if (_helpersService.GetMissionsInProgress(bestOrigin.Coordinate, Missions.Attack, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
+									if (_calculationService.GetMissionsInProgress(bestOrigin.Coordinate, Missions.Attack, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
 										break;
 									}
 
 									// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
 									if (celestialProbes[bestOrigin.ID] < neededProbes) {
-										var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, bestOrigin, UpdateTypes.Ships);
+										var tempCelestial = await _tbotOgameBridge.UpdatePlanet(bestOrigin, UpdateTypes.Ships);
 										celestialProbes.Remove(bestOrigin.ID);
 										celestialProbes.Add(bestOrigin.ID, tempCelestial.Ships.EspionageProbe);
 									}
@@ -358,7 +367,7 @@ namespace Tbot.Workers {
 
 										_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Spying {target.ToString()} from {bestOrigin.ToString()} with {neededProbes} probes.");
 
-										_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+										_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 										var fleetId = await _fleetScheduler.SendFleet(bestOrigin, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
 										if (fleetId > (int) SendFleetCode.GenericError) {
 											freeSlots--;
@@ -383,34 +392,34 @@ namespace Tbot.Workers {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Insufficient probes ({celestialProbes[bestOrigin.ID]}/{neededProbes}).");
 										if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "BuildProbes") && _tbotInstance.InstanceSettings.AutoFarm.BuildProbes == true) {
 											//Check if probes can be built
-											var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, bestOrigin, UpdateTypes.Constructions);
+											var tempCelestial = await _tbotOgameBridge.UpdatePlanet(bestOrigin, UpdateTypes.Constructions);
 											if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 												Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 												break;
 											}
 
-											tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, bestOrigin, UpdateTypes.Productions);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(bestOrigin, UpdateTypes.Productions);
 											if (tempCelestial.Productions.Any(p => p.ID == (int) Buildables.EspionageProbe)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: Probes already building.");
 												break;
 											}
 
 											var buildProbes = neededProbes - celestialProbes[bestOrigin.ID];
-											var cost = _helpersService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
-											tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, bestOrigin, UpdateTypes.Resources);
+											var cost = _calculationService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(bestOrigin, UpdateTypes.Resources);
 											if (tempCelestial.Resources.IsEnoughFor(cost)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {buildProbes}x{Buildables.EspionageProbe.ToString()}");
 											} else {
-												var buildableProbes = _helpersService.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
+												var buildableProbes = _calculationService.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
 												_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {buildProbes}x{Buildables.EspionageProbe.ToString()}. {buildableProbes} will be built instead.");
 												buildProbes = buildableProbes;
 											}
 
 											try {
-												await _tbotInstance.OgamedInstance.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
-												tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Facilities);
-												int interval = (int) (_helpersService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+												await _ogameService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
+												tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
+												int interval = (int) (_calculationService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
 												await Task.Delay(interval);
 											} catch {
@@ -430,7 +439,7 @@ namespace Tbot.Workers {
 
 					// Wait for all espionage fleets to return.
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-					Fleet firstReturning = _helpersService.GetFirstReturningEspionage(_tbotInstance.UserData.fleets);
+					Fleet firstReturning = _calculationService.GetFirstReturningEspionage(_tbotInstance.UserData.fleets);
 					if (firstReturning != null) {
 						int interval = (int) ((1000 * firstReturning.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
@@ -474,8 +483,8 @@ namespace Tbot.Workers {
 						return;
 					}
 
-					_tbotInstance.UserData.researches = await TBotOgamedBridge.UpdateResearches(_tbotInstance);
-					_tbotInstance.UserData.celestials = await TBotOgamedBridge.UpdateCelestials(_tbotInstance);
+					_tbotInstance.UserData.researches = await _tbotOgameBridge.UpdateResearches();
+					_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdateCelestials();
 					int attackTargetsCount = 0;
 					decimal lootFuelRatio = SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MinLootFuelRatio") ? (decimal) _tbotInstance.InstanceSettings.AutoFarm.MinLootFuelRatio : (decimal) 0.0001;
 					decimal speed = 0;
@@ -483,28 +492,28 @@ namespace Tbot.Workers {
 						attackTargetsCount++;
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count()} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(_tbotInstance.UserData.userInfo.Class).TransportableResources}.");
 						var loot = target.Report.Loot(_tbotInstance.UserData.userInfo.Class);
-						var numCargo = _helpersService.CalcShipNumberForPayload(loot, cargoShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						var numCargo = _calculationService.CalcShipNumberForPayload(loot, cargoShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "CargoSurplusPercentage") && (double) _tbotInstance.InstanceSettings.AutoFarm.CargoSurplusPercentage > 0) {
 							numCargo = (long) Math.Round(numCargo + (numCargo / 100 * (double) _tbotInstance.InstanceSettings.AutoFarm.CargoSurplusPercentage), 0);
 						}
 						var attackingShips = new Ships().Add(cargoShip, numCargo);
 
-						List<Celestial> tempCelestials = (_tbotInstance.InstanceSettings.AutoFarm.Origin.Length > 0) ? _helpersService.ParseCelestialsList(_tbotInstance.InstanceSettings.AutoFarm.Origin, _tbotInstance.UserData.celestials) : _tbotInstance.UserData.celestials;
+						List<Celestial> tempCelestials = (_tbotInstance.InstanceSettings.AutoFarm.Origin.Length > 0) ? _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.AutoFarm.Origin, _tbotInstance.UserData.celestials) : _tbotInstance.UserData.celestials;
 						List<Celestial> closestCelestials = tempCelestials
 							.OrderByDescending(planet => planet.Coordinate.Type == Celestials.Moon)
-							.OrderBy(c => _helpersService.CalcDistance(c.Coordinate, target.Celestial.Coordinate, _tbotInstance.UserData.serverData))
+							.OrderBy(c => _calculationService.CalcDistance(c.Coordinate, target.Celestial.Coordinate, _tbotInstance.UserData.serverData))
 							.ToList();
 
 						Celestial fromCelestial = null;
 						foreach (var c in closestCelestials) {
-							var tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, c, UpdateTypes.Ships);
-							tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Resources);
+							var tempCelestial = await _tbotOgameBridge.UpdatePlanet(c, UpdateTypes.Ships);
+							tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 							if (tempCelestial.Ships != null && tempCelestial.Ships.GetAmount(cargoShip) >= (numCargo + _tbotInstance.InstanceSettings.AutoFarm.MinCargosToKeep)) {
 								// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 								speed = 0;
 								if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MinLootFuelRatio") && _tbotInstance.InstanceSettings.AutoFarm.MinLootFuelRatio != 0) {
 									long maxFlightTime = SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MaxFlightTime") ? (long) _tbotInstance.InstanceSettings.AutoFarm.MaxFlightTime : 86400;
-									var optimalSpeed = _helpersService.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+									var optimalSpeed = _calculationService.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 									if (optimalSpeed == 0) {
 										_tbotInstance.log(LogLevel.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
 
@@ -516,7 +525,7 @@ namespace Tbot.Workers {
 								if (speed == 0) {
 									if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "FleetSpeed") && _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed > 0) {
 										speed = (int) _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed / 10;
-										if (!_helpersService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
+										if (!_calculationService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
 											_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
 											speed = Speeds.HundredPercent;
 										}
@@ -524,7 +533,7 @@ namespace Tbot.Workers {
 										speed = Speeds.HundredPercent;
 									}
 								}
-								FleetPrediction prediction = _helpersService.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+								FleetPrediction prediction = _calculationService.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 
 								if (
 									(
@@ -545,13 +554,13 @@ namespace Tbot.Workers {
 							// TODO Future: If prefered cargo ship is not available or not sufficient capacity, combine with other cargo type.
 							foreach (var closest in closestCelestials) {
 								Celestial tempCelestial = closest;
-								tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Ships);
-								tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Resources);
+								tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
+								tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 								// TODO Future: If fleet composition is changed, update ships passed to CalcFlightTime.
 								speed = 0;
 								if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "FleetSpeed") && _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed > 0) {
 									speed = (int) _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed / 10;
-									if (!_helpersService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
+									if (!_calculationService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
 										speed = Speeds.HundredPercent;
 									}
@@ -559,7 +568,7 @@ namespace Tbot.Workers {
 									speed = 0;
 									if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MinLootFuelRatio") && _tbotInstance.InstanceSettings.AutoFarm.MinLootFuelRatio != 0) {
 										long maxFlightTime = SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MaxFlightTime") ? (long) _tbotInstance.InstanceSettings.AutoFarm.MaxFlightTime : 86400;
-										var optimalSpeed = _helpersService.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+										var optimalSpeed = _calculationService.CalcOptimalFarmSpeed(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 										if (optimalSpeed == 0) {
 											_tbotInstance.log(LogLevel.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
 
@@ -571,7 +580,7 @@ namespace Tbot.Workers {
 									if (speed == 0) {
 										if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "FleetSpeed") && _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed > 0) {
 											speed = (int) _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed / 10;
-											if (!_helpersService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
+											if (!_calculationService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
 												_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
 												speed = Speeds.HundredPercent;
 											}
@@ -580,7 +589,7 @@ namespace Tbot.Workers {
 										}
 									}
 								}
-								FleetPrediction prediction = _helpersService.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+								FleetPrediction prediction = _calculationService.CalcFleetPrediction(tempCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, Missions.Attack, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 
 								if (
 									tempCelestial.Ships.GetAmount(cargoShip) < numCargo + (long) _tbotInstance.InstanceSettings.AutoFarm.MinCargosToKeep &&
@@ -593,19 +602,19 @@ namespace Tbot.Workers {
 								) {
 									if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "BuildCargos") && _tbotInstance.InstanceSettings.AutoFarm.BuildCargos == true) {
 										var neededCargos = numCargo + (long) _tbotInstance.InstanceSettings.AutoFarm.MinCargosToKeep - tempCelestial.Ships.GetAmount(cargoShip);
-										var cost = _helpersService.CalcPrice(cargoShip, (int) neededCargos);
+										var cost = _calculationService.CalcPrice(cargoShip, (int) neededCargos);
 										if (tempCelestial.Resources.IsEnoughFor(cost)) {
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {neededCargos}x{cargoShip.ToString()}");
 										} else {
-											var buildableCargos = _helpersService.CalcMaxBuildableNumber(cargoShip, tempCelestial.Resources);
+											var buildableCargos = _calculationService.CalcMaxBuildableNumber(cargoShip, tempCelestial.Resources);
 											_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{cargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
 											neededCargos = buildableCargos;
 										}
 
 										try {
-											await _tbotInstance.OgamedInstance.BuildShips(tempCelestial, cargoShip, neededCargos);
-											tempCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Facilities);
-											int interval = (int) (_helpersService.CalcProductionTime(cargoShip, (int) neededCargos, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+											await _ogameService.BuildShips(tempCelestial, cargoShip, neededCargos);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
+											int interval = (int) (_calculationService.CalcProductionTime(cargoShip, (int) neededCargos, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
 											await Task.Delay(interval);
 										} catch {
@@ -632,7 +641,7 @@ namespace Tbot.Workers {
 
 						// Only execute update slots if our local copy indicates we have run out.
 						if (freeSlots <= slotsToLeaveFree) {
-							_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+							_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 							freeSlots = _tbotInstance.UserData.slots.Free;
 						}
 
@@ -647,7 +656,7 @@ namespace Tbot.Workers {
 								} else {
 									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting {TimeSpan.FromMilliseconds(interval)} for first fleet to return...");
 									await Task.Delay(interval);
-									_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+									_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 									freeSlots = _tbotInstance.UserData.slots.Free;
 								}
 							} else {
@@ -663,7 +672,7 @@ namespace Tbot.Workers {
 							speed = 0;
 							if (/*cargoShip == Buildables.EspionageProbe &&*/ SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MinLootFuelRatio") && _tbotInstance.InstanceSettings.AutoFarm.MinLootFuelRatio != 0) {
 								long maxFlightTime = SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MaxFlightTime") ? (long) _tbotInstance.InstanceSettings.AutoFarm.MaxFlightTime : 86400;
-								var optimalSpeed = _helpersService.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+								var optimalSpeed = _calculationService.CalcOptimalFarmSpeed(fromCelestial.Coordinate, target.Celestial.Coordinate, attackingShips, target.Report.Loot(_tbotInstance.UserData.userInfo.Class), lootFuelRatio, maxFlightTime, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 								if (optimalSpeed == 0) {
 									_tbotInstance.log(LogLevel.Debug, LogSender.AutoFarm, $"Unable to calculate a valid optimal speed: {(int) Math.Round(optimalSpeed * 10, 0)}%");
 
@@ -675,7 +684,7 @@ namespace Tbot.Workers {
 							if (speed == 0) {
 								if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "FleetSpeed") && _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed > 0) {
 									speed = (int) _tbotInstance.InstanceSettings.AutoFarm.FleetSpeed / 10;
-									if (!_helpersService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
+									if (!_calculationService.GetValidSpeedsForClass(_tbotInstance.UserData.userInfo.Class).Any(s => s == speed)) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Invalid FleetSpeed, falling back to default 100%.");
 										speed = Speeds.HundredPercent;
 									}
@@ -712,14 +721,14 @@ namespace Tbot.Workers {
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Stopping feature.");
 						await EndExecution();
 					} else {
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMax);
 						if (interval <= 0)
 							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						var newTime = time.AddMilliseconds(interval);
 						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Next autofarm check at {newTime.ToString()}");
-						await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+						await _tbotOgameBridge.CheckCelestials();
 					}
 				}
 			}
@@ -731,15 +740,15 @@ namespace Tbot.Workers {
 		private async Task AutoFarmProcessReports() {
 			// TODO Future: Read espionage reports in separate thread (concurently with probing itself).
 			// TODO Future: Check if probes were destroyed, blacklist target if so to avoid additional kills.
-			List<EspionageReportSummary> summaryReports = await _tbotInstance.OgamedInstance.GetEspionageReports();
+			List<EspionageReportSummary> summaryReports = await _ogameService.GetEspionageReports();
 			foreach (var summary in summaryReports) {
 				if (summary.Type == EspionageReportType.Action)
 					continue;
 
 				try {
-					var report = await _tbotInstance.OgamedInstance.GetEspionageReport(summary.ID);
-					if (DateTime.Compare(report.Date.AddMinutes((double) _tbotInstance.InstanceSettings.AutoFarm.KeepReportFor), await TBotOgamedBridge.GetDateTime(_tbotInstance)) < 0) {
-						await _tbotInstance.OgamedInstance.DeleteReport(report.ID);
+					var report = await _ogameService.GetEspionageReport(summary.ID);
+					if (DateTime.Compare(report.Date.AddMinutes((double) _tbotInstance.InstanceSettings.AutoFarm.KeepReportFor), await _tbotOgameBridge.GetDateTime()) < 0) {
+						await _ogameService.DeleteReport(report.ID);
 						continue;
 					}
 
@@ -758,7 +767,7 @@ namespace Tbot.Workers {
 
 						if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
 							// Target has a more recent report. Delete report.
-							await _tbotInstance.OgamedInstance.DeleteReport(report.ID);
+							await _ogameService.DeleteReport(report.ID);
 							continue;
 						}
 
@@ -800,7 +809,7 @@ namespace Tbot.Workers {
 				}
 			}
 
-			await _tbotInstance.OgamedInstance.DeleteAllEspionageReports();
+			await _ogameService.DeleteAllEspionageReports();
 
 		}
 	}

@@ -13,18 +13,21 @@ using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 using Tbot.Includes;
 using System.Timers;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers {
 	internal class DefenderWorker : WorkerBase {
-
-		public DefenderWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService) :
-			base(parentInstance, fleetScheduler, helpersService) {
-
-		}
-
-		public DefenderWorker(ITBotMain parentInstance)
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly IOgameService _ogameService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		public DefenderWorker(ITBotMain parentInstance,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ITBotOgamedBridge tbotOgameBridge)
 			: base(parentInstance) {
-
+			_fleetScheduler = fleetScheduler;
+			_ogameService = ogameService;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 
 		protected override async Task Execute() {
@@ -37,15 +40,15 @@ namespace Tbot.Workers {
 				}
 
 				await FakeActivity();
-				_tbotInstance.UserData.fleets = await _tbotInstance.FleetScheduler.UpdateFleets();
-				bool isUnderAttack = await _tbotInstance.OgamedInstance.IsUnderAttack();
-				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+				bool isUnderAttack = await _ogameService.IsUnderAttack();
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				if (isUnderAttack) {
 					if ((bool) _tbotInstance.InstanceSettings.Defender.Alarm.Active)
 						await Task.Factory.StartNew(() => ConsoleHelpers.PlayAlarm(), _ct);
 					// UpdateTitle(false, true);
 					DoLog(LogLevel.Warning, "ENEMY ACTIVITY!!!");
-					_tbotInstance.UserData.attacks = await _tbotInstance.OgamedInstance.GetAttacks();
+					_tbotInstance.UserData.attacks = await _ogameService.GetAttacks();
 					foreach (AttackerFleet attack in _tbotInstance.UserData.attacks) {
 						HandleAttack(attack);
 					}
@@ -60,16 +63,16 @@ namespace Tbot.Workers {
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
-				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+				await _tbotOgameBridge.CheckCelestials();
 			} catch (Exception e) {
 				DoLog(LogLevel.Warning, $"An error has occurred while checking for attacks: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
-				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
 				DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
-				await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+				await _tbotOgameBridge.CheckCelestials();
 			} finally {
 
 			}
@@ -100,11 +103,11 @@ namespace Tbot.Workers {
 				.SingleOrDefault() ?? new() { ID = 0 };
 
 			if (celestial.ID != 0) {
-				celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Defences);
+				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Defences);
 			}
 			randomCelestial = _tbotInstance.UserData.celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
 			if (randomCelestial.ID != 0) {
-				randomCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, randomCelestial, UpdateTypes.Defences);
+				randomCelestial = await _tbotOgameBridge.UpdatePlanet(randomCelestial, UpdateTypes.Defences);
 			}
 
 			return;
@@ -112,7 +115,7 @@ namespace Tbot.Workers {
 
 		private async void HandleAttack(AttackerFleet attack) {
 			if (_tbotInstance.UserData.celestials.Count() == 0) {
-				DateTime time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+				DateTime time = await _tbotOgameBridge.GetDateTime();
 				long interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				DateTime newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(TimeSpan.FromMilliseconds(interval));
@@ -122,7 +125,7 @@ namespace Tbot.Workers {
 			}
 
 			Celestial attackedCelestial = _tbotInstance.UserData.celestials.Unique().SingleOrDefault(planet => planet.HasCoords(attack.Destination));
-			attackedCelestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, attackedCelestial, UpdateTypes.Ships);
+			attackedCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Ships);
 
 			try {
 				if ((_tbotInstance.InstanceSettings.Defender.WhiteList as long[]).Any()) {
@@ -182,14 +185,14 @@ namespace Tbot.Workers {
 			DoLog(LogLevel.Warning, $"The attack is composed by: {attack.Ships.ToString()}");
 
 			if ((bool) _tbotInstance.InstanceSettings.Defender.SpyAttacker.Active) {
-				_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
+				_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 				if (attackedCelestial.Ships.EspionageProbe == 0) {
 					DoLog(LogLevel.Warning, "Could not spy attacker: no probes available.");
 				} else {
 					try {
 						Coordinate destination = attack.Origin;
 						Ships ships = new() { EspionageProbe = (int) _tbotInstance.InstanceSettings.Defender.SpyAttacker.Probes };
-						int fleetId = await _tbotInstance.FleetScheduler.SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent, new Resources(), _tbotInstance.UserData.userInfo.Class);
+						int fleetId = await _fleetScheduler.SendFleet(attackedCelestial, ships, destination, Missions.Spy, Speeds.HundredPercent, new Resources(), _tbotInstance.UserData.userInfo.Class);
 						Fleet fleet = _tbotInstance.UserData.fleets.Single(fleet => fleet.ID == fleetId);
 						DoLog(LogLevel.Information, $"Spying attacker from {attackedCelestial.ToString()} to {destination.ToString()} with {_tbotInstance.InstanceSettings.Defender.SpyAttacker.Probes} probes. Arrival at {fleet.ArrivalTime.ToString()}");
 					} catch (Exception e) {
@@ -207,7 +210,7 @@ namespace Tbot.Workers {
 						string message = messages.ToList().Shuffle().First();
 						DoLog(LogLevel.Information, $"Sending message \"{message}\" to attacker {attack.AttackerName}");
 						try {
-							await _tbotInstance.OgamedInstance.SendMessage(attack.AttackerID, message);
+							await _ogameService.SendMessage(attack.AttackerID, message);
 							DoLog(LogLevel.Information, "Message succesfully sent.");
 						} catch {
 							DoLog(LogLevel.Warning, "Unable send message.");
@@ -224,7 +227,7 @@ namespace Tbot.Workers {
 
 			if ((bool) _tbotInstance.InstanceSettings.Defender.Autofleet.Active) {
 				var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
-				await _tbotInstance.FleetScheduler.AutoFleetSave(attackedCelestial, false, minFlightTime, true);
+				await _fleetScheduler.AutoFleetSave(attackedCelestial, false, minFlightTime, true);
 			}
 		}
 	}

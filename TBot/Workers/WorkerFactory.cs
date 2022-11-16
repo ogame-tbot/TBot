@@ -5,37 +5,51 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Tbot.Includes;
 using Tbot.Services;
 using Tbot.Workers.Brain;
 using TBot.Common.Logging;
+using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
 
 namespace Tbot.Workers {
 	public class WorkerFactory : IWorkerFactory {
+		private readonly ICalculationService _calculationService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly IOgameService _ogameService;
+
+		public WorkerFactory(ICalculationService calculationService,
+			IFleetScheduler fleetScheduler,
+			IOgameService ogameService) {
+			_calculationService = calculationService;
+			_fleetScheduler = fleetScheduler;
+			_ogameService = ogameService;
+		}
+
 
 		// This is going to be replaced with ServiceProvider
 		private ConcurrentDictionary<Feature, ITBotWorker> _workers = new();
 
 		private SemaphoreSlim _brain = new SemaphoreSlim(1, 1);
 
-		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance) {
+		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge) {
 			if (_workers.TryGetValue(feat, out var worker)) {
 				return worker;
 			}
 
 			ITBotWorker newWorker = feat switch {
-				Feature.Defender => new DefenderWorker(tbotMainInstance),
-				Feature.BrainAutobuildCargo => new AutoCargoWorker(tbotMainInstance),
-				Feature.BrainAutoRepatriate => new AutoRepatriateWorker(tbotMainInstance),
-				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance),
-				Feature.BrainOfferOfTheDay => new BuyOfferOfTheDayWorker(tbotMainInstance),
-				Feature.Expeditions => new ExpeditionsWorker(tbotMainInstance),
-				Feature.Harvest => new HarvestWorker(tbotMainInstance),
-				Feature.BrainAutoResearch => new AutoResearchWorker(tbotMainInstance, GetAutoMineWorker()),
-				Feature.Colonize => new ColonizeWorker(tbotMainInstance),
-				Feature.AutoFarm => new AutoFarmWorker(tbotMainInstance),
-				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, GetAutoMineWorker()),
-				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, GetAutoMineWorker()),
+				Feature.Defender => new DefenderWorker(tbotMainInstance, _ogameService, _fleetScheduler, tbotOgameBridge),
+				Feature.BrainAutobuildCargo => new AutoCargoWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainAutoRepatriate => new AutoRepatriateWorker(tbotMainInstance, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainOfferOfTheDay => new BuyOfferOfTheDayWorker(tbotMainInstance, _ogameService, tbotOgameBridge),
+				Feature.Expeditions => new ExpeditionsWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.Harvest => new HarvestWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainAutoResearch => new AutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.Colonize => new ColonizeWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.AutoFarm => new AutoFarmWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				_ => null
 			};
 

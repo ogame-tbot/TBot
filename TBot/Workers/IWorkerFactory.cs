@@ -9,7 +9,7 @@ using TBot.Ogame.Infrastructure.Enums;
 
 namespace Tbot.Workers {
 	public interface IWorkerFactory {
-		ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance);
+		ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge);
 		ITBotWorker GetWorker(Feature feat);
 		IAutoMineWorker GetAutoMineWorker();
 	}

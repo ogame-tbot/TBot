@@ -12,17 +12,28 @@ using TBot.Ogame.Infrastructure.Enums;
 using TBot.Ogame.Infrastructure.Models;
 using Tbot.Includes;
 using Tbot.Services;
+using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	public class AutoResearchWorker : WorkerBase {
 		private readonly IAutoMineWorker _autoMineWorker;
-		public AutoResearchWorker(ITBotMain parentInstance, IFleetScheduler fleetScheduler, ICalculationService helpersService, IAutoMineWorker autoMineWorker) :
-			base(parentInstance, fleetScheduler, helpersService) {
-			_autoMineWorker = autoMineWorker;
-		}
-		public AutoResearchWorker(ITBotMain parentInstance, IAutoMineWorker autoMineWorker) :
+		private readonly IOgameService _ogameService;
+		private readonly IFleetScheduler _fleetScheduler;
+		private readonly ICalculationService _calculationService;
+		private readonly ITBotOgamedBridge _tbotOgameBridge;
+
+		public AutoResearchWorker(ITBotMain parentInstance,
+			IAutoMineWorker autoMineWorker,
+			IOgameService ogameService,
+			IFleetScheduler fleetScheduler,
+			ICalculationService calculationService,
+			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
 			_autoMineWorker = autoMineWorker;
+			_ogameService = ogameService;
+			_calculationService = calculationService;
+			_fleetScheduler = fleetScheduler;
+			_tbotOgameBridge = tbotOgameBridge;
 		}
 		protected override async Task Execute() {
 			int fleetId = (int) SendFleetCode.GenericError;
@@ -33,7 +44,7 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Information, "Running autoresearch...");
 
 				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Active) {
-					_tbotInstance.UserData.researches = await _tbotInstance.OgamedInstance.GetResearches();
+					_tbotInstance.UserData.researches = await _ogameService.GetResearches();
 					Planet celestial;
 					var parseSucceded = _tbotInstance.UserData.celestials
 						.Any(c => c.HasCoords(new(
@@ -55,19 +66,19 @@ namespace Tbot.Workers.Brain {
 							)) as Planet;
 					} else {
 						DoLog(LogLevel.Warning, "Unable to parse Brain.AutoResearch.Target. Falling back to planet with biggest Research Lab");
-						_tbotInstance.UserData.celestials = await TBotOgamedBridge.UpdatePlanets(_tbotInstance, UpdateTypes.Facilities);
+						_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Facilities);
 						celestial = _tbotInstance.UserData.celestials
 							.Where(c => c.Coordinate.Type == Celestials.Planet)
 							.OrderByDescending(c => c.Facilities.ResearchLab)
 							.First() as Planet;
 					}
 
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities) as Planet;
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities) as Planet;
 					if (celestial.Facilities.ResearchLab == 0) {
 						DoLog(LogLevel.Information, "Skipping AutoResearch: Research Lab is missing on target planet.");
 						return;
 					}
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions) as Planet;
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
 					if (celestial.Constructions.ResearchID != 0) {
 						delayResearch = (long) celestial.Constructions.ResearchCountdown * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 						DoLog(LogLevel.Information, "Skipping AutoResearch: there is already a research in progress.");
@@ -77,10 +88,10 @@ namespace Tbot.Workers.Brain {
 						DoLog(LogLevel.Information, "Skipping AutoResearch: the Research Lab is upgrading.");
 						return;
 					}
-					_tbotInstance.UserData.slots = await TBotOgamedBridge.UpdateSlots(_tbotInstance);
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Facilities) as Planet;
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources) as Planet;
-					celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.ResourcesProduction) as Planet;
+					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities) as Planet;
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction) as Planet;
 
 					Buildables research;
 
@@ -88,14 +99,14 @@ namespace Tbot.Workers.Brain {
 						List<Celestial> planets = new();
 						foreach (var p in _tbotInstance.UserData.celestials) {
 							if (p.Coordinate.Type == Celestials.Planet) {
-								var newPlanet = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, p, UpdateTypes.Facilities);
-								newPlanet = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, p, UpdateTypes.Buildings);
+								var newPlanet = await _tbotOgameBridge.UpdatePlanet(p, UpdateTypes.Facilities);
+								newPlanet = await _tbotOgameBridge.UpdatePlanet(p, UpdateTypes.Buildings);
 								planets.Add(newPlanet);
 							}
 						}
-						var plasmaDOIR = _helpersService.CalcNextPlasmaTechDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+						var plasmaDOIR = _calculationService.CalcNextPlasmaTechDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 						DoLog(LogLevel.Debug, $"Next Plasma tech DOIR: {Math.Round(plasmaDOIR, 2).ToString()}");
-						var astroDOIR = _helpersService.CalcNextAstroDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
+						var astroDOIR = _calculationService.CalcNextAstroDOIR(planets.Where(c => c is Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 						DoLog(LogLevel.Debug, $"Next Astro DOIR: {Math.Round(astroDOIR, 2).ToString()}");
 
 						if (
@@ -110,7 +121,7 @@ namespace Tbot.Workers.Brain {
 							_tbotInstance.UserData.researches.IonTechnology >= 5
 						) {
 							research = Buildables.PlasmaTechnology;
-						} else if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeEnergyTechnology && _helpersService.ShouldResearchEnergyTech(planets.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull)) {
+						} else if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeEnergyTechnology && _calculationService.ShouldResearchEnergyTech(planets.Where(c => c.Coordinate.Type == Celestials.Planet).Cast<Planet>().ToList<Planet>(), _tbotInstance.UserData.researches, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull)) {
 							research = Buildables.EnergyTechnology;
 						} else if (
 							(bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeAstrophysics &&
@@ -124,10 +135,10 @@ namespace Tbot.Workers.Brain {
 						) {
 							research = Buildables.Astrophysics;
 						} else {
-							research = _helpersService.GetNextResearchToBuild(celestial as Planet, _tbotInstance.UserData.researches, (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.PrioritizeRobotsAndNanites, _tbotInstance.UserData.slots, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxLaserTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIonTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxPlasmaTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxCombustionDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxImpulseDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEspionageTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxComputerTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxAstrophysics, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxWeaponsTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxShieldingTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxArmourTechnology, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.OptimizeForStart, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.EnsureExpoSlots, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.Admiral);
+							research = _calculationService.GetNextResearchToBuild(celestial as Planet, _tbotInstance.UserData.researches, (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.PrioritizeRobotsAndNanites, _tbotInstance.UserData.slots, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxLaserTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIonTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxPlasmaTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxCombustionDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxImpulseDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEspionageTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxComputerTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxAstrophysics, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxWeaponsTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxShieldingTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxArmourTechnology, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.OptimizeForStart, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.EnsureExpoSlots, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.Admiral);
 						}
 					} else {
-						research = _helpersService.GetNextResearchToBuild(celestial as Planet, _tbotInstance.UserData.researches, (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.PrioritizeRobotsAndNanites, _tbotInstance.UserData.slots, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxLaserTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIonTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxPlasmaTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxCombustionDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxImpulseDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEspionageTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxComputerTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxAstrophysics, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxWeaponsTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxShieldingTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxArmourTechnology, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.OptimizeForStart, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.EnsureExpoSlots, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.Admiral);
+						research = _calculationService.GetNextResearchToBuild(celestial as Planet, _tbotInstance.UserData.researches, (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.PrioritizeRobotsAndNanites, _tbotInstance.UserData.slots, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEnergyTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxLaserTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIonTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxPlasmaTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxCombustionDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxImpulseDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxHyperspaceDrive, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxEspionageTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxComputerTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxAstrophysics, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxWeaponsTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxShieldingTechnology, (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxArmourTechnology, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.OptimizeForStart, (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.EnsureExpoSlots, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.Admiral);
 					}
 
 					if (
@@ -137,24 +148,24 @@ namespace Tbot.Workers.Brain {
 						celestial.Facilities.ResearchLab >= 10 &&
 						_tbotInstance.UserData.researches.ComputerTechnology >= 8 &&
 						_tbotInstance.UserData.researches.HyperspaceTechnology >= 8 &&
-						(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= _helpersService.GetNextLevel(_tbotInstance.UserData.researches, Buildables.IntergalacticResearchNetwork) &&
+						(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.MaxIntergalacticResearchNetwork >= _calculationService.GetNextLevel(_tbotInstance.UserData.researches, Buildables.IntergalacticResearchNetwork) &&
 						_tbotInstance.UserData.celestials.Any(c => c.Facilities != null)
 					) {
-						var cumulativeLabLevel = _helpersService.CalcCumulativeLabLevel(_tbotInstance.UserData.celestials, _tbotInstance.UserData.researches);
-						var researchTime = _helpersService.CalcProductionTime(research, _helpersService.GetNextLevel(_tbotInstance.UserData.researches, research), _tbotInstance.UserData.serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, _tbotInstance.UserData.userInfo.Class == CharacterClass.Discoverer, _tbotInstance.UserData.staff.Technocrat);
-						var irnTime = _helpersService.CalcProductionTime(Buildables.IntergalacticResearchNetwork, _helpersService.GetNextLevel(_tbotInstance.UserData.researches, Buildables.IntergalacticResearchNetwork), _tbotInstance.UserData.serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, _tbotInstance.UserData.userInfo.Class == CharacterClass.Discoverer, _tbotInstance.UserData.staff.Technocrat);
+						var cumulativeLabLevel = _calculationService.CalcCumulativeLabLevel(_tbotInstance.UserData.celestials, _tbotInstance.UserData.researches);
+						var researchTime = _calculationService.CalcProductionTime(research, _calculationService.GetNextLevel(_tbotInstance.UserData.researches, research), _tbotInstance.UserData.serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, _tbotInstance.UserData.userInfo.Class == CharacterClass.Discoverer, _tbotInstance.UserData.staff.Technocrat);
+						var irnTime = _calculationService.CalcProductionTime(Buildables.IntergalacticResearchNetwork, _calculationService.GetNextLevel(_tbotInstance.UserData.researches, Buildables.IntergalacticResearchNetwork), _tbotInstance.UserData.serverData.SpeedResearch, celestial.Facilities, cumulativeLabLevel, _tbotInstance.UserData.userInfo.Class == CharacterClass.Discoverer, _tbotInstance.UserData.staff.Technocrat);
 						if (irnTime < researchTime) {
 							research = Buildables.IntergalacticResearchNetwork;
 						}
 					}
 
-					int level = _helpersService.GetNextLevel(_tbotInstance.UserData.researches, research);
+					int level = _calculationService.GetNextLevel(_tbotInstance.UserData.researches, research);
 					if (research != Buildables.Null) {
-						celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Resources) as Planet;
-						Resources cost = _helpersService.CalcPrice(research, level);
+						celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
+						Resources cost = _calculationService.CalcPrice(research, level);
 						if (celestial.Resources.IsEnoughFor(cost)) {
 							try {
-								await _tbotInstance.OgamedInstance.BuildCancelable(celestial, research);
+								await _ogameService.BuildCancelable(celestial, research);
 								DoLog(LogLevel.Information, $"Research {research.ToString()} level {level.ToString()} started on {celestial.ToString()}");
 							} catch {
 								DoLog(LogLevel.Warning, $"Research {research.ToString()} level {level.ToString()} could not be started on {celestial.ToString()}");
@@ -163,7 +174,7 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Information, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Active) {
 								_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-								if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+								if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 									Celestial origin = _tbotInstance.UserData.celestials
 										.Unique()
 										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Galaxy)
@@ -209,7 +220,7 @@ namespace Tbot.Workers.Brain {
 						await EndExecution();
 					} else if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						long interval;
 						try {
@@ -221,7 +232,7 @@ namespace Tbot.Workers.Brain {
 						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next AutoResearch check at {newTime.ToString()}");
 					} else if (delayResearch > 0) {
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						var newTime = time.AddMilliseconds(delayResearch);
 						ChangeWorkerPeriod(delayResearch);
 						DoLog(LogLevel.Information, $"Next AutoResearch check at {newTime.ToString()}");
@@ -236,11 +247,11 @@ namespace Tbot.Workers.Brain {
 								Celestials.Planet
 								)
 							)) as Planet ?? new Planet() { ID = 0 };
-						var time = await TBotOgamedBridge.GetDateTime(_tbotInstance);
+						var time = await _tbotOgameBridge.GetDateTime();
 						if (celestial.ID != 0) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-							celestial = await TBotOgamedBridge.UpdatePlanet(_tbotInstance, celestial, UpdateTypes.Constructions) as Planet;
-							var incomingFleets = _helpersService.GetIncomingFleets(celestial, _tbotInstance.UserData.fleets);
+							celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions) as Planet;
+							var incomingFleets = _calculationService.GetIncomingFleets(celestial, _tbotInstance.UserData.fleets);
 							if (celestial.Constructions.ResearchCountdown != 0)
 								interval = (long) ((long) celestial.Constructions.ResearchCountdown * (long) 1000) + (long) RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 							else if (fleetId > (int) SendFleetCode.GenericError) {
@@ -263,7 +274,7 @@ namespace Tbot.Workers.Brain {
 						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next AutoResearch check at {newTime.ToString()}");
 					}
-					await TBotOgamedBridge.CheckCelestials(_tbotInstance);
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			}
 		}

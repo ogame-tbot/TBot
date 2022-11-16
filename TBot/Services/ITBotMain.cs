@@ -23,9 +23,6 @@ namespace Tbot.Services {
 		string InstanceAlias { get; }
 		UserData UserData { get; set; } // Must be modifiable from outside so ITBotHelper can access it
 		TelegramUserData TelegramUserData { get; }
-		IOgameService OgamedInstance { get; }
-		ICalculationService HelperService { get; }
-		IFleetScheduler FleetScheduler { get; }
 		long SleepDuration { get; set; }
 		DateTime NextWakeUpTime { get; set;}
 		void log(LogLevel logLevel, LogSender sender, string format);
