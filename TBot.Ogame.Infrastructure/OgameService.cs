@@ -649,8 +649,13 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		public async Task<List<Fleet>> Phalanx(Celestial origin, Coordinate coords) {
-
-			return await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			List<Fleet> phalanxedFleets = new();
+			try {
+				phalanxedFleets = await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				// Means not fleet or can't phalanx. Got to check better with ogamed
+			}
+			return phalanxedFleets;
 		}
 	}
 }
