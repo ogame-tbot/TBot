@@ -25,6 +25,7 @@ namespace Tbot.Workers {
 		void ChangeWorkerDueTime(long dueTime);
 		void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime);
 		bool IsWorkerRunning();
+		bool IsWorkerEnabledBySettings();
 		void SetSemaphore(SemaphoreSlim sem);
 		Task WaitWorker();
 		void ReleaseWorker();

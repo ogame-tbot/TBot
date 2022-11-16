@@ -12,5 +12,6 @@ namespace Tbot.Workers {
 		ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge);
 		ITBotWorker GetWorker(Feature feat);
 		IAutoMineWorker GetAutoMineWorker();
+		IAutoRepatriateWorker GetAutoRepatriateWorker();
 	}
 }

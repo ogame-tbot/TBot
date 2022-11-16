@@ -37,16 +37,15 @@ namespace Tbot.Workers.Brain {
 			try {
 				DoLog(LogLevel.Information, "Running autocargo...");
 
-				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.Active) {
-					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
-					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoCargo.Exclude, _tbotInstance.UserData.celestials);
+				_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+				List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
+				List<Celestial> celestialsToExclude = _helpersService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoCargo.Exclude, _tbotInstance.UserData.celestials);
 
-					foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials) {
-						if (celestialsToExclude.Has(celestial)) {
-							DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: celestial in exclude list.");
-							continue;
-						}
+				foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials) {
+					if (celestialsToExclude.Has(celestial)) {
+						DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: celestial in exclude list.");
+						continue;
+					}
 
 						var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
 
@@ -70,7 +69,7 @@ namespace Tbot.Workers.Brain {
 							Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
 							DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 
-						}
+					}
 
 						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
 						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
@@ -97,8 +96,8 @@ namespace Tbot.Workers.Brain {
 							if (neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild)
 								neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild;
 
-							if (tempCelestial.Ships.GetAmount(preferredCargoShip) + neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep)
-								neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
+						if (tempCelestial.Ships.GetAmount(preferredCargoShip) + neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep)
+							neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
 
 							var cost = _calculationService.CalcPrice(preferredCargoShip, (int) neededCargos);
 							if (tempCelestial.Resources.IsEnoughFor(cost))
@@ -127,33 +126,30 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: No ships will be built.");
 						}
 
-						newCelestials.Remove(celestial);
-						newCelestials.Add(tempCelestial);
-					}
-					_tbotInstance.UserData.celestials = newCelestials;
-				} else {
-					DoLog(LogLevel.Information, "Skipping: feature disabled");
-					stop = true;
+					newCelestials.Remove(celestial);
+					newCelestials.Add(tempCelestial);
 				}
+				_tbotInstance.UserData.celestials = newCelestials;
 			} catch (Exception e) {
 				DoLog(LogLevel.Error, $"Unable to complete autocargo: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
-				if (!_tbotInstance.UserData.isSleeping) {
-					if (stop) {
-						DoLog(LogLevel.Information, $"Stopping feature.");
-						await EndExecution();
-					} else {
-						var time = await _tbotOgameBridge.GetDateTime();
-						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMax);
-						if (interval <= 0)
-							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
-						var newTime = time.AddMilliseconds(interval);
-						ChangeWorkerPeriod(interval);
-						DoLog(LogLevel.Information, $"Next capacity check at {newTime.ToString()}");
-						await _tbotOgameBridge.CheckCelestials();
-					}
-				}
+					var time = await _tbotOgameBridge.GetDateTime();
+					var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.AutoCargo.CheckIntervalMax);
+					if (interval <= 0)
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+					var newTime = time.AddMilliseconds(interval);
+					ChangeWorkerPeriod(interval);
+					DoLog(LogLevel.Information, $"Next capacity check at {newTime.ToString()}");
+					await _tbotOgameBridge.CheckCelestials();
+			}
+		}
+
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.Active);
+			} catch(Exception) {
+				return false;
 			}
 		}
 

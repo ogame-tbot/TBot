@@ -453,8 +453,19 @@ namespace TBot.Ogame.Infrastructure {
 			}
 		}
 
-		public async Task BuyOfferOfTheDay() {
-			await GetAsync<object>("/bot/buy-offer-of-the-day");
+		public async Task<OfferOfTheDayStatus> BuyOfferOfTheDay() {
+			OfferOfTheDayStatus sts = OfferOfTheDayStatus.OfferOfTheDayUnknown;
+			// 200 means it has been bought
+			// 400 {"Status":"error","Code":400,"Message":"Offer already accepted","Result":null}
+			try {
+				await GetAsync<object>("/bot/buy-offer-of-the-day");
+				sts = OfferOfTheDayStatus.OfferOfTheDayBougth;
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				sts = OfferOfTheDayStatus.OfferOfTheDayAlreadyBought;
+			} catch {
+				// Unknown!
+			}
+			return sts;
 		}
 
 		public async Task<List<AttackerFleet>> GetAttacks() {
@@ -638,8 +649,13 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		public async Task<List<Fleet>> Phalanx(Celestial origin, Coordinate coords) {
-
-			return await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			List<Fleet> phalanxedFleets = new();
+			try {
+				phalanxedFleets = await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				// Means not fleet or can't phalanx. Got to check better with ogamed
+			}
+			return phalanxedFleets;
 		}
 	}
 }

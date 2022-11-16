@@ -62,14 +62,14 @@ namespace Tbot.Workers {
 			await StartWorker(ct, Timeout.InfiniteTimeSpan, dueTime);
 		}
 		public async Task StopWorker() {
+			// Stop also all the timers
+			RemoveAllTimers();
 			if (_timer != null) {
 				DoLog(LogLevel.Information, $"Closing Worker \"{GetWorkerName()}\"..");
 				await _timer.DisposeAsync();
+				DoLog(LogLevel.Information, $"Worker \"{GetWorkerName()}\" closed!");
 				_timer = null;
 			}
-
-			// Stop also all the timers
-			RemoveAllTimers();
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
@@ -108,18 +108,17 @@ namespace Tbot.Workers {
 			}
 		}
 
+		public abstract bool IsWorkerEnabledBySettings();
 		public abstract string GetWorkerName();
 		public abstract Feature GetFeature();
 		public abstract LogSender GetLogSender();
 
 
 
-		protected async Task EndExecution() {
-			// This is meant to be called within the worker callback
+		protected Task EndExecution() {
+			// This is meant to be called within the worker callback, so we can't await _timer to end
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
-			// Delete all timers
-			RemoveAllTimers();
-			await StopWorker();
+			return Task.CompletedTask;
 		}
 
 		private async Task ExecutionWrapper(CancellationToken ct) {
@@ -128,18 +127,23 @@ namespace Tbot.Workers {
 				DoLog(LogLevel.Debug, $"Sleeping... Ending {GetWorkerName()}");
 				await EndExecution();
 				return;
+			} else if (IsWorkerEnabledBySettings() == false) {
+				DoLog(LogLevel.Information, $"{GetWorkerName()} not enabled by settings. Ending...");
+				await EndExecution();
+				return;
 			}
 
 			try {
-				await _sem.WaitAsync(ct);
+				await WaitWorker();
+
+				ct.ThrowIfCancellationRequested();
+
 				await Execute();
 				
 			} catch(OperationCanceledException) {
-
-			} catch(Exception ex) {
-				throw ex;
+				// OK
 			} finally {
-				_sem.Release();
+				ReleaseWorker();
 			}
 		}
 

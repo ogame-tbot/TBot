@@ -31,7 +31,13 @@ namespace Tbot.Workers {
 			_ogameService = ogameService;
 			_tbotOgameBridge = tbotOgameBridge;	
 		}
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.AutoColonize.Active;
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "Colonize";
 		}
@@ -47,11 +53,6 @@ namespace Tbot.Workers {
 			bool stop = false;
 			bool delay = false;
 			try {
-
-				if (_tbotInstance.UserData.isSleeping) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "Skipping: Sleep Mode Active!");
-					return;
-				}
 
 				if ((bool) _tbotInstance.InstanceSettings.AutoColonize.Active) {
 					long interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMax);

@@ -43,35 +43,34 @@ namespace Tbot.Workers.Brain {
 			try {
 				DoLog(LogLevel.Information, "Running autoresearch...");
 
-				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Active) {
-					_tbotInstance.UserData.researches = await _ogameService.GetResearches();
-					Planet celestial;
-					var parseSucceded = _tbotInstance.UserData.celestials
-						.Any(c => c.HasCoords(new(
+				_tbotInstance.UserData.researches = await _ogameService.GetResearches();
+				Planet celestial;
+				var parseSucceded = _tbotInstance.UserData.celestials
+					.Any(c => c.HasCoords(new(
+						(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Galaxy,
+						(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.System,
+						(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Position,
+						Celestials.Planet
+					))
+				);
+				if (parseSucceded) {
+					celestial = _tbotInstance.UserData.celestials
+						.Unique()
+						.Single(c => c.HasCoords(new(
 							(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Galaxy,
 							(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.System,
 							(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Position,
 							Celestials.Planet
-						))
-					);
-					if (parseSucceded) {
-						celestial = _tbotInstance.UserData.celestials
-							.Unique()
-							.Single(c => c.HasCoords(new(
-								(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Galaxy,
-								(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.System,
-								(int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Target.Position,
-								Celestials.Planet
-								)
-							)) as Planet;
-					} else {
-						DoLog(LogLevel.Warning, "Unable to parse Brain.AutoResearch.Target. Falling back to planet with biggest Research Lab");
-						_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Facilities);
-						celestial = _tbotInstance.UserData.celestials
-							.Where(c => c.Coordinate.Type == Celestials.Planet)
-							.OrderByDescending(c => c.Facilities.ResearchLab)
-							.First() as Planet;
-					}
+							)
+						)) as Planet;
+				} else {
+					DoLog(LogLevel.Warning, "Unable to parse Brain.AutoResearch.Target. Falling back to planet with biggest Research Lab");
+					_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Facilities);
+					celestial = _tbotInstance.UserData.celestials
+						.Where(c => c.Coordinate.Type == Celestials.Planet)
+						.OrderByDescending(c => c.Facilities.ResearchLab)
+						.First() as Planet;
+				}
 
 					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Facilities) as Planet;
 					if (celestial.Facilities.ResearchLab == 0) {
@@ -93,7 +92,7 @@ namespace Tbot.Workers.Brain {
 					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
 					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction) as Planet;
 
-					Buildables research;
+				Buildables research;
 
 					if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeAstrophysics || (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizePlasmaTechnology || (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeEnergyTechnology || (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.PrioritizeIntergalacticResearchNetwork) {
 						List<Celestial> planets = new();
@@ -159,56 +158,52 @@ namespace Tbot.Workers.Brain {
 						}
 					}
 
-					int level = _calculationService.GetNextLevel(_tbotInstance.UserData.researches, research);
-					if (research != Buildables.Null) {
-						celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
-						Resources cost = _calculationService.CalcPrice(research, level);
-						if (celestial.Resources.IsEnoughFor(cost)) {
-							try {
-								await _ogameService.BuildCancelable(celestial, research);
-								DoLog(LogLevel.Information, $"Research {research.ToString()} level {level.ToString()} started on {celestial.ToString()}");
-							} catch {
-								DoLog(LogLevel.Warning, $"Research {research.ToString()} level {level.ToString()} could not be started on {celestial.ToString()}");
-							}
-						} else {
-							DoLog(LogLevel.Information, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
-							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Active) {
-								_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-								if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
-									Celestial origin = _tbotInstance.UserData.celestials
-										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-									fleetId = await _autoMineWorker.HandleMinerTransport(origin, celestial, cost);
-									if (fleetId == (int) SendFleetCode.AfterSleepTime) {
-										stop = true;
-									}
-									if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
-										delay = true;
-									}
-								} else {
-									DoLog(LogLevel.Information, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
-									fleetId = (_tbotInstance.UserData.fleets
-										.Where(f => f.Mission == Missions.Transport)
-										.Where(f => f.Resources.TotalResources > 0)
-										.Where(f => f.ReturnFlight == false)
-										.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
-										.Where(f => f.Destination.System == celestial.Coordinate.System)
-										.Where(f => f.Destination.Position == celestial.Coordinate.Position)
-										.Where(f => f.Destination.Type == celestial.Coordinate.Type)
-										.OrderByDescending(f => f.ArriveIn)
-										.FirstOrDefault() ?? new() { ID = 0 })
-										.ID;
+				int level = _calculationService.GetNextLevel(_tbotInstance.UserData.researches, research);
+				if (research != Buildables.Null) {
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
+					Resources cost = _helpersService.CalcPrice(research, level);
+					if (celestial.Resources.IsEnoughFor(cost)) {
+						try {
+							await _ogameService.BuildCancelable(celestial, research);
+							DoLog(LogLevel.Information, $"Research {research.ToString()} level {level.ToString()} started on {celestial.ToString()}");
+						} catch {
+							DoLog(LogLevel.Warning, $"Research {research.ToString()} level {level.ToString()} could not be started on {celestial.ToString()}");
+						}
+					} else {
+						DoLog(LogLevel.Information, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
+						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Active) {
+							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+							if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+								Celestial origin = _tbotInstance.UserData.celestials
+									.Unique()
+									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Galaxy)
+									.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.System)
+									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Position)
+									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Type))
+									.SingleOrDefault() ?? new() { ID = 0 };
+								fleetId = await _autoMineWorker.HandleMinerTransport(origin, celestial, cost);
+								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+									stop = true;
 								}
+								if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+									delay = true;
+								}
+							} else {
+								DoLog(LogLevel.Information, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
+								fleetId = (_tbotInstance.UserData.fleets
+									.Where(f => f.Mission == Missions.Transport)
+									.Where(f => f.Resources.TotalResources > 0)
+									.Where(f => f.ReturnFlight == false)
+									.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+									.Where(f => f.Destination.System == celestial.Coordinate.System)
+									.Where(f => f.Destination.Position == celestial.Coordinate.Position)
+									.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+									.OrderByDescending(f => f.ArriveIn)
+									.FirstOrDefault() ?? new() { ID = 0 })
+									.ID;
 							}
 						}
 					}
-				} else {
-					DoLog(LogLevel.Information, "Skipping: feature disabled");
-					stop = true;
 				}
 			} catch (Exception e) {
 				DoLog(LogLevel.Error, $"AutoResearch Exception: {e.Message}");
@@ -279,7 +274,15 @@ namespace Tbot.Workers.Brain {
 			}
 		}
 
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (
+					(bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Active
+				);
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "AutoResearch";
 		}

@@ -76,6 +76,12 @@ namespace Tbot.Workers {
 			}
 			return null;
 		}
+		public IAutoRepatriateWorker GetAutoRepatriateWorker() {
+			if (_workers.TryGetValue(Feature.BrainAutoRepatriate, out var worker)) {
+				return (IAutoRepatriateWorker) worker;
+			}
+			return null;
+		}
 
 		private bool WantsAutoMine(Feature feat) {
 			switch (feat) {

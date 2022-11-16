@@ -31,7 +31,13 @@ namespace Tbot.Workers {
 			_calculationService = calculationService;
 			_tbotOgameBridge = tbotOgameBridge;
 		}
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.AutoFarm.Active;
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "AutoFarm";
 		}
@@ -230,7 +236,7 @@ namespace Tbot.Workers {
 
 									await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
 
-									await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
+									await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds), _ct);
 
 									_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 									var probesInMission = _tbotInstance.UserData.fleets.Select(c => c.Ships).Sum(c => c.EspionageProbe);
@@ -291,14 +297,14 @@ namespace Tbot.Workers {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 												continue;
 											}
-											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
-											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
+											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds), _ct);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Productions);
 											if (tempCelestial.Productions.Any(p => p.ID == (int) Buildables.EspionageProbe)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: Probes already building.");
 												continue;
 											}
 
-											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
+											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds), _ct);
 											var buildProbes = neededProbes - celestialProbes[closest.ID];
 											var cost = _calculationService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
@@ -312,7 +318,7 @@ namespace Tbot.Workers {
 										if (minBackIn.Value != int.MaxValue) {
 											int interval = (int) ((1000 * minBackIn.Value) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Not enough free slots {freeSlots}/{slotsToLeaveFree}. Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
-											await Task.Delay(interval);
+											await Task.Delay(interval, _ct);
 											bestOrigin = await _tbotOgameBridge.UpdatePlanet(minBackIn.Key, UpdateTypes.Ships);
 											freeSlots++;
 										} else {
@@ -336,7 +342,7 @@ namespace Tbot.Workers {
 										if (_tbotInstance.UserData.fleets.Any()) {
 											int interval = (int) ((1000 * _tbotInstance.UserData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting {TimeSpan.FromMilliseconds(interval)} for fleet to return...");
-											await Task.Delay(interval);
+											await Task.Delay(interval, _ct);
 											_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 											freeSlots = _tbotInstance.UserData.slots.Free;
 										} else {
@@ -421,7 +427,7 @@ namespace Tbot.Workers {
 												tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
 												int interval = (int) (_calculationService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
-												await Task.Delay(interval);
+												await Task.Delay(interval, _ct);
 											} catch {
 												_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 											}
@@ -443,7 +449,7 @@ namespace Tbot.Workers {
 					if (firstReturning != null) {
 						int interval = (int) ((1000 * firstReturning.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
-						await Task.Delay(interval);
+						await Task.Delay(interval, _ct);
 					}
 
 					_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Processing espionage reports of found inactives...");
@@ -616,7 +622,7 @@ namespace Tbot.Workers {
 											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
 											int interval = (int) (_calculationService.CalcProductionTime(cargoShip, (int) neededCargos, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 											_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
-											await Task.Delay(interval);
+											await Task.Delay(interval, _ct);
 										} catch {
 											_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, "Unable to start ship production.");
 										}
@@ -655,8 +661,8 @@ namespace Tbot.Workers {
 									return;
 								} else {
 									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting {TimeSpan.FromMilliseconds(interval)} for first fleet to return...");
-									await Task.Delay(interval);
-									_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
+									await Task.Delay(interval, _ct);
+									_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots(_tbotInstance);
 									freeSlots = _tbotInstance.UserData.slots.Free;
 								}
 							} else {

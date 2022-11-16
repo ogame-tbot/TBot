@@ -17,6 +17,7 @@ using Tbot.Exceptions;
 using Tbot.Helpers;
 using Tbot.Includes;
 using Tbot.Workers;
+using Tbot.Workers.Brain;
 using TBot.Common.Logging;
 using TBot.Model;
 using TBot.Ogame.Infrastructure;
@@ -294,7 +295,7 @@ namespace Tbot.Services {
 
 				deInitTasks.Add(worker.Value.StopWorker());
 			}
-
+			await Task.WhenAll(deInitTasks);
 			deInitTasks.Clear();
 
 			log(LogLevel.Information, LogSender.Tbot, "Deinitializing timers...");
@@ -474,6 +475,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
 			// Wait on feature to be shut down
+			cts.Cancel();
 			foreach (var worker in workers) {
 				log(LogLevel.Information, LogSender.Tbot, $"Stopping feature {worker.Key.ToString()}...");
 				await worker.Value.StopWorker();
@@ -483,6 +485,7 @@ namespace Tbot.Services {
 			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
 			InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
 
+			cts = new();
 			// If wakeUp, then all features will be restored
 			InitializeSleepMode();
 		}
@@ -746,7 +749,8 @@ namespace Tbot.Services {
 		}
 
 		public void TelegramCollect() {
-			_workerFactory.GetWorker(Feature.BrainAutoRepatriate).RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(3000));
+			IAutoRepatriateWorker repatriateWorker = _workerFactory.GetAutoRepatriateWorker();
+			repatriateWorker.Collect();
 
 			return;
 		}
@@ -1004,84 +1008,8 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramCollectDeut(long MinAmount = 0) {
-			userData.fleets = await _fleetScheduler.UpdateFleets();
-			long TotalDeut = 0;
-			Coordinate destinationCoordinate;
-
-			Celestial cel = userData.celestials
-					.Unique()
-					.Where(c => c.Coordinate.Galaxy == (int) InstanceSettings.Brain.AutoRepatriate.Target.Galaxy)
-					.Where(c => c.Coordinate.System == (int) InstanceSettings.Brain.AutoRepatriate.Target.System)
-					.Where(c => c.Coordinate.Position == (int) InstanceSettings.Brain.AutoRepatriate.Target.Position)
-					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) InstanceSettings.Brain.AutoRepatriate.Target.Type))
-					.SingleOrDefault() ?? new() { ID = 0 };
-
-			if (cel.ID == 0) {
-				await SendTelegramMessage("Error! Could not parse auto repatriate Celestial from JSON InstanceSettings. Need <code>/editsettings</code>");
-				return;
-			} else {
-				destinationCoordinate = cel.Coordinate;
-			}
-
-			foreach (Celestial celestial in userData.celestials.ToList()) {
-				if (celestial.Coordinate.IsSame(destinationCoordinate)) {
-					continue;
-				}
-				if (celestial is Moon) {
-					continue;
-				}
-
-				var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
-				userData.fleets = await _fleetScheduler.UpdateFleets();
-
-				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
-				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
-
-				Buildables preferredShip = Buildables.LargeCargo;
-				if (!Enum.TryParse<Buildables>((string) InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
-					preferredShip = Buildables.LargeCargo;
-				}
-				Resources payload = tempCelestial.Resources;
-				payload.Metal = 0;
-				payload.Crystal = 0;
-				payload.Food = 0;
-
-				if ((long) tempCelestial.Resources.Deuterium < (long) MinAmount || payload.IsEmpty()) {
-					continue;
-				}
-
-				long idealShips = _helpersService.CalcShipNumberForPayload(payload, preferredShip, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
-
-				Ships ships = new();
-				if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
-					if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
-						ships.Add(preferredShip, idealShips);
-					} else {
-						ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
-					}
-					payload = _helpersService.CalcMaxTransportableResources(ships, payload, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
-
-					if ((long) payload.TotalResources >= (long) MinAmount) {
-						var fleetId = await _fleetScheduler.SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
-						if (fleetId == (int) SendFleetCode.AfterSleepTime) {
-							continue;
-						}
-						if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
-							continue;
-						}
-
-						TotalDeut += payload.Deuterium;
-					}
-				} else {
-					continue;
-				}
-			}
-
-			if (TotalDeut > 0) {
-				await SendTelegramMessage($"{TotalDeut} Deuterium sent.");
-			} else {
-				await SendTelegramMessage("No resources sent");
-			}
+			IAutoRepatriateWorker repatriateWorker = _workerFactory.GetAutoRepatriateWorker();
+			await repatriateWorker.CollectDeut(MinAmount);
 		}
 
 		public async Task SleepNow(DateTime WakeUpTime) {

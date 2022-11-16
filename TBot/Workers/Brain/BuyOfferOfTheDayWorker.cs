@@ -25,50 +25,42 @@ namespace Tbot.Workers.Brain {
 			_tbotOgameBridge = tbotOgameBridge;
 		}
 		protected override async Task Execute() {
-			bool stop = false;
+			bool stop = true;
+
+			_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
+			OfferOfTheDayStatus sts = await _ogameService.BuyOfferOfTheDay();
+
+			if (sts == OfferOfTheDayStatus.OfferOfTheDayBougth) {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
+			} else if (sts == OfferOfTheDayStatus.OfferOfTheDayAlreadyBought){
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
+			} else {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day unknown error.");
+				stop = false;
+			}
+			
+			
+			if (stop) {
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping BuyOfferOfTheDay.");
+				await EndExecution();
+			} else {
+				var time = await _tbotOgameBridge.GetDateTime();
+				var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+				if (interval <= 0)
+					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+				var newTime = time.AddMilliseconds(interval);
+				ChangeWorkerPeriod(interval);
+				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
+				await _tbotOgameBridge.CheckCelestials();
+			}
+		}
+		public override bool IsWorkerEnabledBySettings() {
 			try {
-
-				if (_tbotInstance.UserData.isSleeping) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: Sleep Mode Active!");
-					return;
-				}
-
-				if ((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.Active) {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
-					if (_tbotInstance.UserData.isSleeping) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: Sleep Mode Active!");
-						return;
-					}
-					try {
-						await _ogameService.BuyOfferOfTheDay();
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
-					} catch {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
-					}
-
-				} else {
-					_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Skipping: feature disabled");
-					stop = true;
-				}
-			} catch (Exception e) {
-				_tbotInstance.log(LogLevel.Error, LogSender.Brain, $"BuyOfferOfTheDay Exception: {e.Message}");
-				_tbotInstance.log(LogLevel.Warning, LogSender.Brain, $"Stacktrace: {e.StackTrace}");
-			} finally {
-				if (!_tbotInstance.UserData.isSleeping) {
-					if (stop) {
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping feature.");
-						await EndExecution();
-					} else {
-						var time = await _tbotOgameBridge.GetDateTime();
-						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
-						if (interval <= 0)
-							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
-						var newTime = time.AddMilliseconds(interval);
-						ChangeWorkerPeriod(interval);
-						_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-						await _tbotOgameBridge.CheckCelestials();
-					}
-				}
+				return (
+					(bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.Active
+				);
+			} catch (Exception) {
+				return false;
 			}
 		}
 		public override string GetWorkerName() {
@@ -79,7 +71,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Defender;
+			return LogSender.Brain;
 		}
 	}
 }

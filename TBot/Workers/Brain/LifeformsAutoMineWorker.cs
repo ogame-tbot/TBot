@@ -36,6 +36,15 @@ namespace Tbot.Workers.Brain {
 			_tbotOgameBridge = tbotOGameBridge;
 		}
 
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (
+					(bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Active
+				);
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "LifeformsAutoMine";
 		}
@@ -266,11 +275,10 @@ namespace Tbot.Workers.Brain {
 						value.Dispose();
 
 					newTime = time.AddMilliseconds(interval);
-					ChangeWorkerPeriod(delayTime);
+					ChangeWorkerPeriod(interval);
 					DoLog(LogLevel.Information, $"Next Lifeform AutoMine check for {celestial.ToString()} at {newTime.ToString()}");
 				}
 			}
 		}
-
 	}
 }

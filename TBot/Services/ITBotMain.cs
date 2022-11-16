@@ -21,7 +21,7 @@ namespace Tbot.Services {
 
 		dynamic InstanceSettings { get; }
 		string InstanceAlias { get; }
-		UserData UserData { get; set; } // Must be modifiable from outside so ITBotHelper can access it
+		UserData UserData { get; set; }
 		TelegramUserData TelegramUserData { get; }
 		long SleepDuration { get; set; }
 		DateTime NextWakeUpTime { get; set;}

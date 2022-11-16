@@ -31,7 +31,13 @@ namespace Tbot.Workers {
 			_calculationService = calculationService;
 			_tbotOgameBridge = tbotOgameBridge;
 		}
-
+		public override bool IsWorkerEnabledBySettings() {
+			try {
+				return (bool) _tbotInstance.InstanceSettings.Expeditions.Active;
+			} catch (Exception) {
+				return false;
+			}
+		}
 		public override string GetWorkerName() {
 			return "Expeditions";
 		}
@@ -52,11 +58,6 @@ namespace Tbot.Workers {
 				long interval;
 				DateTime time;
 				DateTime newTime;
-
-				if (_tbotInstance.UserData.isSleeping) {
-					DoLog(LogLevel.Information, "Skipping: Sleep Mode Active!");
-					return;
-				}
 
 				if ((bool) _tbotInstance.InstanceSettings.Expeditions.Active) {
 					_tbotInstance.UserData.researches = await _tbotOgameBridge.UpdateResearches();
@@ -271,7 +272,7 @@ namespace Tbot.Workers {
 													delay = true;
 													return;
 												}
-												await Task.Delay((int) IntervalType.AFewSeconds);
+												await Task.Delay((int) IntervalType.AFewSeconds, _ct);
 											} else {
 												DoLog(LogLevel.Information, "Unable to send expeditions: no expedition slots available.");
 												break;
@@ -327,6 +328,7 @@ namespace Tbot.Workers {
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						DoLog(LogLevel.Information, $"Stopping feature.");
+						await EndExecution();
 					}
 					if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
