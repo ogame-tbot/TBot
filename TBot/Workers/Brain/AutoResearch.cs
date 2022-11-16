@@ -161,7 +161,7 @@ namespace Tbot.Workers.Brain {
 				int level = _calculationService.GetNextLevel(_tbotInstance.UserData.researches, research);
 				if (research != Buildables.Null) {
 					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources) as Planet;
-					Resources cost = _helpersService.CalcPrice(research, level);
+					Resources cost = _calculationService.CalcPrice(research, level);
 					if (celestial.Resources.IsEnoughFor(cost)) {
 						try {
 							await _ogameService.BuildCancelable(celestial, research);
@@ -173,7 +173,7 @@ namespace Tbot.Workers.Brain {
 						DoLog(LogLevel.Information, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Active) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-							if (!_helpersService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
+							if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 								Celestial origin = _tbotInstance.UserData.celestials
 									.Unique()
 									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Galaxy)

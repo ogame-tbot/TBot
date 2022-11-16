@@ -298,7 +298,7 @@ namespace Tbot.Workers {
 												continue;
 											}
 											await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds), _ct);
-											tempCelestial = await _tbotOgameBridge.UpdatePlanet(_tbotInstance, tempCelestial, UpdateTypes.Productions);
+											tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
 											if (tempCelestial.Productions.Any(p => p.ID == (int) Buildables.EspionageProbe)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Skipping {tempCelestial.ToString()}: Probes already building.");
 												continue;
@@ -662,7 +662,7 @@ namespace Tbot.Workers {
 								} else {
 									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Waiting {TimeSpan.FromMilliseconds(interval)} for first fleet to return...");
 									await Task.Delay(interval, _ct);
-									_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots(_tbotInstance);
+									_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 									freeSlots = _tbotInstance.UserData.slots.Free;
 								}
 							} else {
