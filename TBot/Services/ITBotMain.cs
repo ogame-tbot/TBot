@@ -28,6 +28,7 @@ namespace Tbot.Services {
 		void log(LogLevel logLevel, LogSender sender, string format);
 		Task InitializeFeature(Feature feat);
 		Task StopFeature(Feature feat);
+		bool IsFeatureRunning(Feature feat);
 		Task SendTelegramMessage(string fmt);
 		Task<bool> TelegramSwitch(decimal speed, Celestial attacked = null, bool fromTelegram = false);
 		Task SleepNow(DateTime WakeUpTime);

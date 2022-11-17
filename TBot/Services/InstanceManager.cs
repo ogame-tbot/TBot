@@ -106,7 +106,7 @@ namespace Tbot.Services {
 					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.Settings)).FullName;
 					string alias = instance.Alias;
 
-					if(uniqueInstances.Any(c => c.SettingsPath == cInstanceSettingPath) == false) {
+					if(uniqueInstances.Any(c => string.Compare(c.SettingsPath, cInstanceSettingPath) == 0)) {
 						uniqueInstances.Add(new InitInstanceData(alias, cInstanceSettingPath));
 					}
 				}
@@ -115,14 +115,11 @@ namespace Tbot.Services {
 
 				// Check if they are already inited or must be inited
 				foreach (var instance in uniqueInstances) {
-					if ((SettingsService.IsSettingSet(instance, "Settings") == false) || (SettingsService.IsSettingSet(instance, "Alias") == false)) {
-						continue;
-					}
 					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.SettingsPath)).FullName;
 					string alias = instance.Alias;
 
 					// Check if already initialized. if that so, update alias and keep going
-					if (instances.Any(c => c._botSettingsPath == cInstanceSettingPath) == true) {
+					if (instances.Any(c => string.Compare(c._botSettingsPath, cInstanceSettingPath) == 0)) {
 						_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Instance \"{alias}\" \"{cInstanceSettingPath}\" already inited.");
 						var foundInstance = instances.First(c => c._botSettingsPath == cInstanceSettingPath);
 						foundInstance._alias = alias;
@@ -137,7 +134,7 @@ namespace Tbot.Services {
 
 			// Deinitialize instances that are no more valid (not present in newInstances)
 			foreach (var deInstance in instances) {
-				if (newInstances.Any(c => c._botSettingsPath == deInstance._botSettingsPath) == false) {
+				if (newInstances.Any(c => string.Compare(c._botSettingsPath, deInstance._botSettingsPath) == 0)) {
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Deinitializing instance \"{deInstance._alias}\" \"{deInstance._botSettingsPath}\"");
 
 					deinitingInstances.Add(deInstance._botMain.DisposeAsync().AsTask());

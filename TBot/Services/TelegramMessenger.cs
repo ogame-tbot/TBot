@@ -203,6 +203,7 @@ namespace Tbot.Services {
 			{
 				"/setmain",
 				"/getmain",
+				"/getmainstats",
 				"/listinstances",
 				"/loglevel",
 				"/setloglevel",
@@ -306,6 +307,16 @@ namespace Tbot.Services {
 								await SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
+						case "/getmainstats":
+							if (currInstanceIndex < 0 || currInstanceIndex >= instances.Count()) {
+								await SendMessage(botClient, message.Chat, "Currently managing no instance");
+							} else {
+								var instance = instances[currInstanceIndex].Instance;
+								foreach (var feat in Features.AllFeatures) {
+									await SendMessage(botClient, message.Chat, $"Instance #{currInstanceIndex} <code>{instance.ToString()}</code> <b>{feat.ToString()}</b> Running: {instance.IsFeatureRunning(feat)}");
+								}
+							}
+							return;
 						case "/listinstances":
 							await SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
 							foreach (var instanceWithBridge in instances) {
@@ -369,6 +380,7 @@ namespace Tbot.Services {
 								"\t Core Commands\n" +
 								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
 								"/getmain - Get the current TBot instance that Telegram is managing\n" +
+								"/getmainstats - Get current TBot instance statistics\n" +
 								"/listinstances - List TBot main instances\n" +
 								"/loglevel - Get current log level on telegram logging\n" +
 								"/setloglevel - Set log level on telegram logging and enables it. Format <code>/setloglevel Debug|Information|Warning|Error </code>\n" +

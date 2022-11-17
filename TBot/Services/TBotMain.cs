@@ -239,6 +239,7 @@ namespace Tbot.Services {
 
 			await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 
+			loggedIn = true;
 			log(LogLevel.Information, LogSender.Tbot, "Logged in!");
 
 			await InitUserData();
@@ -345,6 +346,9 @@ namespace Tbot.Services {
 		}
 
 		public async Task InitializeFeature(Feature feat) {
+			if (feat == Feature.SleepMode) {
+				return;	// always enabled
+			}
 			long dueTime = feat switch {
 				Feature.Defender => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
 				Feature.BrainAutobuildCargo => RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo),
@@ -378,6 +382,16 @@ namespace Tbot.Services {
 		public async Task StopFeature(Feature feat) {
 			if (workers.TryGetValue(feat, out var worker)) {
 				await worker.StopWorker();
+			}
+		}
+
+		public bool IsFeatureRunning(Feature feat) {
+			if (workers.TryGetValue(feat, out var worker)) {
+				return worker.IsWorkerRunning();
+			} else if (feat == Feature.SleepMode) {
+				return true;	// Always running
+			} else {
+				return false;
 			}
 		}
 
@@ -1042,7 +1056,6 @@ namespace Tbot.Services {
 			}
 
 			try {
-				await WaitFeature();
 
 				DateTime time = await _tbotOgameBridge.GetDateTime();
 
@@ -1163,7 +1176,6 @@ namespace Tbot.Services {
 				log(LogLevel.Information, LogSender.SleepMode, $"Next check at {newTime.ToString()}");
 				await _tbotOgameBridge.CheckCelestials();
 			} finally {
-				releaseFeature();
 			}
 		}
 
