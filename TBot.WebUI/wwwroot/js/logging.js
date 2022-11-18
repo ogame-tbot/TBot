@@ -25,10 +25,34 @@ function Initialize(logsUrl, maxElements, logModel) {
 		typingTimer = setTimeout(applyFilter, doneTypingInterval);
 	});
 
+	$("#logsDate").on("change blur", function () {
+		var inputValue = $(this).val();
+		if (inputValue == null || inputValue === "")
+			return;
+		var newUrl = window.location.href.split("?")[0];
+		var newDate = formatDate(new Date(inputValue));
+		window.location = `${newUrl}?date=${newDate}`;
+	});
+
 	defineConnection();
 	renderGrid(logData);
-	start();
+
+	var logsDate = new Date($("#logsDate").val());
+	if (logsDate.toDateString() === new Date().toDateString())
+		start();
 	
+}
+
+function padTo2Digits(num) {
+	return num.toString().padStart(2, '0');
+}
+
+function formatDate(date) {
+	return [
+		padTo2Digits(date.getDate()),
+		padTo2Digits(date.getMonth() + 1),
+		date.getFullYear(),
+	].join('/');
 }
 
 //LogEntry class
@@ -40,9 +64,6 @@ function LogEntry(timestamp, level, message, sender) {
 	this.sender = sender;
 	this.row = createLogElement(this.timestamp, this.level, this.message, this.sender);
 }
-
-
-
 
 //Function to apply the current filters
 function applyFilter() {

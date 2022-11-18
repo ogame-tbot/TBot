@@ -113,7 +113,7 @@ namespace TBot.Common.Logging {
 				.WriteTo.SignalRTBotSink<WebHub, IWebHub>(
 					LogEventLevel.Debug,
 					_serviceProvider,
-					null, // can be null
+					CultureInfo.InvariantCulture, // can be null
 					new string[] { },        // can be null
 					new string[] { },        // can be null
 					new string[] { },        // can be null

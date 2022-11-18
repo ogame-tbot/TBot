@@ -50,8 +50,9 @@ namespace TBot.WebUI.Controllers {
 		[HttpPost]
 		public async Task<IActionResult> SaveFileContent(string fileName, string content) {
 			try {
-				JToken.Parse(content); //Validate Json, if incorrect, exception is thrown and message will be sent to the user.
-				await System.IO.File.WriteAllTextAsync(Path.Combine(GetCurrentDirectory(), fileName), content);
+				//Validate Json, if incorrect, exception is thrown and message will be sent to the user.
+				string jsonFormatted = JValue.Parse(content).ToString(Formatting.Indented);
+				await System.IO.File.WriteAllTextAsync(Path.Combine(GetCurrentDirectory(), fileName), jsonFormatted);
 				return Json(new { success = true });
 			}
 			catch (Exception ex) {

@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#212529">
+    <link rel="icon" type="image/jpg" href="~/img/favicon.jpg">
     <title>T-Bot</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -33,7 +35,7 @@
             </div>
         </nav>
     </header>
-    <div class="container-fluid">
+    <div class="container-fluid main-container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
