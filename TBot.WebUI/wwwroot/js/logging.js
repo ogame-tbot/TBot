@@ -117,15 +117,19 @@ function getLogLevelNum(logLevel) {
 //Creates the row to draw
 function createLogElement(timestamp, level, message, sender) {
 	var row = $("<div class='row'></div>");
-	var colTs = $("<div class='col-6 col-md-3 col-xl-2 log-ts'></div>").text(timestamp)
+	var colTs = $("<div class='col-5 col-lg-3 col-xl-2 log-ts'></div>").text(timestamp)
 		.addClass("timestamp");
-	var colLevel = $("<div class='col-3 col-md-2 col-xl-1 log-level' style='text-align:right'></div>").text(level);
+
+	var colSender = $("<div class='col-4 col-lg-2 col-xl-2 log-sender'></div>").text(sender)
+		.addClass("logsender");
+
+	var colLevel = $("<div class='col-3 col-lg-2 col-xl-1 log-level'></div>").text(level);
 	colLevel.addClass(level)
 		.addClass("loglevel");
-	var colSender = $("<div class='col-3 col-md-2 col-xl-1 log-sender'></div>").text(sender)
-		.addClass("logsender");
-	var colMsg = $("<div class='col-12 col-md-5 col-xl-8 log-msg'></div>").text(message)
+
+	var colMsg = $("<div class='col-12 col-lg-5 col-xl-7 log-msg'></div>").text(message)
 		.addClass("logmessage");
+
 	row.append(colTs)
 		.append(colSender)
 		.append(colLevel)
