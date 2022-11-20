@@ -115,7 +115,7 @@ namespace Tbot.Services {
 
 				// Check if they are already inited or must be inited
 				foreach (var instance in uniqueInstances) {
-					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.SettingsPath)).FullName;
+					string cInstanceSettingPath = instance.SettingsPath;
 					string alias = instance.Alias;
 
 					// Check if already initialized. if that so, update alias and keep going
@@ -134,7 +134,7 @@ namespace Tbot.Services {
 
 			// Deinitialize instances that are no more valid (not present in newInstances)
 			foreach (var deInstance in instances) {
-				if (newInstances.Any(c => string.Compare(c._botSettingsPath, deInstance._botSettingsPath) == 0)) {
+				if (newInstances.Any(c => string.Compare(c._botSettingsPath, deInstance._botSettingsPath) == 0) == false) {
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Deinitializing instance \"{deInstance._alias}\" \"{deInstance._botSettingsPath}\"");
 
 					deinitingInstances.Add(deInstance._botMain.DisposeAsync().AsTask());
