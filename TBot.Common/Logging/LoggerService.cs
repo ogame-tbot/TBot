@@ -131,6 +131,7 @@ namespace TBot.Common.Logging {
 			lock (syncObject) {
 				if (_telegramAdded == false) {
 					Log.Logger = new LoggerConfiguration()
+						.MinimumLevel.Debug()
 						.WriteTo.Logger(Log.Logger)
 						// Control telegram level
 						.MinimumLevel.ControlledBy(_telegramLevelSwitch)

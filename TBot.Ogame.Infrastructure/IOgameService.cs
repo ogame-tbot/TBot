@@ -3,6 +3,7 @@ using TBot.Ogame.Infrastructure.Models;
 
 namespace TBot.Ogame.Infrastructure {
 	public interface IOgameService {
+		event EventHandler OnError;
 		void Initialize(Credentials credentials,
 				ProxySettings proxySettings,
 				string host = "127.0.0.1",
@@ -19,7 +20,7 @@ namespace TBot.Ogame.Infrastructure {
 		Task BuildMilitary(Celestial celestial, Buildables buildable, long quantity);
 		Task BuildShips(Celestial celestial, Buildables buildable, long quantity);
 		Task BuildTechnology(Celestial celestial, Buildables buildable);
-		Task BuyOfferOfTheDay();
+		Task<OfferOfTheDayStatus> BuyOfferOfTheDay();
 		Task CancelConstruction(Celestial celestial);
 		Task CancelFleet(Fleet fleet);
 		Task CancelResearch(Celestial celestial);

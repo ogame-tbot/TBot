@@ -18,10 +18,20 @@ using TBot.Model;
 using Tbot.Includes;
 using Tbot.Helpers;
 using Serilog.Events;
+using Telegram.Bot.Types.ReplyMarkups;
+using Tbot.Workers;
 
 namespace Tbot.Services {
 
 	internal class TelegramMessenger : ITelegramMessenger {
+		private class InstanceWithBridge {
+			public InstanceWithBridge(TBotMain instance, ITBotOgamedBridge tBotOgamedBridge) {
+				Instance = instance;
+				TBotOGamedBridge = tBotOgamedBridge;
+			}
+			public TBotMain Instance { get; set; }
+			public ITBotOgamedBridge TBotOGamedBridge { get; set; }
+		}
 		public string Api { get; private set; }
 		public string Channel { get; private set; }
 		public ITelegramBotClient Client { get; private set; }
@@ -34,7 +44,7 @@ namespace Tbot.Services {
 		Task receivingTask = null;
 
 		private SemaphoreSlim instanceSem = new SemaphoreSlim(1, 1);
-		private List<TBotMain> instances = new();
+		private List<InstanceWithBridge> instances = new();
 		private int currInstanceIndex = -1;
 
 		private Timer autoPingTimer;
@@ -97,9 +107,10 @@ namespace Tbot.Services {
 				autoPingTimer.Change(nextping, Timeout.Infinite);
 
 				string pingStr = $"TBot is running since {FormattingHelper.TimeSpanToString(upTime)}\n";
-				foreach (var instance in instances) {
+				foreach (var instanceWithBridge in instances) {
+					var instance = instanceWithBridge.Instance;
 					TimeSpan instanceUpTime = now - instance.startTime;
-					int instanceIndex = instances.IndexOf(instance);
+					int instanceIndex = instances.IndexOf(instanceWithBridge);
 					pingStr += $"#{instanceIndex} " +
 						$"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> " +
 						$"since {FormattingHelper.TimeSpanToString(instanceUpTime)}\n";
@@ -115,16 +126,17 @@ namespace Tbot.Services {
 			return;
 		}
 
-		public async Task AddTbotInstance(TBotMain instance) {
+		public async Task AddTbotInstance(TBotMain instance, ITBotOgamedBridge tbotOgamedBridge) {
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, "Adding instance.....");
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			await instanceSem.WaitAsync(ct);
 
-			if (instances.Contains(instance) == false) {
-				instances.Add(instance);
+			if (!instances.Any(i => i.Instance.InstanceAlias == instance.InstanceAlias)) {
+				var instanceWithBridge = new InstanceWithBridge(instance, tbotOgamedBridge);
+				instances.Add(instanceWithBridge);
 
-				int instanceIndex = instances.IndexOf(instance);
+				int instanceIndex = instances.IndexOf(instanceWithBridge);
 				await SendMessage($"<code>[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]</code> Instance added! (Index:{instanceIndex})");
 
 				// Set a default instance
@@ -140,8 +152,8 @@ namespace Tbot.Services {
 			_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"[{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 
 			await instanceSem.WaitAsync(ct);
-
-			if (instances.Remove(instance) == false) {
+			var instanceToRemove = instances.FirstOrDefault(i => i.Instance.InstanceAlias == instance.InstanceAlias);
+			if (instanceToRemove == null || !instances.Remove(instanceToRemove)) {
 				_logger.WriteLog(LogLevel.Information, LogSender.Telegram, $"Error removing [{instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}]");
 			}
 
@@ -167,6 +179,16 @@ namespace Tbot.Services {
 				cancellationToken: cancellationToken);
 		}
 
+		public async Task SendReplyMarkup(string text, IEnumerable<IEnumerable<InlineKeyboardButton>> buttons, CancellationToken ct) {
+			var inlineKeyboard = new InlineKeyboardMarkup(buttons);
+			await Client.SendTextMessageAsync(
+				chatId: Channel,
+				text: text,
+				replyMarkup: inlineKeyboard,
+				cancellationToken: ct
+			);
+		}
+
 		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
 			try {
 				await client.SendTextMessageAsync(chat, message, parseMode);
@@ -181,6 +203,7 @@ namespace Tbot.Services {
 			{
 				"/setmain",
 				"/getmain",
+				"/getmainstats",
 				"/listinstances",
 				"/loglevel",
 				"/setloglevel",
@@ -268,7 +291,7 @@ namespace Tbot.Services {
 									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\" exceeds managed {instances.Count()}");
 								} else {
 									currInstanceIndex = UserSelectedInstance;
-									var cInstance = instances.ElementAt(currInstanceIndex);
+									var cInstance = instances.ElementAt(currInstanceIndex).Instance;
 									await SendMessage(botClient, message.Chat, $"Selected index \"{args.ElementAt(1)}\"" +
 										$"{cInstance.userData.userInfo.PlayerName}@{cInstance.userData.serverData.Name}");
 								}
@@ -280,14 +303,25 @@ namespace Tbot.Services {
 							if (currInstanceIndex < 0 || currInstanceIndex >= instances.Count()) {
 								await SendMessage(botClient, message.Chat, "Currently managing no instance");
 							} else {
-								var instance = instances[currInstanceIndex];
+								var instance = instances[currInstanceIndex].Instance;
 								await SendMessage(botClient, message.Chat, $"Managing #{currInstanceIndex} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+							}
+							return;
+						case "/getmainstats":
+							if (currInstanceIndex < 0 || currInstanceIndex >= instances.Count()) {
+								await SendMessage(botClient, message.Chat, "Currently managing no instance");
+							} else {
+								var instance = instances[currInstanceIndex].Instance;
+								foreach (var feat in Features.AllFeatures) {
+									await SendMessage(botClient, message.Chat, $"Instance #{currInstanceIndex} <code>{instance.ToString()}</code> <b>{feat.ToString()}</b> Running: {instance.IsFeatureRunning(feat)}");
+								}
 							}
 							return;
 						case "/listinstances":
 							await SendMessage(botClient, message.Chat, $"Listing #{instances.Count}");
-							foreach (var instance in instances) {
-								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instance)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
+							foreach (var instanceWithBridge in instances) {
+								var instance = instanceWithBridge.Instance;
+								await SendMessage(botClient, message.Chat, $"{instances.IndexOf(instanceWithBridge)} {instance.userData.userInfo.PlayerName}@{instance.userData.serverData.Name}");
 							}
 							return;
 						case "/loglevel":
@@ -346,6 +380,7 @@ namespace Tbot.Services {
 								"\t Core Commands\n" +
 								"/setmain - Set the TBot main instance to pilot. Format <code>/setmain 0</code>\n" +
 								"/getmain - Get the current TBot instance that Telegram is managing\n" +
+								"/getmainstats - Get current TBot instance statistics\n" +
 								"/listinstances - List TBot main instances\n" +
 								"/loglevel - Get current log level on telegram logging\n" +
 								"/setloglevel - Set log level on telegram logging and enables it. Format <code>/setloglevel Debug|Information|Warning|Error </code>\n" +
@@ -412,7 +447,7 @@ namespace Tbot.Services {
 					if (message.Text.Contains("@") && message.Text.Split(" ").Length == 1)
 						message.Text = message.Text.ToLower().Split(' ')[0].Split('@')[0];
 
-					TBotMain currInstance = instances.ElementAt(currInstanceIndex);
+					TBotMain currInstance = instances.ElementAt(currInstanceIndex).Instance;
 					args = message.Text.ToLower().Split(' ');
 					arg = args.ElementAt(0);
 
@@ -483,7 +518,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(arg);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
 
 								return;
 
@@ -503,7 +538,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, false, mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, mission, true);
 
 								return;
 
@@ -525,7 +560,7 @@ namespace Tbot.Services {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										await SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
-										await currInstance.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+										await currInstance.FleetScheduler.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
@@ -554,7 +589,7 @@ namespace Tbot.Services {
 								celestial = await currInstance.TelegramGetCurrentCelestial();
 								currInstance.telegramUserData.CurrentCelestialToSave = celestial;
 								currInstance.telegramUserData.Mission = mission;
-								await currInstance.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
 								return;
 
 
@@ -572,7 +607,7 @@ namespace Tbot.Services {
 								}
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
 								return;
 
 
@@ -772,8 +807,8 @@ namespace Tbot.Services {
 								}
 								arg = message.Text.Split(' ')[1];
 								duration = FormattingHelper.ParseDurationFromString(arg);
-
-								DateTime timeNow = await currInstance.GetDateTime();
+								var instanceWithBridge = instances.First(i => i.Instance.InstanceAlias == currInstance.InstanceAlias);
+								DateTime timeNow = await instanceWithBridge.TBotOGamedBridge.GetDateTime();
 								DateTime WakeUpTime = timeNow.AddSeconds(duration);
 
 								await currInstance.SleepNow(WakeUpTime);
@@ -822,7 +857,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopExpeditions();
+								await currInstance.StopFeature(Feature.Expeditions);
 								await SendMessage(botClient, message.Chat, "Expeditions stopped!");
 								return;
 
@@ -833,7 +868,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeExpeditions();
+								await currInstance.InitializeFeature(Feature.Expeditions);
 								await SendMessage(botClient, message.Chat, "Expeditions initialized!");
 								return;
 
@@ -869,7 +904,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainAutoResearch();
+								await currInstance.StopFeature(Feature.BrainAutoResearch);
 								await SendMessage(botClient, message.Chat, "AutoResearch stopped!");
 								return;
 
@@ -880,7 +915,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainAutoResearch();
+								await currInstance.InitializeFeature(Feature.BrainAutoResearch);
 								await SendMessage(botClient, message.Chat, "AutoResearch started!");
 								return;
 
@@ -891,7 +926,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainAutoMine();
+								await currInstance.StopFeature(Feature.BrainAutoMine);
 								await SendMessage(botClient, message.Chat, "AutoMine stopped!");
 								return;
 
@@ -902,7 +937,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainAutoMine();
+								await currInstance.InitializeFeature(Feature.BrainAutoMine);
 								await SendMessage(botClient, message.Chat, "AutoMine started!");
 								return;
 
@@ -913,7 +948,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainLifeformAutoMine();
+								await currInstance.StopFeature(Feature.BrainLifeformAutoMine);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoMine stopped!");
 								return;
 
@@ -924,7 +959,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainLifeformAutoMine();
+								await currInstance.InitializeFeature(Feature.BrainLifeformAutoMine);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoMine started!");
 								return;
 
@@ -935,7 +970,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopBrainLifeformAutoResearch();
+								await currInstance.StopFeature(Feature.BrainLifeformAutoResearch);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch stopped!");
 								return;
 
@@ -946,7 +981,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeBrainLifeformAutoResearch();
+								await currInstance.InitializeFeature(Feature.BrainLifeformAutoResearch);
 								await SendMessage(botClient, message.Chat, "Lifeform AutoResearch started!");
 								return;
 
@@ -957,7 +992,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopDefender();
+								await currInstance.StopFeature(Feature.Defender);
 								await SendMessage(botClient, message.Chat, "Defender stopped!");
 								return;
 
@@ -968,7 +1003,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeDefender();
+								await currInstance.InitializeFeature(Feature.Defender);
 								await SendMessage(botClient, message.Chat, "Defender started!");
 								return;
 
@@ -979,7 +1014,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.StopAutoFarm();
+								await currInstance.StopFeature(Feature.AutoFarm);
 								await SendMessage(botClient, message.Chat, "Autofarm stopped!");
 								return;
 
@@ -990,7 +1025,7 @@ namespace Tbot.Services {
 									return;
 								}
 
-								currInstance.InitializeAutoFarm();
+								await currInstance.InitializeFeature(Feature.AutoFarm);
 								await SendMessage(botClient, message.Chat, "Autofarm started!");
 								return;
 
@@ -1140,7 +1175,7 @@ namespace Tbot.Services {
 								}
 								Celestial origin = await currInstance.TelegramGetCurrentCelestial();
 
-								await currInstance.SpyCrash(origin, target);
+								await currInstance.FleetScheduler.SpyCrash(origin, target);
 								return;
 
 
@@ -1233,7 +1268,7 @@ namespace Tbot.Services {
 
 				await instanceSem.WaitAsync(ct);
 				foreach (var instance in instances) {
-					instance.RemoveTelegramMessenger();
+					instance.Instance.RemoveTelegramMessenger();
 				}
 			} finally {
 				instanceSem.Release();

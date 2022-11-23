@@ -1,17 +1,18 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Tbot.Services;
+using Tbot.Workers;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Tbot.Includes {
-	internal interface ITelegramMessenger {
+	public interface ITelegramMessenger {
 		string Api { get; }
 		string Channel { get; }
 		ITelegramBotClient Client { get; }
 
-		Task AddTbotInstance(TBotMain instance);
+		Task AddTbotInstance(TBotMain instance, ITBotOgamedBridge tbotOgameBridge);
 		Task RemoveTBotInstance(TBotMain instance);
 		Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken);
 		Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html);
