@@ -27,7 +27,7 @@ namespace Tbot.Services {
 		}
 	}
 	internal class InstanceManager : IInstanceManager {
-		public string SettingsAbsoluteFilepath { get; set; } = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
+		public string SettingsAbsoluteFilepath { get; set; } = "";
 		static dynamic _mainSettings;
 
 		private readonly IOgameService _ogameService;
@@ -107,7 +107,7 @@ namespace Tbot.Services {
 					string cInstanceSettingPath = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(SettingsAbsoluteFilepath), instance.Settings)).FullName;
 					string alias = instance.Alias;
 
-					if(uniqueInstances.Any(c => string.Compare(c.SettingsPath, cInstanceSettingPath) == 0)) {
+					if(uniqueInstances.Any(c => c.SettingsPath == cInstanceSettingPath) == false) {
 						uniqueInstances.Add(new InitInstanceData(alias, cInstanceSettingPath));
 					}
 				}
@@ -120,7 +120,7 @@ namespace Tbot.Services {
 					string alias = instance.Alias;
 
 					// Check if already initialized. if that so, update alias and keep going
-					if (instances.Any(c => string.Compare(c._botSettingsPath, cInstanceSettingPath) == 0)) {
+					if (instances.Any(c => c._botSettingsPath == cInstanceSettingPath) == true) {
 						_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Instance \"{alias}\" \"{cInstanceSettingPath}\" already inited.");
 						var foundInstance = instances.First(c => c._botSettingsPath == cInstanceSettingPath);
 						foundInstance._alias = alias;

@@ -52,12 +52,6 @@ namespace Tbot {
 				.AddScoped<ITelegramMessenger, TelegramMessenger>()
 				.AddScoped<IInstanceManager, InstanceManager>();
 
-			var serviceProvider = WebApp.Build();
-
-			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
-			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
-			var ogameService = serviceProvider.GetRequiredService<IOgameService>();
-
 			ConsoleHelpers.SetTitle();
 
 			CmdLineArgsService.DoParse(args);
@@ -66,8 +60,9 @@ namespace Tbot {
 				Environment.Exit(0);
 			}
 
+			string settingsPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
 			if (CmdLineArgsService.settingsPath.IsPresent) {
-				_instanceManager.SettingsAbsoluteFilepath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
+				settingsPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
 
 			var logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
@@ -75,7 +70,15 @@ namespace Tbot {
 				logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
 			}
 
+			var serviceProvider = WebApp.Build(settingsPath);
+
+			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
+			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
+			var ogameService = serviceProvider.GetRequiredService<IOgameService>();
+
 			_logger.ConfigureLogging(logPath);
+			_instanceManager.SettingsAbsoluteFilepath = settingsPath;
+			
 
 			// Context validation
 			//	a - Ogamed binary is present on same directory ?
@@ -102,8 +105,8 @@ namespace Tbot {
 				tcs.SetResult();
 			};
 
-			var settingsFile = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
-			var settings = SettingsService.GetSettings(settingsFile);
+			// Manage WebUI
+			var settings = SettingsService.GetSettings(settingsPath);
 			if (SettingsService.IsSettingSet(settings, "WebUI")
 				&& SettingsService.IsSettingSet(settings.WebUI, "Enable")
 				&& (bool) settings.WebUI.Enable) {

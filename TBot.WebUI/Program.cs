@@ -17,7 +17,7 @@ namespace TBot.WebUI {
 			return _builder.Services;
 		}
 
-		public static IServiceProvider Build() {
+		public static IServiceProvider Build(string settingsPath) {
 			var assembly = Assembly.GetExecutingAssembly();
 			_builder.Services.AddControllersWithViews()
 				.AddRazorRuntimeCompilation()
@@ -27,7 +27,6 @@ namespace TBot.WebUI {
 
 			Console.WriteLine($"Folder: {AppDomain.CurrentDomain.BaseDirectory}");
 
-			var settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
 			var settingsFile = SettingsService.GetSettings(settingsPath);
 			string urls = (string) settingsFile.WebUI.Urls;
 
