@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
-using Tbot.Includes;
+using Tbot.Common.Extensions;
 
-namespace Tbot.Services {
+namespace Tbot.Common.Settings {
 	public static class SettingsService {
 		public static dynamic GetSettings(string settingsPath) {
 			if (File.Exists(settingsPath) == false) {

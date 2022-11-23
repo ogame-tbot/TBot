@@ -1,0 +1,78 @@
+#logsDiv {
+	max-height: calc(100vh - 160px);
+	overflow-y: scroll;
+	overflow-x: hidden;
+	background-color: transparent;
+	color: white;
+}
+
+	#logsDiv .row {
+		padding: 5px;
+		margin-bottom: 5px;
+		background-color: #212529;
+	}
+
+#loglevelfilter {
+	max-width: 200px;
+	margin-top: 1px;
+}
+
+#logsenderfilter {
+	max-width: 200px;
+	margin-top: 1px;
+}
+
+.loglevel.Debug {
+	color: lightgreen;
+}
+
+.loglevel.Information {
+	color: lightblue;
+}
+
+.loglevel.Warning {
+	color: orange;
+}
+
+.loglevel.Error {
+	color: palevioletred;
+}
+
+.logmessage {
+	/*font-family: Courier New, Consolas;*/
+}
+
+.vrow {
+	width: 100%;
+}
+
+@media (max-width: 992px) {
+	.timestamp, .loglevel, .logsender {
+		font-size: 8pt;
+	}
+
+	.logmessage {
+		padding-top: 10px;
+	}
+
+	.logsender {
+		text-align: center;
+	}
+
+	.loglevel {
+		text-align: right;
+	}
+}
+
+@media (max-width: 768px) {
+
+
+	.main-container {
+		padding-left: 0px;
+		padding-right: 0px;
+	}
+
+	#logsearch {
+		width: 100%;
+	}
+}

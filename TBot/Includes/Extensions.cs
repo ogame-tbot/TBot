@@ -12,14 +12,6 @@ namespace Tbot.Includes {
 			return source.OrderBy((item) => rnd.Next());
 		}
 
-		public static string FirstCharToUpper(this string input) {
-			return input switch {
-				null => throw new ArgumentNullException(nameof(input)),
-				"" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
-				_ => input.First().ToString().ToUpper() + input[1..]
-			};
-		}
-
 		public static bool Has(this List<Celestial> celestials, Celestial celestial) {
 			foreach (Celestial cel in celestials) {
 				if (cel.HasCoords(celestial.Coordinate)) {

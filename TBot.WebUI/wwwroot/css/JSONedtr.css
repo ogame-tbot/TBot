@@ -1,0 +1,97 @@
+.jse--output{
+	position: relative;
+	margin: 50px;
+	width: 1000px;
+	min-height: 100px;
+	outline: 1px solid #eee;
+	padding: 0;
+	color: white;
+	background-color: #f3f6fa;
+    background-image: linear-gradient(#fff 50%, transparent 50%, transparent);
+    background-size: 60px 60px;
+    color: black;
+    font-family: monospace;
+}
+
+.jse--output .jse--row{
+	position: relative;
+	display: block;
+	margin: 0px;
+	line-height: 30px;
+}
+
+.jse--output .jse--row:hover{
+	background-color: rgba( 0, 0, 0, 0.01);
+	outline: 1px dotted #555;
+}
+
+.jse--output .jse--delete{
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 2em;
+	text-align: center;
+	font-size: 1.5em;
+	cursor: pointer;
+}
+
+.jse--output .jse--row.jse--add{
+	font-weight: bold;
+	height: 30px;
+}
+
+.jse--output .jse--row.jse--add .jse--plus{
+	font-size: 1em;
+	padding-left: 20px !important;
+	cursor: pointer;
+	border: none;
+	background-color: transparent;
+	margin-left: 6px;
+	padding: 0 !important;
+	width: 30px;
+	height: 30px;
+}
+
+.jse--output .jse--typeof{
+	font-weight: 200;
+	font-size: 0.9em;
+	color: #555;
+	margin-left: 50px;
+}
+
+.jse--output input{
+	border: none;
+	background-color: transparent;
+	margin: 0;
+	line-height: 30px;
+	height: 30px;
+	padding: 0 15px;
+}
+
+.jse--output input:hover{
+	background-color: rgba(249, 251, 253, 0.5)
+}
+
+.jse--output input:focus{
+	outline: 1px solid silver;
+	background-color: rgba(249, 251, 253, 1)
+}
+
+.jse--output input.jse--key{
+	font-weight: bold;
+}
+
+.jse--output input.jse--value{
+	font-style: italic;
+}
+
+.jse--output input[type=checkbox].jse--value__new{
+	position: absolute;
+}
+
+.jse--output .jse--row-object > .jse--row,
+.jse--output .jse--row--array > .jse--row{
+	padding-left: 15px;
+	margin-left: 15px;
+	border-left: 1px dotted #ccc;
+}
