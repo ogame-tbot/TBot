@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Tbot.Common.Settings;
 using Tbot.Helpers;
 using Tbot.Includes;
 using Tbot.Services;

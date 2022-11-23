@@ -13,6 +13,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using Tbot.Common.Settings;
 using Tbot.Exceptions;
 using Tbot.Helpers;
 using Tbot.Includes;
@@ -87,7 +88,7 @@ namespace Tbot {
 			}
 
 			// Manage settings
-			_instanceManager.OnSettingsChanged();
+			//_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
@@ -101,8 +102,13 @@ namespace Tbot {
 				tcs.SetResult();
 			};
 
-			await WebApp.Main(cts.Token);
-
+			var settingsFile = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
+			var settings = SettingsService.GetSettings(settingsFile);
+			if (SettingsService.IsSettingSet(settings, "WebUI")
+				&& SettingsService.IsSettingSet(settings.WebUI, "Enable")
+				&& (bool) settings.WebUI.Enable) {
+				await WebApp.Main(cts.Token);
+			}
 			await tcs.Task;
 
 			await _instanceManager.DisposeAsync();

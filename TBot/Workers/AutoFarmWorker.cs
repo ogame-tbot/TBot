@@ -13,6 +13,7 @@ using Tbot.Helpers;
 using TBot.Model;
 using TBot.Ogame.Infrastructure.Models;
 using TBot.Ogame.Infrastructure;
+using Tbot.Common.Settings;
 
 namespace Tbot.Workers {
 	public class AutoFarmWorker : WorkerBase {

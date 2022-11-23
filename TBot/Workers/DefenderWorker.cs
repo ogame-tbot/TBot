@@ -14,6 +14,7 @@ using TBot.Ogame.Infrastructure.Models;
 using Tbot.Includes;
 using System.Timers;
 using TBot.Ogame.Infrastructure;
+using Tbot.Common.Settings;
 
 namespace Tbot.Workers {
 	internal class DefenderWorker : WorkerBase {

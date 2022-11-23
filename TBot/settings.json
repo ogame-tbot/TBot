@@ -10,6 +10,7 @@
 		}
 	},
 	"WebUI": {
+		"Enable": true,
 		"Urls": "http://localhost:8091,https://localhost:8092",
 		"MaxLogsToShow": 2000
 	},
