@@ -88,7 +88,7 @@ namespace Tbot {
 			}
 
 			// Manage settings
-			//_instanceManager.OnSettingsChanged();
+			_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
