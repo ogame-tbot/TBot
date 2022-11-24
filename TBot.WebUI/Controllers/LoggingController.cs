@@ -6,10 +6,17 @@ using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Tbot.Common.Settings;
+using TBot.Common.Logging;
 using TBot.WebUI.Models;
 
 namespace TBot.WebUI.Controllers {
 	public class LoggingController : Controller {
+		private readonly ILoggerService<LoggingController> _loggerService;
+
+		public LoggingController(ILoggerService<LoggingController> loggerService) {
+			_loggerService= loggerService;
+		}
+
 		private class LogEntry {
 			public string type { get; set; }
 			public string datetime { get; set; }
@@ -18,7 +25,7 @@ namespace TBot.WebUI.Controllers {
 		}
 		private async Task<string> GetLogsFromCSV(DateTime logsDate) {
 			try {
-				var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log", $"TBot{logsDate.ToString("yyyyMMdd")}.csv");
+				var filePath = Path.Combine(SettingsService.LogsPath, $"TBot{logsDate.ToString("yyyyMMdd")}.csv");
 				if (System.IO.File.Exists(filePath)) {
 					using var fs = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 					using var sr = new StreamReader(fs, Encoding.Default);
@@ -36,7 +43,7 @@ namespace TBot.WebUI.Controllers {
 			}
 		}
 		private int GetMaxLogsToShow() {
-			var settings = SettingsService.GetSettings(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json"));
+			var settings = SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
 			return (int) settings.WebUI.MaxLogsToShow;
 		}
 

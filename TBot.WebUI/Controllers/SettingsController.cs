@@ -19,9 +19,8 @@ namespace TBot.WebUI.Controllers {
 			return settings.GetType().GetProperty(name) != null;
 		}
 		private async Task<List<string>> GetFileNames() {
-			var fileNames = new List<string>() { "settings.json" };
-			var settingsPath = Path.Combine(GetCurrentDirectory(), "settings.json");
-			var settingsFile = SettingsService.GetSettings(settingsPath);
+			var fileNames = new List<string>() { new FileInfo(SettingsService.GlobalSettingsPath).Name };
+			var settingsFile = SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
 
 			if (!SettingsService.IsSettingSet(settingsFile, "Instances")) {
 				return fileNames;

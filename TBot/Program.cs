@@ -65,12 +65,16 @@ namespace Tbot {
 				settingsPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
 
+			SettingsService.GlobalSettingsPath = settingsPath;
+
 			var logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
 			if (CmdLineArgsService.logPath.IsPresent == true) {
 				logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
 			}
 
-			var serviceProvider = WebApp.Build(settingsPath);
+			SettingsService.LogsPath = logPath;
+
+			var serviceProvider = WebApp.Build();
 
 			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
 			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
@@ -91,7 +95,7 @@ namespace Tbot {
 			}
 
 			// Manage settings
-			_instanceManager.OnSettingsChanged();
+			//_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
