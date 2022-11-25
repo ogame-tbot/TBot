@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using Tbot.Model;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Includes {
 	public static class Extensions {
@@ -50,24 +50,6 @@ namespace Tbot.Includes {
 			public int GetHashCode([DisallowNull] Celestial obj) {
 				return obj.ID;
 			}
-		}
-
-		public static string EscapeForCSV(this string str) {
-			bool mustQuote = str.Contains(",") || str.Contains("\"") || str.Contains("\r") || str.Contains("\n");
-			if (mustQuote) {
-				StringBuilder sb = new();
-				sb.Append("\"");
-				foreach (char nextChar in str) {
-					sb.Append(nextChar);
-					if (nextChar == '"') {
-						sb.Append("\"");
-					}
-				}
-				sb.Append("\"");
-				return sb.ToString();
-			}
-
-			return str;
 		}
 	}
 }
