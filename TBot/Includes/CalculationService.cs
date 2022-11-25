@@ -90,7 +90,7 @@ namespace Tbot.Includes {
 			return baseCargo * (bonus + 100) / 100;
 		}
 
-		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData,  int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			return CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 		}
 
