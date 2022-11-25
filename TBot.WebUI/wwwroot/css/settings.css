@@ -1,0 +1,47 @@
+.list-files {
+	list-style-type: none; /* Remove bullets */
+	padding: 0; /* Remove padding */
+	margin: 0; /* Remove margins */
+	margin-bottom: 20px;
+	max-height: calc(100vh - 160px);
+	overflow-y: scroll;
+}
+
+	.list-files li {
+		margin-bottom: 5px;
+	}
+
+	.list-files > li > .btn.selected {
+		background-color: white;
+	}
+
+	.list-files .file-entry {
+		width: 100%;
+		text-align: left;
+	}
+
+
+.buttons-box {
+	margin-bottom: 20px;
+}
+
+	.buttons-box .btn {
+		margin-right: 5px;
+	}
+
+#json-display {
+	min-height: 50vh;
+	padding: 10px 30px;
+	max-height: calc(100vh - 180px);
+	overflow-y: scroll;
+	margin-right: 10px;
+}
+
+@media (max-width: 992px) {
+	#json-display {
+		max-height: unset;
+		overflow-y: auto;
+		margin-right: unset;
+	}
+}
+

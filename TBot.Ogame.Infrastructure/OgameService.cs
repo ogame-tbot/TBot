@@ -27,7 +27,7 @@ namespace TBot.Ogame.Infrastructure {
 
 		private readonly ILoggerService<OgameService> _logger;
 		private HttpClient _client;
-		private Process _ogamedProcess;
+		private Process? _ogamedProcess;
 		private string _username;
 
 		private Credentials _credentials;
@@ -36,6 +36,8 @@ namespace TBot.Ogame.Infrastructure {
 		private string _captchaKey;
 		private ProxySettings _proxySettings;
 		private string _cookiesPath;
+
+		public event EventHandler OnError;
 
 		bool _mustKill = false;	// used whenever we want to actually kill ogamed
 
@@ -166,12 +168,25 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		private void handle_ogamedProcess_Exited(object? sender, EventArgs e) {
+			var totalRunTime = Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds);
 			_logger.WriteLog(LogLevel.Information, LogSender.OGameD, $"OgameD Exited {_ogamedProcess.ExitCode}" +
-				$" TotalTime(ms) {Math.Round((_ogamedProcess.ExitTime - _ogamedProcess.StartTime).TotalMilliseconds)}");
+				$" TotalTime(ms) {totalRunTime}");
+
+			// If total run time is very low, then OGameD encountered a serious problem
 			if (_mustKill == false) {
-				RerunOgamed();
+				if (totalRunTime > 500) {
+					Task.Delay(1000).Wait();
+					RerunOgamed();
+				} else {
+					_ogamedProcess.Dispose();
+					_ogamedProcess = null;
+					if (OnError != null) {
+						OnError(this, EventArgs.Empty);
+					}
+				}
 			} else {
 				_ogamedProcess.Dispose();
+				_ogamedProcess = null;
 			}
 		}
 		public void RerunOgamed() {
@@ -183,6 +198,7 @@ namespace TBot.Ogame.Infrastructure {
 				_mustKill = true;
 				_ogamedProcess.Kill();
 				_ogamedProcess.Dispose();
+				_ogamedProcess = null;
 			}
 		}
 
@@ -437,8 +453,19 @@ namespace TBot.Ogame.Infrastructure {
 			}
 		}
 
-		public async Task BuyOfferOfTheDay() {
-			await GetAsync<object>("/bot/buy-offer-of-the-day");
+		public async Task<OfferOfTheDayStatus> BuyOfferOfTheDay() {
+			OfferOfTheDayStatus sts = OfferOfTheDayStatus.OfferOfTheDayUnknown;
+			// 200 means it has been bought
+			// 400 {"Status":"error","Code":400,"Message":"Offer already accepted","Result":null}
+			try {
+				await GetAsync<object>("/bot/buy-offer-of-the-day");
+				sts = OfferOfTheDayStatus.OfferOfTheDayBougth;
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				sts = OfferOfTheDayStatus.OfferOfTheDayAlreadyBought;
+			} catch {
+				// Unknown!
+			}
+			return sts;
 		}
 
 		public async Task<List<AttackerFleet>> GetAttacks() {
@@ -622,8 +649,13 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		public async Task<List<Fleet>> Phalanx(Celestial origin, Coordinate coords) {
-
-			return await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			List<Fleet> phalanxedFleets = new();
+			try {
+				phalanxedFleets = await GetAsync<List<Fleet>>($"/bot/moons/{origin.ID}/phalanx/{coords.Galaxy}/{coords.System}/{coords.Position}");
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				// Means not fleet or can't phalanx. Got to check better with ogamed
+			}
+			return phalanxedFleets;
 		}
 	}
 }

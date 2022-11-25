@@ -6,10 +6,13 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
-using Tbot.Includes;
+using Tbot.Common.Extensions;
 
-namespace Tbot.Services {
+namespace Tbot.Common.Settings {
 	public static class SettingsService {
+		public static string GlobalSettingsPath { get; set; }
+		public static string LogsPath { get; set; }
+
 		public static dynamic GetSettings(string settingsPath) {
 			if (File.Exists(settingsPath) == false) {
 				throw new Exception($"{settingsPath} does not exist.");

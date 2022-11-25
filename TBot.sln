@@ -5,9 +5,11 @@ VisualStudioVersion = 17.3.32811.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TBot", "TBot\TBot.csproj", "{8421A5B3-C582-4525-B6E9-00CD740BAE62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBot.Ogame.Infrastructure", "TBot.Ogame.Infrastructure\TBot.Ogame.Infrastructure.csproj", "{5C8B9102-7F57-4ADB-8D4A-BF472CACD0FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TBot.Ogame.Infrastructure", "TBot.Ogame.Infrastructure\TBot.Ogame.Infrastructure.csproj", "{5C8B9102-7F57-4ADB-8D4A-BF472CACD0FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBot.Common", "TBot.Common\TBot.Common.csproj", "{6F9D7876-1ABA-40A1-AAA3-F2E0C1B06CD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TBot.Common", "TBot.Common\TBot.Common.csproj", "{6F9D7876-1ABA-40A1-AAA3-F2E0C1B06CD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TBot.WebUI", "TBot.WebUI\TBot.WebUI.csproj", "{31659602-8086-4996-AB55-63E509B238E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,6 +57,18 @@ Global
 		{6F9D7876-1ABA-40A1-AAA3-F2E0C1B06CD8}.Release|x64.Build.0 = Release|Any CPU
 		{6F9D7876-1ABA-40A1-AAA3-F2E0C1B06CD8}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F9D7876-1ABA-40A1-AAA3-F2E0C1B06CD8}.Release|x86.Build.0 = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|x64.Build.0 = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Debug|x86.Build.0 = Debug|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|x64.ActiveCfg = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|x64.Build.0 = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|x86.ActiveCfg = Release|Any CPU
+		{31659602-8086-4996-AB55-63E509B238E5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

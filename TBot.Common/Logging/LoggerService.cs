@@ -17,9 +17,22 @@ using System.Runtime.InteropServices;
 using Serilog.Context;
 using Serilog.Core;
 using Serilog.Filters;
+using Microsoft.AspNetCore.SignalR;
+using TBot.Common.Logging.Hubs;
+using Serilog.Sinks.AspNetCore.SignalR.Extensions;
+using System.Globalization;
 
 namespace TBot.Common.Logging {
 	public class LoggerService<T> : ILoggerService<T> {
+
+		private readonly IHubContext<WebHub, IWebHub> _hub;
+		private readonly IServiceProvider _serviceProvider;
+
+		public LoggerService(IHubContext<WebHub, IWebHub> hub,
+			IServiceProvider serviceProvider) {
+			_hub = hub;
+			_serviceProvider = serviceProvider;
+		}
 
 		private object syncObject = new object();
 		private string _logPath = "";
@@ -96,7 +109,15 @@ namespace TBot.Common.Logging {
 					flushToDiskInterval: TimeSpan.FromHours(1),
 					rollOnFileSizeLimit: true,
 					fileSizeLimitBytes: maxFileSize,
-					rollingInterval: RollingInterval.Day);
+					rollingInterval: RollingInterval.Day)
+				.WriteTo.SignalRTBotSink<WebHub, IWebHub>(
+					LogEventLevel.Debug,
+					_serviceProvider,
+					CultureInfo.InvariantCulture, // can be null
+					new string[] { },        // can be null
+					new string[] { },        // can be null
+					new string[] { },        // can be null
+					false);          // false is the default value
 
 				// Telegram default values
 				_telegramLevelSwitch.MinimumLevel = LogEventLevel.Debug;
@@ -110,6 +131,7 @@ namespace TBot.Common.Logging {
 			lock (syncObject) {
 				if (_telegramAdded == false) {
 					Log.Logger = new LoggerConfiguration()
+						.MinimumLevel.Debug()
 						.WriteTo.Logger(Log.Logger)
 						// Control telegram level
 						.MinimumLevel.ControlledBy(_telegramLevelSwitch)

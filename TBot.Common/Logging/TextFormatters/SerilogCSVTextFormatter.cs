@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace TBot.Common.Logging.TextFormatters {
 			output.Write("{0},{1},{2},{3}{4}",
 				EscapeForCSV(logEvent.Level.ToString()),
 				EscapeForCSV(logEvent.Properties["LogSender"].ToString()),
-				EscapeForCSV(DateTime.Now.ToString()),
+				EscapeForCSV(DateTime.Now.ToString(CultureInfo.InvariantCulture)),
 				EscapeForCSV(message),
 				output.NewLine);
 		}

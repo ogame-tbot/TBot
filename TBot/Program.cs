@@ -13,17 +13,21 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using Tbot.Common.Settings;
 using Tbot.Exceptions;
 using Tbot.Helpers;
 using Tbot.Includes;
 using Tbot.Services;
+using Tbot.Workers;
 using TBot.Common.Logging;
 using TBot.Common.Logging.Enrichers;
 using TBot.Common.Logging.Hooks;
+using TBot.Common.Logging.Hubs;
 using TBot.Common.Logging.Sinks;
 using TBot.Common.Logging.TextFormatters;
 using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.WebUI;
 
 namespace Tbot {
 
@@ -37,18 +41,16 @@ namespace Tbot {
 		}
 		static async Task MainAsync(string[] args) {
 
-			var serviceProvider = new ServiceCollection()
+			var serviceCollection = WebApp.GetServiceCollection()
 				.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>))
 				.AddScoped<ICalculationService, CalculationService>()
 				.AddScoped<IOgameService, OgameService>()
-				.AddScoped<ITelegramMessenger, TelegramMessenger>()
-				.AddScoped<IInstanceManager, InstanceManager>()
 				.AddScoped<ITBotMain, TBotMain>()
-				.BuildServiceProvider();
-
-			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
-			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
-			var ogameService = serviceProvider.GetRequiredService<IOgameService>();
+				.AddScoped<ITBotOgamedBridge, TBotOgamedBridge>()
+				.AddScoped<IFleetScheduler, FleetScheduler>()
+				.AddScoped<IWorkerFactory, WorkerFactory>()
+				.AddScoped<ITelegramMessenger, TelegramMessenger>()
+				.AddScoped<IInstanceManager, InstanceManager>();
 
 			ConsoleHelpers.SetTitle();
 
@@ -58,16 +60,29 @@ namespace Tbot {
 				Environment.Exit(0);
 			}
 
+			string settingsPath = Path.Combine(Path.GetFullPath(AppContext.BaseDirectory), "settings.json");
 			if (CmdLineArgsService.settingsPath.IsPresent) {
-				_instanceManager.SettingsAbsoluteFilepath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
+				settingsPath = Path.GetFullPath(CmdLineArgsService.settingsPath.Get());
 			}
+
+			SettingsService.GlobalSettingsPath = settingsPath;
 
 			var logPath = Path.Combine(Directory.GetCurrentDirectory(), "log");
 			if (CmdLineArgsService.logPath.IsPresent == true) {
 				logPath = Path.GetFullPath(CmdLineArgsService.logPath.Get());
 			}
 
+			SettingsService.LogsPath = logPath;
+
+			var serviceProvider = WebApp.Build();
+
+			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
+			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
+			var ogameService = serviceProvider.GetRequiredService<IOgameService>();
+
 			_logger.ConfigureLogging(logPath);
+			_instanceManager.SettingsAbsoluteFilepath = settingsPath;
+			
 
 			// Context validation
 			//	a - Ogamed binary is present on same directory ?
@@ -80,16 +95,27 @@ namespace Tbot {
 			}
 
 			// Manage settings
-			_instanceManager.OnSettingsChanged();
+			//_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
+			CancellationTokenSource cts = new CancellationTokenSource();
+
+			
 
 			Console.CancelKeyPress += (sender, e) => {
 				_logger.WriteLog(LogLevel.Information, LogSender.Main, "CTRL+C pressed!");
+				cts.Cancel();
 				tcs.SetResult();
 			};
 
+			// Manage WebUI
+			var settings = SettingsService.GetSettings(settingsPath);
+			if (SettingsService.IsSettingSet(settings, "WebUI")
+				&& SettingsService.IsSettingSet(settings.WebUI, "Enable")
+				&& (bool) settings.WebUI.Enable) {
+				await WebApp.Main(cts.Token);
+			}
 			await tcs.Task;
 
 			await _instanceManager.DisposeAsync();

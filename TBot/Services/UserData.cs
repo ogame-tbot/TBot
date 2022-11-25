@@ -10,7 +10,7 @@ using TBot.Ogame.Infrastructure.Models;
 namespace Tbot.Services {
 
 	// Data required by TBotMain instances
-	class UserData {
+	public class UserData {
 		public Server serverInfo = new();
 		public ServerData serverData;
 		public UserInfo userInfo;
@@ -29,7 +29,7 @@ namespace Tbot.Services {
 	}
 
 	// Data used by TelegramMessenger binded to TBotMain
-	class TelegramUserData {
+	public class TelegramUserData {
 		public Celestial CurrentCelestial;			// Willingly left to null
 		public Celestial CurrentCelestialToSave;	// Willingly left to null
 		public Missions Mission = Missions.None;

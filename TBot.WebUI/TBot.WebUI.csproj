@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<OutputType>Library</OutputType>
+		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="wwwroot\**\*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Remove="wwwroot\css\logging.css" />
+	  <Content Remove="wwwroot\css\Settings.css" />
+	  <Content Remove="wwwroot\img\tbot-logo.jpg" />
+	  <Content Remove="wwwroot\js\jquery.json-editor.min.js" />
+	  <Content Remove="wwwroot\js\JSONedtr-dark.css" />
+	  <Content Remove="wwwroot\js\JSONedtr.css" />
+	  <Content Remove="wwwroot\js\JSONedtr.js" />
+	  <Content Remove="wwwroot\js\logging.js" />
+	  <Content Remove="wwwroot\js\settings.js" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="30.0.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.11" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="6.0.11" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\TBot.Common\TBot.Common.csproj" />
+	</ItemGroup>
+
+</Project>

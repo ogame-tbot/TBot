@@ -8,7 +8,6 @@ namespace TBot.Ogame.Infrastructure.Enums {
 	public static class Features {
 		public static readonly List<Feature> AllFeatures = new List<Feature>() {
 						Feature.Defender,
-						Feature.Brain,
 						Feature.BrainAutobuildCargo,
 						Feature.BrainAutoRepatriate,
 						Feature.BrainAutoMine,
@@ -20,7 +19,6 @@ namespace TBot.Ogame.Infrastructure.Enums {
 						Feature.Expeditions,
 						Feature.Colonize,
 						Feature.Harvest,
-						Feature.FleetScheduler,
 						Feature.SleepMode,
 					};
 	}

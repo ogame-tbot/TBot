@@ -1,0 +1,31 @@
+@model TBot.WebUI.Models.SettingsModel
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT"
+        crossorigin="anonymous"></script>
+
+<script src="~/js/jquery.json-editor.min.js"></script>
+<link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
+<script src="~/js/settings.js" asp-append-version="true"></script>
+
+<div class="row">
+    <div class="col-lg-3 files-col">
+        <ul class="list-files">
+            @foreach (var file in Model.SettingsFiles)
+            {
+                <li><button class="btn btn-light file-entry" data-filename="@file" onclick="onClickFileLink(this, '@file')">📄 @file</button></li>
+            }
+        </ul>
+    </div>
+    <div class="col-lg-9">
+        <div class="buttons-box">
+            <button class="btn btn-light" onclick="saveFileContents()">💾 Save</button>
+            <button class="btn btn-light" onclick="onReloadClick()">🔃 Reload current file</button>
+        </div>
+        <pre id="json-display"></pre>
+    </div>
+</div>
+
+<script type="text/javascript">
+    Initialize("@Url.Action("GetFileContent", "Settings")", "@Url.Action("SaveFileContent", "Settings")");
+</script>
+
