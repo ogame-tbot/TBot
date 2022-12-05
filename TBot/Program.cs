@@ -74,7 +74,7 @@ namespace Tbot {
 
 			SettingsService.LogsPath = logPath;
 
-			var serviceProvider = WebApp.Build();
+			var serviceProvider = await WebApp.Build();
 
 			_logger = serviceProvider.GetRequiredService<ILoggerService<Program>>();
 			_instanceManager = serviceProvider.GetRequiredService<IInstanceManager>();
@@ -95,7 +95,7 @@ namespace Tbot {
 			}
 
 			// Manage settings
-			//_instanceManager.OnSettingsChanged();
+			_instanceManager.OnSettingsChanged();
 
 			// Wait for CTRL + C event
 			var tcs = new TaskCompletionSource();
@@ -110,7 +110,7 @@ namespace Tbot {
 			};
 
 			// Manage WebUI
-			var settings = SettingsService.GetSettings(settingsPath);
+			var settings = await SettingsService.GetSettings(settingsPath);
 			if (SettingsService.IsSettingSet(settings, "WebUI")
 				&& SettingsService.IsSettingSet(settings.WebUI, "Enable")
 				&& (bool) settings.WebUI.Enable) {

@@ -215,7 +215,7 @@ namespace Tbot.Services {
 
 			InstanceSettingsPath = settingPath;
 			InstanceAlias = alias;
-			InstanceSettings = SettingsService.GetSettings(settingPath);
+			InstanceSettings = await SettingsService.GetSettings(settingPath);
 
 			telegramMessenger = telegramHandler;
 			try {
@@ -233,10 +233,15 @@ namespace Tbot.Services {
 				log(LogLevel.Warning, LogSender.Tbot, $"Unable to login (\"{oe.Message}\"). Checking captcha...");
 				await ResolveCaptcha();
 			} catch (System.Net.Http.HttpRequestException) {
-				throw new UnableToLoginException("Unable to login");
+				try {
+					await ResolveCaptcha();
+				} catch (Exception ex) {
+					log(LogLevel.Error, LogSender.Tbot, $"Unable to login after captcha. (\"{ex.Message}\")");
+					throw new UnableToLoginException("Unable to login", ex);
+				}
 			} catch (Exception e) {
 				log(LogLevel.Error, LogSender.Tbot, $"Unable to login. (\"{e.Message}\")");
-				throw;
+				throw new UnableToLoginException("Unable to login", e);
 			}
 
 			await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
@@ -269,7 +274,7 @@ namespace Tbot.Services {
 
 			if (userData.celestials.Count == 1) {
 				await EditSettings(userData.celestials.First());
-				InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
+				InstanceSettings = await SettingsService.GetSettings(InstanceSettingsPath);
 			}
 
 			// SleepMode will know if features must be enabled or not
@@ -399,7 +404,7 @@ namespace Tbot.Services {
 
 		public async Task<bool> EditSettings(Celestial celestial = null, Feature feature = Feature.Null, string recall = "", int cargo = 0) {
 			await Task.Delay(500, cts.Token);
-			var file = System.IO.File.ReadAllText(Path.GetFullPath(InstanceSettingsPath));
+			var file = await SettingsService.GetSettingsFileContents(Path.GetFullPath(InstanceSettingsPath));
 			var jsonObj = new JObject();
 			jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(file);
 
@@ -460,7 +465,7 @@ namespace Tbot.Services {
 			}
 
 			string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-			System.IO.File.WriteAllText(Path.GetFullPath(InstanceSettingsPath), output);
+			await SettingsService.WriteSettings(Path.GetFullPath(InstanceSettingsPath), output);
 
 			return true;
 		}
@@ -500,7 +505,7 @@ namespace Tbot.Services {
 			}
 
 			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
-			InstanceSettings = SettingsService.GetSettings(InstanceSettingsPath);
+			InstanceSettings = await SettingsService.GetSettings(InstanceSettingsPath);
 
 			cts = new();
 			// If wakeUp, then all features will be restored

@@ -6,22 +6,45 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Tbot.Common.Extensions;
+using VanLangen.Locking;
 
 namespace Tbot.Common.Settings {
 	public static class SettingsService {
 		public static string GlobalSettingsPath { get; set; }
 		public static string LogsPath { get; set; }
 
-		public static dynamic GetSettings(string settingsPath) {
-			if (File.Exists(settingsPath) == false) {
-				throw new Exception($"{settingsPath} does not exist.");
-			}
+		private static SettingsSemaphoreManager _settingsSemaphoreManager = new SettingsSemaphoreManager();
 
-			string file = File.ReadAllText(settingsPath);
+		public static async Task WriteSettings(string settingsPath, string content) {
+			var semaphore = _settingsSemaphoreManager.GetSemaphore(settingsPath);
+			await semaphore.UseWriterAsync(async () => {
+				await File.WriteAllTextAsync(settingsPath, content, Encoding.Default);
+			});
+		}
+
+		public static async Task<dynamic> GetSettings(string settingsPath) {
+			string file = await GetSettingsFileContents(settingsPath);
 			dynamic settings = JsonConvert.DeserializeObject<ExpandoObject>(file, new ExpandoObjectConverter());
 			settings = ConfigObject.FromExpando(JsonNetAdapter.Transform(settings));
 			return settings;
+		}
+
+		public static async Task<string> GetSettingsFileContents(string settingsPath) {
+			if (File.Exists(settingsPath) == false) {
+				throw new Exception($"{settingsPath} does not exist.");
+			}
+			var semaphore = _settingsSemaphoreManager.GetSemaphore(settingsPath);
+			string file = await semaphore.UseReaderAsync(async () => {
+				using var fs = System.IO.File.Open(settingsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+				using var sr = new StreamReader(fs, Encoding.Default);
+				fs.Position = 0;
+				string file = await sr.ReadToEndAsync();
+				return file;
+			});
+
+			return file;
 		}
 
 		public static bool IsSettingSet(dynamic setting, string property) {
@@ -41,6 +64,28 @@ namespace Tbot.Common.Settings {
 				return (T) setting[property];
 			else
 				return defValue;
+		}
+
+		private class SettingsSemaphoreManager {
+			private readonly SemaphoreSlim _dictSemaphore;
+			private readonly Dictionary<string, AsyncReadersWriterLock> _settingsSemaphores;
+
+			public SettingsSemaphoreManager() {
+				_settingsSemaphores = new Dictionary<string, AsyncReadersWriterLock>();
+				_dictSemaphore = new SemaphoreSlim(1, 1);
+			}
+
+			public AsyncReadersWriterLock GetSemaphore(string settingsPath) {
+				if (!_settingsSemaphores.ContainsKey(settingsPath)) {
+
+					_dictSemaphore.Wait();
+					if (!_settingsSemaphores.ContainsKey(settingsPath)) {
+						_settingsSemaphores.Add(settingsPath, new AsyncReadersWriterLock());
+					}
+					_dictSemaphore.Release();
+				}
+				return _settingsSemaphores[settingsPath];
+			}
 		}
 
 	}

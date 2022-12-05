@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Dynamic;
 using Tbot.Common.Settings;
 using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace TBot.WebUI.Controllers {
 	public class SettingsController : Controller {
@@ -20,13 +21,13 @@ namespace TBot.WebUI.Controllers {
 		}
 		private async Task<List<string>> GetFileNames() {
 			var fileNames = new List<string>() { new FileInfo(SettingsService.GlobalSettingsPath).Name };
-			var settingsFile = SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
+			var settingsFile = await SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
 
 			if (!SettingsService.IsSettingSet(settingsFile, "Instances")) {
 				return fileNames;
 			}
 
-			foreach(var instance in settingsFile.Instances) {
+			foreach (var instance in settingsFile.Instances) {
 				fileNames.Add(instance.Settings);
 			}
 
@@ -42,7 +43,8 @@ namespace TBot.WebUI.Controllers {
 
 		[HttpGet]
 		public async Task<IActionResult> GetFileContent(string fileName) {
-			var fileContents = await System.IO.File.ReadAllTextAsync(Path.Combine(GetCurrentDirectory(), fileName));
+
+			string fileContents = await SettingsService.GetSettingsFileContents(Path.Combine(GetCurrentDirectory(), fileName));
 			return Json(new { data = fileContents });
 		}
 
@@ -51,10 +53,9 @@ namespace TBot.WebUI.Controllers {
 			try {
 				//Validate Json, if incorrect, exception is thrown and message will be sent to the user.
 				string jsonFormatted = JValue.Parse(content).ToString(Formatting.Indented);
-				await System.IO.File.WriteAllTextAsync(Path.Combine(GetCurrentDirectory(), fileName), jsonFormatted);
+				await SettingsService.WriteSettings(Path.Combine(GetCurrentDirectory(), fileName), jsonFormatted);
 				return Json(new { success = true });
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				return Json(new { success = false, error = ex.Message });
 			}
 		}

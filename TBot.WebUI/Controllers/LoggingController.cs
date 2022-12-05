@@ -42,8 +42,8 @@ namespace TBot.WebUI.Controllers {
 				return "[]";
 			}
 		}
-		private int GetMaxLogsToShow() {
-			var settings = SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
+		private async Task<int> GetMaxLogsToShow() {
+			var settings = await SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
 			return (int) settings.WebUI.MaxLogsToShow;
 		}
 
@@ -52,7 +52,7 @@ namespace TBot.WebUI.Controllers {
 			if (!string.IsNullOrEmpty(date))
 				DateTime.TryParseExact(date, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out logsDate);
 			var jsonLogs = await GetLogsFromCSV(logsDate);
-			var maxLogsToShow = GetMaxLogsToShow();
+			var maxLogsToShow = await GetMaxLogsToShow();
 			return View(new LogJson() {
 				Content = jsonLogs,
 				MaxLogsToShow = maxLogsToShow,

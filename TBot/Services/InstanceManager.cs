@@ -58,7 +58,7 @@ namespace Tbot.Services {
 			_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Reading settings \"{SettingsAbsoluteFilepath}\"");
 
 			// Read settings first
-			_mainSettings = SettingsService.GetSettings(SettingsAbsoluteFilepath);
+			_mainSettings = await SettingsService.GetSettings(SettingsAbsoluteFilepath);
 
 			// Initialize TelegramMessenger if enabled on main settings
 			await InitializeTelegramMessenger();

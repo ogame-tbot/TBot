@@ -224,8 +224,7 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		private AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy() {
-			return Policy.Handle<Exception>()
-				.OrTransientHttpError()
+			return HttpPolicyExtensions.HandleTransientHttpError()
 				.WaitAndRetryAsync(3, retryCount => TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
 		}
 
