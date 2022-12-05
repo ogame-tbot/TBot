@@ -12,7 +12,6 @@
     <PackageReference Include="Serilog.Sinks.AspNetCore.SignalR" Version="0.4.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="Serilog.Sinks.Telegram.Alternative" Version="1.1.10" />
-    <PackageReference Include="VanLangen.Locking.ReadersWriterLockAsync" Version="1.0.11" />
   </ItemGroup>
 
 </Project>
