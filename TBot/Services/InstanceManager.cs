@@ -175,17 +175,13 @@ namespace Tbot.Services {
 
 			// Finally, swap lists
 			instances.Clear();
-			instances = newInstances;
+			instances = newInstances.ToList();
 
 			_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Instances stats: Initialized {instances.Count} - Deinitialized {deinitingInstances.Count}");
 
 			// Initialize settingsWatcher 
 			if (settingsWatcher == null)
 				settingsWatcher = new SettingsFileWatcher(OnSettingsChanged, SettingsAbsoluteFilepath);
-
-			// Finally, swap lists
-			instances.Clear();
-			instances = newInstances;
 
 			instancesSem.Release();
 		}
