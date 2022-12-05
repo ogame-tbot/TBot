@@ -38,6 +38,7 @@ namespace Tbot.Services {
 		private readonly ICalculationService _helpersService;
 		private readonly IWorkerFactory _workerFactory;
 		private readonly ITBotOgamedBridge _tbotOgameBridge;
+		private readonly SemaphoreSlim _settingsReloadSemaphore = new SemaphoreSlim(1, 1);
 
 		private ITelegramMessenger telegramMessenger;
 
@@ -291,7 +292,7 @@ namespace Tbot.Services {
 				settingsWatcher.deinitWatch();
 				settingsWatcher = null;
 			}
-			
+
 			if (telegramMessenger != null) {
 				log(LogLevel.Information, LogSender.Tbot, "Removing instance from telegram...");
 				await telegramMessenger.RemoveTBotInstance(this);
@@ -354,7 +355,7 @@ namespace Tbot.Services {
 
 		public async Task InitializeFeature(Feature feat) {
 			if (feat == Feature.SleepMode) {
-				return;	// always enabled
+				return;// always enabled
 			}
 			long dueTime = feat switch {
 				Feature.Defender => RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds),
@@ -396,7 +397,7 @@ namespace Tbot.Services {
 			if (workers.TryGetValue(feat, out var worker)) {
 				return worker.IsWorkerRunning();
 			} else if (feat == Feature.SleepMode) {
-				return true;	// Always running
+				return true;    // Always running
 			} else {
 				return false;
 			}
@@ -472,7 +473,7 @@ namespace Tbot.Services {
 
 		public async Task WaitFeature() {
 			List<Task> tasks = new List<Task>();
-			foreach(var feat in Features.AllFeatures) {
+			foreach (var feat in Features.AllFeatures) {
 				ITBotWorker worker = _workerFactory.GetWorker(feat);
 				if (worker != null) {
 					tasks.Add(worker.WaitWorker());
@@ -491,25 +492,36 @@ namespace Tbot.Services {
 				}
 			}
 		}
-
+		private DateTime _lastReloadFinished = DateTime.MinValue;
 		private async void OnSettingsChanged() {
+			DateTime onSettingsLaunched = DateTime.Now;
+			await _settingsReloadSemaphore.WaitAsync();
+			try {
+				if (_lastReloadFinished > onSettingsLaunched) {
+					return;
+				}
+				log(LogLevel.Information, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
 
-			log(LogLevel.Information, LogSender.Tbot, "Settings file change detected! Waiting workers to complete ongoing activities...");
+				// Wait on feature to be shut down
+				cts.Cancel();
+				foreach (var worker in workers) {
+					log(LogLevel.Information, LogSender.Tbot, $"Stopping feature {worker.Key.ToString()}...");
+					await worker.Value.StopWorker();
+					log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} stopped for settings reload!");
+				}
 
-			// Wait on feature to be shut down
-			cts.Cancel();
-			foreach (var worker in workers) {
-				log(LogLevel.Information, LogSender.Tbot, $"Stopping feature {worker.Key.ToString()}...");
-				await worker.Value.StopWorker();
-				log(LogLevel.Information, LogSender.Tbot, $"Feature {worker.Key.ToString()} stopped for settings reload!");
+				log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
+				InstanceSettings = await SettingsService.GetSettings(InstanceSettingsPath);
+
+				cts = new();
+				// If wakeUp, then all features will be restored
+				await HandleSleepModeAsync(null);
+				_lastReloadFinished = DateTime.Now;
 			}
-
-			log(LogLevel.Information, LogSender.Tbot, "Reloading Settings file");
-			InstanceSettings = await SettingsService.GetSettings(InstanceSettingsPath);
-
-			cts = new();
-			// If wakeUp, then all features will be restored
-			InitializeSleepMode();
+			finally {
+				_settingsReloadSemaphore.Release();
+			}
+			
 		}
 
 		private void InitializeSleepMode() {
@@ -1056,8 +1068,10 @@ namespace Tbot.Services {
 				userData.isSleeping = true;
 			}
 		}
-
 		private async void HandleSleepMode(object state) {
+			await HandleSleepModeAsync(state);
+		}
+		private async Task HandleSleepModeAsync(object state) {
 			if (timers.TryGetValue("TelegramSleepModeTimer", out Timer value)) {
 				return;
 			}
@@ -1068,16 +1082,16 @@ namespace Tbot.Services {
 
 				if (!(bool) InstanceSettings.SleepMode.Active) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Sleep mode is disabled");
-					WakeUp(null);
+					await WakeUpAsync(null);
 				} else if (!DateTime.TryParse((string) InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep)) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Unable to parse GoToSleep time. Sleep mode will be disabled");
-					WakeUp(null);
+					await WakeUpAsync(null);
 				} else if (!DateTime.TryParse((string) InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp)) {
 					log(LogLevel.Warning, LogSender.SleepMode, "Unable to parse WakeUp time. Sleep mode will be disabled");
-					WakeUp(null);
+					await WakeUpAsync(null);
 				} else if (goToSleep == wakeUp) {
 					log(LogLevel.Warning, LogSender.SleepMode, "GoToSleep time and WakeUp time must be different. Sleep mode will be disabled");
-					WakeUp(null);
+					await WakeUpAsync(null);
 				} else {
 					long interval;
 
@@ -1092,7 +1106,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								GoToSleep(newTime);
+								await GoToSleepAsync(newTime);
 							} else {
 								// YES YES NO
 								// AWAKE
@@ -1102,7 +1116,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								WakeUp(newTime);
+								await WakeUpAsync(newTime);
 							}
 						} else {
 							if (goToSleep >= wakeUp) {
@@ -1123,7 +1137,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								GoToSleep(newTime);
+								await GoToSleepAsync(newTime);
 							}
 						}
 					} else {
@@ -1137,7 +1151,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								WakeUp(newTime);
+								await WakeUpAsync(newTime);
 							} else {
 								// NO YES NO
 								// THIS SHOULDNT HAPPEN
@@ -1158,7 +1172,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								GoToSleep(newTime);
+								await GoToSleepAsync(newTime);
 							} else {
 								// NO NO NO
 								// AWAKE
@@ -1168,7 +1182,7 @@ namespace Tbot.Services {
 								if (interval <= 0)
 									interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 								DateTime newTime = time.AddMilliseconds(interval);
-								WakeUp(newTime);
+								await WakeUpAsync(newTime);
 							}
 						}
 					}
@@ -1187,6 +1201,9 @@ namespace Tbot.Services {
 		}
 
 		private async void GoToSleep(object state) {
+			await GoToSleepAsync(state);
+		}
+		private async Task GoToSleepAsync(object state) {
 			try {
 				userData.fleets = await _fleetScheduler.UpdateFleets();
 				bool delayed = false;
@@ -1314,6 +1331,10 @@ namespace Tbot.Services {
 		}
 
 		private async void WakeUp(object state) {
+			await WakeUpAsync(state);
+		}
+
+		private async Task WakeUpAsync(object state) {
 			try {
 				log(LogLevel.Information, LogSender.SleepMode, "Waking Up...");
 				if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active && state != null) {
@@ -1338,7 +1359,7 @@ namespace Tbot.Services {
 				await _tbotOgameBridge.CheckCelestials();
 			}
 		}
-		
+
 		public async Task TelegramRetireFleet(int fleetId) {
 			userData.fleets = await _fleetScheduler.UpdateFleets();
 			Fleet ToRecallFleet = userData.fleets.SingleOrDefault(f => f.ID == fleetId) ?? new() { ID = (int) SendFleetCode.GenericError };

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Tbot.Common.Extensions;
-using VanLangen.Locking;
 
 namespace Tbot.Common.Settings {
 	public static class SettingsService {
@@ -19,9 +19,9 @@ namespace Tbot.Common.Settings {
 
 		public static async Task WriteSettings(string settingsPath, string content) {
 			var semaphore = _settingsSemaphoreManager.GetSemaphore(settingsPath);
-			await semaphore.UseWriterAsync(async () => {
+			using (await semaphore.WriteLockAsync()) {
 				await File.WriteAllTextAsync(settingsPath, content, Encoding.Default);
-			});
+			}
 		}
 
 		public static async Task<dynamic> GetSettings(string settingsPath) {
@@ -36,15 +36,10 @@ namespace Tbot.Common.Settings {
 				throw new Exception($"{settingsPath} does not exist.");
 			}
 			var semaphore = _settingsSemaphoreManager.GetSemaphore(settingsPath);
-			string file = await semaphore.UseReaderAsync(async () => {
-				using var fs = System.IO.File.Open(settingsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-				using var sr = new StreamReader(fs, Encoding.Default);
-				fs.Position = 0;
-				string file = await sr.ReadToEndAsync();
+			using (await semaphore.ReadLockAsync()) {
+				string file = await File.ReadAllTextAsync(settingsPath);
 				return file;
-			});
-
-			return file;
+			}
 		}
 
 		public static bool IsSettingSet(dynamic setting, string property) {
@@ -68,19 +63,19 @@ namespace Tbot.Common.Settings {
 
 		private class SettingsSemaphoreManager {
 			private readonly SemaphoreSlim _dictSemaphore;
-			private readonly Dictionary<string, AsyncReadersWriterLock> _settingsSemaphores;
+			private readonly Dictionary<string, AsyncReaderWriterLock> _settingsSemaphores;
 
 			public SettingsSemaphoreManager() {
-				_settingsSemaphores = new Dictionary<string, AsyncReadersWriterLock>();
+				_settingsSemaphores = new Dictionary<string, AsyncReaderWriterLock>();
 				_dictSemaphore = new SemaphoreSlim(1, 1);
 			}
 
-			public AsyncReadersWriterLock GetSemaphore(string settingsPath) {
+			public AsyncReaderWriterLock GetSemaphore(string settingsPath) {
 				if (!_settingsSemaphores.ContainsKey(settingsPath)) {
 
 					_dictSemaphore.Wait();
 					if (!_settingsSemaphores.ContainsKey(settingsPath)) {
-						_settingsSemaphores.Add(settingsPath, new AsyncReadersWriterLock());
+						_settingsSemaphores.Add(settingsPath, new AsyncReaderWriterLock());
 					}
 					_dictSemaphore.Release();
 				}
