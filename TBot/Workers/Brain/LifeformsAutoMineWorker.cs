@@ -54,7 +54,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Brain;
+			return LogSender.LifeformsAutoMine;
 		}
 
 		protected override async Task Execute() {

@@ -50,7 +50,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Brain;
+			return LogSender.AutoMine;
 		}
 
 		public async Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null) {

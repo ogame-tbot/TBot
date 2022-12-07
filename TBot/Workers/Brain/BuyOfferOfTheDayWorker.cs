@@ -27,21 +27,21 @@ namespace Tbot.Workers.Brain {
 		protected override async Task Execute() {
 			bool stop = true;
 
-			_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Buying offer of the day...");
+			_tbotInstance.log(LogLevel.Information, GetLogSender(), "Buying offer of the day...");
 			OfferOfTheDayStatus sts = await _ogameService.BuyOfferOfTheDay();
 
 			if (sts == OfferOfTheDayStatus.OfferOfTheDayBougth) {
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day succesfully bought.");
+				_tbotInstance.log(LogLevel.Information, GetLogSender(), "Offer of the day succesfully bought.");
 			} else if (sts == OfferOfTheDayStatus.OfferOfTheDayAlreadyBought){
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day already bought.");
+				_tbotInstance.log(LogLevel.Information, GetLogSender(), "Offer of the day already bought.");
 			} else {
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, "Offer of the day unknown error.");
+				_tbotInstance.log(LogLevel.Information, GetLogSender(), "Offer of the day unknown error.");
 				stop = false;
 			}
 			
 			
 			if (stop) {
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Stopping BuyOfferOfTheDay.");
+				_tbotInstance.log(LogLevel.Information, GetLogSender(), $"Stopping BuyOfferOfTheDay.");
 				await EndExecution();
 			} else {
 				var time = await _tbotOgameBridge.GetDateTime();
@@ -50,7 +50,7 @@ namespace Tbot.Workers.Brain {
 					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				var newTime = time.AddMilliseconds(interval);
 				ChangeWorkerPeriod(interval);
-				_tbotInstance.log(LogLevel.Information, LogSender.Brain, $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
+				_tbotInstance.log(LogLevel.Information, GetLogSender(), $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
 				await _tbotOgameBridge.CheckCelestials();
 			}
 		}
@@ -71,7 +71,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Brain;
+			return LogSender.BuyOfferOfTheDay;
 		}
 	}
 }

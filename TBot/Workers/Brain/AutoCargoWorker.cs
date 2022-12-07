@@ -160,7 +160,7 @@ namespace Tbot.Workers.Brain {
 		}
 
 		public override LogSender GetLogSender() {
-			return LogSender.Brain;
+			return LogSender.AutoCargo;
 		}
 	}
 }
