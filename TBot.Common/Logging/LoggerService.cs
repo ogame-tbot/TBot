@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.SignalR;
 using TBot.Common.Logging.Hubs;
 using Serilog.Sinks.AspNetCore.SignalR.Extensions;
 using System.Globalization;
+using Microsoft.AspNetCore.Routing.Template;
 
 namespace TBot.Common.Logging {
 	public class LoggerService<T> : ILoggerService<T> {
@@ -37,7 +38,7 @@ namespace TBot.Common.Logging {
 		private object syncObject = new object();
 		private string _logPath = "";
 
-		private LoggingLevelSwitch _telegramLevelSwitch = new LoggingLevelSwitch();
+		private LoggingLevelSwitch _telegramLevelSwitch = new LoggingLevelSwitch(LogEventLevel.Verbose);
 		private bool _telegramAdded = false;
 
 		public void WriteLog(LogLevel level, LogSender sender, string message) {
@@ -53,22 +54,22 @@ namespace TBot.Common.Logging {
 			{
 				switch (level) {
 					case LogLevel.Trace:
-						Log.Verbose(message);
+						Log.Logger.Verbose(message);
 						break;
 					case LogLevel.Debug:
-						Log.Debug(message);
+						Log.Logger.Debug(message);
 						break;
 					case LogLevel.Information:
-						Log.Information(message);
+						Log.Logger.Information(message);
 						break;
 					case LogLevel.Warning:
-						Log.Warning(message);
+						Log.Logger.Warning(message);
 						break;
 					case LogLevel.Error:
-						Log.Error(message);
+						Log.Logger.Error(message);
 						break;
 					case LogLevel.Critical:
-						Log.Fatal(message);
+						Log.Logger.Fatal(message);
 						break;
 				}
 			}
@@ -78,22 +79,20 @@ namespace TBot.Common.Logging {
 			}
 		}
 
-		public void ConfigureLogging(string logPath) {
-			lock (syncObject) {
-				_logPath = logPath;
-				string outTemplate = "[{Timestamp:HH:mm:ss.fff zzz} {ThreadId} {Level:u3} {LogSender}] {Message:lj}{NewLine}{Exception}";
-				long maxFileSize = 1 * 1024 * 1024 * 10;
-				var logConfig = new LoggerConfiguration()
-				.MinimumLevel.Debug()
+		private LoggerConfiguration GetDefaultConfiguration() {
+			string outTemplate = "[{Timestamp:HH:mm:ss.fff zzz} {ThreadId} {Level:u3} {LogSender}] {Message:lj}{NewLine}{Exception}";
+			long maxFileSize = 1 * 1024 * 1024 * 10;
+
+			var logConfig = new LoggerConfiguration()
 				.Enrich.With(new ThreadIdEnricher())
 				.Enrich.FromLogContext()
-				// Console
+			// Console
 				.WriteTo.TBotColoredConsole(
 					outputTemplate: outTemplate
 				)
 				// Log file
 				.WriteTo.File(
-					path: Path.Combine(logPath, "TBot.log"),
+					path: Path.Combine(_logPath, "TBot.log"),
 					buffered: false,
 					flushToDiskInterval: TimeSpan.FromHours(1),
 					rollOnFileSizeLimit: true,
@@ -102,7 +101,7 @@ namespace TBot.Common.Logging {
 					rollingInterval: RollingInterval.Day)
 				// CSV
 				.WriteTo.File(
-					path: Path.Combine(logPath, "TBot.csv"),
+					path: Path.Combine(_logPath, "TBot.csv"),
 					buffered: false,
 					hooks: new SerilogCSVHeaderHooks(),
 					formatter: new SerilogCSVTextFormatter(),
@@ -111,34 +110,38 @@ namespace TBot.Common.Logging {
 					fileSizeLimitBytes: maxFileSize,
 					rollingInterval: RollingInterval.Day)
 				.WriteTo.SignalRTBotSink<WebHub, IWebHub>(
-					LogEventLevel.Debug,
+					LogEventLevel.Verbose,
 					_serviceProvider,
 					CultureInfo.InvariantCulture, // can be null
 					new string[] { },        // can be null
 					new string[] { },        // can be null
 					new string[] { },        // can be null
-					false);          // false is the default value
+					false) // false is the default value
+				.MinimumLevel.Verbose();
+
+			return logConfig;
+		}
+
+		public void ConfigureLogging(string logPath) {
+			lock (syncObject) {
+				_logPath = logPath;
+
+				var logConfig = GetDefaultConfiguration();
 
 				// Telegram default values
-				_telegramLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+				_telegramLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
 				_telegramAdded = false;
 
 				Log.Logger = logConfig.CreateLogger();
+
 			}
 		}
 
 		public void AddTelegramLogger(string botToken, string chatId) {
 			lock (syncObject) {
 				if (_telegramAdded == false) {
-					Log.Logger = new LoggerConfiguration()
-						.MinimumLevel.Debug()
-						.WriteTo.Logger(Log.Logger)
-						// Control telegram level
-						.MinimumLevel.ControlledBy(_telegramLevelSwitch)
-						// Start anew with Enrichers
-						.Enrich.With(new ThreadIdEnricher())
-						.Enrich.FromLogContext()
-						.WriteTo.Logger(
+					var logConfig = GetDefaultConfiguration();
+					Log.Logger = logConfig.WriteTo.Logger(
 							c => c.Filter.Equals(Matching.WithProperty<bool>("TelegramEnabled", p => p == true))
 							).WriteTo.Telegram(botToken: botToken,
 								chatId: chatId,

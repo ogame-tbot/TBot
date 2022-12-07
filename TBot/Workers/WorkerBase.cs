@@ -139,7 +139,14 @@ namespace Tbot.Workers {
 				ct.ThrowIfCancellationRequested();
 
 				await Execute();
-				
+
+				if (Period != Timeout.InfiniteTimeSpan) {
+					DoLog(LogLevel.Information, $"Next {GetWorkerName()} execution in {Period}");
+				}
+				else {
+					DoLog(LogLevel.Information, $"{GetWorkerName()} Stopped.");
+				}
+
 			} catch(OperationCanceledException) {
 				// OK
 			} finally {

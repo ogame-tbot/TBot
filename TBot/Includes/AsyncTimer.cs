@@ -13,6 +13,10 @@ namespace Tbot.Includes {
 		private readonly string _name;
 		private readonly object _changeLock = new();
 
+
+
+		private bool _canSetBiggerPeriod = true;
+
 		private TimeSpan _dueTime;
 		private TimeSpan _period;
 
@@ -81,6 +85,7 @@ namespace Tbot.Includes {
 
 				try {
 					while (ct.IsCancellationRequested == false) {
+
 						if (DueTime != TimeSpan.Zero) {
 							await Task.Delay(DueTime, _cts.Token);
 						}
@@ -88,6 +93,10 @@ namespace Tbot.Includes {
 						// USER CALLBACK START HERE
 						await _callback(_cts.Token);
 						// USER CALLBACK END HERE
+
+						lock (_changeLock) {
+							_canSetBiggerPeriod = true;
+						}
 
 						if (Period == Timeout.InfiniteTimeSpan) {
 							// Exit
@@ -127,9 +136,24 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public void ChangePeriod(TimeSpan period) {
+		private bool IsLessThan(TimeSpan period, TimeSpan period2) {
+			if (period2 == Timeout.InfiniteTimeSpan)
+				return true;
+			if (period == Timeout.InfiniteTimeSpan)
+				return false;
+			return period.TotalMilliseconds < period2.TotalMilliseconds;
+		}
+
+		public bool ChangePeriod(TimeSpan period) {
 			lock (_changeLock) {
-				_period = period;
+				if (IsLessThan(period, _period) || _canSetBiggerPeriod) {
+					if (period != Timeout.InfiniteTimeSpan && period.TotalMilliseconds < 0)
+						period = TimeSpan.FromMilliseconds(1000);
+					_period = period;
+					_canSetBiggerPeriod = false;
+					return true;
+				}
+				return false;
 			}
 		}
 

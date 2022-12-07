@@ -147,7 +147,10 @@ function renderLogEntry(timestamp, level, message, sender) {
 	//check if has to be drawn
 	var logLevelSelected = getLogLevelNum($("#loglevelfilter option:selected").val());
 	var render = true;
-	if (logEntry.loglevel < logLevelSelected)
+
+	console.log("LogLevelSelected: " + logLevelSelected + " . LogLevel: " + logEntry.loglevel);
+
+	if (logLevelSelected !== 0 && logEntry.loglevel < logLevelSelected)
 		render = false;
 
 	var searchText = $("#logsearch").val();
