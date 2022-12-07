@@ -36,7 +36,7 @@ namespace TBot.Common.Logging {
 		}
 
 		private object syncObject = new object();
-		private string _logPath = "";
+		private static string _logPath = "";
 
 		private LoggingLevelSwitch _telegramLevelSwitch = new LoggingLevelSwitch(LogEventLevel.Verbose);
 		private bool _telegramAdded = false;
