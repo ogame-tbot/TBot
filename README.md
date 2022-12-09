@@ -66,7 +66,12 @@ The settings json should be compiled as follows:
                         "Alias": "Another main",
                         "Settings": "<other_main>.json"
                 }
-        ]
+        ],
+	"WebUI": {
+		"Enable": true,
+		"Urls": "http://localhost:8091,https://localhost:8092",
+		"MaxLogsToShow": 2000
+	}
 }
 ```
 NB: The settings should be pointing to a relative directory of this very JSON.
@@ -77,6 +82,9 @@ Instances from the same lobby account can share the same cookies file; If you ru
 
   
 Be **warned** that Ogame's servers have a limit on the number of requests per second. If you run too many instances, you may get IP banned, or end up with banned accounts. Use proxies to avoid this.
+
+The WebUI configuration is to enable the web of TBot, where you can change the settings files and see the logs in real time.
+NOTE: You can specify at maximum two URLs: one for HTTP and one for HTTPS. If you're running the bot in a remote server, the URL must be configured as the one used to access the bot. The ports used should not being in use by other applications.
 
 ### Features
 TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
