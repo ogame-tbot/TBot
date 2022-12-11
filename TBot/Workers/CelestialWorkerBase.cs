@@ -14,7 +14,7 @@ using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 
-	public abstract class CelestialWorkerBase : ITBotCelestialWorker {
+	public abstract class CelestialWorkerBase : ITBotWorker, ITBotCelestialWorker {
 		protected readonly ITBotMain _tbotInstance;
 
 		protected CancellationToken _ct = CancellationToken.None;

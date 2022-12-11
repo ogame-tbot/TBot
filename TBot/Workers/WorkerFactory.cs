@@ -69,7 +69,7 @@ namespace Tbot.Workers {
 			var dic = new Dictionary<Feature, Celestial>();
 			dic.Add(feat, celestial);
 			if (_celestialWorkers.TryGetValue(dic, out var worker)) {
-				return worker as ITBotCelestialWorker;
+				return worker;
 			}
 
 			ITBotCelestialWorker newWorker = feat switch {
@@ -81,7 +81,7 @@ namespace Tbot.Workers {
 				if (IsBrain(feat) == true) {
 					newWorker.SetSemaphore(_brain);
 				}
-				_workers.TryAdd(feat, newWorker);
+				_celestialWorkers.TryAdd(dic, newWorker);
 			}
 
 			return newWorker;
