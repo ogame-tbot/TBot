@@ -377,7 +377,7 @@ namespace Tbot.Services {
 			if (workers.TryGetValue(feat, out var worker)) {
 				worker.RestartWorker(cts.Token, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(dueTime));
 			} else {
-				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this, _tbotOgameBridge);
+				ITBotWorker newWorker = _workerFactory.InitializeWorker(feat, this, _tbotOgameBridge, _workerFactory);
 				if (newWorker != null) {
 					workers.TryAdd(feat, newWorker);
 					await newWorker.StartWorker(cts.Token, TimeSpan.FromMilliseconds(dueTime));

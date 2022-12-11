@@ -10,12 +10,11 @@ using Tbot.Includes;
 using Tbot.Services;
 using TBot.Common.Logging;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 
-	public delegate Task WorkerFunction(CancellationToken ct);
-
-	public abstract class WorkerBase : ITBotWorker {
+	public abstract class CelestialWorkerBase : ITBotCelestialWorker {
 		protected readonly ITBotMain _tbotInstance;
 
 		protected CancellationToken _ct = CancellationToken.None;
@@ -23,8 +22,14 @@ namespace Tbot.Workers {
 
 		private SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
 		private AsyncTimer _timer = null;
+		
+		private Celestial _celestial = null;
 
-		protected IWorkerFactory _workerFactory;
+		public Celestial celestial {
+			get {
+				return (_celestial != null) ? _celestial : null;
+			}
+		}
 
 		public TimeSpan DueTime {
 			get {
@@ -37,8 +42,9 @@ namespace Tbot.Workers {
 			}
 		}
 
-		public WorkerBase(ITBotMain parentInstance) {
+		public CelestialWorkerBase(ITBotMain parentInstance, Celestial celestial) {
 			_tbotInstance = parentInstance;
+			_celestial = celestial;
 		}
 
 		protected abstract Task Execute();

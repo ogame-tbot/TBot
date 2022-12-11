@@ -11,6 +11,7 @@ using Tbot.Workers.Brain;
 using TBot.Common.Logging;
 using TBot.Ogame.Infrastructure;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 	public class WorkerFactory : IWorkerFactory {
@@ -29,10 +30,11 @@ namespace Tbot.Workers {
 
 		// This is going to be replaced with ServiceProvider
 		private ConcurrentDictionary<Feature, ITBotWorker> _workers = new();
+		private ConcurrentDictionary<Dictionary<Feature, Celestial>, ITBotCelestialWorker> _celestialWorkers = new();
 
 		private SemaphoreSlim _brain = new SemaphoreSlim(1, 1);
 
-		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge) {
+		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, IWorkerFactory workerFactory) {
 			if (_workers.TryGetValue(feat, out var worker)) {
 				return worker;
 			}
@@ -41,7 +43,7 @@ namespace Tbot.Workers {
 				Feature.Defender => new DefenderWorker(tbotMainInstance, _ogameService, _fleetScheduler, tbotOgameBridge),
 				Feature.BrainAutobuildCargo => new AutoCargoWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.BrainAutoRepatriate => new AutoRepatriateWorker(tbotMainInstance, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, workerFactory),
 				Feature.BrainOfferOfTheDay => new BuyOfferOfTheDayWorker(tbotMainInstance, _ogameService, tbotOgameBridge),
 				Feature.Expeditions => new ExpeditionsWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.Harvest => new HarvestWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
@@ -59,12 +61,43 @@ namespace Tbot.Workers {
 				}
 				_workers.TryAdd(feat, newWorker);
 			}
+			
+			return newWorker;
+		}
+
+		public ITBotCelestialWorker InitializeCelestialWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial) {
+			var dic = new Dictionary<Feature, Celestial>();
+			dic.Add(feat, celestial);
+			if (_celestialWorkers.TryGetValue(dic, out var worker)) {
+				return worker as ITBotCelestialWorker;
+			}
+
+			ITBotCelestialWorker newWorker = feat switch {
+				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				_ => null
+			};
+
+			if (newWorker != null) {
+				if (IsBrain(feat) == true) {
+					newWorker.SetSemaphore(_brain);
+				}
+				_workers.TryAdd(feat, newWorker);
+			}
 
 			return newWorker;
 		}
 
 		public ITBotWorker GetWorker(Feature feat) {
 			if (_workers.TryGetValue(feat, out var worker)) {
+				return worker;
+			}
+			return null;
+		}
+
+		public ITBotCelestialWorker GetCelestialWorker(Feature feat, Celestial celestial) {
+			var dic = new Dictionary<Feature, Celestial>();
+			dic.Add(feat, celestial);
+			if (_celestialWorkers.TryGetValue(dic, out var worker)) {
 				return worker;
 			}
 			return null;
@@ -104,6 +137,7 @@ namespace Tbot.Workers {
 				case Feature.BrainAutoResearch:
 				case Feature.BrainLifeformAutoMine:
 				case Feature.BrainLifeformAutoResearch:
+				case Feature.BrainCelestialAutoMine:
 					return true;
 
 				default:
