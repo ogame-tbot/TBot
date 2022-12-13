@@ -574,6 +574,7 @@ namespace Tbot.Workers {
 			GalaxyInfo galaxyInfo = new();
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+			int sys = 0;
 
 			switch (mission) {
 				case Missions.Spy:
@@ -581,22 +582,25 @@ namespace Tbot.Workers {
 						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"No espionageprobe available, skipping to next mission...");
 						break;
 					}
-					Coordinate destination = new(origin.Coordinate.Galaxy, origin.Coordinate.System, 16, Celestials.Planet);
-					foreach (var currentSpeed in validSpeeds) {
-						FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+					for (sys = origin.Coordinate.System - 5; sys <= origin.Coordinate.System + 5; sys++) {
+						sys = GeneralHelper.ClampSystem(sys);
+						Coordinate destination = new(origin.Coordinate.Galaxy, sys, 16, Celestials.Planet);
+						foreach (var currentSpeed in validSpeeds) {
+							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 
-						FleetHypotesis fleetHypotesis = new() {
-							Origin = origin,
-							Destination = destination,
-							Ships = origin.Ships.GetMovableShips(),
-							Mission = mission,
-							Speed = currentSpeed,
-							Duration = fleetPrediction.Time,
-							Fuel = fleetPrediction.Fuel
-						};
-						if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
-							possibleFleets.Add(fleetHypotesis);
-							break;
+							FleetHypotesis fleetHypotesis = new() {
+								Origin = origin,
+								Destination = destination,
+								Ships = origin.Ships.GetMovableShips(),
+								Mission = mission,
+								Speed = currentSpeed,
+								Duration = fleetPrediction.Time,
+								Fuel = fleetPrediction.Fuel
+							};
+							if (fleetHypotesis.Duration >= minFlightTime / 2 && fleetHypotesis.Fuel <= maxFuel) {
+								possibleFleets.Add(fleetHypotesis);
+								break;
+							}
 						}
 					}
 					break;
@@ -607,11 +611,17 @@ namespace Tbot.Workers {
 						break;
 					}
 					galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate);
-					int pos = 1;
-					foreach (var planet in galaxyInfo.Planets) {
-						if (planet == null)
-							possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
-						pos = +1;
+
+					for (sys = origin.Coordinate.System - 5; sys <= origin.Coordinate.System + 5; sys++) {
+						int pos = 1;
+						sys = GeneralHelper.ClampSystem(sys);
+						galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
+						foreach (var planet in galaxyInfo.Planets) {
+							if (planet == null) {
+								possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
+							}
+							pos++;
+						}
 					}
 
 					if (possibleDestinations.Count() > 0) {
@@ -643,7 +653,6 @@ namespace Tbot.Workers {
 						break;
 					}
 					int playerid = _tbotInstance.UserData.userInfo.PlayerID;
-					int sys = 0;
 					for (sys = origin.Coordinate.System - 5; sys <= origin.Coordinate.System + 5; sys++) {
 						sys = GeneralHelper.ClampSystem(sys);
 						galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);

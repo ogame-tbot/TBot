@@ -417,20 +417,32 @@ namespace Tbot.Workers {
 											tempCelestial = await _tbotOgameBridge.UpdatePlanet(bestOrigin, UpdateTypes.Resources);
 											if (tempCelestial.Resources.IsEnoughFor(cost)) {
 												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Building {buildProbes}x{Buildables.EspionageProbe.ToString()}");
-											} else {
+											} /*else {
 												var buildableProbes = _calculationService.CalcMaxBuildableNumber(Buildables.EspionageProbe, tempCelestial.Resources);
 												_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"{tempCelestial.ToString()}: Not enough resources to build {buildProbes}x{Buildables.EspionageProbe.ToString()}. {buildableProbes} will be built instead.");
 												buildProbes = buildableProbes;
+											}*/
+											if (buildProbes > 0) {
+												try {
+													await _ogameService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
+													tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
+													int interval = (int) (_calculationService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+													_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
+													await Task.Delay(interval, _ct);
+												} catch {
+													_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+												}
 											}
-
-											try {
-												await _ogameService.BuildShips(tempCelestial, Buildables.EspionageProbe, buildProbes);
-												tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Facilities);
-												int interval = (int) (_calculationService.CalcProductionTime(Buildables.EspionageProbe, (int) buildProbes, _tbotInstance.UserData.serverData, tempCelestial.Facilities) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
-												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Production succesfully started. Waiting {TimeSpan.FromMilliseconds(interval)} for build order to finish...");
-												await Task.Delay(interval, _ct);
-											} catch {
-												_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, "Unable to start ship production.");
+											else {
+												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Not enough resources to build probes.");
+												_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+												var spyMissions = _calculationService.GetMissionsInProgress(bestOrigin.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets);
+												if (spyMissions.Any()) {
+													var spyMissionToWait = spyMissions.OrderBy(c => c.BackIn).First();
+													int interval = (int) ((1000 * spyMissionToWait.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanASecond));
+													_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Waiting {TimeSpan.FromMilliseconds(interval)} for spy mission to return...");
+													await Task.Delay(interval);
+												}
 											}
 										}
 										break;
