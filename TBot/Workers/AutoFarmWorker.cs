@@ -463,11 +463,11 @@ namespace Tbot.Workers {
 
 									if (_calculationService.GetMissionsInProgress(bestOrigin.Origin.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
-										break;
+										continue;
 									}
 									if (_calculationService.GetMissionsInProgress(bestOrigin.Origin.Coordinate, Missions.Attack, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate) && f.ReturnFlight == false)) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Attack already on route towards {target.ToString()}.");
-										break;
+										continue;
 									}
 
 									// If local record indicate not enough espionage probes are available, update record to make sure this is correct.
@@ -541,13 +541,13 @@ namespace Tbot.Workers {
 											celestialProbes[bestOrigin.Origin.ID] -= neededProbes;
 
 											if (target.State == FarmState.ProbesRequired || target.State == FarmState.FailedProbesRequired)
-												break;
+												continue;
 
 											_tbotInstance.UserData.farmTargets.Remove(target);
 											target.State = FarmState.ProbesSent;
 											_tbotInstance.UserData.farmTargets.Add(target);
 
-											break;
+											continue;
 										} else if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 											stop = true;
 											return;
