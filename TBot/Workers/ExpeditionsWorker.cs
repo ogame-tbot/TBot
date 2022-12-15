@@ -140,9 +140,9 @@ namespace Tbot.Workers {
 										expsToSendFromThisOrigin = 1;
 									} else {
 										expsToSendFromThisOrigin = (int) Math.Round((float) expsToSend / (float) origins.Count(), MidpointRounding.ToZero);
-										if (origin == origins.Last()) {
-											expsToSendFromThisOrigin = (int) Math.Round((float) expsToSend / (float) origins.Count(), MidpointRounding.ToZero) + (expsToSend % origins.Count());
-										}
+										//if (origin == origins.Last()) {
+										//	expsToSendFromThisOrigin = (int) Math.Round((float) expsToSend / (float) origins.Count(), MidpointRounding.ToZero) + (expsToSend % origins.Count());
+										//}
 									}
 									if (origin.Ships.IsEmpty()) {
 										DoLog(LogLevel.Warning, "Unable to send expeditions: no ships available");
