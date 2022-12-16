@@ -151,9 +151,8 @@ namespace Tbot.Workers {
 		private FarmTarget CheckDuplicatesAndGetExisting(Celestial planet) {
 			var exists = _tbotInstance.UserData.farmTargets.Where(t => t != null && t.Celestial.HasCoords(planet.Coordinate)).ToList();
 			if (exists.Count() > 1) {
-				// BUG: Same coordinates should never appear multiple times in _tbotInstance.UserData.farmTargets. The list should only contain unique coordinates.
+				// It can exist if was processed in a previous execution
 				//Remove all except the first to be able to continue
-				_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, "BUG: Same coordinates appeared multiple times within _tbotInstance.UserData.farmTargets!");
 				var firstExisting = exists.First();
 				_tbotInstance.UserData.farmTargets.RemoveAll(c => c.Celestial.HasCoords(planet.Coordinate) && c.Celestial.ID != firstExisting.Celestial.ID);
 				return firstExisting;
@@ -220,9 +219,7 @@ namespace Tbot.Workers {
 			FarmTarget target,
 			int neededProbes,
 			int slotsToLeaveFree,
-			int freeSlots,
-			long totalProbesInAllCelestials,
-			int totalSlotsForProbing) {
+			int freeSlots) {
 			//Set first celestial as default best Origin
 			SpyOriginResult bestOrigin = new SpyOriginResult(closestCelestials.First(), int.MaxValue, freeSlots);
 			foreach (var closest in closestCelestials) {
@@ -264,12 +261,6 @@ namespace Tbot.Workers {
 					_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Cannot spy {target.Celestial.Coordinate.ToString()} from {closest.Coordinate.ToString()}, insufficient probes ({celestialProbes[closest.ID]}/{neededProbes}).");
 					if (bestOrigin.BackIn < int.MaxValue)
 						continue;
-
-					//If total probes of all the planets is greater than the needed, then avoid building new ones.
-					if (totalProbesInAllCelestials > totalSlotsForProbing * neededProbes) {
-						_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"There should be enough probes in other planets, so avoiding build new ones in {closest.Coordinate.ToString()}");
-						continue;
-					}
 
 					//If there is no bestOrigin, check if can be a good origin (it has enough resources to build probes)
 					tempCelestial = await _tbotOgameBridge.UpdatePlanet(closest, UpdateTypes.Constructions);
@@ -344,7 +335,6 @@ namespace Tbot.Workers {
 
 					int freeSlots = _tbotInstance.UserData.slots.Free;
 					int slotsToLeaveFree = (int) _tbotInstance.InstanceSettings.AutoFarm.SlotsToLeaveFree;
-					int totalSlotsForProbing = _tbotInstance.UserData.slots.Total - slotsToLeaveFree;
 					if (freeSlots <= slotsToLeaveFree) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to start auto farm, no slots available");
 						return;
@@ -439,7 +429,6 @@ namespace Tbot.Workers {
 
 									_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 									var probesInMission = _tbotInstance.UserData.fleets.Select(c => c.Ships).Sum(c => c.EspionageProbe);
-									long totalProbesInAllCelestials = closestCelestials.Sum(c => c.Ships.EspionageProbe) + probesInMission;
 
 									//Calculate best origin
 									var bestOrigin = await GetBestOrigin(closestCelestials,
@@ -447,9 +436,7 @@ namespace Tbot.Workers {
 										target,
 										neededProbes,
 										slotsToLeaveFree,
-										freeSlots,
-										totalProbesInAllCelestials,
-										totalSlotsForProbing);
+										freeSlots);
 
 									freeSlots = bestOrigin.FreeSlots;
 

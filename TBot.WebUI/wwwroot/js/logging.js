@@ -45,7 +45,7 @@ function updateGrid(url, callback) {
 	$.get(url,
 		function (data) {
 			logData = data.content.sort((a, b) => (a.position > b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
-			_maxElements = logData.length;
+			_maxElements = logData.length > 100 ? logData.length : 100;
 			renderGrid(logData);
 			if (callback)
 				callback();

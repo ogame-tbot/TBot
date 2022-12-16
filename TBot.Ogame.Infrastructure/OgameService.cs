@@ -203,22 +203,37 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		private async Task<T> ManageResponse<T>(HttpResponseMessage response) {
-			var jsonResponseContent = await response.Content.ReadAsStringAsync();
-			var result = JsonConvert.DeserializeObject<OgamedResponse>(jsonResponseContent, new JsonSerializerSettings {
-				DateTimeZoneHandling = DateTimeZoneHandling.Local,
-				NullValueHandling = NullValueHandling.Ignore
-			});
-			if (result?.Status != "ok") {
-				throw new OgamedException($"An error has occurred: Status: {result?.Status} - Message: {result?.Message}");
-			} else {
-				if (result.Result is JObject) {
-					var jObject = result.Result as JObject;
-					return jObject.ToObject<T>();
+			OgamedResponse result = null;
+			try {
+				var jsonResponseContent = await response.Content.ReadAsStringAsync();
+				if (jsonResponseContent != null) {
+					result = JsonConvert.DeserializeObject<OgamedResponse>(jsonResponseContent, new JsonSerializerSettings {
+						DateTimeZoneHandling = DateTimeZoneHandling.Local,
+						NullValueHandling = NullValueHandling.Ignore
+					});
 				}
-				else if (result.Result is JArray) {
-					var jArray = result.Result as JArray;
-					return jArray.ToObject<T>();
+				else {
+					response.EnsureSuccessStatusCode();
 				}
+			}
+			catch {
+				response.EnsureSuccessStatusCode();
+			}
+			if (result != null) {
+				if (result?.Status != "ok") {
+					throw new OgamedException($"An error has occurred: Status Code: {response.StatusCode} Status: {result?.Status} - Message: {result?.Message}");
+				} else {
+					if (result.Result is JObject) {
+						var jObject = result.Result as JObject;
+						return jObject.ToObject<T>();
+					} else if (result.Result is JArray) {
+						var jArray = result.Result as JArray;
+						return jArray.ToObject<T>();
+					}
+				}
+			}
+			else {
+				response.EnsureSuccessStatusCode();
 			}
 			return (T) result.Result;
 		}
@@ -238,7 +253,6 @@ namespace TBot.Ogame.Infrastructure {
 					var response = await _client.SendAsync(request);
 					return response;
 				});
-			response.EnsureSuccessStatusCode();
 			return await ManageResponse<T>(response);
 		}
 
@@ -253,7 +267,6 @@ namespace TBot.Ogame.Infrastructure {
 					var response = await _client.SendAsync(request);
 					return response;
 				});
-			response.EnsureSuccessStatusCode();
 			return await ManageResponse<T>(response);
 		}
 
