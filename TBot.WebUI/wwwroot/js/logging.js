@@ -1,22 +1,19 @@
 let _logsUrl = "";
-let _maxElements = 5000;
+let _getLogsUrl = "";
 let logData = [];
 let _connection = null;
 var logsDiv;
-
+let _loadMoreButton;
+var _maxElements = 100;
 var typingTimer;
 var doneTypingInterval = 1000;
 
 //Initialize variables
-function Initialize(logsUrl, maxElements, logModel) {
+function Initialize(logsUrl, getLogsUrl) {
+	showLoading();
 	_logsUrl = logsUrl;
-	_maxElements = maxElements;
+	_getLogsUrl = getLogsUrl;
 
-	//Initialize the logData array
-	logData = logModel.map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
-
-	//Show how many messages are showing in the label
-	$("#maxElements").text(`Showing the ${_maxElements} last logs`);
 	logsDiv = $("#logsDiv");
 
 	//Event when user types on search textbox. It uses a timer to avoid re-rendering at every letter typed
@@ -34,12 +31,31 @@ function Initialize(logsUrl, maxElements, logModel) {
 		window.location = `${newUrl}?date=${newDate}`;
 	});
 
-	defineConnection();
-	renderGrid(logData);
-
 	var logsDate = new Date($("#logsDate").val());
-	if (logsDate.toDateString() === new Date().toDateString())
-		start();
+	updateGrid(_getLogsUrl + getFilterParameters(), function () {
+		if (logsDate.toDateString() === new Date().toDateString()) {
+			defineConnection();
+			start();
+		}
+	});
+}
+
+function updateGrid(url, callback) {
+	showLoading();
+	$.get(url,
+		function (data) {
+			logData = data.content.sort((a, b) => (a.position > b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
+			_maxElements = logData.length;
+			renderGrid(logData);
+			if (callback)
+				callback();
+			manageVisibilityLoadMore(data.hasMoreData);
+			if (data.content.length == 0) {
+				logsDiv.prepend("<div class='row'><span>No logs to show.</span></div>")
+			}
+			hideLoading();
+		}
+	);
 	
 }
 
@@ -57,7 +73,9 @@ function formatDate(date) {
 
 //LogEntry class
 function LogEntry(timestamp, level, message, sender) {
-	this.timestamp = new Date(timestamp).toLocaleString();
+	this.date = new Date(timestamp);
+	this.timestamp = this.date.toLocaleString();
+	this.originalTimestamp = timestamp;
 	this.level = level;
 	this.loglevel = getLogLevelNum(level);
 	this.message = message;
@@ -65,18 +83,19 @@ function LogEntry(timestamp, level, message, sender) {
 	this.row = createLogElement(this.timestamp, this.level, this.message, this.sender);
 }
 
+function getFilterParameters() {
+	var logLevel = $("#loglevelfilter option:selected").val();
+	var textToSearch = $("#logsearch").val().toLowerCase();
+	var sender = $("#logsenderfilter option:selected").val();
+	let filterParameters = `&search=${encodeURIComponent(textToSearch)}&logSender=${encodeURIComponent(sender)}&logLevel=${encodeURIComponent(logLevel)}`;
+	return filterParameters;
+}
+
 //Function to apply the current filters
 function applyFilter() {
 	console.log("applyFilter");
-	var logLevelNum = getLogLevelNum($("#loglevelfilter option:selected").val());
-	var textToSearch = $("#logsearch").val().toLowerCase();
-	var sender = $("#logsenderfilter option:selected").val();
-
-	var filteredData = logData.filter(x => (logLevelNum == 0 || x.loglevel >= logLevelNum)
-		&& (sender == "" || x.sender === sender)
-		&& (textToSearch == "" || x.message.toLowerCase().includes(textToSearch)));
-
-	renderGrid(filteredData);
+	let urlWithFilters = _getLogsUrl + getFilterParameters();
+	updateGrid(urlWithFilters);
 }
 
 //Cleans the grid
@@ -86,16 +105,66 @@ function cleanGrid() {
 
 //Renders a single row in the grid
 function renderRow(row) {
+	row.insertBefore(_loadMoreButton);
+}
+
+function renderRowTop(row) {
 	logsDiv.prepend(row);
 }
 
 //Renders the grid with the LogEntry array passed by the parameter "data"
 function renderGrid(data) {
 	cleanGrid();
-	var dataToDisplay = data.slice(-_maxElements);
-	for (var i = 0; i < dataToDisplay.length; i++) {
-		renderRow(dataToDisplay[i].row);
+	for (var i = 0; i < data.length; i++) {
+		renderRowTop(data[i].row);
 	}
+	renderLoadMoreButton();
+}
+
+function renderLoadMoreButton() {
+	if ($("#loadMore").length > 0)
+		return;
+	let loadMoreButton = $("<button id='loadMore' class='btn btn-light' style='margin:10px;' onclick='loadMore()'>Load more logs</button>");
+	let loadMoreButtonWrapper = $("<div style='width: 100%; text-align: center'></div>");
+	loadMoreButton.appendTo(loadMoreButtonWrapper);
+	logsDiv.append(loadMoreButtonWrapper);
+	_loadMoreButton = loadMoreButtonWrapper;
+}
+
+function showLoading() {
+	$("#backdrop").show();
+}
+
+function hideLoading() {
+	$("#backdrop").hide();
+}
+
+function manageVisibilityLoadMore(show) {
+	if (show) {
+		_loadMoreButton.show();
+	}
+	else {
+
+		_loadMoreButton.hide();
+	}
+}
+
+function loadMore() {
+	var lastItem = $(".logEntry").last();
+	let timestamp = lastItem.find(".timestamp").text();
+	let url = _getLogsUrl + "&lastTime=" + encodeURIComponent(timestamp) + getFilterParameters();
+	showLoading();
+	$.get(url,
+		function (data) {
+			let logEntries = data.content.sort((a, b) => (a.position < b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
+			_maxElements += logEntries.length;
+			for (let i = 0; i < logEntries.length; i++) {
+				logData.unshift(logEntries[i]);
+				renderRow(logEntries[i].row);
+			}
+			manageVisibilityLoadMore(data.hasMoreData);
+			hideLoading();
+		});
 }
 
 //Function to map the Log Level string to a number to be filtered
@@ -116,7 +185,7 @@ function getLogLevelNum(logLevel) {
 
 //Creates the row to draw
 function createLogElement(timestamp, level, message, sender) {
-	var row = $("<div class='row'></div>");
+	var row = $("<div class='row logEntry'></div>");
 	var colTs = $("<div class='col-5 col-lg-3 col-xl-2 log-ts'></div>").text(timestamp)
 		.addClass("timestamp");
 
@@ -162,7 +231,7 @@ function renderLogEntry(timestamp, level, message, sender) {
 		render = false;
 
 	if (render)
-		renderRow(logEntry.row);
+		renderRowTop(logEntry.row);
 
 	//if we reached the maximum log messages, delete the last
 	var elementsCount = logsDiv.find(".row").length;
