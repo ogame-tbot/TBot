@@ -44,7 +44,7 @@ function updateGrid(url, callback) {
 	showLoading();
 	$.get(url,
 		function (data) {
-			logData = data.content.sort((a, b) => (a.position > b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
+			logData = data.content.sort((a, b) => (a.position > b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender, x.position));
 			_maxElements = logData.length > 100 ? logData.length : 100;
 			renderGrid(logData);
 			if (callback)
@@ -72,7 +72,7 @@ function formatDate(date) {
 }
 
 //LogEntry class
-function LogEntry(timestamp, level, message, sender) {
+function LogEntry(timestamp, level, message, sender, position) {
 	this.date = new Date(timestamp);
 	this.timestamp = this.date.toLocaleString();
 	this.originalTimestamp = timestamp;
@@ -80,6 +80,7 @@ function LogEntry(timestamp, level, message, sender) {
 	this.loglevel = getLogLevelNum(level);
 	this.message = message;
 	this.sender = sender;
+	this.position = position;
 	this.row = createLogElement(this.timestamp, this.level, this.message, this.sender);
 }
 
@@ -161,7 +162,7 @@ function loadMore() {
 	showLoading();
 	$.get(url,
 		function (data) {
-			let logEntries = data.content.sort((a, b) => (a.position < b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender));
+			let logEntries = data.content.sort((a, b) => (a.position < b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender, x.position));
 			_maxElements += logEntries.length;
 			for (let i = 0; i < logEntries.length; i++) {
 				logData.unshift(logEntries[i]);
@@ -215,7 +216,8 @@ function createLogElement(timestamp, level, message, sender) {
 //Function that is called for every log received by the hub
 function renderLogEntry(timestamp, level, message, sender) {
 
-	var logEntry = new LogEntry(timestamp, level, message, sender);
+	let last = logData.sort((a, b) => (a.position < b.position))[0];
+	var logEntry = new LogEntry(timestamp, level, message, sender, last.position + 1);
 	logData.push(logEntry);
 
 	//check if has to be drawn
