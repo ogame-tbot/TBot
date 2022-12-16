@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -113,7 +114,7 @@ namespace TBot.WebUI.Controllers {
 			}
 
 			if (!string.IsNullOrEmpty(lastTime)) {
-				logsDate = DateTime.ParseExact(lastTime, "dd/MM/yyyy, H:mm:ss", CultureInfo.InvariantCulture);
+				logsDate = DateTime.Parse(lastTime, CultureInfo.InvariantCulture, DateTimeStyles.None);
 				jsonLogsQuery = jsonLogsQuery.Where(c => c.DateTimeParsed < logsDate);
 			}
 

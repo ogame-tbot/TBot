@@ -150,8 +150,13 @@ function manageVisibilityLoadMore(show) {
 }
 
 function loadMore() {
-	var lastItem = $(".logEntry").last();
-	let timestamp = lastItem.find(".timestamp").text();
+	if (logData.length == 0) {
+		hideLoading();
+		return;
+	}
+
+	var last = logData.sort((a,b) => (a.position < b.position))[0];
+	let timestamp = last.originalTimestamp;
 	let url = _getLogsUrl + "&lastTime=" + encodeURIComponent(timestamp) + getFilterParameters();
 	showLoading();
 	$.get(url,
