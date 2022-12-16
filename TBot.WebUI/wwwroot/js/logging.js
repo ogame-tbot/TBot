@@ -155,7 +155,7 @@ function loadMore() {
 		return;
 	}
 
-	var last = logData.sort((a,b) => (a.position < b.position))[0];
+	var last = logData.sort((a,b) => (a.position > b.position))[0];
 	let timestamp = last.originalTimestamp;
 	let url = _getLogsUrl + "&lastTime=" + encodeURIComponent(timestamp) + getFilterParameters();
 	showLoading();
