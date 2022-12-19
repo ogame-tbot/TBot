@@ -177,11 +177,13 @@ namespace Tbot.Workers {
 
 				// If target marked not suitable based on a non-expired espionage report, skip probing.
 				if (target.State == FarmState.NotSuitable && target.Report != null) {
+					_tbotInstance.log(LogLevel.Debug, LogSender.AutoFarm, $"Target {planet.ToString()} marked as Not Suitable. Skipping...");
 					return null;
 				}
 
 				// If probes are already sent or if an attack is pending, skip probing.
 				if (target.State == FarmState.ProbesSent || target.State == FarmState.AttackPending) {
+					_tbotInstance.log(LogLevel.Debug, LogSender.AutoFarm, $"Target {planet.ToString()} marked as {target.State.ToString()}. Skipping...");
 					return null;
 				}
 			}
@@ -281,7 +283,7 @@ namespace Tbot.Workers {
 					var cost = _calculationService.CalcPrice(Buildables.EspionageProbe, (int) buildProbes);
 					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
 					if (tempCelestial.Resources.IsEnoughFor(cost)) {
-						bestOrigin = new SpyOriginResult(closest, int.MaxValue - 1, freeSlots);
+						bestOrigin = new SpyOriginResult(closest, int.MaxValue, freeSlots);
 					}
 				}
 			}
@@ -289,6 +291,8 @@ namespace Tbot.Workers {
 			if (bestOrigin.BackIn != 0) {
 				if (bestOrigin.BackIn != int.MaxValue) {
 					int interval = (int) ((1000 * bestOrigin.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds));
+					if (interval < 0)
+						interval = 1000;
 					_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Not enough free slots {freeSlots}/{slotsToLeaveFree}. Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
 					await Task.Delay(interval, _ct);
 					bestOrigin.Origin = await _tbotOgameBridge.UpdatePlanet(bestOrigin.Origin, UpdateTypes.Ships);
@@ -423,8 +427,6 @@ namespace Tbot.Workers {
 
 									int neededProbes = GetNeededProbes(target);
 
-									//await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
-
 									await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.LessThanFiveSeconds), _ct);
 
 									_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
@@ -441,12 +443,6 @@ namespace Tbot.Workers {
 									freeSlots = bestOrigin.FreeSlots;
 
 									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Best origin found: {bestOrigin.Origin.Name} ({bestOrigin.Origin.Coordinate.ToString()})");
-
-									try {
-										freeSlots = await WaitForFreeSlots(freeSlots, slotsToLeaveFree);
-									} catch {
-										break;
-									}
 
 									if (_calculationService.GetMissionsInProgress(bestOrigin.Origin.Coordinate, Missions.Spy, _tbotInstance.UserData.fleets).Any(f => f.Destination.IsSame(target.Celestial.Coordinate))) {
 										_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Probes already on route towards {target.ToString()}.");
@@ -515,13 +511,26 @@ namespace Tbot.Workers {
 									}
 
 									if (celestialProbes[bestOrigin.Origin.ID] >= neededProbes) {
+
 										Ships ships = new();
 										ships.Add(Buildables.EspionageProbe, neededProbes);
 
 										_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Spying {target.ToString()} from {bestOrigin.Origin.ToString()} with {neededProbes} probes.");
 
-										_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
-										var fleetId = await _fleetScheduler.SendFleet(bestOrigin.Origin, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
+										var fleetId = (int) SendFleetCode.GenericError;
+										int retryCount = 0;
+										int maxRetryCount = 5;
+										do {
+											_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
+											freeSlots = _tbotInstance.UserData.slots.Free;
+											freeSlots = await WaitForFreeSlots(freeSlots, slotsToLeaveFree);
+											fleetId = await _fleetScheduler.SendFleet(bestOrigin.Origin, ships, target.Celestial.Coordinate, Missions.Spy, Speeds.HundredPercent);
+											if (fleetId == (int)SendFleetCode.NotEnoughSlots) {
+												_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Another worker took the slot, waiting again for a free slot... Retry count: {retryCount}/{maxRetryCount}");
+											}
+											retryCount++;
+										} while (fleetId == (int) SendFleetCode.NotEnoughSlots && retryCount <= maxRetryCount);
+
 										if (fleetId > (int) SendFleetCode.GenericError) {
 											freeSlots--;
 											numProbed++;
@@ -538,6 +547,9 @@ namespace Tbot.Workers {
 										} else if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 											stop = true;
 											return;
+										} else if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+											_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Unable to achieve a free slot after {retryCount} retries.");
+											continue;
 										} else {
 											continue;
 										}
@@ -553,10 +565,10 @@ namespace Tbot.Workers {
 
 					// Wait for all espionage fleets to return.
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-					Fleet firstReturning = _calculationService.GetFirstReturningEspionage(_tbotInstance.UserData.fleets);
+					Fleet firstReturning = _calculationService.GetLastReturningEspionage(_tbotInstance.UserData.fleets);
 					if (firstReturning != null) {
 						int interval = (int) ((1000 * firstReturning.BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
-						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Waiting {TimeSpan.FromMilliseconds(interval)} for probes to return...");
+						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Waiting {TimeSpan.FromMilliseconds(interval)} for all probes to return...");
 						await Task.Delay(interval, _ct);
 					}
 

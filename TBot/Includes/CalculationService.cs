@@ -2626,6 +2626,15 @@ namespace Tbot.Includes {
 				return null;
 		}
 
+		public Fleet GetLastReturningEspionage(List<Fleet> fleets) {
+			var celestialEspionages = GetMissionsInProgress(Missions.Spy, fleets);
+			if (celestialEspionages.Count > 0) {
+				return celestialEspionages
+					.OrderBy(fleet => fleet.BackIn).Last();
+			} else
+				return null;
+		}
+
 		public Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets) {
 			var celestialEspionages = GetMissionsInProgress(origin, Missions.Spy, fleets);
 			if (celestialEspionages != null) {

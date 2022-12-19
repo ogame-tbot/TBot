@@ -130,7 +130,7 @@ namespace TBot.WebUI.Controllers {
 			}
 
 			return Json(new {
-				Content = result,
+				Content = result.OrderByDescending(c => c.position).ToList(),
 				HasMoreData = result.Count != jsonLogs.Count
 			});
 		}

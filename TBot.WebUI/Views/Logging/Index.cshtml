@@ -38,7 +38,13 @@
         </div>
     </div>
 
-    <div id="logsDiv" style="margin-top:20px;">
+    <div id="logsDivWrapper" style="overflow-y: auto">
+        <div id="logsDiv" style="margin-top:20px;">
+        </div>
+
+        <div style="width: 100%; text-align:center">
+            <button id='loadMore' class='btn btn-light' style='margin:10px;' onclick='loadMore()'>Load more logs</button>
+        </div>
     </div>
 </div>
 
@@ -50,10 +56,10 @@
 </div>
 
 <script type="text/javascript">
-        @{
-            var getLogsUrl = $"{@Url.Action("GetLogs", "Logging")}?date={Model.Date}";
-        }
+                    @{
+                        var getLogsUrl = $"{@Url.Action("GetLogs", "Logging")}?date={Model.Date}";
+                    }
         Initialize("/realTimeLog", "@getLogsUrl");
-        
+
 
 </script>

@@ -70,6 +70,7 @@ namespace Tbot.Includes {
 		int CalcSlowestSpeed(Ships fleet, Researches researches, CharacterClass playerClass = CharacterClass.NoClass);
 		Fleet GetFirstReturningEspionage(Coordinate origin, List<Fleet> fleets);
 		Fleet GetFirstReturningEspionage(List<Fleet> fleets);
+		Fleet GetLastReturningEspionage(List<Fleet> fleets);
 		Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleetsWithResources(Celestial celestial, List<Fleet> fleets);
