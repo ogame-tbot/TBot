@@ -34,16 +34,16 @@ namespace Tbot.Workers {
 
 		private SemaphoreSlim _brain = new SemaphoreSlim(1, 1);
 
-		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, IWorkerFactory workerFactory) {
+		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge) {
 			if (_workers.TryGetValue(feat, out var worker)) {
 				return worker;
 			}
-
+			
 			ITBotWorker newWorker = feat switch {
 				Feature.Defender => new DefenderWorker(tbotMainInstance, _ogameService, _fleetScheduler, tbotOgameBridge),
 				Feature.BrainAutobuildCargo => new AutoCargoWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.BrainAutoRepatriate => new AutoRepatriateWorker(tbotMainInstance, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, workerFactory),
+				Feature.BrainAutoMine => new AutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
 				Feature.BrainOfferOfTheDay => new BuyOfferOfTheDayWorker(tbotMainInstance, _ogameService, tbotOgameBridge),
 				Feature.Expeditions => new ExpeditionsWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.Harvest => new HarvestWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
