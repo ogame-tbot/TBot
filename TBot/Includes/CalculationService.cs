@@ -1906,13 +1906,15 @@ namespace Tbot.Includes {
 				}
 			}
 
-			//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
-			var nextlvl = GetNextLevel(planet, nextLFbuild);
-			var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
-			var MetalMineCost = CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
-			if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
-				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
-				nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
+			if (nextLFbuild != LFBuildables.None) {
+				//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
+				var nextlvl = GetNextLevel(planet, nextLFbuild);
+				var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
+				var MetalMineCost = CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
+				if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
+					_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
+					nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
+				}
 			}
 
 			return nextLFbuild;

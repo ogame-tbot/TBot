@@ -85,21 +85,4 @@
 	height: 100%;
 }
 
-.spinner-border {
-	display: block;
-	position: fixed;
-	top: calc(50% - (48px / 2));
-	right: calc(50% - (48px / 2));
-	color: #F5B70E;
-	width: 48px;
-	height: 48px;
-}
 
-#backdrop {
-	position: absolute;
-	top: 0;
-	width: 100vw;
-	height: 100vh;
-	z-index: 999;
-	background-color: rgb(0,0,0,0.2);
-}

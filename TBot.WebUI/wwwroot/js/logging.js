@@ -121,13 +121,6 @@ function renderGrid(data) {
 	}
 }
 
-function showLoading() {
-	$("#backdrop").show();
-}
-
-function hideLoading() {
-	$("#backdrop").hide();
-}
 
 function manageVisibilityLoadMore(show) {
 	if (show) {
