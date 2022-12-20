@@ -96,6 +96,10 @@ namespace Tbot.Workers {
 			_sem.Dispose();
 			_sem = sem;
 		}
+
+		public SemaphoreSlim GetSemaphore() {
+			return _sem;
+		}
 		public async Task WaitWorker() {
 			try {
 				await _sem.WaitAsync(_ct);

@@ -14,7 +14,7 @@
             <div id="logsendercol" class="col-4 col-md-3">
                 <select id="logsenderfilter" name="logsenderfilter" onchange="applyFilter()" ">
                     <option value="">All</option>
-                    @foreach (var logSender in Enum.GetNames(typeof(LogSender)))
+                    @foreach (var logSender in Enum.GetNames(typeof(LogSender)).OrderBy(c => c))
                     {
                     <option value="@logSender">@logSender</option>
                     }
@@ -33,18 +33,26 @@
                 </select>
             </div>
 
-           
-            
+
+
         </div>
     </div>
 
-    <span style="font-size:8pt" id="maxElements"></span>
+    <div id="logsDivWrapper" style="overflow-y: auto">
+        <div id="logsDiv" style="margin-top:20px;">
+        </div>
 
-    <div id="logsDiv">
+        <div style="width: 100%; text-align:center">
+            <button id='loadMore' class='btn btn-light' style='margin:10px;' onclick='loadMore()'>Load more logs</button>
+        </div>
     </div>
 </div>
 
 <script type="text/javascript">
-    var logModel = @Html.Raw(Model.Content);
-    Initialize("/realTimeLog", @Model.MaxLogsToShow, logModel);
+                    @{
+                        var getLogsUrl = $"{@Url.Action("GetLogs", "Logging")}?date={Model.Date}";
+                    }
+        Initialize("/realTimeLog", "@getLogsUrl");
+
+
 </script>

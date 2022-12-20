@@ -27,6 +27,7 @@ namespace Tbot.Workers {
 		bool IsWorkerRunning();
 		bool IsWorkerEnabledBySettings();
 		void SetSemaphore(SemaphoreSlim sem);
+		SemaphoreSlim GetSemaphore();
 		Task WaitWorker();
 		void ReleaseWorker();
 		string GetWorkerName();

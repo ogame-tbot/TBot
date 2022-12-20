@@ -473,10 +473,15 @@ namespace Tbot.Services {
 
 		public async Task WaitFeature() {
 			List<Task> tasks = new List<Task>();
+			List<SemaphoreSlim> semaphores = new List<SemaphoreSlim>();
 			foreach (var feat in Features.AllFeatures) {
 				ITBotWorker worker = _workerFactory.GetWorker(feat);
 				if (worker != null) {
-					tasks.Add(worker.WaitWorker());
+					var semaphore = worker.GetSemaphore();
+					if (!semaphores.Contains(semaphore)) {
+						tasks.Add(semaphore.WaitAsync()); //Avoid waiting the same semaphore more than once (Brain)
+						semaphores.Add(semaphore);
+					}
 				}
 			}
 			await Task.WhenAll(

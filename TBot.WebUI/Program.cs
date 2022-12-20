@@ -25,10 +25,16 @@ namespace TBot.WebUI {
 				.AddControllersAsServices();
 			_builder.Services.AddSignalR();
 
+			_builder.Services.AddResponseCompression(options =>
+			{
+				options.EnableForHttps = true;
+			});
+
 			Console.WriteLine($"Folder: {AppDomain.CurrentDomain.BaseDirectory}");
 
 			var settingsFile = await SettingsService.GetSettings(SettingsService.GlobalSettingsPath);
 			string urls = (string) settingsFile.WebUI.Urls;
+
 
 			_builder.WebHost.UseUrls(urls.Split(",").Select(c => c.Trim()).ToArray());
 			_webApplication = _builder.Build();
@@ -56,6 +62,8 @@ namespace TBot.WebUI {
 			});
 
 			_webApplication.UseAuthorization();
+
+			_webApplication.UseResponseCompression();
 
 			_webApplication.MapControllerRoute(
 				name: "default",

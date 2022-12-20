@@ -12,7 +12,7 @@ namespace Tbot.Includes {
 		private readonly AsyncTimerCallback _callback;
 		private readonly string _name;
 		private readonly object _changeLock = new();
-
+		private SemaphoreSlim _startStopSemaphore = new SemaphoreSlim(1, 1);
 
 
 		private bool _canSetBiggerPeriod = true;
@@ -76,51 +76,66 @@ namespace Tbot.Includes {
 				throw new ArgumentOutOfRangeException(nameof(period), "period must be equal or greater than zero");
 			Period = period;
 
-			_cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			await _startStopSemaphore.WaitAsync();
 
-			_scheduledAction = Task.Run(async () => {
-				// Change thread name so TaskManager will show it
-				Thread.CurrentThread.Name = $"AT_{_name}";
-				IsRunning = true;
+			try {
+				_cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-				try {
-					while (ct.IsCancellationRequested == false) {
+				_scheduledAction = Task.Run(async () => {
+					// Change thread name so TaskManager will show it
+					Thread.CurrentThread.Name = $"AT_{_name}";
+					IsRunning = true;
 
-						if (DueTime != TimeSpan.Zero) {
-							await Task.Delay(DueTime, _cts.Token);
+					try {
+						while (ct.IsCancellationRequested == false) {
+
+							if (DueTime > TimeSpan.Zero) {
+								await Task.Delay(DueTime, _cts.Token);
+							}
+
+							// USER CALLBACK START HERE
+							await _callback(_cts.Token);
+							// USER CALLBACK END HERE
+
+							lock (_changeLock) {
+								_canSetBiggerPeriod = true;
+							}
+
+							if (Period == Timeout.InfiniteTimeSpan) {
+								// Exit
+								break;
+							}
+							if (Period > TimeSpan.Zero) {
+								await Task.Delay(Period, _cts.Token);
+							}
 						}
-
-						// USER CALLBACK START HERE
-						await _callback(_cts.Token);
-						// USER CALLBACK END HERE
-
-						lock (_changeLock) {
-							_canSetBiggerPeriod = true;
-						}
-
-						if (Period == Timeout.InfiniteTimeSpan) {
-							// Exit
-							break;
-						}
-						await Task.Delay(Period, _cts.Token);
+					} catch (OperationCanceledException) {
+						// OK!
+					} finally {
+						IsRunning = false;
 					}
-				} catch (OperationCanceledException) {
-					// OK!
-				} finally {
-					IsRunning = false;
-				}
 
-			}, _cts.Token);
+				}, _cts.Token);
+			}
+			finally {
+				_startStopSemaphore.Release();
+			}
 		}
-
+		
 		public async Task StopAsync() {
-			if (_scheduledAction != null) {
-				if (_cts != null) {
-					_cts.Cancel();
+			await _startStopSemaphore.WaitAsync();
+			try {
+				if (_scheduledAction != null) {
+					if (_cts != null) {
+						_cts.Cancel();
+					}
+					await _scheduledAction;
+					_cts = null;
+					_scheduledAction = null;
 				}
-				await _scheduledAction;
-				_cts = null;
-				_scheduledAction = null;
+			}
+			finally {
+				_startStopSemaphore.Release();
 			}
 		}
 

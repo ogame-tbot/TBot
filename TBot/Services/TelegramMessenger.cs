@@ -162,6 +162,7 @@ namespace Tbot.Services {
 
 		public async Task SendMessage(string message, ParseMode parseMode = ParseMode.Html, CancellationToken cancellationToken = default) {
 			try {
+				isTyping = false;
 				await Client.SendTextMessageAsync(
 					chatId: Channel,
 					text: message,
@@ -172,14 +173,23 @@ namespace Tbot.Services {
 			}
 		}
 
-		public async Task SendTyping(CancellationToken cancellationToken) {
-			await Client.SendChatActionAsync(
-				chatId: Channel,
-				chatAction: ChatAction.Typing,
-				cancellationToken: cancellationToken);
+		bool isTyping = false;
+		public Task SendTyping(CancellationToken cancellationToken) {
+			isTyping = true;
+			Task.Run(async () => {
+				while (isTyping) {
+					await Client.SendChatActionAsync(
+						chatId: Channel,
+						chatAction: ChatAction.Typing,
+						cancellationToken: cancellationToken);
+					await Task.Delay(3000);
+				}
+			});
+			return Task.CompletedTask;
 		}
 
 		public async Task SendReplyMarkup(string text, IEnumerable<IEnumerable<InlineKeyboardButton>> buttons, CancellationToken ct) {
+			isTyping = false;
 			var inlineKeyboard = new InlineKeyboardMarkup(buttons);
 			await Client.SendTextMessageAsync(
 				chatId: Channel,
@@ -191,6 +201,7 @@ namespace Tbot.Services {
 
 		public async Task SendMessage(ITelegramBotClient client, Chat chat, string message, ParseMode parseMode = ParseMode.Html) {
 			try {
+				isTyping = false;
 				await client.SendTextMessageAsync(chat, message, parseMode);
 			} catch (Exception e) {
 				_logger.WriteLog(LogLevel.Error, LogSender.Tbot, $"Could not send Telegram message: an exception has occurred: {e.Message}");
@@ -262,6 +273,7 @@ namespace Tbot.Services {
 			if (update.Type != UpdateType.Message) {
 
 			} else {
+				await SendTyping(ct);
 				var message = update.Message;
 				var arg = "";
 				var test = "";
