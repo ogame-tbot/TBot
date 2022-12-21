@@ -270,12 +270,13 @@ namespace Tbot.Workers
 				if (!_tbotInstance.UserData.isSleeping) {
 					var newCelestials = await UpdateCelestials();
 					if (_tbotInstance.UserData.celestials.Count() != newCelestials.Count) {
-						_tbotInstance.UserData.celestials = newCelestials.Unique().ToList();
 						if (_tbotInstance.UserData.celestials.Count() > newCelestials.Count) {
 							_tbotInstance.log(LogLevel.Warning, LogSender.Tbot, "Less userData.celestials than last check detected!!");
 						} else {
 							_tbotInstance.log(LogLevel.Information, LogSender.Tbot, "More userData.celestials than last check detected");
 						}
+						_tbotInstance.UserData.celestials = newCelestials.Unique().ToList();
+						await _tbotInstance.InitializeFeature(Feature.BrainAutoMine);
 						return true;
 					}
 				}
