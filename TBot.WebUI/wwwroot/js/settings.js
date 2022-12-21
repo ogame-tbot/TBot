@@ -21,11 +21,13 @@ function getJson(jsonContents) {
 }
 
 function openFileContents(fileName) {
+	showLoading();
 	selectedFile = fileName;
 	var url = `${_getFileUrl}?fileName=${fileName}`;
 	$.get(url, function (response) {
 		var content = getJson(response.data);
 		editor.load(content);
+		hideLoading();
 	});
 }
 
@@ -41,6 +43,7 @@ function onReloadClick() {
 
 function saveFileContents() {
 	try {
+		showLoading();
 		let fileName = selectedFile;
 		let content = editor.get();
 		let url = _saveFileUrl;
@@ -51,9 +54,11 @@ function saveFileContents() {
 			else {
 				alert("File saved successfully!");
 			}
+			hideLoading();
 		});
 	}
 	catch (ex) {
+		hideLoading();
 		alert(ex);
 	}
 }

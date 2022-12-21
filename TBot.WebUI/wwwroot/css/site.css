@@ -47,4 +47,5 @@ body {
 	height: 100vh;
 	z-index: 999;
 	background-color: rgb(0,0,0,0.2);
+	display: none;
 }
