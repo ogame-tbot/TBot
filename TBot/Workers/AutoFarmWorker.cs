@@ -896,9 +896,7 @@ namespace Tbot.Workers {
 							var planet = galaxyInfo.Planets.FirstOrDefault(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation && p.HasCoords(report.Coordinate));
 							if (planet != null) {
 								target = GetFarmTarget(planet);
-								if (target != null)
-									_tbotInstance.UserData.farmTargets.Add(target);
-								else
+								if (target == null)
 									continue;
 							} else {
 								continue;
