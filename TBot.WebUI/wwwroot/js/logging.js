@@ -40,6 +40,18 @@ function Initialize(logsUrl, getLogsUrl) {
 	});
 }
 
+function ensureLogDataOrder() {
+	let previousDate = logData[0].date;
+	for (let i = 1; i < logData.length; i++) {
+		if (logData[i].date > previousDate) {
+			alert(`Position: ${i}. LogDate: ${logData[i].date}. Previous Date: ${previousDate}`);
+			return;
+		}
+		previousDate = logData[i].date;
+	}
+	alert("Everything is ok");
+}
+
 function updateGrid(url, callback) {
 	showLoading();
 	$.get(url,
@@ -138,13 +150,12 @@ function loadMore() {
 		return;
 	}
 
-	let last = logData.sort((a,b) => (a.position > b.position))[0];
+	let last = logData[logData.length - 1];
 	let timestamp = last.originalTimestamp;
 	let url = _getLogsUrl + "&lastTime=" + encodeURIComponent(timestamp) + getFilterParameters();
 	showLoading();
 	$.get(url,
 		function (data) {
-			//let logEntries = data.content.sort((a, b) => (a.position < b.position)).map(x => new LogEntry(x.datetime, x.type, x.message, x.sender, x.position));
 			let logEntries = data.content.map(x => new LogEntry(x.datetime, x.type, x.message, x.sender, x.position));
 			_maxElements += logEntries.length;
 			for (let i = 0; i < logEntries.length; i++) {
@@ -198,9 +209,11 @@ function createLogElement(timestamp, level, message, sender) {
 
 //Function that is called for every log received by the hub
 function renderLogEntry(timestamp, level, message, sender) {
+	let lastPosition = 0;
+	if (logData.length > 0)
+		lastPosition = logData[0].position;
+	let logEntry = new LogEntry(timestamp, level, message, sender, lastPosition + 1);
 
-	let last = logData.sort((a, b) => (a.position < b.position))[0];
-	let logEntry = new LogEntry(timestamp, level, message, sender, last.position + 1);
 	logData.unshift(logEntry);
 
 	//check if has to be drawn
@@ -226,6 +239,7 @@ function renderLogEntry(timestamp, level, message, sender) {
 	if (elementsCount > _maxElements) {
 		let elementsToDelete = elementsCount - _maxElements;
 		logsDiv.find(".row:nth-last-child(-n+" + elementsToDelete + ")").remove();
+		logData = logData.slice(0, -elementsToDelete);
 	}
 }
 

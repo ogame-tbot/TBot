@@ -68,16 +68,18 @@ namespace Tbot.Includes {
 
 			await StopAsync();
 
+			
+
 			if (dueTime < TimeSpan.Zero)
 				throw new ArgumentOutOfRangeException(nameof(dueTime), "due time must be equal or greater than zero");
-			DueTime = dueTime;
+			DueTime = EnsureMaximumTimeSpan(dueTime, TimeSpan.FromDays(1));
 
 			if ((period < TimeSpan.Zero) && (period != Timeout.InfiniteTimeSpan))
 				throw new ArgumentOutOfRangeException(nameof(period), "period must be equal or greater than zero");
-			Period = period;
+			Period = EnsureMaximumTimeSpan(period, TimeSpan.FromDays(1));
 
 			await _startStopSemaphore.WaitAsync();
-
+			_canSetBiggerPeriod = true;
 			try {
 				_cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
@@ -89,9 +91,7 @@ namespace Tbot.Includes {
 					try {
 						while (ct.IsCancellationRequested == false) {
 
-							if (DueTime > TimeSpan.Zero) {
-								await Task.Delay(DueTime, _cts.Token);
-							}
+							await Task.Delay(DueTime, _cts.Token);
 
 							// USER CALLBACK START HERE
 							await _callback(_cts.Token);
@@ -105,9 +105,8 @@ namespace Tbot.Includes {
 								// Exit
 								break;
 							}
-							if (Period > TimeSpan.Zero) {
-								await Task.Delay(Period, _cts.Token);
-							}
+
+							await Task.Delay(Period, _cts.Token);
 						}
 					} catch (OperationCanceledException) {
 						// OK!
@@ -116,12 +115,11 @@ namespace Tbot.Includes {
 					}
 
 				}, _cts.Token);
-			}
-			finally {
+			} finally {
 				_startStopSemaphore.Release();
 			}
 		}
-		
+
 		public async Task StopAsync() {
 			await _startStopSemaphore.WaitAsync();
 			try {
@@ -133,8 +131,7 @@ namespace Tbot.Includes {
 					_cts = null;
 					_scheduledAction = null;
 				}
-			}
-			finally {
+			} finally {
 				_startStopSemaphore.Release();
 			}
 		}
@@ -146,8 +143,8 @@ namespace Tbot.Includes {
 
 		public void ChangeTimings(TimeSpan period, TimeSpan dueTime) {
 			lock (_changeLock) {
-				_dueTime = dueTime;
-				_period = period;
+				_dueTime = EnsureMaximumTimeSpan(dueTime, TimeSpan.FromDays(1));
+				_period = EnsureMaximumTimeSpan(period, TimeSpan.FromDays(1));
 			}
 		}
 
@@ -159,8 +156,19 @@ namespace Tbot.Includes {
 			return period.TotalMilliseconds < period2.TotalMilliseconds;
 		}
 
+		private TimeSpan EnsureMaximumTimeSpan(TimeSpan timeSpan, TimeSpan maximum) {
+			if (timeSpan == Timeout.InfiniteTimeSpan)
+				return timeSpan;
+			if (timeSpan.TotalMilliseconds < 0)
+				return TimeSpan.FromMilliseconds(1);
+			if (timeSpan > maximum)
+				return maximum;
+			return timeSpan;
+		}
+
 		public bool ChangePeriod(TimeSpan period) {
 			lock (_changeLock) {
+				period = EnsureMaximumTimeSpan(period, TimeSpan.FromDays(1));
 				if (IsLessThan(period, _period) || _canSetBiggerPeriod) {
 					if (period != Timeout.InfiniteTimeSpan && period.TotalMilliseconds < 0)
 						period = TimeSpan.FromMilliseconds(1000);
@@ -174,7 +182,7 @@ namespace Tbot.Includes {
 
 		public void ChangeDueTime(TimeSpan dueTime) {
 			lock (_changeLock) {
-				_dueTime = dueTime;
+				_dueTime = EnsureMaximumTimeSpan(dueTime, TimeSpan.FromDays(1));
 			}
 		}
 
