@@ -842,6 +842,7 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacked targets: {_tbotInstance.UserData.farmTargets.Where(t => t.State == FarmState.AttackSent).Count()}");
+				_tbotInstance.UserData.farmTargets.RemoveAll(t => t.State == FarmState.ProbesSent); //At this point no ProbesSent should remain in farmTargets
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Stopping feature.");
