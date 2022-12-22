@@ -1,0 +1,51 @@
+{
+	"name": "T-Bot",
+	"short_name": "T-Bot",
+	"start_url": "/",
+	"display": "standalone",
+	"icons": [
+		{
+			"src": "/favicon.ico"
+		},
+		{
+			"src": "/img/TBot logo 72.png",
+			"type": "image/png",
+			"sizes": "72x72"
+		},
+		{
+			"src": "/img/TBot logo 96.png",
+			"type": "image/png",
+			"sizes": "96x96"
+		},
+		{
+			"src": "/img/TBot logo 128.png",
+			"type": "image/png",
+			"sizes": "128x128"
+		},
+		{
+			"src": "/img/TBot logo 144.png",
+			"type": "image/png",
+			"sizes": "144x144"
+		},
+		{
+			"src": "/img/TBot logo 152.png",
+			"type": "image/png",
+			"sizes": "152x152"
+		},
+		{
+			"src": "/img/TBot logo 192.png",
+			"type": "image/png",
+			"sizes": "192x192"
+		},
+		{
+			"src": "/img/TBot logo 384.png",
+			"type": "image/png",
+			"sizes": "384x384"
+		},
+		{
+			"src": "/img/TBot logo 512.png",
+			"type": "image/png",
+			"sizes": "512x512"
+		}
+	]
+}

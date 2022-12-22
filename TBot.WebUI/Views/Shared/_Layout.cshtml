@@ -4,7 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#212529">
-    <link rel="icon" type="image/jpg" href="~/img/favicon.jpg">
+    <link rel="icon" type="image/jpg" href="~/favicon.ico">
+    <link rel="manifest" href="~/manifest.json" asp-append-version="true"/>
+    <!-- iOS support -->
+    <link rel="apple-touch-icon" href="/img/TBot logo 72.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 96.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 128.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 144.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 152.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 192.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 384.png" />
+    <link rel="apple-touch-icon" href="/img/TBot logo 512.png" />
+    <meta name="apple-mobile-web-app-status-bar" content="#212529" />
+
     <title>T-Bot</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -52,5 +64,16 @@
 
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script type="text/javascript">
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker
+                    .register("/serviceWorker.js")
+                    .then(res => console.log("service worker registered"))
+                    .catch(err => console.log("service worker not registered", err))
+            })
+        }
+    </script>
 </body>
 </html>

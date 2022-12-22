@@ -4,7 +4,7 @@
 	margin: 0; /* Remove margins */
 	margin-bottom: 20px;
 	max-height: calc(100vh - 160px);
-	overflow-y: scroll;
+	overflow-y: auto;
 }
 
 	.list-files li {
