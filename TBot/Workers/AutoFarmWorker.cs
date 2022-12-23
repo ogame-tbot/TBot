@@ -154,8 +154,12 @@ namespace Tbot.Workers {
 				// It can exist if was processed in a previous execution
 				//Remove all except the first to be able to continue
 				var firstExisting = exists.First();
-				_tbotInstance.UserData.farmTargets.RemoveAll(c => c.Celestial.HasCoords(planet.Coordinate) && c.Celestial.ID != firstExisting.Celestial.ID);
+				_tbotInstance.UserData.farmTargets.RemoveAll(c => c.Celestial.HasCoords(planet.Coordinate));
+				_tbotInstance.UserData.farmTargets.Add(firstExisting);
 				return firstExisting;
+			}
+			else if (exists.Count() == 1) {
+				return exists.First();
 			}
 			return null;
 		}
@@ -375,6 +379,7 @@ namespace Tbot.Workers {
 								if (stopAutoFarm)
 									break;
 								if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "TargetsProbedBeforeAttack") && ((int) _tbotInstance.InstanceSettings.AutoFarm.TargetsProbedBeforeAttack != 0) && numProbed >= (int) _tbotInstance.InstanceSettings.AutoFarm.TargetsProbedBeforeAttack) {
+									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Maximum number of targets to probe reached, proceeding to attack.");
 									break;
 								}
 
@@ -842,6 +847,7 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.AutoFarm, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacked targets: {_tbotInstance.UserData.farmTargets.Where(t => t.State == FarmState.AttackSent).Count()}");
+				_tbotInstance.UserData.farmTargets.RemoveAll(t => t.State == FarmState.ProbesSent); //At this point no ProbesSent should remain in farmTargets
 				if (!_tbotInstance.UserData.isSleeping) {
 					if (stop) {
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Stopping feature.");
@@ -879,16 +885,25 @@ namespace Tbot.Workers {
 					}
 
 					if (_tbotInstance.UserData.farmTargets.Any(t => t.HasCoords(report.Coordinate))) {
+						FarmTarget target;
 						var matchingTarget = _tbotInstance.UserData.farmTargets.Where(t => t.HasCoords(report.Coordinate));
 						if (matchingTarget.Count() == 0) {
 							// Report received of planet not in _tbotInstance.UserData.farmTargets. If inactive: add, otherwise: ignore.
 							if (!report.IsInactive)
 								continue;
-							// TODO: Get corresponding planet. Add to target list.
-							continue;
+							//Get corresponding planet. Add to target list.
+							var galaxyInfo = await _ogameService.GetGalaxyInfo(report.Coordinate.Galaxy, report.Coordinate.System);
+							var planet = galaxyInfo.Planets.FirstOrDefault(p => p != null && p.Inactive && !p.Administrator && !p.Banned && !p.Vacation && p.HasCoords(report.Coordinate));
+							if (planet != null) {
+								target = GetFarmTarget(planet);
+								if (target == null)
+									continue;
+							} else {
+								continue;
+							}
+						} else {
+							target = matchingTarget.First();
 						}
-
-						var target = matchingTarget.First();
 						var newFarmTarget = target;
 
 						if (target.Report != null && DateTime.Compare(report.Date, target.Report.Date) < 0) {
