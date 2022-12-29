@@ -14,7 +14,5 @@ namespace Tbot.Workers {
 		ITBotCelestialWorker InitializeCelestialWorker(ITBotWorker parentWorker, Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial);
 		ITBotWorker GetWorker(Feature feat);
 		ITBotCelestialWorker GetCelestialWorker(ITBotWorker parentWorker, Celestial celestial);
-		IAutoMineWorker GetAutoMineWorker();
-		IAutoRepatriateWorker GetAutoRepatriateWorker();
 	}
 }

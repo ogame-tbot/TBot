@@ -22,10 +22,8 @@ namespace Tbot.Workers.Brain {
 		private readonly IFleetScheduler _fleetScheduler;
 		private readonly IOgameService _ogameService;
 		private readonly ITBotOgamedBridge _tbotOgameBridge;
-		private readonly IAutoMineWorker _automineWorker;
 		public AutoMineCelestialWorker(ITBotMain parentInstance,
 			ITBotWorker parentWorker,
-			IAutoMineWorker autoMineWorker,
 			IOgameService ogameService,
 			IFleetScheduler fleetScheduler,
 			ICalculationService calculationService,
@@ -36,7 +34,6 @@ namespace Tbot.Workers.Brain {
 			_fleetScheduler = fleetScheduler;
 			_ogameService = ogameService;
 			_tbotOgameBridge = tbotOgameBridge;
-			_automineWorker = autoMineWorker;
 		}
 
 		public override bool IsWorkerEnabledBySettings() {
@@ -276,17 +273,17 @@ namespace Tbot.Workers.Brain {
 						} else {
 							DoLog(LogLevel.Information, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
 						}
-						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Active) {
+						if ((bool) _tbotInstance.InstanceSettings.Brain.Transports.Active) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 							if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 								Celestial origin = _tbotInstance.UserData.celestials
 										.Unique()
-										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
-										.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.System)
-										.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Position)
-										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Type))
+										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
+										.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
+										.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
+										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
 										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = await _automineWorker.HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+								fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
 
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
@@ -492,13 +489,13 @@ namespace Tbot.Workers.Brain {
 							//DoLog(LogLevel.Debug, $"Next expedition returning by {now.AddMilliseconds(returningExpoTime).ToString()}");
 						}
 
-						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Active) {
+						if ((bool) _tbotInstance.InstanceSettings.Brain.Transports.Active) {
 							Celestial origin = _tbotInstance.UserData.celestials
 									.Unique()
-									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
-									.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.System)
-									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Position)
-									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Origin.Type))
+									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
+									.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
+									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
+									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
 							var returningExpoOrigin = _calculationService.GetFirstReturningExpedition(origin.Coordinate, _tbotInstance.UserData.fleets);
 							if (returningExpoOrigin != null) {

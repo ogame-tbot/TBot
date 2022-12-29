@@ -86,6 +86,18 @@
 	},
 	"Brain": {
 		"Active": true,
+		"Transports": {
+			"Active": true,
+			"CargoType": "SmallCargo",
+			"DeutToLeave": 1000000,
+			"RoundResources": true,
+			"Origin": {
+				"Galaxy": 3,
+				"System": 333,
+				"Position": 8,
+				"Type": "Moon"
+			}
+		},
 		"AutoMine": {
 			"Active": true,
 			"MaxMetalMine": 40,
@@ -108,18 +120,6 @@
 			"MaxLunarRoboticsFactory": 8,
 			"MaxSensorPhalanx": 6,
 			"MaxJumpGate": 1,
-			"Transports": {
-				"Active": true,
-				"CargoType": "SmallCargo",
-				"DeutToLeave": 1000000,
-				"RoundResources": true,
-				"Origin": {
-					"Galaxy": 3,
-					"System": 333,
-					"Position": 8,
-					"Type": "Moon"
-				}
-			},
 			"RandomOrder": true,
 			"Exclude": [
 				{
@@ -182,18 +182,6 @@
 				"System": 333,
 				"Position": 8,
 				"Type": "Planet"
-			},
-			"Transports": {
-				"Active": true,
-				"CargoType": "SmallCargo",
-				"DeutToLeave": 1000000,
-				"RoundResources": true,
-				"Origin": {
-					"Galaxy": 3,
-					"System": 333,
-					"Position": 8,
-					"Type": "Moon"
-				}
 			},
 			"OptimizeForStart": true,
 			"EnsureExpoSlots": true,
