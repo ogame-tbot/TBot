@@ -11,7 +11,7 @@
 	},
 	"WebUI": {
 		"Enable": true,
-		"Urls": "http://localhost:8091,https://localhost:8092",
+		"Urls": "http://localhost:9090",
 		"MaxLogsToShow": 2000
 	},
 	"Instances": [

@@ -11,9 +11,9 @@ using TBot.Ogame.Infrastructure.Models;
 namespace Tbot.Workers {
 	public interface IWorkerFactory {
 		ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge);
-		ITBotCelestialWorker InitializeCelestialWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial);
+		ITBotCelestialWorker InitializeCelestialWorker(ITBotWorker parentWorker, Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial);
 		ITBotWorker GetWorker(Feature feat);
-		ITBotCelestialWorker GetCelestialWorker(Feature feat, Celestial celestial);
+		ITBotCelestialWorker GetCelestialWorker(ITBotWorker parentWorker, Celestial celestial);
 		IAutoMineWorker GetAutoMineWorker();
 		IAutoRepatriateWorker GetAutoRepatriateWorker();
 	}

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TBot.Common.Logging;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 	public interface ITBotWorker {
@@ -15,6 +17,8 @@ namespace Tbot.Workers {
 		TimeSpan Period { get;  }
 
 		void DoLog(LogLevel level, string format);
+
+		ConcurrentDictionary<Celestial, ITBotCelestialWorker> celestialWorkers { get; }
 
 		Task StartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime);
 		Task StartWorker(CancellationToken ct, TimeSpan dueTime);

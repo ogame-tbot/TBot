@@ -24,13 +24,14 @@ namespace Tbot.Workers.Brain {
 		private readonly ITBotOgamedBridge _tbotOgameBridge;
 		private readonly IAutoMineWorker _automineWorker;
 		public AutoMineCelestialWorker(ITBotMain parentInstance,
+			ITBotWorker parentWorker,
 			IAutoMineWorker autoMineWorker,
 			IOgameService ogameService,
 			IFleetScheduler fleetScheduler,
 			ICalculationService calculationService,
 			ITBotOgamedBridge tbotOgameBridge,
 			Celestial celestial) :
-			base(parentInstance, celestial) {
+			base(parentInstance, parentWorker, celestial) {
 			_calculationService = calculationService;
 			_fleetScheduler = fleetScheduler;
 			_ogameService = ogameService;

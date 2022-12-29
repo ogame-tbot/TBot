@@ -13,5 +13,6 @@ namespace Tbot.Workers {
 	public interface ITBotCelestialWorker : ITBotWorker {
 
 		Celestial celestial { get; }
+		ITBotWorker parentWorker { get; }
 	}
 }

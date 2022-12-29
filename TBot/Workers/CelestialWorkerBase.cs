@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -24,6 +25,13 @@ namespace Tbot.Workers {
 		private AsyncTimer _timer = null;
 		
 		private Celestial _celestial = null;
+		private ITBotWorker _parentWorker = null;
+
+		public ITBotWorker parentWorker {
+			get {
+				return (_parentWorker != null) ? _parentWorker : null;
+			}
+		}
 
 		public Celestial celestial {
 			get {
@@ -42,8 +50,11 @@ namespace Tbot.Workers {
 			}
 		}
 
-		public CelestialWorkerBase(ITBotMain parentInstance, Celestial celestial) {
+		public ConcurrentDictionary<Celestial, ITBotCelestialWorker> celestialWorkers => throw new NotImplementedException();
+
+		public CelestialWorkerBase(ITBotMain parentInstance, ITBotWorker parentWorker, Celestial celestial) {
 			_tbotInstance = parentInstance;
+			_parentWorker = parentWorker;
 			_celestial = celestial;
 		}
 

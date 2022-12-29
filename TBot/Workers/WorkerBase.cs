@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,6 +11,7 @@ using Tbot.Includes;
 using Tbot.Services;
 using TBot.Common.Logging;
 using TBot.Ogame.Infrastructure.Enums;
+using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 
@@ -20,11 +22,18 @@ namespace Tbot.Workers {
 
 		protected CancellationToken _ct = CancellationToken.None;
 		protected Dictionary<string, Timer> timers = new();
-
+		
 		private SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
 		private AsyncTimer _timer = null;
 
 		protected IWorkerFactory _workerFactory;
+		protected ConcurrentDictionary<Celestial, ITBotCelestialWorker> _celestialWorkers = new();
+
+		public ConcurrentDictionary<Celestial, ITBotCelestialWorker> celestialWorkers {
+			get {
+				return (_celestialWorkers != null) ? _celestialWorkers : null;
+			}
+		}
 
 		public TimeSpan DueTime {
 			get {
@@ -72,6 +81,9 @@ namespace Tbot.Workers {
 				DoLog(LogLevel.Information, $"Worker \"{GetWorkerName()}\" closed!");
 				_timer = null;
 			}
+			foreach (var worker in _celestialWorkers.Values) {
+				await worker.StopWorker();
+			}
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
@@ -87,6 +99,9 @@ namespace Tbot.Workers {
 		}
 		public async void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 			DoLog(LogLevel.Information, $"Restarting Worker \"{GetWorkerName()}\"...");
+			foreach (var worker in _celestialWorkers.Values) {
+				await worker.StopWorker();
+			}
 			await StartWorker(ct, period, dueTime);
 		}
 		public bool IsWorkerRunning() {
@@ -124,6 +139,9 @@ namespace Tbot.Workers {
 		protected Task EndExecution() {
 			// This is meant to be called within the worker callback, so we can't await _timer to end
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
+			foreach (var worker in _celestialWorkers.Values) {
+				worker.ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
+			}
 			return Task.CompletedTask;
 		}
 
@@ -152,7 +170,7 @@ namespace Tbot.Workers {
 				else {
 					DoLog(LogLevel.Information, $"{GetWorkerName()} Stopped.");
 				}
-
+				
 			} catch(OperationCanceledException) {
 				// OK
 			} finally {

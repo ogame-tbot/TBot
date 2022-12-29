@@ -35,8 +35,8 @@ namespace Tbot.Workers {
 		private SemaphoreSlim _brain = new SemaphoreSlim(1, 1);
 
 		public ITBotWorker InitializeWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge) {
-			if (_workers.TryGetValue(feat, out var worker)) {
-				return worker;
+			if (GetWorker(feat) != null) {
+				return GetWorker(feat);
 			}
 			
 			ITBotWorker newWorker = feat switch {
@@ -65,15 +65,13 @@ namespace Tbot.Workers {
 			return newWorker;
 		}
 
-		public ITBotCelestialWorker InitializeCelestialWorker(Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial) {
-			var dic = new Dictionary<Feature, Celestial>();
-			dic.Add(feat, celestial);
-			if (_celestialWorkers.TryGetValue(dic, out var worker)) {
-				return worker;
+		public ITBotCelestialWorker InitializeCelestialWorker(ITBotWorker parentWorker, Feature feat, ITBotMain tbotMainInstance, ITBotOgamedBridge tbotOgameBridge, Celestial celestial) {
+			if (GetCelestialWorker(parentWorker, celestial) != null) {
+				return GetCelestialWorker(parentWorker, celestial);
 			}
 
 			ITBotCelestialWorker newWorker = feat switch {
-				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
 				_ => null
 			};
 
@@ -81,7 +79,7 @@ namespace Tbot.Workers {
 				if (IsBrain(feat) == true) {
 					newWorker.SetSemaphore(_brain);
 				}
-				_celestialWorkers.TryAdd(dic, newWorker);
+				parentWorker.celestialWorkers.TryAdd(celestial, newWorker);
 			}
 
 			return newWorker;
@@ -93,12 +91,10 @@ namespace Tbot.Workers {
 			}
 			return null;
 		}
-
-		public ITBotCelestialWorker GetCelestialWorker(Feature feat, Celestial celestial) {
-			var dic = new Dictionary<Feature, Celestial>();
-			dic.Add(feat, celestial);
-			if (_celestialWorkers.TryGetValue(dic, out var worker)) {
-				return worker;
+		
+		public ITBotCelestialWorker GetCelestialWorker(ITBotWorker parentWorker, Celestial celestial) {
+			if (parentWorker.celestialWorkers.Any(e => e.Key.ID == celestial.ID)) {
+				return parentWorker.celestialWorkers.First(e => e.Key.ID == celestial.ID).Value;
 			}
 			return null;
 		}

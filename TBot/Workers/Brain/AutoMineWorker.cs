@@ -252,7 +252,7 @@ namespace Tbot.Workers.Brain {
 						continue;
 					}
 
-					var celestialWorker = _workerFactory.InitializeCelestialWorker(Feature.BrainCelestialAutoMine, _tbotInstance, _tbotOgameBridge, celestial);
+					var celestialWorker = _workerFactory.InitializeCelestialWorker(this, Feature.BrainCelestialAutoMine, _tbotInstance, _tbotOgameBridge, celestial);
 					await celestialWorker.StartWorker(new CancellationTokenSource().Token, TimeSpan.FromMilliseconds(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds)));
 
 				}
