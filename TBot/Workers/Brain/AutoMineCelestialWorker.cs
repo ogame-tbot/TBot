@@ -60,8 +60,6 @@ namespace Tbot.Workers.Brain {
 
 		protected override async Task Execute() {
 			try {
-				DoLog(LogLevel.Information, $"Running automine for celestial { celestial.ToString() }...");
-
 				Buildings maxBuildings = new() {
 					MetalMine = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.MaxMetalMine,
 					CrystalMine = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.MaxCrystalMine,

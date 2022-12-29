@@ -50,8 +50,8 @@ namespace Tbot.Workers {
 				Feature.BrainAutoResearch => new AutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.Colonize => new ColonizeWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.AutoFarm => new AutoFarmWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
+				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
 				_ => null
 			};
 
@@ -72,6 +72,8 @@ namespace Tbot.Workers {
 
 			ITBotCelestialWorker newWorker = feat switch {
 				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialLifeformAutoMine => new LifeformsAutoMineCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialLifeformAutoResearch => new LifeformsAutoResearchCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
 				_ => null
 			};
 
@@ -134,6 +136,8 @@ namespace Tbot.Workers {
 				case Feature.BrainLifeformAutoMine:
 				case Feature.BrainLifeformAutoResearch:
 				case Feature.BrainCelestialAutoMine:
+				case Feature.BrainCelestialLifeformAutoMine:
+				case Feature.BrainCelestialLifeformAutoResearch:
 					return true;
 
 				default:

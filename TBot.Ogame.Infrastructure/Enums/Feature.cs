@@ -22,5 +22,7 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		BrainLifeformAutoResearch = 13,
 
 		BrainCelestialAutoMine = 14,
+		BrainCelestialLifeformAutoMine = 15,
+		BrainCelestialLifeformAutoResearch = 16,
 	}
 }
