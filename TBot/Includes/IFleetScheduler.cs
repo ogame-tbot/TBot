@@ -18,5 +18,9 @@ namespace Tbot.Includes {
 		Task CancelFleet(Fleet fleet);
 		Task<List<Fleet>> UpdateFleets();
 		void RetireFleet(object fleet);
+		Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null);
+		Task Collect();
+		Task<RepatriateCode> CollectImpl(bool fromTelegram = false);
+		Task CollectDeut(long minAmount = 0);
 	}
 }

@@ -16,20 +16,17 @@ using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	public class AutoResearchWorker : WorkerBase {
-		private readonly IAutoMineWorker _autoMineWorker;
 		private readonly IOgameService _ogameService;
 		private readonly IFleetScheduler _fleetScheduler;
 		private readonly ICalculationService _calculationService;
 		private readonly ITBotOgamedBridge _tbotOgameBridge;
 
 		public AutoResearchWorker(ITBotMain parentInstance,
-			IAutoMineWorker autoMineWorker,
 			IOgameService ogameService,
 			IFleetScheduler fleetScheduler,
 			ICalculationService calculationService,
 			ITBotOgamedBridge tbotOgameBridge) :
 			base(parentInstance) {
-			_autoMineWorker = autoMineWorker;
 			_ogameService = ogameService;
 			_calculationService = calculationService;
 			_fleetScheduler = fleetScheduler;
@@ -181,7 +178,7 @@ namespace Tbot.Workers.Brain {
 									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Position)
 									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = await _autoMineWorker.HandleMinerTransport(origin, celestial, cost);
+								fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, cost);
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;
 								}

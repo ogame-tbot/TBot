@@ -47,11 +47,11 @@ namespace Tbot.Workers {
 				Feature.BrainOfferOfTheDay => new BuyOfferOfTheDayWorker(tbotMainInstance, _ogameService, tbotOgameBridge),
 				Feature.Expeditions => new ExpeditionsWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.Harvest => new HarvestWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainAutoResearch => new AutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
+				Feature.BrainAutoResearch => new AutoResearchWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.Colonize => new ColonizeWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
 				Feature.AutoFarm => new AutoFarmWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge),
-				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
-				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
+				Feature.BrainLifeformAutoMine => new LifeformsAutoMineWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
+				Feature.BrainLifeformAutoResearch => new LifeformsAutoResearchWorker(tbotMainInstance, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, this),
 				_ => null
 			};
 
@@ -71,9 +71,9 @@ namespace Tbot.Workers {
 			}
 
 			ITBotCelestialWorker newWorker = feat switch {
-				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
-				Feature.BrainCelestialLifeformAutoMine => new LifeformsAutoMineCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
-				Feature.BrainCelestialLifeformAutoResearch => new LifeformsAutoResearchCelestialWorker(tbotMainInstance, parentWorker, GetAutoMineWorker(), _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialAutoMine => new AutoMineCelestialWorker(tbotMainInstance, parentWorker, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialLifeformAutoMine => new LifeformsAutoMineCelestialWorker(tbotMainInstance, parentWorker, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
+				Feature.BrainCelestialLifeformAutoResearch => new LifeformsAutoResearchCelestialWorker(tbotMainInstance, parentWorker, _ogameService, _fleetScheduler, _calculationService, tbotOgameBridge, celestial),
 				_ => null
 			};
 
@@ -99,31 +99,6 @@ namespace Tbot.Workers {
 				return parentWorker.celestialWorkers.First(e => e.Key.ID == celestial.ID).Value;
 			}
 			return null;
-		}
-
-		public IAutoMineWorker GetAutoMineWorker() {
-			if (_workers.TryGetValue(Feature.BrainAutoMine, out var worker)) {
-				return (IAutoMineWorker)worker;
-			}
-			return null;
-		}
-		public IAutoRepatriateWorker GetAutoRepatriateWorker() {
-			if (_workers.TryGetValue(Feature.BrainAutoRepatriate, out var worker)) {
-				return (IAutoRepatriateWorker) worker;
-			}
-			return null;
-		}
-
-		private bool WantsAutoMine(Feature feat) {
-			switch (feat) {
-				case Feature.BrainAutoResearch:
-				case Feature.BrainLifeformAutoMine:
-				case Feature.BrainLifeformAutoResearch:
-					return true;
-
-				default:
-					return false;
-			}
 		}
 
 		private bool IsBrain(Feature feat) {

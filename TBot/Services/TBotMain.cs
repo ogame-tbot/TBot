@@ -788,8 +788,7 @@ namespace Tbot.Services {
 		}
 
 		public void TelegramCollect() {
-			IAutoRepatriateWorker repatriateWorker = _workerFactory.GetAutoRepatriateWorker();
-			repatriateWorker.Collect();
+			_fleetScheduler.Collect();
 
 			return;
 		}
@@ -1005,10 +1004,10 @@ namespace Tbot.Services {
 				Celestial celestial;
 				celestial = userData.celestials
 					.Unique()
-					.Where(c => c.Coordinate.Galaxy == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.Galaxy)
-					.Where(c => c.Coordinate.System == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.System)
-					.Where(c => c.Coordinate.Position == (int) InstanceSettings.Brain.AutoMine.Transports.Origin.Position)
-					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) InstanceSettings.Brain.AutoMine.Transports.Origin.Type))
+					.Where(c => c.Coordinate.Galaxy == (int) InstanceSettings.Brain.Transports.Origin.Galaxy)
+					.Where(c => c.Coordinate.System == (int) InstanceSettings.Brain.Transports.Origin.System)
+					.Where(c => c.Coordinate.Position == (int) InstanceSettings.Brain.Transports.Origin.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) InstanceSettings.Brain.Transports.Origin.Type))
 					.SingleOrDefault() ?? new() { ID = 0 };
 
 				if (celestial.ID == 0) {
@@ -1047,8 +1046,7 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramCollectDeut(long MinAmount = 0) {
-			IAutoRepatriateWorker repatriateWorker = _workerFactory.GetAutoRepatriateWorker();
-			await repatriateWorker.CollectDeut(MinAmount);
+			await _fleetScheduler.CollectDeut(MinAmount);
 		}
 
 		public async Task SleepNow(DateTime WakeUpTime) {

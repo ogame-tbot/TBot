@@ -16,21 +16,18 @@ using TBot.Ogame.Infrastructure;
 
 namespace Tbot.Workers.Brain {
 	public class LifeformsAutoMineWorker : WorkerBase {
-		private readonly IAutoMineWorker _autoMineWorker;
 		private readonly IOgameService _ogameService;
 		private readonly IFleetScheduler _fleetScheduler;
 		private readonly ICalculationService _calculationService;
 		private readonly ITBotOgamedBridge _tbotOgameBridge;
 
 		public LifeformsAutoMineWorker(ITBotMain parentInstance,
-			IAutoMineWorker autoMineWorker,
 			IOgameService ogameService,
 			IFleetScheduler fleetScheduler,
 			ICalculationService calculationService,
 			ITBotOgamedBridge tbotOGameBridge,
 			IWorkerFactory workerFactory) :
 			base(parentInstance) {
-			_autoMineWorker = autoMineWorker;
 			_ogameService = ogameService;
 			_fleetScheduler = fleetScheduler;
 			_calculationService = calculationService;

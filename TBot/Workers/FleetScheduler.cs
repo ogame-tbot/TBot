@@ -15,6 +15,7 @@ using TBot.Model;
 using System.Threading;
 using System.Globalization;
 using TBot.Ogame.Infrastructure;
+using Tbot.Common.Settings;
 
 namespace Tbot.Workers {
 	public class FleetScheduler : IFleetScheduler {
@@ -467,6 +468,14 @@ namespace Tbot.Workers {
 				if (payload == null)
 					payload = new();
 				try {
+					if (payload.Metal < 0)
+						payload.Metal = 0;
+					if (payload.Crystal < 0)
+						payload.Crystal = 0;
+					if (payload.Deuterium < 0)
+						payload.Deuterium = 0;
+					if (payload.Food < 0)
+						payload.Food = 0;
 					Fleet fleet = await _ogameService.SendFleet(origin, ships, destination, mission, speed, payload);
 					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Fleet succesfully sent");
 					_tbotInstance.UserData.fleets = await _ogameService.GetFleets();
@@ -731,6 +740,348 @@ namespace Tbot.Workers {
 
 			} else {
 				return new List<FleetHypotesis>();
+			}
+		}
+
+		public async Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null) {
+			try {
+				if (origin.ID == destination.ID) {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Skipping transport: origin and destination are the same.");
+					return 0;
+				} else if (origin.ID == 0) {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Skipping transport: unable to parse transport origin.");
+					return 0;
+				} else {
+					var missingResources = resources.Difference(destination.Resources);
+					Resources resToLeave = new(0, 0, 0);
+					if ((long) _tbotInstance.InstanceSettings.Brain.Transports.DeutToLeave > 0)
+						resToLeave.Deuterium = (long) _tbotInstance.InstanceSettings.Brain.Transports.DeutToLeave;
+
+					origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
+					if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+						Buildables preferredShip = Buildables.SmallCargo;
+						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.Transports.CargoType, true, out preferredShip)) {
+							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to parse CargoType. Falling back to default SmallCargo");
+							preferredShip = Buildables.SmallCargo;
+						}
+
+						long idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						Ships ships = new();
+						Ships tempShips = new();
+						tempShips.Add(preferredShip, 1);
+						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+						long flightTime = flightPrediction.Time;
+						idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						var availableShips = origin.Ships.GetAmount(preferredShip);
+						if (buildable != Buildables.Null) {
+							int level = _calcService.GetNextLevel(destination, buildable);
+							long buildTime = _calcService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, destination.Facilities);
+							if (maxBuildings != null && maxFacilities != null && maxLunarFacilities != null && autoMinerSettings != null) {
+								var tempCelestial = destination;
+								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
+									tempCelestial.SetLevel(buildable, level);
+									if (buildable != Buildables.SolarSatellite && buildable != Buildables.Crawler && buildable != Buildables.SpaceDock) {
+										tempCelestial.Fields.Built += 1;
+									}
+									var nextBuildable = Buildables.Null;
+									if (tempCelestial.Coordinate.Type == Celestials.Planet) {
+										tempCelestial.Resources.Energy += _calcService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+										tempCelestial.ResourcesProduction.Energy.Available += _calcService.GetProductionEnergyDelta(buildable, level, _tbotInstance.UserData.researches.EnergyTechnology, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+										tempCelestial.Resources.Energy -= _calcService.GetRequiredEnergyDelta(buildable, level);
+										tempCelestial.ResourcesProduction.Energy.Available -= _calcService.GetRequiredEnergyDelta(buildable, level);
+										nextBuildable = _calcService.GetNextBuildingToBuild(tempCelestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings, 1);
+									} else {
+										nextBuildable = _calcService.GetNextLunarFacilityToBuild(tempCelestial as Moon, _tbotInstance.UserData.researches, maxLunarFacilities);
+									}
+									if ((nextBuildable != Buildables.Null) && (buildable != Buildables.SolarSatellite)) {
+										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
+										var newMissingRes = missingResources.Sum(_calcService.CalcPrice(nextBuildable, nextLevel));
+
+										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
+											var newIdealShips = _calcService.CalcShipNumberForPayload(newMissingRes, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
+												idealShips = newIdealShips;
+												missingResources = newMissingRes;
+												buildTime += _calcService.CalcProductionTime(nextBuildable, nextLevel, _tbotInstance.UserData.serverData, tempCelestial.Facilities);
+												_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
+												level = nextLevel;
+												buildable = nextBuildable;
+											} else {
+												break;
+											}
+										} else {
+											break;
+										}
+									} else {
+										break;
+									}
+								}
+							}
+						}
+
+						if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Brain.Transports, "RoundResources") && (bool) _tbotInstance.InstanceSettings.Brain.Transports.RoundResources) {
+							missingResources = missingResources.Round();
+							idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						}
+
+						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
+							ships.Add(preferredShip, idealShips);
+
+							if (destination.Coordinate.Type == Celestials.Planet) {
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourceSettings);
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.Buildings);
+								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourcesProduction);
+
+								float metProdInASecond = destination.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
+								float cryProdInASecond = destination.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
+								float deutProdInASecond = destination.ResourcesProduction.Deuterium.CurrentProduction / (float) 3600;
+								var metProdInFlightTime = metProdInASecond * flightTime;
+								var cryProdInFlightTime = cryProdInASecond * flightTime;
+								var deutProdInFlightTime = deutProdInASecond * flightTime;
+
+								if (
+									(metProdInASecond == 0 && missingResources.Metal > 0) ||
+									(cryProdInFlightTime == 0 && missingResources.Crystal > 0) ||
+									(deutProdInFlightTime == 0 && missingResources.Deuterium > 0) ||
+									missingResources.Metal >= metProdInFlightTime ||
+									missingResources.Crystal >= cryProdInFlightTime ||
+									missingResources.Deuterium >= deutProdInFlightTime ||
+									resources.Metal > destination.ResourcesProduction.Metal.StorageCapacity ||
+									resources.Crystal > destination.ResourcesProduction.Crystal.StorageCapacity ||
+									resources.Deuterium > destination.ResourcesProduction.Deuterium.StorageCapacity
+								) {
+									_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
+									return await SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, _tbotInstance.UserData.userInfo.Class);
+								} else {
+									_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Skipping transport: it is quicker to wait for production.");
+									return 0;
+								}
+							} else {
+								_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Sending {ships.ToString()} with {missingResources.TransportableResources} from {origin.ToString()} to {destination.ToString()}");
+								return await SendFleet(origin, ships, destination.Coordinate, Missions.Transport, Speeds.HundredPercent, missingResources, _tbotInstance.UserData.userInfo.Class);
+							}
+						} else {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Skipping transport: not enough ships to transport required resources.");
+							return 0;
+						}
+					} else {
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+						return 0;
+					}
+				}
+			} catch (Exception e) {
+				_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, $"HandleMinerTransport Exception: {e.Message}");
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
+				return 0;
+			}
+		}
+
+		public async Task Collect() {
+			await CollectImpl(true);
+		}
+
+		public async Task CollectDeut(long MinAmount = 0) {
+			_tbotInstance.UserData.fleets = await UpdateFleets();
+			long TotalDeut = 0;
+			Coordinate destinationCoordinate;
+
+			Celestial cel = _tbotInstance.UserData.celestials
+					.Unique()
+					.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy)
+					.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System)
+					.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position)
+					.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type))
+					.SingleOrDefault() ?? new() { ID = 0 };
+
+			if (cel.ID == 0) {
+				await _tbotInstance.SendTelegramMessage("Error! Could not parse auto repatriate Celestial from JSON InstanceSettings. Need <code>/editsettings</code>");
+				return;
+			} else {
+				destinationCoordinate = cel.Coordinate;
+			}
+
+			foreach (Celestial celestial in _tbotInstance.UserData.celestials.ToList()) {
+				if (celestial.Coordinate.IsSame(destinationCoordinate)) {
+					continue;
+				}
+				if (celestial is Moon) {
+					continue;
+				}
+
+				var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+				_tbotInstance.UserData.fleets = await UpdateFleets();
+
+				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+				tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
+
+				Buildables preferredShip = Buildables.LargeCargo;
+				if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
+					preferredShip = Buildables.LargeCargo;
+				}
+				Resources payload = tempCelestial.Resources;
+				payload.Metal = 0;
+				payload.Crystal = 0;
+				payload.Food = 0;
+
+				if ((long) tempCelestial.Resources.Deuterium < (long) MinAmount || payload.IsEmpty()) {
+					continue;
+				}
+
+				long idealShips = _calcService.CalcShipNumberForPayload(payload, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+
+				Ships ships = new();
+				if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
+					if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
+						ships.Add(preferredShip, idealShips);
+					} else {
+						ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
+					}
+					payload = _calcService.CalcMaxTransportableResources(ships, payload, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+
+					if ((long) payload.TotalResources >= (long) MinAmount) {
+						var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+						if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+							continue;
+						}
+						if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+							continue;
+						}
+
+						TotalDeut += payload.Deuterium;
+					}
+				} else {
+					continue;
+				}
+			}
+
+			if (TotalDeut > 0) {
+				await _tbotInstance.SendTelegramMessage($"{TotalDeut} Deuterium sent.");
+			} else {
+				await _tbotInstance.SendTelegramMessage("No resources sent");
+			}
+		}
+
+		public async Task<RepatriateCode> CollectImpl(bool fromTelegram) {
+			bool stop = false;
+			bool delay = false;
+			try {
+				_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Repatriating resources...");
+
+				if (fromTelegram) {
+					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Telegram collect initated..");
+				}
+				if (_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target) {
+					_tbotInstance.UserData.fleets = await UpdateFleets();
+					long TotalMet = 0;
+					long TotalCri = 0;
+					long TotalDeut = 0;
+					Coordinate destinationCoordinate = new(
+					(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
+						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System,
+						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position,
+						Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
+					);
+					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
+					List<Celestial> celestialsToExclude = _calcService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Exclude, _tbotInstance.UserData.celestials);
+
+					foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials.OrderBy(c => _calcService.CalcDistance(c.Coordinate, destinationCoordinate, _tbotInstance.UserData.serverData)).ToList()) {
+						if (celestialsToExclude.Has(celestial)) {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {celestial.ToString()}: celestial in exclude list.");
+							continue;
+						}
+						if (celestial.Coordinate.IsSame(destinationCoordinate)) {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {celestial.ToString()}: celestial is the target.");
+							continue;
+						}
+
+						var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+
+						_tbotInstance.UserData.fleets = await UpdateFleets();
+						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.SkipIfIncomingTransport && _calcService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets) && (!fromTelegram)) {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {tempCelestial.ToString()}: there is a transport incoming.");
+							continue;
+						}
+						if (celestial.Coordinate.Type == Celestials.Moon && (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.ExcludeMoons) {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
+							continue;
+						}
+
+						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
+
+						Buildables preferredShip = Buildables.SmallCargo;
+						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.CargoType, true, out preferredShip)) {
+							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to parse CargoType. Falling back to default SmallCargo");
+							preferredShip = Buildables.SmallCargo;
+						}
+						Resources payload = tempCelestial.Resources;
+
+						if ((long) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave > 0) {
+							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.LeaveDeut.OnlyOnMoons) {
+								if (tempCelestial.Coordinate.Type == Celestials.Moon) {
+									payload = payload.Difference(new(0, 0, (long) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave));
+								}
+							} else {
+								payload = payload.Difference(new(0, 0, (long) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.LeaveDeut.DeutToLeave));
+							}
+						}
+
+						if (payload.TotalResources < (long) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.MinimumResources || payload.IsEmpty()) {
+							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {tempCelestial.ToString()}: resources under set limit");
+							continue;
+						}
+
+						long idealShips = _calcService.CalcShipNumberForPayload(payload, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+
+						Ships ships = new();
+						if (tempCelestial.Ships.GetAmount(preferredShip) != 0) {
+							if (idealShips <= tempCelestial.Ships.GetAmount(preferredShip)) {
+								ships.Add(preferredShip, idealShips);
+							} else {
+								ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
+							}
+							payload = _calcService.CalcMaxTransportableResources(ships, payload, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+
+							if (payload.TotalResources > 0) {
+								var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
+								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+									stop = true;
+									return RepatriateCode.Stop;
+								}
+								if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+									delay = true;
+									return RepatriateCode.Delay;
+								}
+								TotalMet += payload.Metal;
+								TotalCri += payload.Crystal;
+								TotalDeut += payload.Deuterium;
+							}
+						} else {
+							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping {tempCelestial.ToString()}: there are no {preferredShip.ToString()}");
+						}
+
+						newCelestials.Remove(celestial);
+						newCelestials.Add(tempCelestial);
+					}
+					_tbotInstance.UserData.celestials = newCelestials;
+					//send notif only if sent via telegram
+					if (fromTelegram) {
+						if ((TotalMet > 0) || (TotalCri > 0) || (TotalDeut > 0)) {
+							await _tbotInstance.SendTelegramMessage($"Resources sent!:\n{TotalMet} Metal\n{TotalCri} Crystal\n{TotalDeut} Deuterium");
+						} else {
+							await _tbotInstance.SendTelegramMessage("No resources sent");
+						}
+					}
+					return RepatriateCode.Success;
+				} else {
+					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Skipping autorepatriate: unable to parse custom destination");
+					return RepatriateCode.Failure;
+				}
+			} catch (Exception e) {
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Unable to complete repatriate: {e.Message}");
+				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Stacktrace: {e.StackTrace}");
+				return RepatriateCode.Failure;
 			}
 		}
 	}
