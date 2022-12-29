@@ -15,23 +15,27 @@ using TBot.Ogame.Infrastructure.Models;
 
 namespace Tbot.Workers {
 
-	public delegate Task WorkerFunction(CancellationToken ct);
-
-	public abstract class WorkerBase : ITBotWorker {
+	public abstract class CelestialWorkerBase : ITBotWorker, ITBotCelestialWorker {
 		protected readonly ITBotMain _tbotInstance;
 
 		protected CancellationToken _ct = CancellationToken.None;
 		protected Dictionary<string, Timer> timers = new();
-		
+
 		private SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
 		private AsyncTimer _timer = null;
+		
+		private Celestial _celestial = null;
+		private ITBotWorker _parentWorker = null;
 
-		protected IWorkerFactory _workerFactory;
-		protected ConcurrentDictionary<Celestial, ITBotCelestialWorker> _celestialWorkers = new();
-
-		public ConcurrentDictionary<Celestial, ITBotCelestialWorker> celestialWorkers {
+		public ITBotWorker parentWorker {
 			get {
-				return (_celestialWorkers != null) ? _celestialWorkers : null;
+				return (_parentWorker != null) ? _parentWorker : null;
+			}
+		}
+
+		public Celestial celestial {
+			get {
+				return (_celestial != null) ? _celestial : null;
 			}
 		}
 
@@ -46,8 +50,12 @@ namespace Tbot.Workers {
 			}
 		}
 
-		public WorkerBase(ITBotMain parentInstance) {
+		public ConcurrentDictionary<Celestial, ITBotCelestialWorker> celestialWorkers => throw new NotImplementedException();
+
+		public CelestialWorkerBase(ITBotMain parentInstance, ITBotWorker parentWorker, Celestial celestial) {
 			_tbotInstance = parentInstance;
+			_parentWorker = parentWorker;
+			_celestial = celestial;
 		}
 
 		protected abstract Task Execute();
@@ -81,11 +89,10 @@ namespace Tbot.Workers {
 				DoLog(LogLevel.Information, $"Worker \"{GetWorkerName()}\" closed!");
 				_timer = null;
 			}
-			foreach (var worker in _celestialWorkers.Values) {
-				await worker.StopWorker();
-			}
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
+			if (periodMs >= int.MaxValue)
+				periodMs = int.MaxValue;
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
 		}
 		public void ChangeWorkerPeriod(TimeSpan period) {
@@ -99,9 +106,6 @@ namespace Tbot.Workers {
 		}
 		public async void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 			DoLog(LogLevel.Information, $"Restarting Worker \"{GetWorkerName()}\"...");
-			foreach (var worker in _celestialWorkers.Values) {
-				await worker.StopWorker();
-			}
 			await StartWorker(ct, period, dueTime);
 		}
 		public bool IsWorkerRunning() {
@@ -111,7 +115,6 @@ namespace Tbot.Workers {
 			_sem.Dispose();
 			_sem = sem;
 		}
-
 		public SemaphoreSlim GetSemaphore() {
 			return _sem;
 		}
@@ -139,9 +142,6 @@ namespace Tbot.Workers {
 		protected Task EndExecution() {
 			// This is meant to be called within the worker callback, so we can't await _timer to end
 			ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
-			foreach (var worker in _celestialWorkers.Values) {
-				worker.ChangeWorkerPeriod(Timeout.InfiniteTimeSpan);
-			}
 			return Task.CompletedTask;
 		}
 
@@ -170,7 +170,7 @@ namespace Tbot.Workers {
 				else {
 					DoLog(LogLevel.Information, $"{GetWorkerName()} Stopped.");
 				}
-				
+
 			} catch(OperationCanceledException) {
 				// OK
 			} finally {

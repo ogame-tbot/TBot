@@ -781,7 +781,7 @@ namespace Tbot.Workers {
 							// No slots free, wait for first fleet to come back.
 							if (_tbotInstance.UserData.fleets.Any()) {
 								int interval = (int) ((1000 * _tbotInstance.UserData.fleets.OrderBy(fleet => fleet.BackIn).First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
-								if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MaxWaitTime") && (int) _tbotInstance.InstanceSettings.AutoFarm.MaxWaitTime != 0 && interval > (int) _tbotInstance.InstanceSettings.AutoFarm.MaxWaitTime) {
+								if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.AutoFarm, "MaxWaitTime") && (int) _tbotInstance.InstanceSettings.AutoFarm.MaxWaitTime != 0 && interval > (int) _tbotInstance.InstanceSettings.AutoFarm.MaxWaitTime * 1000) {
 									_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Out of fleet slots. Time to wait greater than set {(int) _tbotInstance.InstanceSettings.AutoFarm.MaxWaitTime} seconds. Stopping autofarm.");
 									return;
 								} else {
