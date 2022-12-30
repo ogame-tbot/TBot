@@ -18,6 +18,7 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		Destroy = 9,
 		MissileAttack = 10,
 		Expedition = 15,
-		Trade = 16
+		Trade = 16,
+		Discovery = 18
 	}
 }

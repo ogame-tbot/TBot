@@ -96,13 +96,16 @@ namespace Tbot.Workers {
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
 		}
 		public void ChangeWorkerPeriod(TimeSpan period) {
-			_timer.ChangePeriod(period);
+			if (_timer != null)
+				_timer.ChangePeriod(period);
 		}
 		public void ChangeWorkerDueTime(TimeSpan dueTime) {
-			_timer.ChangeDueTime(dueTime);
+			if (_timer != null)
+				_timer.ChangeDueTime(dueTime);
 		}
 		public void ChangeWorkerDueTime(long dueTimeMs) {
-			_timer.ChangeDueTime(TimeSpan.FromMilliseconds(dueTimeMs));
+			if (_timer != null)
+				_timer.ChangeDueTime(TimeSpan.FromMilliseconds(dueTimeMs));
 		}
 		public async void RestartWorker(CancellationToken ct, TimeSpan period, TimeSpan dueTime) {
 			DoLog(LogLevel.Information, $"Restarting Worker \"{GetWorkerName()}\"...");
