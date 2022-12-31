@@ -38,7 +38,11 @@ namespace Tbot.Workers {
 			int failures = 0;
 			var rand = new Random();
 			try {
+				if (_tbotInstance.UserData.discoveryBlackList == null) {
+					_tbotInstance.UserData.discoveryBlackList = new Dictionary<Coordinate, DateTime>();
+				}
 				if (!_tbotInstance.UserData.isSleeping) {
+					DoLog(LogLevel.Information, $"Starting AutoDiscovery...");
 					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 
@@ -55,23 +59,27 @@ namespace Tbot.Workers {
 						return;
 					}
 
-					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots) {
+					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free >= 1) {
 						Coordinate dest = new();
-						dest.Galaxy = _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
-						dest.System = rand.Next(_tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
+						dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
+						dest.System = rand.Next((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
 						dest.Position = rand.Next(1, 16);
 
-						if (_tbotInstance.UserData.discoveryBlackList.ContainsKey(dest)) {
-							if (_tbotInstance.UserData.discoveryBlackList[dest] > DateTime.Now) {
-								DoLog(LogLevel.Information, $"Skipping {dest} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[dest]}");
+						Coordinate blacklistedCoord = _tbotInstance.UserData.discoveryBlackList.Keys
+							.Where(c => c.Galaxy == dest.Galaxy)
+							.Where(c => c.System == dest.System)
+							.Where(c => c.Position == dest.Position)
+							.SingleOrDefault() ?? null;
+						if (blacklistedCoord != null) {
+							if (_tbotInstance.UserData.discoveryBlackList.Single(d => d.Key.Galaxy == dest.Galaxy && d.Key.System == dest.System && d.Key.Position == dest.Position).Value > DateTime.Now) {
+								DoLog(LogLevel.Information, $"Skipping {dest.ToString()} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[blacklistedCoord].ToString()}");
 								continue;
 							} else {
-								_tbotInstance.UserData.discoveryBlackList.Remove(dest);
+								_tbotInstance.UserData.discoveryBlackList.Remove(blacklistedCoord);
 							}
 						}
 						
 						var result = await _ogameService.SendDiscovery(origin, dest);
-
 						if (!result) {
 							failures++;
 							DoLog(LogLevel.Warning, $"Failed to send discovery fleet to {dest.ToString()} from {origin.ToString()}.");
@@ -80,16 +88,17 @@ namespace Tbot.Workers {
 							DoLog(LogLevel.Information, $"Sent discovery fleet to {dest.ToString()} from {origin.ToString()}.");
 						}
 						_tbotInstance.UserData.discoveryBlackList.Add(dest, DateTime.Now.AddDays(1));
+						
 
-						if (failures >= _tbotInstance.InstanceSettings.AutoDiscovery.MaxFailures) {
+						if (failures >= (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxFailures) {
 							DoLog(LogLevel.Warning, $"AutoDiscoveryWorker: Max failures reached, stopping");
 							break;
 						}
+						
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
-
 						if (_tbotInstance.UserData.slots.Free <= 1) {
-							DoLog(LogLevel.Warning, $"AutoDiscoveryWorker: No slots left, dealying");
+							DoLog(LogLevel.Information, $"AutoDiscoveryWorker: No slots left, dealying");
 							delay = true;
 							break;
 						}

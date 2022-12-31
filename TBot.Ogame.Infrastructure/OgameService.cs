@@ -679,6 +679,10 @@ namespace TBot.Ogame.Infrastructure {
 				success = await PostAsync<bool>($"/bot/planets/{origin.ID}/send-discovery", parameters.ToArray());
 			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
 				success = false;
+			} catch (OgamedException e) {
+				success = false;
+			} catch (Exception e) {
+				success = false;
 			}
 			return success;
 		}
