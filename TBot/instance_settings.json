@@ -100,6 +100,9 @@
 		},
 		"AutoMine": {
 			"Active": true,
+			"Transports": {
+				"Active": true
+			},
 			"MaxMetalMine": 40,
 			"MaxCrystalMine": 35,
 			"MaxDeuteriumSynthetizer": 37,
@@ -162,6 +165,9 @@
 		},
 		"AutoResearch": {
 			"Active": true,
+			"Transports": {
+				"Active": true
+			},
 			"MaxEnergyTechnology": 20,
 			"MaxLaserTechnology": 12,
 			"MaxIonTechnology": 5,
