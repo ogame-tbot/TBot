@@ -144,13 +144,13 @@
 		},
 		"LifeformAutoMine": {
 			"Active": true,
+			"Transports": {
+				"Active": true
+			},
 			"StartFromCrystalMineLvl": 20,
 			"MaxBasePopulationBuilding": 60,
 			"MaxBaseFoodBuilding": 62,
 			"MaxBaseTechBuilding": 6,
-			"Transports": {
-				"Active": true
-			},
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},

@@ -138,7 +138,7 @@ namespace Tbot.Workers.Brain {
 						} else {
 							DoLog(LogLevel.Information, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
 
-							if ((bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Transports.Active) {
+							if ((bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Transports.Active && (bool) _tbotInstance.InstanceSettings.Brain.Transports.Active) {
 								_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 								if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 									Celestial origin = _tbotInstance.UserData.celestials
