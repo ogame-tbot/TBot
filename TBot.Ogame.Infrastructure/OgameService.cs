@@ -669,5 +669,18 @@ namespace TBot.Ogame.Infrastructure {
 			}
 			return phalanxedFleets;
 		}
+		public async Task<bool> SendDiscovery(Celestial origin, Coordinate coords) {
+			bool success = false;
+			try {
+				List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+				parameters.Add(new KeyValuePair<string, string>("galaxy", coords.Galaxy.ToString()));
+				parameters.Add(new KeyValuePair<string, string>("system", coords.System.ToString()));
+				parameters.Add(new KeyValuePair<string, string>("position", coords.Position.ToString()));
+				success = await PostAsync<bool>($"/bot/planets/{origin.ID}/send-discovery", parameters.ToArray());
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				success = false;
+			}
+			return success;
+		}
 	}
 }

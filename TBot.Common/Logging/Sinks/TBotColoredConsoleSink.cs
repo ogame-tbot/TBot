@@ -45,6 +45,7 @@ namespace TBot.Common.Logging.Sinks {
 				LogSender.LifeformsAutoResearch => ConsoleColor.Blue,
 				LogSender.Defender => ConsoleColor.DarkGreen,
 				LogSender.Expeditions => ConsoleColor.Cyan,
+				LogSender.AutoDiscovery => ConsoleColor.Cyan,
 				LogSender.FleetScheduler => ConsoleColor.DarkMagenta,
 				LogSender.Harvest => ConsoleColor.Green,
 				LogSender.Colonize => ConsoleColor.DarkRed,

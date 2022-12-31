@@ -7,19 +7,20 @@ using System.Threading.Tasks;
 namespace TBot.Ogame.Infrastructure.Enums {
 	public static class Features {
 		public static readonly List<Feature> AllFeatures = new List<Feature>() {
-						Feature.Defender,
-						Feature.BrainAutobuildCargo,
-						Feature.BrainAutoRepatriate,
-						Feature.BrainAutoMine,
-						Feature.BrainLifeformAutoMine,
-						Feature.BrainLifeformAutoResearch,
-						Feature.BrainOfferOfTheDay,
-						Feature.BrainAutoResearch,
-						Feature.AutoFarm,
-						Feature.Expeditions,
-						Feature.Colonize,
-						Feature.Harvest,
-						Feature.SleepMode,
-					};
+			Feature.Defender,
+			Feature.BrainAutobuildCargo,
+			Feature.BrainAutoRepatriate,
+			Feature.BrainAutoMine,
+			Feature.BrainLifeformAutoMine,
+			Feature.BrainLifeformAutoResearch,
+			Feature.BrainOfferOfTheDay,
+			Feature.BrainAutoResearch,
+			Feature.AutoFarm,
+			Feature.Expeditions,
+			Feature.AutoDiscovery,
+			Feature.Colonize,
+			Feature.Harvest,
+			Feature.SleepMode,
+		};
 	}
 }

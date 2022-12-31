@@ -370,6 +370,7 @@ namespace Tbot.Services {
 				Feature.Expeditions => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
 				Feature.Harvest => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
 				Feature.Colonize => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
+				Feature.AutoDiscovery => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds),
 				_ => RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds)
 			};
 
@@ -425,22 +426,22 @@ namespace Tbot.Services {
 					type = "Planet";
 
 				if (feature == Feature.BrainAutoMine || feature == Feature.Null) {
-					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["Brain"]["AutoMine"]["Transports"]["Origin"]["Type"] = type;
+					jsonObj["Brain"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["Transports"]["Origin"]["Type"] = type;
 				}
 
 				if (feature == Feature.BrainAutoResearch || feature == Feature.Null) {
-					jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = "Planet";
+					jsonObj["Brain"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["Target"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["Target"]["Type"] = "Planet";
 
-					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["Brain"]["AutoResearch"]["Transports"]["Origin"]["Type"] = type;
+					jsonObj["Brain"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["Transports"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["Transports"]["Origin"]["Type"] = type;
 				}
 
 				if (feature == Feature.BrainAutoRepatriate || feature == Feature.Null) {
@@ -455,6 +456,13 @@ namespace Tbot.Services {
 					jsonObj["Expeditions"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
 					jsonObj["Expeditions"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
 					jsonObj["Expeditions"]["Origin"][0]["Type"] = type;
+				}
+
+				if (feature == Feature.AutoDiscovery || feature == Feature.Null) {
+					jsonObj["AutoDiscovery"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["AutoDiscovery"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["AutoDiscovery"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["AutoDiscovery"]["Origin"][0]["Type"] = type;
 				}
 
 				if (feature == Feature.Colonize || feature == Feature.Null) {

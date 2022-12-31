@@ -87,7 +87,7 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Lifeform Research: {nextLFTechToBuild.ToString()} lv {level.ToString()}.");
 							celestialsToMine.Add(celestial);
 						} else {
-							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: No Next Lifeform technoDoLogy to build found. All research reached _tbotInstance.InstanceSettings MaxResearchLevel ?");
+							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: No Next Lifeform technology to build found. All research reached _tbotInstance.InstanceSettings MaxResearchLevel ?");
 						}
 
 					}

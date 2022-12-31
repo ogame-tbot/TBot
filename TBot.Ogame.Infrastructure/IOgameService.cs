@@ -83,6 +83,7 @@ namespace TBot.Ogame.Infrastructure {
 		Task<bool> IsUnderAttack();
 		Task<bool> IsVacationMode();
 		Task JumpGate(Celestial origin, Celestial destination, Ships ships);
+		Task<bool> SendDiscovery(Celestial origin, Coordinate coords);
 		void KillOgamedExecutable(CancellationToken ct = default);
 		Task Login();
 		Task Logout();

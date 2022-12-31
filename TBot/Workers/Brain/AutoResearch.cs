@@ -168,15 +168,15 @@ namespace Tbot.Workers.Brain {
 						}
 					} else {
 						DoLog(LogLevel.Information, $"Not enough resources to build: {research.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {cost.TransportableResources} - Available: {celestial.Resources.TransportableResources}");
-						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Active) {
+						if ((bool) _tbotInstance.InstanceSettings.Brain.Transports.Active) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 							if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
 								Celestial origin = _tbotInstance.UserData.celestials
 									.Unique()
-									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Galaxy)
-									.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.System)
-									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Position)
-									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoResearch.Transports.Origin.Type))
+									.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
+									.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
+									.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
+									.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
 									.SingleOrDefault() ?? new() { ID = 0 };
 								fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, cost);
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {

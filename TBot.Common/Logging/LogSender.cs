@@ -26,6 +26,7 @@ namespace TBot.Common.Logging {
 		SleepMode,
 		Colonize,
 		AutoFarm,
+		AutoDiscovery,
 		Telegram
 	}
 }
