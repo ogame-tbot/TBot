@@ -36,6 +36,7 @@ namespace Tbot.Workers {
 			bool delay = false;
 			bool stop = false;
 			int failures = 0;
+			int skips = 0;
 			var rand = new Random();
 			try {
 				if (_tbotInstance.UserData.discoveryBlackList == null) {
@@ -73,7 +74,14 @@ namespace Tbot.Workers {
 						if (blacklistedCoord != null) {
 							if (_tbotInstance.UserData.discoveryBlackList.Single(d => d.Key.Galaxy == dest.Galaxy && d.Key.System == dest.System && d.Key.Position == dest.Position).Value > DateTime.Now) {
 								DoLog(LogLevel.Information, $"Skipping {dest.ToString()} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[blacklistedCoord].ToString()}");
-								continue;
+								skips++;
+								if (skips >= ((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem - (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem) * 15) {
+									DoLog(LogLevel.Information, $"Range depleted: stopping");
+									stop = true;
+									break;
+								} else {
+									continue;
+								}
 							} else {
 								_tbotInstance.UserData.discoveryBlackList.Remove(blacklistedCoord);
 							}
@@ -91,7 +99,7 @@ namespace Tbot.Workers {
 						
 
 						if (failures >= (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxFailures) {
-							DoLog(LogLevel.Warning, $"AutoDiscoveryWorker: Max failures reached, stopping");
+							DoLog(LogLevel.Warning, $"Max failures reached");
 							break;
 						}
 						
