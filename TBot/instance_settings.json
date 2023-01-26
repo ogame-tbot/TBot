@@ -151,6 +151,7 @@
 			"MaxBasePopulationBuilding": 60,
 			"MaxBaseFoodBuilding": 62,
 			"MaxBaseTechBuilding": 6,
+			"PreventIfMoreExpensiveThanNextMine": true,
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},

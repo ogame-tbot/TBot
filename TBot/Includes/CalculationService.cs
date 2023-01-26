@@ -1796,18 +1796,80 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public async Task<LFBuildables> GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20) {
+		public async Task<LFBuildables> GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
 			LFBuildables nextLFbuild = LFBuildables.None;
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
 
+			LFBuildables foodBuilding = GetFoodBuilding(planet.LFtype);
+			LFBuildables populationBuilding = GetPopulationBuilding(planet.LFtype);
+			LFBuildables techBuilding = GetTechBuilding(planet.LFtype);
+			LFBuildables T2Building = GetT2Building(planet.LFtype);
+			LFBuildables T3Building = GetT3Building(planet.LFtype);
+
+			if (
+				planet.GetLevel(foodBuilding) < maxFoodFactory &&
+				planet.ResourcesProduction.Population.IsStarving() 
+			) {
+				return foodBuilding;
+			}
+			else if (
+				planet.GetLevel(populationBuilding) < maxPopuFactory &&
+				(
+					planet.ResourcesProduction.Population.IsThereFoodForMore() ||
+					planet.ResourcesProduction.Population.IsFull()
+				)
+			) {
+				nextLFbuild = populationBuilding;
+			} else if (
+				planet.GetLevel(foodBuilding) < maxFoodFactory &&
+				(
+					planet.ResourcesProduction.Population.IsStarving() ||
+					planet.ResourcesProduction.Population.WillStarve()
+				)
+			) {
+				nextLFbuild = foodBuilding;
+			} else  if (
+				isUnlocked(planet, T2Building) &&
+				planet.ResourcesProduction.Population.NeedsMoreT2()
+			) {
+				nextLFbuild = T2Building;
+			} else if (
+				isUnlocked(planet, T3Building) &&
+				planet.ResourcesProduction.Population.NeedsMoreT3()
+			) {
+				nextLFbuild = T3Building;
+			}
+			
+			if (nextLFbuild != LFBuildables.None) {
+				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
+				var lessExpensiveBuilding = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory);
+				if (lessExpensiveBuilding != LFBuildables.None) {
+					nextLFbuild = lessExpensiveBuilding;
+				}
+
+				if (preventIfMoreExpensiveThanNextMine) {
+					var nextlvl = GetNextLevel(planet, nextLFbuild);
+					var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
+					var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);
+					var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
+					if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
+						_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"{nextLFbuild.ToString()} level {nextlvl} is more expensive than this planet's next mine, build {nextMine.ToString()} first.");
+						nextLFbuild = LFBuildables.None;
+					}
+				}
+			}
+			
+
+			
+
+			/*
 			LFBuildables T2 = LFBuildables.None;
 			LFBuildables T3 = LFBuildables.None;
 			var T2lifeformNextlvl = 0;
 			var T3lifeformNextlvl = 0;
 			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
-				//if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
-				if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied < 0.86)) {
+				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
 					if (planet.LFtype == LFTypes.Humans) {
 						nextLFbuild = LFBuildables.ResidentialSector;
 					} else if (planet.LFtype == LFTypes.Rocktal) {
@@ -1845,7 +1907,7 @@ namespace Tbot.Includes {
 				var nextLFbuildLvl = GetNextLevel(planet, nextLFbuild);
 				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, nextLFbuildLvl);
 				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost);
 				// Prevent chosing food building because less expensive whereas it is not needed
 				if (LessExpensiveLFbuild != LFBuildables.None) {
 					nextLFbuild = LessExpensiveLFbuild;
@@ -1863,7 +1925,7 @@ namespace Tbot.Includes {
 				}
 				var nextLFbuildLvl = GetNextLevel(planet, nextLFbuild);
 				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, nextLFbuildLvl);
-				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextLFbuildcost, maxTechFactory);
+				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost);
 				if (LessExpensiveLFbuild != LFBuildables.None) {
 					nextLFbuild = LessExpensiveLFbuild;
 				} else {
@@ -1905,83 +1967,151 @@ namespace Tbot.Includes {
 					}
 				}
 			}
-
+			
 			if (nextLFbuild != LFBuildables.None) {
 				//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
 				var nextlvl = GetNextLevel(planet, nextLFbuild);
 				var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
-				var MetalMineCost = CalcPrice(Buildables.MetalMine, planet.Buildings.MetalMine + 1);
-				if (nextlvlcost.TotalResources > MetalMineCost.TotalResources) {
-					_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! {nextLFbuild.ToString()} level {nextlvl} is more expensive than planet Metal mine, build metal mine first..");
-					nextLFbuild = await GetLessExpensiveLFBuilding(planet, planet.LFtype, nextlvlcost, maxTechFactory);
+				var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);				
+				var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
+				if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
+					_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"{nextLFbuild.ToString()} level {nextlvl} is more expensive than this planet's next mine, build {nextMine.ToString()} first.");
+					nextLFbuild = await GetLessExpensiveLFBuilding(planet, nextlvlcost);
 				}
 			}
+
+			*/
 
 			return nextLFbuild;
 		}
 
-		private async Task<LFBuildables> GetLessExpensiveLFBuilding(Celestial planet, LFTypes lftype, Resources Currentlfbuildingcost, int maxTechFactory = 10) {
+		private LFBuildables GetPopulationBuilding(LFTypes LFtype) {
+			LFBuildables populationBuilding = LFBuildables.None;
+			if (LFtype == LFTypes.Humans) {
+				populationBuilding = LFBuildables.ResidentialSector;
+			} else if (LFtype == LFTypes.Rocktal) {
+				populationBuilding = LFBuildables.MeditationEnclave;
+			} else if (LFtype == LFTypes.Mechas) {
+				populationBuilding = LFBuildables.AssemblyLine;
+			} else if (LFtype == LFTypes.Kaelesh) {
+				populationBuilding = LFBuildables.Sanctuary;
+			}
+			return populationBuilding;
+		}
+
+		private LFBuildables GetFoodBuilding(LFTypes LFtype) {
+			LFBuildables foodBuilding = LFBuildables.None;
+			if (LFtype == LFTypes.Humans) {
+				foodBuilding = LFBuildables.BiosphereFarm;
+			} else if (LFtype == LFTypes.Rocktal) {
+				foodBuilding = LFBuildables.CrystalFarm;
+			} else if (LFtype == LFTypes.Mechas) {
+				foodBuilding = LFBuildables.FusionCellFactory;
+			} else if (LFtype == LFTypes.Kaelesh) {
+				foodBuilding = LFBuildables.AntimatterCondenser;
+			}
+			return foodBuilding;
+		}
+
+		private LFBuildables GetTechBuilding(LFTypes LFtype) {
+			LFBuildables techBuilding = LFBuildables.None;
+			if (LFtype == LFTypes.Humans) {
+				techBuilding = LFBuildables.ResearchCentre;
+			} else if (LFtype == LFTypes.Rocktal) {
+				techBuilding = LFBuildables.RuneTechnologium;
+			} else if (LFtype == LFTypes.Mechas) {
+				techBuilding = LFBuildables.RoboticsResearchCentre;
+			} else if (LFtype == LFTypes.Kaelesh) {
+				techBuilding = LFBuildables.VortexChamber;
+			}
+			return techBuilding;
+		}
+
+		private LFBuildables GetT2Building(LFTypes LFtype) {
+			LFBuildables t2Building = LFBuildables.None;
+			if (LFtype == LFTypes.Humans) {
+				t2Building = LFBuildables.NeuroCalibrationCentre;
+			} else if (LFtype == LFTypes.Rocktal) {
+				t2Building = LFBuildables.RuneForge;
+			} else if (LFtype == LFTypes.Mechas) {
+				t2Building = LFBuildables.UpdateNetwork;
+			} else if (LFtype == LFTypes.Kaelesh) {
+				t2Building = LFBuildables.HallsOfRealisation;
+			}
+			return t2Building;
+		}
+
+		private LFBuildables GetT3Building(LFTypes LFtype) {
+			LFBuildables t3Building = LFBuildables.None;
+			if (LFtype == LFTypes.Humans) {
+				t3Building = LFBuildables.AcademyOfSciences;
+			} else if (LFtype == LFTypes.Rocktal) {
+				t3Building = LFBuildables.Oriktorium;
+			} else if (LFtype == LFTypes.Mechas) {
+				t3Building = LFBuildables.QuantumComputerCentre;
+			} else if (LFtype == LFTypes.Kaelesh) {
+				t3Building = LFBuildables.ForumOfTranscendence;
+			}
+			return t3Building;
+		}
+
+		private List<LFBuildables> GetOtherBuildings(LFTypes LFtype) {
+			List<LFBuildables> list = new();
+			list.Add(GetTechBuilding(LFtype));
+			if (LFtype == LFTypes.Humans) {
+				list.Add(LFBuildables.HighEnergySmelting);
+				list.Add(LFBuildables.FoodSilo);
+				list.Add(LFBuildables.FusionPoweredProduction);
+				list.Add(LFBuildables.Skyscraper);
+				list.Add(LFBuildables.BiotechLab);
+				list.Add(LFBuildables.Metropolis);
+				list.Add(LFBuildables.PlanetaryShield);
+			} else if (LFtype == LFTypes.Rocktal) {
+				list.Add(LFBuildables.MagmaForge);
+				list.Add(LFBuildables.DisruptionChamber);
+				list.Add(LFBuildables.Megalith);
+				list.Add(LFBuildables.CrystalRefinery);
+				list.Add(LFBuildables.DeuteriumSynthesiser);
+				list.Add(LFBuildables.MineralResearchCentre);
+				list.Add(LFBuildables.MetalRecyclingPlant);
+			} else if (LFtype == LFTypes.Mechas) {
+				list.Add(LFBuildables.AutomatisedAssemblyCentre);
+				list.Add(LFBuildables.HighPerformanceTransformer);
+				list.Add(LFBuildables.MicrochipAssemblyLine);
+				list.Add(LFBuildables.ProductionAssemblyHall);
+				list.Add(LFBuildables.HighPerformanceSynthesiser);
+				list.Add(LFBuildables.ChipMassProduction);
+				list.Add(LFBuildables.NanoRepairBots);
+			} else if (LFtype == LFTypes.Kaelesh) {
+				list.Add(LFBuildables.AntimatterConvector);
+				list.Add(LFBuildables.CloningLaboratory);
+				list.Add(LFBuildables.ChrysalisAccelerator);
+				list.Add(LFBuildables.BioModifier);
+				list.Add(LFBuildables.PsionicModulator);
+				list.Add(LFBuildables.ShipManufacturingHall);
+				list.Add(LFBuildables.SupraRefractor);
+			}
+			return list;
+		}
+
+		private async Task<LFBuildables> GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
 			Resources nextlfcost = new();
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
-			if (lftype == LFTypes.Humans) {
-				foreach (HumansBuildables nextbuildable in Enum.GetValues<HumansBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.ResearchCentre && planet.LFBuildings.ResearchCentre >= maxTechFactory)
-						continue;
-					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
-						var nextLFbuildlvl = GetNextLevel(planet, (LFBuildables) nextbuildable);
-						nextlfcost = await _ogameService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
-						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
-							Currentlfbuildingcost = nextlfcost;
-							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
-						}
-					}
-				}
-				return lessExpensiveLFBuild;
 
-			} else if (lftype == LFTypes.Rocktal) {
-				foreach (RocktalBuildables nextbuildable in Enum.GetValues<RocktalBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.RuneTechnologium && planet.LFBuildings.RuneTechnologium >= maxTechFactory)
+			foreach (LFBuildables nextbuildable in GetOtherBuildings(planet.LFtype)) {
+				if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
+					var nextLFbuildlvl = GetNextLevel(planet, (LFBuildables) nextbuildable);
+					if (nextbuildable == GetTechBuilding(planet.LFtype) && nextLFbuildlvl >= maxTechBuilding) {
 						continue;
-					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
-						var nextLFbuildlvl = GetNextLevel(planet, (LFBuildables) nextbuildable);
+					}
+					else {
 						nextlfcost = await _ogameService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
-						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
+						if (nextlfcost.ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium) {
 							Currentlfbuildingcost = nextlfcost;
 							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
 						}
-					}
+					}					
 				}
-				return lessExpensiveLFBuild;
-
-			} else if (lftype == LFTypes.Mechas) {
-				foreach (MechasBuildables nextbuildable in Enum.GetValues<MechasBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.RoboticsResearchCentre && planet.LFBuildings.RoboticsResearchCentre >= maxTechFactory)
-						continue;
-					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
-						var nextLFbuildlvl = GetNextLevel(planet, (LFBuildables) nextbuildable);
-						nextlfcost = await _ogameService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
-						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
-							Currentlfbuildingcost = nextlfcost;
-							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
-						}
-					}
-				}
-				return lessExpensiveLFBuild;
-
-			} else if (lftype == LFTypes.Kaelesh) {
-				foreach (KaeleshBuildables nextbuildable in Enum.GetValues<KaeleshBuildables>()) {
-					if ((LFBuildables) nextbuildable == LFBuildables.VortexChamber && planet.LFBuildings.VortexChamber >= maxTechFactory)
-						continue;
-					if (isUnlocked(planet, (LFBuildables) nextbuildable)) {
-						var nextLFbuildlvl = GetNextLevel(planet, (LFBuildables) nextbuildable);
-						nextlfcost = await _ogameService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
-						if (nextlfcost.TotalResources < Currentlfbuildingcost.TotalResources) {
-							Currentlfbuildingcost = nextlfcost;
-							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
-						}
-					}
-				}
-				return lessExpensiveLFBuild;
 			}
 			return lessExpensiveLFBuild;
 		}
@@ -1992,9 +2122,6 @@ namespace Tbot.Includes {
 			//Therefore, for the moment, up only techs that are minimum level 1, its a way to also allows player to chose which research to up
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
-					//skip intergalactic envoys tech cuz we dont care
-					if (prop.Name == "IntergalacticEnvoys" || nextLFTech == LFTechno.IntergalacticEnvoys)
-						continue;
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == nextLFTech.ToString()) {
 						return nextLFTech;
 					}
@@ -2010,12 +2137,10 @@ namespace Tbot.Includes {
 			Resource nextLFtechcost = new();
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
-					if (prop.Name == "IntergalacticEnvoys" || next == LFTechno.IntergalacticEnvoys)
-						continue;
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
 						var nextLFtechlvl = GetNextLevel(celestial, next);
 						Resources newcost = await _ogameService.GetPrice(next, nextLFtechlvl);
-						if (newcost.TotalResources < currentcost.TotalResources) {
+						if (newcost.ConvertedDeuterium < currentcost.ConvertedDeuterium) {
 							currentcost = newcost;
 							nextLFtech = next;
 						}

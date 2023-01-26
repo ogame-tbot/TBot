@@ -91,6 +91,7 @@ namespace Tbot.Workers.Brain {
 				int maxTechFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
 				int maxPopuFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
 				int maxFoodFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+				bool preventIfMoreExpensiveThanNextMine = (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.PreventIfMoreExpensiveThanNextMine;
 
 				DoLog(LogLevel.Information, $"Running Lifeform AutoMine on {celestial.ToString()}");
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
@@ -110,7 +111,7 @@ namespace Tbot.Workers.Brain {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = await _calculationService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory);
+						buildable = await _calculationService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
 
 						if (buildable != LFBuildables.None) {
 							level = _calculationService.GetNextLevel(celestial, buildable);

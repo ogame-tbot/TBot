@@ -86,7 +86,6 @@ namespace Tbot.Workers {
 								_tbotInstance.UserData.discoveryBlackList.Remove(blacklistedCoord);
 							}
 						}
-						
 						var result = await _ogameService.SendDiscovery(origin, dest);
 						if (!result) {
 							failures++;

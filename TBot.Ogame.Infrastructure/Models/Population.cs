@@ -14,5 +14,23 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public long Hungry { get; set; }
 		public long GrowthRate { get; set; }
 		public long BunkerSpace { get; set; }
+		public bool IsFull() {
+			return Available == LivingSpace;
+		}
+		public bool IsStarving() {
+			return Hungry > 0;
+		}
+		public bool WillStarve() {
+			return LivingSpace < Satisfied;
+		}
+		public bool IsThereFoodForMore() {
+			return Satisfied > LivingSpace;
+		}
+		public bool NeedsMoreT2() {
+			return T2Lifeforms < 11000000;
+		}
+		public bool NeedsMoreT3() {
+			return T3Lifeforms < 435000000;
+		}
 	}
 }

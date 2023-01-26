@@ -459,10 +459,10 @@ namespace Tbot.Services {
 				}
 
 				if (feature == Feature.AutoDiscovery || feature == Feature.Null) {
-					jsonObj["AutoDiscovery"]["Origin"][0]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["AutoDiscovery"]["Origin"][0]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["AutoDiscovery"]["Origin"][0]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["AutoDiscovery"]["Origin"][0]["Type"] = type;
+					jsonObj["AutoDiscovery"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["AutoDiscovery"]["Origin"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["AutoDiscovery"]["Origin"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["AutoDiscovery"]["Origin"]["Type"] = type;
 				}
 
 				if (feature == Feature.Colonize || feature == Feature.Null) {
