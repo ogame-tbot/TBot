@@ -21,10 +21,10 @@ namespace TBot.Ogame.Infrastructure.Models {
 			return Hungry > 0;
 		}
 		public bool WillStarve() {
-			return LivingSpace < Satisfied;
+			return LivingSpace > Satisfied;
 		}
 		public bool IsThereFoodForMore() {
-			return Satisfied > LivingSpace;
+			return Satisfied > Available;
 		}
 		public bool NeedsMoreT2() {
 			return T2Lifeforms < 11000000;
