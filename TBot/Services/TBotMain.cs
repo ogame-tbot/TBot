@@ -433,10 +433,10 @@ namespace Tbot.Services {
 				}
 
 				if (feature == Feature.BrainAutoResearch || feature == Feature.Null) {
-					jsonObj["Brain"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
-					jsonObj["Brain"]["Target"]["System"] = (int) celestial.Coordinate.System;
-					jsonObj["Brain"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
-					jsonObj["Brain"]["Target"]["Type"] = "Planet";
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["System"] = (int) celestial.Coordinate.System;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Position"] = (int) celestial.Coordinate.Position;
+					jsonObj["Brain"]["AutoResearch"]["Target"]["Type"] = "Planet";
 
 					jsonObj["Brain"]["Transports"]["Origin"]["Galaxy"] = (int) celestial.Coordinate.Galaxy;
 					jsonObj["Brain"]["Transports"]["Origin"]["System"] = (int) celestial.Coordinate.System;
