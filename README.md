@@ -9,7 +9,7 @@ OGame Bot
 
 TBot is a .NET 6 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v9.0.7**!
+TBot supports Ogame **v9.1.1**!
 A basic LifeForm support is provided.
 
 Feel free to publish issues or pull requests
@@ -32,20 +32,13 @@ Do you like the project? Buy me a beer!
 
 ## Configuration
 
-TBot may support two modes:
-- Single Instance (old behaviour)
-- Multiple Instances (new behaviour. See below)
-  
-*settings.json* handles the configuration of Telegram Bot and of the bot instances.
-*settings.json* is passed as a command line argument as follows:
-> TBot --settings=<settings.json path>
+TBot configuration consists in two files:
+- *settings.json* handles the configuration of Telegram Bot, WebUI and of the bot instances.
+  *settings.json* can be passed as a command line argument as follows:
+  > TBot --settings=<settings.json path>
+- *instance_settings.json* handles the configuration of a bot instance
 
-
-## Single Instance
-You can get an example at *instance_settings.json*
-
-## Multiple Instance
-The settings json should be compiled as follows:
+The *settings.json* should be compiled as follows:
 ```json
 {
         "TelegramMessenger": {
@@ -59,33 +52,31 @@ The settings json should be compiled as follows:
         },
         "Instances": [
                 {
-                        "Alias": "Main something",
-                        "Settings": "<main_settings>.json"
+                        "Alias": "Account alias",
+                        "Settings": "<instance_settings>.json"
                 },
                 {
-                        "Alias": "Another main",
-                        "Settings": "<other_main>.json"
+                        "Alias": "Another account",
+                        "Settings": "<another_instance_settings>.json"
                 }
         ],
 	"WebUI": {
 		"Enable": true,
-		"Urls": "http://localhost:8091,https://localhost:8092",
+		"Urls": "http://localhost:9090",
 		"MaxLogsToShow": 2000
 	}
 }
 ```
-NB: The settings should be pointing to a relative directory of this very JSON.
+NB: The settings should be pointing to a path relative to *settings.json* directory.
   
 ### Important Notices 
-You must use **different ports** for **each instance**. 
-Instances from the same lobby account can share the same cookies file; If you run instances from different lobby accounts you must use different cookies files.
+You must use **different ports** for **each instance** and for **webUI**. They all must be open and free.
 
+Instances from the **same lobby account** can share the **same cookies file**;
+
+If you run instances from **different lobby accounts** you must use **different cookies files**.
   
 Be **warned** that Ogame's servers have a limit on the number of requests per second. If you run too many instances, you may get IP banned, or end up with banned accounts. Use proxies to avoid this.
-
-The WebUI configuration is to enable the web of TBot, where you can change the settings files and see the logs in real time.
-
-NOTE: You can specify at maximum two URLs: one for HTTP and one for HTTPS. If you're running the bot in a remote server, the URL must be configured as the one used to access the bot. The ports used should not being in use by other applications.
 
 ### Features
 TBot has a wide variety of useful features. They all can be configured and customized editing the instance's settings file.
@@ -118,6 +109,11 @@ Here follows a short explanation of each of them, read the [Wiki](https://github
   * Pay attention: TBot is not aware of what you do in the browser, it will do his job regardless of you playing manually, so keep an eye on the console
 * Proxy: TBot supports routing your traffic through a HTTP o SOCKS5 proxy
   * Fill the settings in settings. The settings are quite self-explainatory. **WARNING: Ogame is positively blocking IPs from datacenters. You will probably need a residential proxy in ordet to be able to login.**
+* WebUI: TBot has a webUI for changing settings, reading logs and interacting manually with the game. You can configure the host and port in the general settings file.
+
+### WebUI
+Since 0.3.0 TBot includes a webUI where you can check and change the settings, read the logs in a filterable table and play manually with your account(s), all in the same place, even remotely.
+
 
 ### Telegram
 You can control and get info for TBot through a Telegram Bot. In order to enable it, you need to follow theese steps:
@@ -188,13 +184,12 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
     * /startautofarm - start autofarm
  
 ### Settings Hot Reload
-
 TBot supports the editing of instance settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
+You can change settings from WebUI or editing the files directly.
 
 **Hot reloading of instances is only partially supported at the moment. You can add and remove instances while the bot is running, but the feature is still in beta so there may be bugs.**
   
 ## Running on Windows
-
 * Download and unzip latest release.
 * Insert you credentials in instance settings file
   * Under "Universe" type your universe name with leading capital letter, i.e.: Andromeda, Bellatrix etc...
@@ -205,7 +200,6 @@ TBot supports the editing of instance settings even while it is running. It will
 * Run TBot.exe
 
 ## Running on Linux/MacOS
-
 * Open a terminal (if you are in a desktop environment)
 * Download latest release for your platform.
   * `wget https://github.com/ogame-tbot/TBot/releases/download/VERSION/TBot-VERSION-PLATFORM.zip` (*change the filename to your real one!*)
@@ -215,10 +209,11 @@ TBot supports the editing of instance settings even while it is running. It will
   * `chmod +x ogamed`
 * Make TBot executable (*this is only required on first run or update*)
   * `chmod +x TBot`
+* Configure the general settings, listing all instance settings files
 * Insert you credentials in instance settings file
   * Under "Universe" type your universe name **with leading capital letter**, i.e.: Andromeda, Bellatrix etc...
-  * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => us
-* Configure the bot by editing all settings.json fields
+  * Under "Language" type your universe community code. You can find it by logging to your account and analyzing the url, such as s161-us.ogame.gameforge.com => **us**
+* Configure the bot by editing all instance settings.json fields
   * All config options are sorted by feature, [check which features](#features) you want and configure them before activating
 * Make sure you have installed the [.NET 6 runtime](https://dotnet.microsoft.com/download/dotnet/6.0) for your platform
 * Run TBot
@@ -270,21 +265,15 @@ To manually solve captcha navigate to host:port/bot/captcha
 To configure Ninja Capthca Service follow [this guide](https://github.com/alaingilbert/ogame/wiki/auto-captcha-using-ninja-solver) and insert the obtained APIKey in settings.json
 
   
-## Development Plans
-A web config interface should be written soon or later, as well as a database persistence.
+## Development
+Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
 
 Also, a proper documentation about how to deal with settings would no doubt be helpful, especially for new users.
 
-Feel free to fork and make pull requests or give suggestions posting an Issue or joining the Discord chat.
-
 ## Building
+We write and build TBot with Visual Studio 2022 Community Edition, thus .NET 6 SDK is enough for command line compilation.
 
-I write and build TBot with Visual Studio 2022 Community Edition, thus .NET 5 SDK is enough for command line compilation.
-
-Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested on the build process.
+Releases are automated by GitHub Actions, take a look at the [workflows](https://github.com/ogame-tbot/TBot/tree/master/.github/workflows) if you are interested in the build process.
   
 ## Portability
-
-TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, Linux ARMv7 and Linux ARM64.
-
-MacOS ARM will be natively supported in a future version, for the time beeing the MacOS 64bit version works fine in emulation on M1.
+TBot is currently developed and mantained for Windows 64bit, Windows 32bit, Linux x86_64, MacOS 64bit, MacOS ARM, Linux ARMv7 and Linux ARM64.

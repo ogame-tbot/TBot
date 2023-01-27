@@ -220,7 +220,10 @@ namespace TBot.Ogame.Infrastructure {
 				response.EnsureSuccessStatusCode();
 			}
 			if (result != null) {
-				if (result?.Status != "ok") {
+				if (result.Status == null) {
+					throw new OgamedException("An error has occurred");
+				}
+				else if (result.Status != "ok") {
 					throw new OgamedException($"An error has occurred: Status Code: {response.StatusCode} Status: {result?.Status} - Message: {result?.Message}");
 				} else {
 					if (result.Result is JObject) {

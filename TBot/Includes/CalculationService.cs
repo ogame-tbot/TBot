@@ -1641,156 +1641,110 @@ namespace Tbot.Includes {
 			};
 		}
 
-		private Dictionary<string, int> GetLFBuildingRequirements(LFBuildables buildable) {
-			var rez = new Dictionary<string, int>();
+		private Dictionary<LFBuildables, int> GetLFBuildingRequirements(LFBuildables buildable) {
+			var rez = new Dictionary<LFBuildables, int>();
 			//Humans
 			if (buildable == LFBuildables.ResearchCentre) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 21 }, { LFBuildables.BiosphereFarm, 22 } };
 			} else if (buildable == LFBuildables.AcademyOfSciences) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 } };
 			} else if (buildable == LFBuildables.NeuroCalibrationCentre) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 }, { "Skyscraper", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.AcademyOfSciences, 1 }, { LFBuildables.FusionPoweredProduction, 1 }, { LFBuildables.Skyscraper, 5 } };
 			} else if (buildable == LFBuildables.HighEnergySmelting) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 21 }, { LFBuildables.BiosphereFarm, 22 }, { LFBuildables.ResearchCentre, 5 } };
 			} else if (buildable == LFBuildables.FoodSilo) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 12 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 }, { "HighEnergySmelting", 3 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 21 }, { LFBuildables.BiosphereFarm, 22 }, { LFBuildables.ResearchCentre, 5 }, { LFBuildables.HighEnergySmelting, 3 } };
 			} else if (buildable == LFBuildables.FusionPoweredProduction) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.AcademyOfSciences, 1 } };
 			} else if (buildable == LFBuildables.Skyscraper) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.AcademyOfSciences, 1 }, { LFBuildables.FusionPoweredProduction, 1 } };
 			} else if (buildable == LFBuildables.BiotechLab) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 2 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.AcademyOfSciences, 1 }, { LFBuildables.FusionPoweredProduction, 2 } };
 			} else if (buildable == LFBuildables.Metropolis) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 1 }, { "Skyscraper", 5 }, { "NeuroCalibrationCentre", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.AcademyOfSciences, 1 }, { LFBuildables.FusionPoweredProduction, 1 }, { LFBuildables.Skyscraper, 6 }, { LFBuildables.NeuroCalibrationCentre, 1 } };
 			} else if (buildable == LFBuildables.PlanetaryShield) {
-				rez = new Dictionary<string, int> { { "ResidentialSector", 40 }, { "BiosphereFarm", 13 }, { "ResearchCentre", 5 }, { "AcademyOfSciences", 1 }, { "FusionPoweredProduction", 5 }, { "Skyscraper", 5 }, { "HighEnergySmelting", 3 }, { "Metropolis", 5 }, { "FoodSilo", 4 }, { "NeuroCalibrationCentre", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.ResidentialSector, 41 }, { LFBuildables.BiosphereFarm, 22 }, { LFBuildables.ResearchCentre, 5 }, { LFBuildables.AcademyOfSciences, 1 }, { LFBuildables.FusionPoweredProduction, 5 }, { LFBuildables.Skyscraper, 6 }, { LFBuildables.HighEnergySmelting, 3 }, { LFBuildables.Metropolis, 5 }, { LFBuildables.FoodSilo, 4 }, { LFBuildables.NeuroCalibrationCentre, 5 } };
 			}
 			//Rocktal
 			else if (buildable == LFBuildables.RuneTechnologium) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 21 }, { LFBuildables.CrystalFarm, 22 } };
 			} else if (buildable == LFBuildables.RuneForge) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 } };
 			} else if (buildable == LFBuildables.Oriktorium) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 1 }, { LFBuildables.CrystalRefinery, 5 } };
 			} else if (buildable == LFBuildables.MagmaForge) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 21 }, { LFBuildables.CrystalFarm, 22 }, { LFBuildables.RuneTechnologium, 5 } };
 			} else if (buildable == LFBuildables.DisruptionChamber) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 21 }, { LFBuildables.CrystalFarm, 22 }, { LFBuildables.RuneTechnologium, 5 }, { LFBuildables.MagmaForge, 3 } };
 			} else if (buildable == LFBuildables.Megalith) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 } };
 			} else if (buildable == LFBuildables.CrystalRefinery) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 1 } };
 			} else if (buildable == LFBuildables.DeuteriumSynthesiser) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "FusionPoweredProduction", 1 }, { "Megalith", 2 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 2 } };
 			} else if (buildable == LFBuildables.MineralResearchCentre) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 6 }, { "Oriktorium", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 1 }, { LFBuildables.CrystalRefinery, 6 }, { LFBuildables.Oriktorium, 1 } };
 			} else if (buildable == LFBuildables.MetalRecyclingPlant) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "CrystalFarm", 22 }, { "RuneForge", 1 }, { "Megalith", 5 }, { "CrystalRefinery", 6 }, { "Oriktorium", 5 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 }, { "DisruptionChamber", 4 }, { "MineralResearchCentre", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.CrystalFarm, 22 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 5 }, { LFBuildables.CrystalRefinery, 6 }, { LFBuildables.Oriktorium, 5 }, { LFBuildables.RuneTechnologium, 5 }, { LFBuildables.MagmaForge, 3 }, { LFBuildables.DisruptionChamber, 4 }, { LFBuildables.MineralResearchCentre, 5 } };
 			}
 			//Mechas
 			else if (buildable == LFBuildables.RoboticsResearchCentre) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 20 }, { "FusionCellFactory", 17 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 17 }, { LFBuildables.FusionCellFactory, 20 } };
 			} else if (buildable == LFBuildables.UpdateNetwork) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 } };
 			} else if (buildable == LFBuildables.QuantumComputerCentre) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.UpdateNetwork, 1 }, { LFBuildables.MicrochipAssemblyLine, 1 }, { LFBuildables.ProductionAssemblyHall, 5 } };
 			} else if (buildable == LFBuildables.AutomatisedAssemblyCentre) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 17 }, { "FusionCellFactory", 20 }, { "RoboticsResearchCentre", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 17 }, { LFBuildables.FusionCellFactory, 20 }, { LFBuildables.RoboticsResearchCentre, 5 } };
 			} else if (buildable == LFBuildables.HighPerformanceTransformer) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 17 }, { "FusionCellFactory", 20 }, { "RoboticsResearchCentre", 5 }, { "AutomatisedAssemblyCentre", 3 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 17 }, { LFBuildables.FusionCellFactory, 20 }, { LFBuildables.RoboticsResearchCentre, 5 }, { LFBuildables.AutomatisedAssemblyCentre, 3 } };
 			} else if (buildable == LFBuildables.MicrochipAssemblyLine) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.UpdateNetwork, 1 } };
 			} else if (buildable == LFBuildables.ProductionAssemblyHall) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.UpdateNetwork, 1 }, { LFBuildables.MicrochipAssemblyLine, 1 } };
 			} else if (buildable == LFBuildables.HighPerformanceSynthesiser) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.UpdateNetwork, 1 }, { LFBuildables.MicrochipAssemblyLine, 2 } };
 			} else if (buildable == LFBuildables.ChipMassProduction) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "UpdateNetwork", 1 }, { "MicrochipAssemblyLine", 1 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.UpdateNetwork, 1 }, { LFBuildables.MicrochipAssemblyLine, 1 }, { LFBuildables.ProductionAssemblyHall, 6 }, { LFBuildables.QuantumComputerCentre, 1 } };
 			} else if (buildable == LFBuildables.NanoRepairBots) {
-				rez = new Dictionary<string, int> { { "AssemblyLine", 41 }, { "FusionCellFactory", 20 }, { "RuneForge", 1 }, { "MicrochipAssemblyLine", 5 }, { "RoboticsResearchCentre", 5 }, { "HighPerformanceTransformer", 4 }, { "ProductionAssemblyHall", 6 }, { "QuantumComputerCentre", 5 }, { "ChipMassProduction", 11 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.AssemblyLine, 41 }, { LFBuildables.FusionCellFactory, 20 }, { LFBuildables.MicrochipAssemblyLine, 5 }, { LFBuildables.RoboticsResearchCentre, 5 }, { LFBuildables.HighPerformanceTransformer, 4 }, { LFBuildables.ProductionAssemblyHall, 6 }, { LFBuildables.QuantumComputerCentre, 5 }, { LFBuildables.ChipMassProduction, 5 } };
 			}
 			//Kaelesh
 			else if (buildable == LFBuildables.VortexChamber) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 20 }, { LFBuildables.AntimatterCondenser, 21 } };
 			} else if (buildable == LFBuildables.HallsOfRealisation) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 } };
 			} else if (buildable == LFBuildables.ForumOfTranscendence) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 }, { "BioModifier", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.HallsOfRealisation, 1 }, { LFBuildables.ChrysalisAccelerator, 1 }, { LFBuildables.BioModifier, 5 } };
 			} else if (buildable == LFBuildables.AntimatterConvector) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 20 }, { LFBuildables.AntimatterCondenser, 21 }, { LFBuildables.VortexChamber, 5 } };
 			} else if (buildable == LFBuildables.CloningLaboratory) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 20 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 20 }, { LFBuildables.AntimatterCondenser, 21 }, { LFBuildables.VortexChamber, 5 }, { LFBuildables.AntimatterConvector, 3 } };
 			} else if (buildable == LFBuildables.ChrysalisAccelerator) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.HallsOfRealisation, 1 } };
 			} else if (buildable == LFBuildables.BioModifier) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.HallsOfRealisation, 1 }, { LFBuildables.ChrysalisAccelerator, 1 } };
 			} else if (buildable == LFBuildables.PsionicModulator) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.HallsOfRealisation, 1 }, { LFBuildables.ChrysalisAccelerator, 2 } };
 			} else if (buildable == LFBuildables.ShipManufacturingHall) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 1 }, { "BioModifier", 6 }, { "ForumOfTranscendence", 1 }, { "QuantumComputerCentre", 1 } };
-				return rez;
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.HallsOfRealisation, 1 }, { LFBuildables.ChrysalisAccelerator, 1 }, { LFBuildables.BioModifier, 6 }, { LFBuildables.ForumOfTranscendence, 1 } };
 			} else if (buildable == LFBuildables.SupraRefractor) {
-				rez = new Dictionary<string, int> { { "Sanctuary", 42 }, { "AntimatterCondenser", 21 }, { "VortexChamber", 5 }, { "AntimatterConvector", 3 }, { "CloningLaboratory", 4 }, { "HallsOfRealisation", 1 }, { "ChrysalisAccelerator", 5 }, { "BioModifier", 6 }, { "ShipManufacturingHall", 5 }, { "ForumOfTranscendence", 5 } };
-				return rez;
-			} else {
-				return new Dictionary<string, int>();
+				rez = new Dictionary<LFBuildables, int> { { LFBuildables.Sanctuary, 42 }, { LFBuildables.AntimatterCondenser, 21 }, { LFBuildables.VortexChamber, 5 }, { LFBuildables.AntimatterConvector, 3 }, { LFBuildables.CloningLaboratory, 4 }, { LFBuildables.HallsOfRealisation, 1 }, { LFBuildables.ChrysalisAccelerator, 5 }, { LFBuildables.BioModifier, 6 }, { LFBuildables.ShipManufacturingHall, 5 }, { LFBuildables.ForumOfTranscendence, 5 } };
 			}
 
-
+			return rez;
 		}
 
 		public bool isUnlocked(Celestial celestial, LFBuildables buildable) {
 			var LFproperties = celestial.LFBuildings.GetType();
 			var reqlist = GetLFBuildingRequirements(buildable);
 
-			bool isEmpty;
-			using (var dictionaryEnum = reqlist.GetEnumerator()) {
-				isEmpty = !dictionaryEnum.MoveNext();
-			}
-			if (isEmpty)
+			if (reqlist.Count == 0)
 				return true; //nextBuilding do not need requirement (base building)
 
 			foreach (var item in reqlist) {
-				var prop = LFproperties.GetProperty(item.Key);
-				if ((int) prop.GetValue(celestial.LFBuildings) < item.Value)
+				var lv = celestial.GetLevel(item.Key);
+				if (lv < item.Value)
 					return false;
 			}
 			return true;
