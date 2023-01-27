@@ -1686,7 +1686,7 @@ namespace Tbot.Includes {
 				rez = new Dictionary<string, int> { { "MeditationEnclave", 41 }, { "RuneForge", 1 }, { "Megalith", 1 }, { "CrystalRefinery", 5 } };
 				return rez;
 			} else if (buildable == LFBuildables.MagmaForge) {
-				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "ResearchCentre", 5 }, { "RuneTechnologium", 5 } };
+				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 } };
 				return rez;
 			} else if (buildable == LFBuildables.DisruptionChamber) {
 				rez = new Dictionary<string, int> { { "MeditationEnclave", 21 }, { "CrystalFarm", 22 }, { "RuneTechnologium", 5 }, { "MagmaForge", 3 } };

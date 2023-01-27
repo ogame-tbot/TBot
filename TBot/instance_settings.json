@@ -151,6 +151,14 @@
 			"MaxBasePopulationBuilding": 60,
 			"MaxBaseFoodBuilding": 62,
 			"MaxBaseTechBuilding": 6,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Planet"
+				}
+			],
 			"PreventIfMoreExpensiveThanNextMine": true,
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
@@ -161,6 +169,14 @@
 				"Active": true
 			},
 			"MaxResearchLevel": 6,
+			"Exclude": [
+				{
+					"Galaxy": 3,
+					"System": 333,
+					"Position": 15,
+					"Type": "Planet"
+				}
+			],
 			"CheckIntervalMin": 30,
 			"CheckIntervalMax": 60
 		},

@@ -70,6 +70,7 @@ namespace Tbot.Workers.Brain {
 						DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
 					};
 
+					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Exclude, _tbotInstance.UserData.celestials);
 					List<Celestial> celestialsToMine = new();
 					LFBuildings maxLFBuildings = new();
 					foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
@@ -98,6 +99,10 @@ namespace Tbot.Workers.Brain {
 					}
 
 					foreach (Celestial celestial in celestialsToMine) {
+						if (celestialsToExclude.Has(celestial)) {
+							DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: celestial in exclude list.");
+							continue;
+						}
 						var celestialWorker = _workerFactory.InitializeCelestialWorker(this, Feature.BrainCelestialLifeformAutoMine, _tbotInstance, _tbotOgameBridge, celestial);
 						await celestialWorker.StartWorker(new CancellationTokenSource().Token, TimeSpan.FromMilliseconds(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds)));
 					}
