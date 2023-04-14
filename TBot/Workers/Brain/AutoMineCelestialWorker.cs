@@ -126,6 +126,7 @@ namespace Tbot.Workers.Brain {
 				if (
 					(!SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Brain.AutoMine, "BuildCrawlers") || (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
+					celestial.Resources.Energy >= 0 &&
 					_tbotInstance.UserData.userInfo.Class == CharacterClass.Collector &&
 					celestial.Facilities.Shipyard >= 5 &&
 					_tbotInstance.UserData.researches.CombustionDrive >= 4 &&
