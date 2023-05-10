@@ -31,6 +31,7 @@ namespace TBot.Ogame.Infrastructure {
 		private string _username;
 
 		private Credentials _credentials;
+		private Device _device;
 		private string _host;
 		private int _port;
 		private string _captchaKey;
@@ -46,21 +47,21 @@ namespace TBot.Ogame.Infrastructure {
 		}
 
 		public void Initialize(Credentials credentials,
+				Device device,
 				ProxySettings proxySettings,
 				string host = "127.0.0.1",
 				int port = 8080,
-				string captchaKey = "",
-				string cookiesPath = "") {
+				string captchaKey = "") {
 			_credentials = credentials;
+			_device = device;
 			_host = host;
 			_port = port;
 			_captchaKey = captchaKey;
 			_proxySettings = proxySettings;
-			_cookiesPath = cookiesPath;
 
 			_username = credentials.Username;
 
-			_ogamedProcess = ExecuteOgamedExecutable(credentials, host, port, captchaKey, proxySettings, cookiesPath);
+			_ogamedProcess = ExecuteOgamedExecutable(credentials, device, host, port, captchaKey, proxySettings);
 
 			_client = new HttpClient() {
 				BaseAddress = new Uri($"http://{host}:{port}/"),
@@ -102,10 +103,10 @@ namespace TBot.Ogame.Infrastructure {
 			return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? "ogamed.exe" : "ogamed";
 		}
 
-		internal Process ExecuteOgamedExecutable(Credentials credentials, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null, string cookiesPath = "cookies.txt") {
+		internal Process ExecuteOgamedExecutable(Credentials credentials, Device device, string host = "localhost", int port = 8080, string captchaKey = "", ProxySettings proxySettings = null) {
 			Process? ogameProc = null;
 			try {
-				string args = $"--universe=\"{credentials.Universe}\" --username={credentials.Username} --password={credentials.Password} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port} --cookies-filename={cookiesPath}";
+				string args = $"--universe=\"{credentials.Universe}\" --username={credentials.Username} --password={credentials.Password} --device-name={device.Name} --language={credentials.Language} --auto-login=false --port={port} --host=0.0.0.0 --api-new-hostname=http://{host}:{port}";
 				if (captchaKey != "")
 					args += $" --nja-api-key={captchaKey}";
 				if (proxySettings.Enabled) {
@@ -126,8 +127,34 @@ namespace TBot.Ogame.Infrastructure {
 					args += $" --basic-auth-username={credentials.BasicAuthUsername}";
 					args += $" --basic-auth-password={credentials.BasicAuthPassword}";
 				}
-				if (cookiesPath.Length > 0)
-					args += $" --cookies-filename=\"{cookiesPath}\"";
+
+				if (device.System != "") {
+					args += $" --device-system={device.System}";
+				}
+				if (device.Browser != "") {
+					args += $" --device-browser={device.Browser}";
+				}
+				if (device.Memory != 0) {
+					args += $" --device-memory={device.Memory}";
+				}
+				if (device.Concurrency != 0) {
+					args += $" --device-concurrency={device.Concurrency}";
+				}
+				if (device.Color != 0) {
+					args += $" --device-color={device.Color}";
+				}
+				if (device.Width != 0) {
+					args += $" --device-width={device.Width}";
+				}
+				if (device.Height != 0) {
+					args += $" --device-height={device.Height}";
+				}
+				if (device.Timezone != "") {
+					args += $" --device-timezone={device.Timezone}";
+				}
+				if (device.Lang != "") {
+					args += $" --device-lang={device.Lang}";
+				}
 
 				ogameProc = new Process();
 				ogameProc.StartInfo.FileName = GetExecutableName();
@@ -190,7 +217,7 @@ namespace TBot.Ogame.Infrastructure {
 			}
 		}
 		public void RerunOgamed() {
-			ExecuteOgamedExecutable(_credentials, _host, _port, _captchaKey, _proxySettings, _cookiesPath);
+			ExecuteOgamedExecutable(_credentials, _device, _host, _port, _captchaKey, _proxySettings);
 		}
 
 		public void KillOgamedExecutable(CancellationToken ct = default) {

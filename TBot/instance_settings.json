@@ -23,7 +23,18 @@
 			"LoginOnly": true
 		},
 		"CaptchaAPIKey": "",
-		"CookiesPath": "cookies.txt",
+		"DeviceConf": {
+			"Name": "Device-name",
+			"System": "windows",
+			"Browser": "Chrome",
+			"Memory": 8,
+			"Concurrency": 16,
+			"Color": 24,
+			"Width": 1920,
+			"Height": 1080,
+			"Timezone": "Europe/London",
+			"Lang": "en-US,en"
+		},
 		"CustomTitle": "",
 		"SlotsToLeaveFree": 1
 	},
