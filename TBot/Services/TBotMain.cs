@@ -135,16 +135,16 @@ namespace Tbot.Services {
 
 		private Device GetDeviceFromSettings() {
 			return new() {
-				Name = ((string) InstanceSettings.DeviceConf.Name).ToUpper(),
-				System = (string) InstanceSettings.DeviceConf.System,
-				Browser = (string) InstanceSettings.DeviceConf.Browser,
-				Memory = (Int32) InstanceSettings.DeviceConf.Memory,
-				Concurrency = (Int32) InstanceSettings.DeviceConf.Concurrency,
-				Color = (Int32) InstanceSettings.DeviceConf.Color,
-				Width = (Int32) InstanceSettings.DeviceConf.Width,
-				Height = (Int32) InstanceSettings.DeviceConf.Height,
-				Timezone = (string) InstanceSettings.DeviceConf.Timezone,
-				Lang = (string) InstanceSettings.DeviceConf.Lang
+				Name = ((string) InstanceSettings.Credentials.DeviceConf.Name).ToUpper(),
+				System = (string) InstanceSettings.Credentials.DeviceConf.System ?? "",
+				Browser = (string) InstanceSettings.Credentials.DeviceConf.Browser ?? "",
+				Memory = (int) InstanceSettings.Credentials.DeviceConf.Memory,
+				Concurrency = (int) InstanceSettings.Credentials.DeviceConf.Concurrency,
+				Color = (int) InstanceSettings.Credentials.DeviceConf.Color,
+				Width = (int) InstanceSettings.Credentials.DeviceConf.Width,
+				Height = (int) InstanceSettings.Credentials.DeviceConf.Height,
+				Timezone = (string) InstanceSettings.Credentials.DeviceConf.Timezone ?? "",
+				Lang = (string) InstanceSettings.Credentials.DeviceConf.Lang ?? ""
 			};
 		}
 

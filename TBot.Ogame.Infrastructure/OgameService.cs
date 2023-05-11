@@ -134,19 +134,19 @@ namespace TBot.Ogame.Infrastructure {
 				if (device.Browser != "") {
 					args += $" --device-browser={device.Browser}";
 				}
-				if (device.Memory != 0) {
+				if (device.Memory > 0) {
 					args += $" --device-memory={device.Memory}";
 				}
-				if (device.Concurrency != 0) {
+				if (device.Concurrency > 0) {
 					args += $" --device-concurrency={device.Concurrency}";
 				}
-				if (device.Color != 0) {
+				if (device.Color > 0) {
 					args += $" --device-color={device.Color}";
 				}
-				if (device.Width != 0) {
+				if (device.Width > 0) {
 					args += $" --device-width={device.Width}";
 				}
-				if (device.Height != 0) {
+				if (device.Height > 0) {
 					args += $" --device-height={device.Height}";
 				}
 				if (device.Timezone != "") {
