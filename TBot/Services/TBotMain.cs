@@ -133,6 +133,22 @@ namespace Tbot.Services {
 			};
 		}
 
+		private Device GetDeviceFromSettings() {
+			return new() {
+				Name = ((string) InstanceSettings.Credentials.DeviceConf.Name).ToUpper(),
+				System = (string) InstanceSettings.Credentials.DeviceConf.System ?? "",
+				Browser = (string) InstanceSettings.Credentials.DeviceConf.Browser ?? "",
+				Memory = (int) InstanceSettings.Credentials.DeviceConf.Memory,
+				Concurrency = (int) InstanceSettings.Credentials.DeviceConf.Concurrency,
+				Color = (int) InstanceSettings.Credentials.DeviceConf.Color,
+				Width = (int) InstanceSettings.Credentials.DeviceConf.Width,
+				Height = (int) InstanceSettings.Credentials.DeviceConf.Height,
+				Timezone = (string) InstanceSettings.Credentials.DeviceConf.Timezone ?? "",
+				Lang = (string) InstanceSettings.Credentials.DeviceConf.Lang ?? ""
+			};
+		}
+
+
 		private async Task InitializeOgame() {
 			string host = (string) InstanceSettings.General.Host ?? "localhost";
 			string port = (string) InstanceSettings.General.Port ?? "8080";
@@ -166,11 +182,8 @@ namespace Tbot.Services {
 				}
 			}
 
-			if (SettingsService.IsSettingSet(InstanceSettings.General, "CookiesPath") && (string) InstanceSettings.General.CookiesPath != "") {
-				// Cookies are defined relative to the settings file
-				cookiesPath = Path.Combine(Path.GetDirectoryName(InstanceSettingsPath), (string) InstanceSettings.General.CookiesPath);
-			}
-			_ogameService.Initialize(GetCredentialsFromSettings(), proxy, (string) host, int.Parse(port), (string) captchaKey, cookiesPath);
+
+			_ogameService.Initialize(GetCredentialsFromSettings(), GetDeviceFromSettings(), proxy, (string) host, int.Parse(port), (string) captchaKey);
 			await _ogameService.SetUserAgent((string) InstanceSettings.General.UserAgent);
 		}
 

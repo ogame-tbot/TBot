@@ -8,7 +8,19 @@
 		"BasicAuth": {
 			"Username": "",
 			"Password": ""
-		}
+		},
+		"DeviceConf": {
+			"Name": "Device-name",
+			"System": "windows",
+			"Browser": "Chrome",
+			"Memory": 8,
+			"Concurrency": 16,
+			"Color": 24,
+			"Width": 1920,
+			"Height": 1080,
+			"Timezone": "Europe/London",
+			"Lang": "en"
+		  }
 	},
 	"General": {
 		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
@@ -23,7 +35,6 @@
 			"LoginOnly": true
 		},
 		"CaptchaAPIKey": "",
-		"CookiesPath": "cookies.txt",
 		"CustomTitle": "",
 		"SlotsToLeaveFree": 1
 	},

@@ -5,11 +5,11 @@ namespace TBot.Ogame.Infrastructure {
 	public interface IOgameService {
 		event EventHandler OnError;
 		void Initialize(Credentials credentials,
+				Device device,
 				ProxySettings proxySettings,
 				string host = "127.0.0.1",
 				int port = 8080,
-				string captchaKey = "",
-				string cookiesPath = "");
+				string captchaKey = "");
 		string GetExecutableName();
 		bool ValidatePrerequisites();
 		Task BuildCancelable(Celestial celestial, Buildables buildable);
