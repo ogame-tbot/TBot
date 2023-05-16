@@ -50,9 +50,42 @@ namespace Tbot.Workers {
 		}
 
 		protected override async Task Execute() {
+			await _tbotOgameBridge.CheckCelestials();
 			bool stop = false;
 			bool delay = false;
+			Fields fieldsSettings = new() {
+				Total = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinFields
+			};
+			Temperature temperaturesSettings = new() {
+				Min = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinTemperatureAcceptable,
+				Max = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MaxTemperatureAcceptable
+			};
 			try {
+				if ((bool) _tbotInstance.InstanceSettings.AutoColonize.Abandon.Active) {
+					DoLog(LogLevel.Information, "Detecting planet to abandon");
+
+					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
+					var dic = new Dictionary<Coordinate, Celestial>();
+				
+					foreach (Planet planet in _tbotInstance.UserData.celestials.Where(c => c is Planet)) {
+						Planet tempCelestial = await _tbotOgameBridge.UpdatePlanet(planet, UpdateTypes.Fast) as Planet;						
+						if (tempCelestial.Coordinate.Type == Celestials.Planet && tempCelestial.Fields.Built == 0) {
+							if (_calculationService.ShouldAbandon(tempCelestial as Planet, tempCelestial.Fields.Total, tempCelestial.Temperature.Max, fieldsSettings, temperaturesSettings)) {
+								DoLog(LogLevel.Debug, $"This planet should be abandoned: {tempCelestial.ToString()}");
+								if (await _ogameService.AbandonCelestial(tempCelestial)) {
+									DoLog(LogLevel.Debug, $"Successful Abandon on {tempCelestial.ToString()}.");
+								} else {
+									DoLog(LogLevel.Debug, $"Failed Abandon on {tempCelestial.ToString()}.");
+								}
+							} else {
+								DoLog(LogLevel.Debug, $"No planet should be abandoned.");
+							}
+							//DoLog(LogLevel.Debug, $"Because: cases -> {tempCelestial.Fields.Total.ToString()}/{fieldsSettings.Total.ToString()}, MinimumTemp -> {tempCelestial.Temperature.Max.ToString()}>={temperaturesSettings.Min.ToString()}, MaximumTemp -> {tempCelestial.Temperature.Max.ToString()}<={temperaturesSettings.Max.ToString()}");
+						}
+					}
+					await _tbotOgameBridge.CheckCelestials();
+					DoLog(LogLevel.Information, "End of planet abandonment");
+				}
 
 				if ((bool) _tbotInstance.InstanceSettings.AutoColonize.Active) {
 					long interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoColonize.CheckIntervalMax);
@@ -66,7 +99,7 @@ namespace Tbot.Workers {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "A new planet is needed.");
 
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-						if (_tbotInstance.UserData.fleets.Any(f => f.Mission == Missions.Colonize && !f.ReturnFlight)) {
+						if (_tbotInstance.UserData.fleets.Count(f => f.Mission == Missions.Colonize && !f.ReturnFlight) >= maxPlanets - currentPlanets) {
 							_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "Colony Ship(s) already in flight.");
 							interval = _tbotInstance.UserData.fleets
 								.OrderBy(f => f.ArriveIn)
@@ -87,13 +120,17 @@ namespace Tbot.Workers {
 							if (origin.Ships.ColonyShip >= neededColonizers) {
 								List<Coordinate> targets = new();
 								foreach (var t in _tbotInstance.InstanceSettings.AutoColonize.Targets) {
-									Coordinate targetCoords = new(
-										(int) t.Galaxy,
-										(int) t.System,
-										(int) t.Position,
-										Celestials.Planet
-									);
-									targets.Add(targetCoords);
+									for (int i = (int) t.StartSystem; i <= (int) t.EndSystem; i++) {
+										for (int ii = (int) t.StartPosition; ii <= (int) t.EndPosition; ii++) {
+											Coordinate targetCoords = new(
+												(int) t.Galaxy,
+												(int) i,
+												(int) ii,
+												Celestials.Planet
+											);
+											targets.Add(targetCoords);
+										}
+									}
 								}
 								List<Coordinate> filteredTargets = new();
 								foreach (Coordinate t in targets) {
@@ -107,21 +144,57 @@ namespace Tbot.Workers {
 									filteredTargets.Add(t);
 								}
 								if (filteredTargets.Count() > 0) {
-									filteredTargets = filteredTargets
-										.OrderBy(t => _calculationService.CalcDistance(origin.Coordinate, t, _tbotInstance.UserData.serverData))
-										.Take(maxPlanets - currentPlanets)
-										.ToList();
+									if ((bool) _tbotInstance.InstanceSettings.AutoColonize.RandomPosition) {
+										List<Coordinate> filteredTargetsRdm = new();
+										var random = new Random();
+										for (int i = 0; i < filteredTargets.Count; i++) {
+											int index = random.Next(filteredTargets.Count);
+											filteredTargetsRdm.Add(filteredTargets[index]);
+											filteredTargets.RemoveAt(index);
+										}
+										filteredTargets = filteredTargetsRdm
+											.Take(maxPlanets - currentPlanets)
+											.ToList();
+									} else {
+										filteredTargets = filteredTargets
+											.OrderBy(t => _calculationService.CalcDistance(origin.Coordinate, t, _tbotInstance.UserData.serverData))
+											.Take(maxPlanets - currentPlanets)
+											.ToList();
+									}
 									foreach (var target in filteredTargets) {
 										Ships ships = new() { ColonyShip = 1 };
-										var fleetId = await _fleetScheduler.SendFleet(origin, ships, target, Missions.Colonize, Speeds.HundredPercent);
+										_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+										var colonize = _tbotInstance.UserData.fleets
+											.Where(f => f.Mission == Missions.Colonize)
+											.Where(f => f.ReturnFlight == false)
+											.Where(f => f.Destination.Galaxy == target.Galaxy)
+											.Where(f => f.Destination.System == target.System)
+											.Where(f => f.Destination.Position == target.Position)
+											.Count();
+										if (colonize > 0) {
+											_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Skipping colonize: there is already a colonize incoming in {target.ToString()}");
+										} else {
+											DoLog(LogLevel.Debug, "Send Colonize.");
+											var fleetId = await _fleetScheduler.SendFleet(origin, ships, target, Missions.Colonize, Speeds.HundredPercent);
+											_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+											List<Fleet> orderedFleet = _tbotInstance.UserData.fleets
+												.Where(fleet => fleet.Mission == Missions.Colonize)
+												.ToList();
+											orderedFleet = orderedFleet
+												.OrderByDescending(fleet => fleet.ArriveIn)
+												.ToList();
+											if (orderedFleet.Count() > 0) {
+												interval = (int) ((1000 * orderedFleet.First().ArriveIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+											}
 
-										if (fleetId == (int) SendFleetCode.AfterSleepTime) {
-											stop = true;
-											return;
-										}
-										if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
-											delay = true;
-											return;
+											if (fleetId == (int) SendFleetCode.AfterSleepTime) {
+												stop = true;
+												return;
+											}
+											if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
+												delay = true;
+												return;
+											}
 										}
 									}
 								} else {
@@ -179,6 +252,7 @@ namespace Tbot.Workers {
 					DateTime newTime = time.AddMilliseconds(interval);
 					ChangeWorkerPeriod(interval);
 					_tbotInstance.log(LogLevel.Information, LogSender.Colonize, $"Next check at {newTime}");
+					await _tbotOgameBridge.CheckCelestials();
 				}
 			} catch (Exception e) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.Colonize, $"HandleColonize exception: {e.Message}");

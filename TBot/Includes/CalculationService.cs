@@ -2799,5 +2799,12 @@ namespace Tbot.Includes {
 
 			return dic2.OrderBy(e => e.Value).FirstOrDefault().Key - (int) planet.Ships.Crawler;
 		}
+
+		public bool ShouldAbandon(Planet celestial, int maxCases, int Temperature, Fields fieldsSettings, Temperature temperaturesSettings) {
+			if (maxCases < fieldsSettings.Total || (Temperature < temperaturesSettings.Min || Temperature > temperaturesSettings.Max)) {
+				return true;
+			}
+			return false;
+		}
 	}
 }
