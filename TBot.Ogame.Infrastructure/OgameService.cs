@@ -716,5 +716,24 @@ namespace TBot.Ogame.Infrastructure {
 			}
 			return success;
 		}
+
+		public async Task<bool> AbandonCelestial(Celestial celestial) {
+			bool success = false;
+			try {
+				Abandon result = await GetAsync<Abandon>($"/bot/celestials/{celestial.ID}/abandon");
+				if (result.Result == "succeed") {
+					success = true;
+				} else {
+					success = false;
+				}
+			} catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest) {
+				success = false;
+			} catch (OgamedException e) {
+				success = false;
+			} catch (Exception e) {
+				success = false;
+			}
+			return success;
+		}
 	}
 }

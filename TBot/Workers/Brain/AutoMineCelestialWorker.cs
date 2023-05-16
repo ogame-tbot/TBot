@@ -91,8 +91,15 @@ namespace Tbot.Workers.Brain {
 					BuildDepositIfFull = (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildDepositIfFull,
 					DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
 				};
+				Fields fieldsSettings = new() {
+					Total = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinFields
+				};
+				Temperature temperaturesSettings = new() {
+					Min = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinTemperatureAcceptable,
+					Max = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MaxTemperatureAcceptable
+				};
 				
-				await AutoMineCelestial(celestial, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+				await AutoMineCelestial(celestial, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings, fieldsSettings, temperaturesSettings);
 				
 			} catch (Exception e) {
 				DoLog(LogLevel.Error, $"AutoMine Exception: {e.Message}");
@@ -103,7 +110,7 @@ namespace Tbot.Workers.Brain {
 				}
 			}
 		}
-		private async Task AutoMineCelestial(Celestial celestial, Buildings maxBuildings, Facilities maxFacilities, Facilities maxLunarFacilities, AutoMinerSettings autoMinerSettings) {
+		private async Task AutoMineCelestial(Celestial celestial, Buildings maxBuildings, Facilities maxFacilities, Facilities maxLunarFacilities, AutoMinerSettings autoMinerSettings, Fields fieldsSettings, Temperature temperaturesSettings) {
 			int fleetId = (int) SendFleetCode.GenericError;
 			Buildables buildable = Buildables.Null;
 			int level = 0;
@@ -123,6 +130,7 @@ namespace Tbot.Workers.Brain {
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Ships);
+				Planet abaCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast) as Planet;
 				if (
 					(!SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Brain.AutoMine, "BuildCrawlers") || (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildCrawlers) &&
 					celestial.Coordinate.Type == Celestials.Planet &&
@@ -144,6 +152,16 @@ namespace Tbot.Workers.Brain {
 					if (celestial.Fields.Free == 0) {
 						DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: not enough fields available.");
 						return;
+					}
+					if (celestial.Coordinate.Type == Celestials.Planet && celestial.Fields.Built == 0 && (bool) _tbotInstance.InstanceSettings.AutoColonize.Abandon.Active) {
+						if (_calculationService.ShouldAbandon(celestial as Planet, celestial.Fields.Total, abaCelestial.Temperature.Max, fieldsSettings, temperaturesSettings)) {
+							DoLog(LogLevel.Debug, $"Skipping {celestial.ToString()}: planet should be abandoned.");
+							//DoLog(LogLevel.Debug, $"Because: cases -> {abaCelestial.Fields.Total.ToString()}/{fieldsSettings.Total.ToString()}, MinimumTemp -> {abaCelestial.Temperature.Max.ToString()}>={temperaturesSettings.Min.ToString()}, MaximumTemp -> {abaCelestial.Temperature.Max.ToString()}<={temperaturesSettings.Max.ToString()}");
+							return;
+						}/* else {
+							DoLog(LogLevel.Debug, $"Confirm AutoMine on {celestial.ToString()}.");
+							DoLog(LogLevel.Debug, $"Because: cases -> {abaCelestial.Fields.Total.ToString()}/{fieldsSettings.Total.ToString()}, MinimumTemp -> {abaCelestial.Temperature.Max.ToString()}>={temperaturesSettings.Min.ToString()}, MaximumTemp -> {abaCelestial.Temperature.Max.ToString()}<={temperaturesSettings.Max.ToString()}");
+						}*/
 					}
 					if (celestial.Constructions.BuildingID != 0) {
 						DoLog(LogLevel.Information, $"Skipping {celestial.ToString()}: there is already a building in production.");

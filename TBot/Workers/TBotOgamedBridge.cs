@@ -274,9 +274,9 @@ namespace Tbot.Workers
 							_tbotInstance.log(LogLevel.Warning, LogSender.Tbot, "Less userData.celestials than last check detected!!");
 						} else {
 							_tbotInstance.log(LogLevel.Information, LogSender.Tbot, "More userData.celestials than last check detected");
+							await _tbotInstance.InitializeFeature(Feature.BrainAutoMine);
 						}
 						_tbotInstance.UserData.celestials = newCelestials.Unique().ToList();
-						await _tbotInstance.InitializeFeature(Feature.BrainAutoMine);
 						return true;
 					}
 				}

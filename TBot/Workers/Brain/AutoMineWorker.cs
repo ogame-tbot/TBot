@@ -94,19 +94,37 @@ namespace Tbot.Workers.Brain {
 					BuildDepositIfFull = (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildDepositIfFull,
 					DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
 				};
+				Fields fieldsSettings = new() {
+					Total = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinFields
+				};
+				Temperature temperaturesSettings = new() {
+					Min = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinTemperatureAcceptable,
+					Max = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MaxTemperatureAcceptable
+				};
 
 				List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoMine.Exclude, _tbotInstance.UserData.celestials);
 				List<Celestial> celestialsToMine = new();
 				foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
 					var cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
+					Planet abaCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast) as Planet;
 					var nextMine = _calculationService.GetNextMineToBuild(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 100, 100, 100, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull, true, int.MaxValue);
 					var lv = _calculationService.GetNextLevel(cel, nextMine);
 					var DOIR = _calculationService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull);
 					DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Mine: {nextMine.ToString()} lv {lv.ToString()}; DOIR: {DOIR.ToString()}.");
 					if (DOIR < _tbotInstance.UserData.nextDOIR || _tbotInstance.UserData.nextDOIR == 0) {
 						_tbotInstance.UserData.nextDOIR = DOIR;
+					}					
+					if (celestial.Coordinate.Type == Celestials.Planet && celestial.Fields.Built == 0 && (bool) _tbotInstance.InstanceSettings.AutoColonize.Abandon.Active) {
+						if (_calculationService.ShouldAbandon(celestial as Planet, celestial.Fields.Total, abaCelestial.Temperature.Max, fieldsSettings, temperaturesSettings)) {
+							DoLog(LogLevel.Debug, $"Skipping {celestial.ToString()}: planet should be abandoned.");
+						} else {
+							//DoLog(LogLevel.Debug, $"Confirm AutoMine on {celestial.ToString()}.");
+							celestialsToMine.Add(cel);
+						}
+						//DoLog(LogLevel.Debug, $"Because: cases -> {abaCelestial.Fields.Total.ToString()}/{fieldsSettings.Total.ToString()}, MinimumTemp -> {abaCelestial.Temperature.Max.ToString()}>={temperaturesSettings.Min.ToString()}, MaximumTemp -> {abaCelestial.Temperature.Max.ToString()}<={temperaturesSettings.Max.ToString()}");
+					} else {
+						celestialsToMine.Add(cel);
 					}
-					celestialsToMine.Add(cel);
 				}
 				celestialsToMine = celestialsToMine.OrderBy(cel => _calculationService.CalcNextDaysOfInvestmentReturn(cel as Planet, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData.Speed, 1, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff.Geologist, _tbotInstance.UserData.staff.IsFull)).ToList();
 				celestialsToMine.AddRange(_tbotInstance.UserData.celestials.Where(c => c is Moon));

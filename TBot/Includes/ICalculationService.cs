@@ -120,5 +120,6 @@ namespace Tbot.Includes {
 		bool ShouldBuildTerraformer(Planet celestial, Researches researches, int maxLevel = 10);
 		bool ShouldResearchEnergyTech(List<Planet> planets, int energyTech, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
 		bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
+		bool ShouldAbandon(Planet celestial, int maxCases, int Temperature, Fields fieldsSettings, Temperature temperaturesSettings);
 	}
 }
