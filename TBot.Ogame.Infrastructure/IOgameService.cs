@@ -93,5 +93,6 @@ namespace TBot.Ogame.Infrastructure {
 		Task SendMessage(int playerID, string message);
 		Task SetUserAgent(string userAgent);
 		Task SolveCaptcha(string challengeID, int answer);
+		Task<bool> AbandonCelestial(Celestial celestial);
 	}
 }

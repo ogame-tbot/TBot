@@ -384,18 +384,29 @@
 			"Type": "Planet"
 		},
 		"SlotsToLeaveFree": 0,
+		"Abandon": {
+			"Active": true,
+			"MinFields": 280,
+			"MinTemperatureAcceptable": -130,
+			"MaxTemperatureAcceptable": 260
+		},
 		"Targets": [
 			{
-				"Galaxy": 6,
-				"System": 1,
-				"Position": 8
+				"Galaxy": 1,
+				"StartSystem": 123,
+				"EndSystem": 123,
+				"StartPosition": 7,
+				"EndPosition": 9
 			},
 			{
-				"Galaxy": 6,
-				"System": 1,
-				"Position": 9
+				"Galaxy": 3,
+				"StartSystem": 150,
+				"EndSystem": 350,
+				"StartPosition": 15,
+				"EndPosition": 15
 			}
 		],
+		"RandomPosition": true,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
 	},
