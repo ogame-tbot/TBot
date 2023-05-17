@@ -170,5 +170,3 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         artifacts: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-win32.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linux64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-linuxarm64.zip,${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx64.zip
-        draft: true
-        token: ${{ secrets.GITHUB_TOKEN }}
