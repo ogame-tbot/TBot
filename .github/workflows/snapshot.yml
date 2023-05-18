@@ -166,8 +166,3 @@ jobs:
       with:
         name: TBot-${{ env.SNAP_VERSION }}-osx-arm64
         path: ${{ github.workspace }}/TBot-${{ env.SNAP_VERSION }}-osx-arm64.zip
-    - name: Step 3 - Use the Upload Artifact GitHub Action
-      uses: actions/upload-artifact@v2
-      with: 
-        name: assets-for-download
-        path: ${{ github.workspace }}
