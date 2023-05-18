@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ develop ]
   workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
 
 jobs:
   build:
