@@ -11,8 +11,9 @@
 		},
 		"DeviceConf": {
 			"Name": "Device-name",
-			"System": "windows",
+			"System": "Windows",
 			"Browser": "Chrome",
+			"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
 			"Memory": 8,
 			"Concurrency": 16,
 			"Color": 24,
@@ -23,7 +24,6 @@
 		  }
 	},
 	"General": {
-		"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
 		"Host": "localhost",
 		"Port": "8080",
 		"Proxy": {
