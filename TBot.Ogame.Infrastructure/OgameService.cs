@@ -134,6 +134,9 @@ namespace TBot.Ogame.Infrastructure {
 				if (device.Browser != "") {
 					args += $" --device-browser={device.Browser}";
 				}
+				if (device.UserAgent != "") {
+					args += $" --device-user-agent=\"{device.UserAgent}\"";
+				}
 				if (device.Memory > 0) {
 					args += $" --device-memory={device.Memory}";
 				}

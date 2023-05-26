@@ -138,6 +138,7 @@ namespace Tbot.Services {
 				Name = ((string) InstanceSettings.Credentials.DeviceConf.Name).ToUpper(),
 				System = (string) InstanceSettings.Credentials.DeviceConf.System ?? "",
 				Browser = (string) InstanceSettings.Credentials.DeviceConf.Browser ?? "",
+				UserAgent = (string) InstanceSettings.Credentials.DeviceConf.UserAgent ?? "",
 				Memory = (int) InstanceSettings.Credentials.DeviceConf.Memory,
 				Concurrency = (int) InstanceSettings.Credentials.DeviceConf.Concurrency,
 				Color = (int) InstanceSettings.Credentials.DeviceConf.Color,
@@ -184,7 +185,7 @@ namespace Tbot.Services {
 
 
 			_ogameService.Initialize(GetCredentialsFromSettings(), GetDeviceFromSettings(), proxy, (string) host, int.Parse(port), (string) captchaKey);
-			await _ogameService.SetUserAgent((string) InstanceSettings.General.UserAgent);
+			await _ogameService.SetUserAgent((string) InstanceSettings.Credentials.DeviceConf.UserAgent);
 		}
 
 		private async Task ResolveCaptcha() {

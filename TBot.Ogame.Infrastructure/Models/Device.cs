@@ -9,6 +9,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public string Name { get; set; }
 		public string System { get; set; }
 		public string Browser { get; set; }
+		public string UserAgent { get; set; }
 		public Int32 Memory { get; set; }
 		public Int32 Concurrency { get; set; }
 		public Int32 Color { get; set; }
