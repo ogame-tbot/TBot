@@ -362,6 +362,7 @@
 		"MaxWaitTime": 7200,
 		"MinLootFuelRatio": 0.5,
 		"PreferedResource": "",
+		"MaxSlots": 18,
 		"SlotsToLeaveFree": 1,
 		"CheckIntervalMin": 30,
 		"CheckIntervalMax": 60
