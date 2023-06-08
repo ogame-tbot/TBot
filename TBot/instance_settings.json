@@ -64,6 +64,13 @@
 		"IgnoreMissiles": true,
 		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
+		"RandomActivity": true,
+		"Home": {
+			"Galaxy": 1,
+			"System": 1,
+			"Position": 1,
+			"Type": "Planet"
+		},
 		"Autofleet": {
 			"Active": true,
 			"TelegramMessenger": {
