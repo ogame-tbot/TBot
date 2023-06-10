@@ -273,7 +273,23 @@ namespace Tbot.Workers {
 													delay = true;
 													return;
 												}
-												await Task.Delay((int) IntervalType.AFewSeconds, _ct);
+												
+												var minWaitSecFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitSecFleet;
+												var maxWaitSecFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitSecFleet;
+
+												if (minWaitSecFleet < 0) {
+													minWaitSecFleet = 0;
+												}
+												if (maxWaitSecFleet < 1) {
+													minWaitSecFleet = 1;
+												}
+
+												var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSeconds(minWaitSecFleet, maxWaitSecFleet);											
+
+												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s");
+
+												await Task.Delay(rndWaitTimeMs, _ct);
+
 											} else {
 												DoLog(LogLevel.Information, "Unable to send expeditions: no expedition slots available.");
 												break;

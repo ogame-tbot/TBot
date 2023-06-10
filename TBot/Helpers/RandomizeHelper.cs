@@ -30,6 +30,12 @@ namespace Tbot.Helpers {
 			var maxMillis = max * 60 * 1000;
 			return rand.Next(minMillis, maxMillis);
 		}
-
+		
+		public static int CalcRandomIntervalSeconds(int min, int max) {
+			var rand = new Random();
+			var minMillis = min * 1000;
+			var maxMillis = max * 1000;
+			return rand.Next(minMillis, maxMillis);
+		}
 	}
 }
