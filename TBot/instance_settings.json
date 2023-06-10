@@ -289,8 +289,8 @@
 	},
 	"Expeditions": {
 		"Active": true,
-		"minWaitSecFleet": 5,
-		"maxWaitSecFleet": 15,
+		"MinWaitSecFleet": 5,
+		"MaxWaitSecFleet": 15,
 		"PrimaryShip": "LargeCargo",
 		"MinPrimaryToSend": 1000,
 		"PrimaryToKeep": 10000,
