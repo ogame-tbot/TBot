@@ -796,7 +796,12 @@ namespace Tbot.Workers {
 							}
 						}
 
-						if (_tbotInstance.UserData.slots.Free > slotsToLeaveFree) {
+						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+						List<Fleet> slotUsed = _tbotInstance.UserData.fleets
+							.Where(fleet => fleet.Mission == Missions.Attack)
+							.ToList();
+
+						if (_tbotInstance.UserData.slots.Free > slotsToLeaveFree && slotUsed.Count() < (int) _tbotInstance.InstanceSettings.AutoFarm.MaxSlots) {
 							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 							Ships ships = new();
 
