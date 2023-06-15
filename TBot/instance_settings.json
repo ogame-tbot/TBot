@@ -309,6 +309,8 @@
 		},
 		"WaitForAllExpeditions": false,
 		"WaitForMajorityOfExpeditions": false,
+		"MinWaitNextRound": 30,
+		"MaxWaitNextRound": 300,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1

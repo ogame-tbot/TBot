@@ -274,20 +274,17 @@ namespace Tbot.Workers {
 													return;
 												}
 												
-												var minWaitSecFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitSecFleet;
-												var maxWaitSecFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitSecFleet;
+												var minWaitNextFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitNextFleet;
+												var maxWaitNextFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitNextFleet;
 
-												if (minWaitSecFleet < 0) {
-													minWaitSecFleet = 0;
-												}
-												if (maxWaitSecFleet < 1) {
-													minWaitSecFleet = 1;
-												}
+												if (minWaitNextFleet < 0)
+													minWaitNextFleet = 0;
+												if (maxWaitNextFleet < 1)
+													maxWaitNextFleet = 1;
 
-												var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSeconds(minWaitSecFleet, maxWaitSecFleet);											
+												var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);											
 
-												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s");
-
+												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s for next Expedition");
 												await Task.Delay(rndWaitTimeMs, _ct);
 
 											} else {
@@ -323,7 +320,15 @@ namespace Tbot.Workers {
 					if ((orderedFleets.Count() == 0) || (_tbotInstance.UserData.slots.ExpFree > 0)) {
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
-						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+
+						var minWaitNextRound = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitNextRound;
+						var maxWaitNextRound = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitNextRound;
+
+						if (minWaitNextRound < 0) minWaitNextRound = 0;
+						if (maxWaitNextRound < 1) maxWaitNextRound = 1;
+
+						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextRound, maxWaitNextRound));
+
 					}
 					time = await _tbotOgameBridge.GetDateTime();
 					if (interval <= 0)
