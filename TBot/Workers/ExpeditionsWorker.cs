@@ -284,7 +284,7 @@ namespace Tbot.Workers {
 
 												var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);											
 
-												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s for next Expedition");
+												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s for next Expedition-Fleet");
 												await Task.Delay(rndWaitTimeMs, _ct);
 
 											} else {
