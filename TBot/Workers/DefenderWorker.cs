@@ -95,24 +95,32 @@ namespace Tbot.Workers {
 		private async Task FakeActivity() {
 			//checking if under attack by making activity on planet/moon configured in settings (otherwise make acti on latest activated planet)
 			// And make activity on one more random planet to fake real player
+
 			Celestial celestial;
 			Celestial randomCelestial;
-			celestial = _tbotInstance.UserData.celestials
+			var randomActivity = (bool) _tbotInstance.InstanceSettings.Defender.RandomActivity;
+
+			if (randomActivity == false) {
+				celestial = _tbotInstance.UserData.celestials
 				.Unique()
-				.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
-				.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
-				.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
-				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
+				.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Defender.Home.Galaxy)
+				.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Defender.Home.System)
+				.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Defender.Home.Position)
+				.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Defender.Home.Type))
 				.SingleOrDefault() ?? new() { ID = 0 };
 
-			if (celestial.ID != 0) {
-				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Defences);
-			}
-			randomCelestial = _tbotInstance.UserData.celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
-			if (randomCelestial.ID != 0) {
-				randomCelestial = await _tbotOgameBridge.UpdatePlanet(randomCelestial, UpdateTypes.Defences);
-			}
+				if (celestial.ID != 0) {
+					DoLog(LogLevel.Information, $"Check from Home ({celestial.Coordinate.Galaxy}:{celestial.Coordinate.System}:{celestial.Coordinate.Position} {celestial.Coordinate.Type})");
+					celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Defences);
+				}
+			} else {
+				randomCelestial = _tbotInstance.UserData.celestials.Shuffle().FirstOrDefault() ?? new() { ID = 0 };
 
+				if (randomCelestial.ID != 0) {
+					DoLog(LogLevel.Information, $"Check from Random Celestial");
+					randomCelestial = await _tbotOgameBridge.UpdatePlanet(randomCelestial, UpdateTypes.Defences);
+				}
+			}
 			return;
 		}
 
