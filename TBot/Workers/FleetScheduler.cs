@@ -496,8 +496,10 @@ namespace Tbot.Workers {
 			//_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Recalling fleet id {fleet.ID} originally from {fleet.Origin.ToString()} to {fleet.Destination.ToString()} with mission: {fleet.Mission.ToString()}. Start time: {fleet.StartTime.ToString()} - Arrival time: {fleet.ArrivalTime.ToString()} - Ships: {fleet.Ships.ToString()}");
 			_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
 			try {
+				await Task.Delay((int) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
+				_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Recall Fleet with ID: {fleet.ID}");
 				await _ogameService.CancelFleet(fleet);
-				await Task.Delay((int) IntervalType.AFewSeconds);
+				await Task.Delay((int) RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 				_tbotInstance.UserData.fleets = await UpdateFleets();
 				Fleet recalledFleet = _tbotInstance.UserData.fleets.SingleOrDefault(f => f.ID == fleet.ID) ?? new() { ID = (int) SendFleetCode.GenericError };
 				if (recalledFleet.ID == (int) SendFleetCode.GenericError) {
