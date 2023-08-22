@@ -273,7 +273,20 @@ namespace Tbot.Workers {
 													delay = true;
 													return;
 												}
-												await Task.Delay((int) IntervalType.AFewSeconds, _ct);
+												
+												var minWaitNextFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitNextFleet;
+												var maxWaitNextFleet = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitNextFleet;
+
+												if (minWaitNextFleet < 0)
+													minWaitNextFleet = 0;
+												if (maxWaitNextFleet < 1)
+													maxWaitNextFleet = 1;
+
+												var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);											
+
+												DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s for next Expedition-Fleet");
+												await Task.Delay(rndWaitTimeMs, _ct);
+
 											} else {
 												DoLog(LogLevel.Information, "Unable to send expeditions: no expedition slots available.");
 												break;
@@ -307,7 +320,15 @@ namespace Tbot.Workers {
 					if ((orderedFleets.Count() == 0) || (_tbotInstance.UserData.slots.ExpFree > 0)) {
 						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
-						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+
+						var minWaitNextRound = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitNextRound;
+						var maxWaitNextRound = (int) _tbotInstance.InstanceSettings.Expeditions.MaxWaitNextRound;
+
+						if (minWaitNextRound < 0) minWaitNextRound = 0;
+						if (maxWaitNextRound < 1) maxWaitNextRound = 1;
+
+						interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextRound, maxWaitNextRound));
+
 					}
 					time = await _tbotOgameBridge.GetDateTime();
 					if (interval <= 0)

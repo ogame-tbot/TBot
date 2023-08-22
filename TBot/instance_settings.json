@@ -64,6 +64,13 @@
 		"IgnoreMissiles": true,
 		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
+		"RandomActivity": true,
+		"Home": {
+			"Galaxy": 1,
+			"System": 1,
+			"Position": 1,
+			"Type": "Planet"
+		},
 		"Autofleet": {
 			"Active": true,
 			"TelegramMessenger": {
@@ -282,6 +289,8 @@
 	},
 	"Expeditions": {
 		"Active": true,
+		"MinWaitNextFleet": 5,
+		"MaxWaitNextFleet": 15,
 		"PrimaryShip": "LargeCargo",
 		"MinPrimaryToSend": 1000,
 		"PrimaryToKeep": 10000,
@@ -300,6 +309,8 @@
 		},
 		"WaitForAllExpeditions": false,
 		"WaitForMajorityOfExpeditions": false,
+		"MinWaitNextRound": 30,
+		"MaxWaitNextRound": 300,
 		"SplitExpeditionsBetweenSystems": {
 			"Active": false,
 			"Range": 1
