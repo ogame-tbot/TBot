@@ -317,8 +317,8 @@ namespace Tbot.Workers {
 					}
 
 					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
-					if ((orderedFleets.Count() == 0) || (_tbotInstance.UserData.slots.ExpFree > 0)) {
-						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+					if ((orderedFleets.Count() == 0) || (_tbotInstance.UserData.slots.ExpFree > 0 && (!((bool) _tbotInstance.InstanceSettings.Expeditions.WaitForAllExpeditions) && !((bool) _tbotInstance.InstanceSettings.Expeditions.WaitForMajorityOfExpeditions)))) {
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
 					} else {
 
 						var minWaitNextRound = (int) _tbotInstance.InstanceSettings.Expeditions.MinWaitNextRound;
