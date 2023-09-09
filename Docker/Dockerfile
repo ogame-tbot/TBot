@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="Crucio32000" \
     name="tbotogame" \
-    version="0.2" \
+    version="0.3" \
     description="TBot image"
 
 ENV CLEAN_DOCKER_CACHE=1
@@ -31,7 +31,7 @@ RUN apt-get install -y nano --fix-missing
 RUN apt-get install -y screen --fix-missing
 
 # Download TBOT and make it executable
-ARG TBOT_RELEASE="v0.2.65"
+ARG TBOT_RELEASE="v0.3.0"
 ARG TBOT_PLATFORM="linuxarm"
 RUN wget https://github.com/ogame-tbot/TBot/releases/download/${TBOT_RELEASE}/TBot-${TBOT_RELEASE}-${TBOT_PLATFORM}.zip && \
     unzip TBot-${TBOT_RELEASE}-${TBOT_PLATFORM}.zip
