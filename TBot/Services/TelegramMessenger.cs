@@ -267,7 +267,9 @@ namespace Tbot.Services {
 				"/bidauction",
 				"/subscribeauction",
 				"/stopautofarm",
-				"/startautofarm"
+				"/startautofarm",
+				"/stopautodiscovery",
+				"/startautodiscovery"
 			};
 
 			if (update.Type != UpdateType.Message) {
@@ -442,7 +444,9 @@ namespace Tbot.Services {
 								"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
 								"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
 								"/stopautofarm - stop autofarm\n" +
-								"/startautofarm - start autofarm"
+								"/startautofarm - start autofarm" +
+								"/stopautodiscovery - stop autodiscovery" +
+								"/startautodiscovery - start autodiscovery"
 							, ParseMode.Html);
 							return;
 						default:
@@ -1039,6 +1043,27 @@ namespace Tbot.Services {
 
 								await currInstance.InitializeFeature(Feature.AutoFarm);
 								await SendMessage(botClient, message.Chat, "Autofarm started!");
+								return;
+
+							case "/stopautodiscovery":
+								if (message.Text.Split(' ').Length != 1) {
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								await currInstance.StopFeature(Feature.AutoDiscovery);
+								await SendMessage(botClient, message.Chat, "Autodiscovery stopped!");
+								return;
+
+
+							case "/startautodiscovery":
+								if (message.Text.Split(' ').Length != 1) {
+									await SendMessage(botClient, message.Chat, "No argument accepted with this command!");
+									return;
+								}
+
+								await currInstance.InitializeFeature(Feature.AutoDiscovery);
+								await SendMessage(botClient, message.Chat, "Autodiscovery started!");
 								return;
 
 
