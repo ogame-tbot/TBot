@@ -216,7 +216,7 @@ namespace Tbot.Workers.Brain {
 
 					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 						bool result = false;
-						if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
+						if ((buildable == Buildables.SolarSatellite && (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellite) || buildable == Buildables.Crawler) {
 							if (!celestial.HasProduction()) {
 								DoLog(LogLevel.Information, $"Building {level.ToString()} x {buildable.ToString()} on {celestial.ToString()}");
 								try {
@@ -242,7 +242,7 @@ namespace Tbot.Workers.Brain {
 									_tbotInstance.UserData.lastDOIR = DOIR;
 								}
 							}
-							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
+							if ((buildable == Buildables.SolarSatellite && (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellite) || buildable == Buildables.Crawler) {
 								celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
 								try {
 									if (celestial.Productions.First().ID == (int) buildable) {
