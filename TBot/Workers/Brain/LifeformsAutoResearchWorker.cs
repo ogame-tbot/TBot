@@ -58,12 +58,9 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Information, "Running Lifeform autoresearch...");
 
 				if (((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Active)) {
-					AutoMinerSettings autoMinerSettings = new() {
-						DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
-					};
 					int maxResearchLevel = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxResearchLevel;
 					
-					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Exclude, _tbotInstance.UserData.celestials);
+					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Exclude, _tbotInstance.UserData.celestials);
 					List<Celestial> celestialsToMine = new();
 					LFBuildings maxLFBuildings = new();
 
@@ -105,7 +102,7 @@ namespace Tbot.Workers.Brain {
 					DoLog(LogLevel.Information, "Skipping: feature disabled");
 				}
 			} catch (Exception e) {
-				DoLog(LogLevel.Error, $"Lifeform AutoMine Exception: {e.Message}");
+				DoLog(LogLevel.Error, $"Lifeform AutoResearch Exception: {e.Message}");
 				DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
 			} finally {
 				if (!_tbotInstance.UserData.isSleeping) {
