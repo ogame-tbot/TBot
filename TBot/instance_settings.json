@@ -153,6 +153,7 @@
 			"OptimizeForStart": true,
 			"PrioritizeRobotsAndNanites": false,
 			"BuildDepositIfFull": false,
+			"BuildSolarSatellite": true,
 			"BuildCrawlers": true,
 			"DepositHours": 6,
 			"MaxDaysOfInvestmentReturn": 7,
