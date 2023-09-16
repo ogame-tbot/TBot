@@ -122,7 +122,8 @@ namespace Tbot.Workers {
 						Feature.BrainLifeformAutoResearch,
 						Feature.AutoFarm,
 						Feature.Harvest,
-						Feature.Expeditions
+						Feature.Expeditions,
+						Feature.AutoDiscovery
 					};
 					foreach(var feat in features) {
 						await _tbotInstance.StopFeature(feat);
