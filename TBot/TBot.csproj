@@ -4,16 +4,16 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>disable</Nullable>
-    <Authors>ELK-Lab</Authors>
-    <Version>0.3.0</Version>
+    <Authors>TBot</Authors>
+    <Version>0.3.1</Version>
     <StartupObject>Tbot.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Copyright>2022 © ELK-Lab</Copyright>
+    <Copyright>2023 © TBot</Copyright>
     <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.ogame-tbot.net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ogame-tbot/TBot</RepositoryUrl>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
-    <FileVersion>0.3.0.0</FileVersion>
+    <AssemblyVersion>0.3.1.0</AssemblyVersion>
+    <FileVersion>0.3.1.0</FileVersion>
     <Description>OGame Bot</Description>
     <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ELK-Lab.pfx</AssemblyOriginatorKeyFile>

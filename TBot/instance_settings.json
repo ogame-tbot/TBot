@@ -13,7 +13,7 @@
 			"Name": "Device-name",
 			"System": "Windows",
 			"Browser": "Chrome",
-			"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+			"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
 			"Memory": 8,
 			"Concurrency": 16,
 			"Color": 24,
@@ -21,7 +21,7 @@
 			"Height": 1080,
 			"Timezone": "Europe/London",
 			"Lang": "en"
-		  }
+		}
 	},
 	"General": {
 		"Host": "localhost",
