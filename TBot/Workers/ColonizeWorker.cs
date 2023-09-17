@@ -125,8 +125,8 @@ namespace Tbot.Workers {
 								foreach (var t in _tbotInstance.InstanceSettings.AutoColonize.Targets) {
 									var planetsInThisRange = _calculationService.CountPlanetsInRange(_tbotInstance.UserData.celestials, (int) t.Galaxy, (int) t.StartSystem, (int) t.EndSystem, (int) t.StartPosition, (int) t.EndPosition, minFields, minTemp, maxTemp);
 									var maxPlanetsInThisRange = (int) t.MaxPlanets;
-									if (maxPlanetsInThisRange >= planetsInThisRange) {
-										DoLog(LogLevel.Debug, $"You already have {planetsInThisRange.ToString()} planets that fit temperature and fields settings in the range [{t.Galaxy}:{t.StartSystem}-{t.EndSystem}:{t.StartPosition}-{t.EndPosition}. Skipping...");
+									if (planetsInThisRange >= maxPlanetsInThisRange) {
+										DoLog(LogLevel.Information, $"You already have {planetsInThisRange.ToString()} planets that fit temperature and fields settings in the range [{t.Galaxy}:{t.StartSystem}-{t.EndSystem}:{t.StartPosition}-{t.EndPosition}]. The max number is {maxPlanetsInThisRange}. Skipping...");
 										continue;
 									}
 									for (int i = (int) t.StartSystem; i <= (int) t.EndSystem; i++) {
