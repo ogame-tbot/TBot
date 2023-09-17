@@ -2808,18 +2808,18 @@ namespace Tbot.Includes {
 			return false;
 		}
 		
-		public int CountPlanetsInRange(List<Planet> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature) {
+		public int CountPlanetsInRange(List<Planet> planets, int galaxy, int minSystem = 1, int maxSystem = 499, int minPosition = 1, int maxPositions = 15, int minSlots = 1, int minTemperature = -130, int maxTemperature = 260) {
 			return planets
 				.Where(planet => planet.Coordinate.Type == Celestials.Planet)
 				.Where(planet => planet.Coordinate.Galaxy == galaxy)
 				.Where(planet => planet.Coordinate.System >= minSystem && planet.Coordinate.System <= maxSystem)
 				.Where(planet => planet.Coordinate.Position >= minPosition && planet.Coordinate.Position <= maxPositions)
 				.Where(planet => planet.Fields.Total >= minSlots)
-				.Where(planet => planet.Temperature.Max < minTemperature && planet.Temperature.Max > maxTemperature)
+				.Where(planet => planet.Temperature.Max >= minTemperature && planet.Temperature.Max <= maxTemperature)
 				.Count();
 		}
 
-		public int CountPlanetsInRange(List<Celestial> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature) {
+		public int CountPlanetsInRange(List<Celestial> planets, int galaxy, int minSystem = 1, int maxSystem = 499, int minPosition = 1, int maxPositions = 15, int minSlots = 1, int minTemperature = -130, int maxTemperature = 260) {
 			return planets
 				.Where(planet => planet is Planet)
 				.Where(planet => planet.Coordinate.Type == Celestials.Planet)
@@ -2827,7 +2827,7 @@ namespace Tbot.Includes {
 				.Where(planet => planet.Coordinate.System >= minSystem && planet.Coordinate.System <= maxSystem)
 				.Where(planet => planet.Coordinate.Position >= minPosition && planet.Coordinate.Position <= maxPositions)
 				.Where(planet => planet.Fields.Total >= minSlots)
-				.Where(planet => (planet as Planet).Temperature.Max < minTemperature && (planet as Planet).Temperature.Max > maxTemperature)
+				.Where(planet => (planet as Planet).Temperature.Max >= minTemperature && (planet as Planet).Temperature.Max <= maxTemperature)
 				.Count();
 		}
 	}
