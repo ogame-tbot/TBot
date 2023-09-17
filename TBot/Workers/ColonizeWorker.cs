@@ -108,7 +108,7 @@ namespace Tbot.Workers {
 						} else {
 							Coordinate originCoords = new(
 								(int) _tbotInstance.InstanceSettings.AutoColonize.Origin.Galaxy,
-							(int) _tbotInstance.InstanceSettings.AutoColonize.Origin.System,
+								(int) _tbotInstance.InstanceSettings.AutoColonize.Origin.System,
 								(int) _tbotInstance.InstanceSettings.AutoColonize.Origin.Position,
 								Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.AutoColonize.Origin.Type)
 							);
@@ -118,8 +118,17 @@ namespace Tbot.Workers {
 							var neededColonizers = maxPlanets - currentPlanets - slotsToLeaveFree;
 
 							if (origin.Ships.ColonyShip >= neededColonizers) {
-								List<Coordinate> targets = new();
+								var minTemp = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinTemperatureAcceptable;
+								var maxTemp = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MaxTemperatureAcceptable;
+								var minFields = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinFields;
+								List <Coordinate> targets = new();
 								foreach (var t in _tbotInstance.InstanceSettings.AutoColonize.Targets) {
+									var planetsInThisRange = _calculationService.CountPlanetsInRange(_tbotInstance.UserData.celestials, (int) t.Galaxy, (int) t.StartSystem, (int) t.EndSystem, (int) t.StartPosition, (int) t.EndPosition, minFields, minTemp, maxTemp);
+									var maxPlanetsInThisRange = (int) t.MaxPlanets;
+									if (maxPlanetsInThisRange >= planetsInThisRange) {
+										DoLog(LogLevel.Debug, $"You already have {planetsInThisRange.ToString()} planets that fit temperature and fields settings in the range [{t.Galaxy}:{t.StartSystem}-{t.EndSystem}:{t.StartPosition}-{t.EndPosition}. Skipping...");
+										continue;
+									}
 									for (int i = (int) t.StartSystem; i <= (int) t.EndSystem; i++) {
 										for (int ii = (int) t.StartPosition; ii <= (int) t.EndPosition; ii++) {
 											Coordinate targetCoords = new(

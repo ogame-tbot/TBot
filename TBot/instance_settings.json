@@ -409,14 +409,16 @@
 				"StartSystem": 123,
 				"EndSystem": 123,
 				"StartPosition": 7,
-				"EndPosition": 9
+				"EndPosition": 9,
+				"MaxPlanets": 1
 			},
 			{
 				"Galaxy": 3,
 				"StartSystem": 150,
 				"EndSystem": 350,
 				"StartPosition": 15,
-				"EndPosition": 15
+				"EndPosition": 15,
+				"MaxPlanets": 2
 			}
 		],
 		"RandomPosition": true,

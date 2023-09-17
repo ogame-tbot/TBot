@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TBot.Common.Logging;
 using TBot.Model;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Tbot.Includes {
 
@@ -2805,6 +2806,29 @@ namespace Tbot.Includes {
 				return true;
 			}
 			return false;
+		}
+		
+		public int CountPlanetsInRange(List<Planet> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature) {
+			return planets
+				.Where(planet => planet.Coordinate.Type == Celestials.Planet)
+				.Where(planet => planet.Coordinate.Galaxy == galaxy)
+				.Where(planet => planet.Coordinate.System >= minSystem && planet.Coordinate.System <= maxSystem)
+				.Where(planet => planet.Coordinate.Position >= minPosition && planet.Coordinate.Position <= maxPositions)
+				.Where(planet => planet.Fields.Total >= minSlots)
+				.Where(planet => planet.Temperature.Max < minTemperature && planet.Temperature.Max > maxTemperature)
+				.Count();
+		}
+
+		public int CountPlanetsInRange(List<Celestial> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature) {
+			return planets
+				.Where(planet => planet is Planet)
+				.Where(planet => planet.Coordinate.Type == Celestials.Planet)
+				.Where(planet => planet.Coordinate.Galaxy == galaxy)
+				.Where(planet => planet.Coordinate.System >= minSystem && planet.Coordinate.System <= maxSystem)
+				.Where(planet => planet.Coordinate.Position >= minPosition && planet.Coordinate.Position <= maxPositions)
+				.Where(planet => planet.Fields.Total >= minSlots)
+				.Where(planet => (planet as Planet).Temperature.Max < minTemperature && (planet as Planet).Temperature.Max > maxTemperature)
+				.Count();
 		}
 	}
 }

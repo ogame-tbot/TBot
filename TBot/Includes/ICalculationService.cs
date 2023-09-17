@@ -121,5 +121,9 @@ namespace Tbot.Includes {
 		bool ShouldResearchEnergyTech(List<Planet> planets, int energyTech, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
 		bool ShouldResearchEnergyTech(List<Planet> planets, Researches researches, int maxEnergyTech = 25, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
 		bool ShouldAbandon(Planet celestial, int maxCases, int Temperature, Fields fieldsSettings, Temperature temperaturesSettings);
+		int CountPlanetsInRange(List<Planet> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature);
+		int CountPlanetsInRange(List<Celestial> planets, int galaxy, int minSystem, int maxSystem, int minPosition, int maxPositions, int minSlots, int minTemperature, int maxTemperature);
+
 	}
+
 }
