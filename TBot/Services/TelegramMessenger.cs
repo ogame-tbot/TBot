@@ -444,9 +444,9 @@ namespace Tbot.Services {
 								"/stoplifeformautoresearch - stop brain Lifeform autoresearch\n" +
 								"/startlifeformautoresearch - start brain Lifeform autoresearch\n" +
 								"/stopautofarm - stop autofarm\n" +
-								"/startautofarm - start autofarm" +
-								"/stopautodiscovery - stop autodiscovery" +
-								"/startautodiscovery - start autodiscovery"
+								"/startautofarm - start autofarm\n" +
+								"/stopautodiscovery - stop autodiscovery\n" +
+								"/startautodiscovery - start autodiscovery\n"
 							, ParseMode.Html);
 							return;
 						default:
