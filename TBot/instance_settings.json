@@ -53,7 +53,11 @@
 			"ForceUnsafe": true,
 			"DeutToLeave": 200000,
 			"Recall": true,
-			"DefaultMission": "Deploy"
+			"DefaultMission": "Deploy",
+			"ForceSpeed": {
+				"Active": false,
+				"Speed": 10
+			}
 		}
 	},
 	"Defender": {

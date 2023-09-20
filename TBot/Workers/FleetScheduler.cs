@@ -215,6 +215,16 @@ namespace Tbot.Workers {
 
 			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 			if (fleetHypotesis.Count() > 0) {
+				if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Active) {
+					var speed = (decimal) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Speed / 10;
+					var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
+					if (validSpeeds.Contains(speed)) {
+						fleetHypotesis = fleetHypotesis.Where(x => x.Speed == speed).ToList();
+					} else {
+						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Error: Could not parse 'ForceSpeed' from settings, value set to 10%.");
+					}
+					fleetHypotesis = fleetHypotesis.Where(x => x.Speed == Speeds.TenPercent).ToList();
+				}
 				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 					if (CheckFuel(fleet, celestial)) {
