@@ -85,6 +85,7 @@ namespace Tbot.Workers.Brain {
 			bool stop = false;
 			bool delay = false;
 			bool delayProduction = false;
+			bool delayLFResearch = false;
 			long delayTime = 0;
 			long interval = 0;
 			try {
@@ -116,6 +117,20 @@ namespace Tbot.Workers.Brain {
 						if (buildable != LFBuildables.None) {
 							level = _calculationService.GetNextLevel(celestial, buildable);
 							DoLog(LogLevel.Information, $"Best building for {celestial.ToString()}: {buildable.ToString()}");
+
+							if (
+								celestial.Constructions.LFResearchID != 0 &&
+								(
+									buildable == LFBuildables.ResearchCentre ||
+									buildable == LFBuildables.RuneTechnologium ||
+									buildable == LFBuildables.RoboticsResearchCentre ||
+									buildable == LFBuildables.VortexChamber
+								)
+							) {
+								DoLog(LogLevel.Warning, "Unable to start building construction: a LifeForm Research is already in progress.");
+								delayLFResearch = true;
+								return;
+							}
 							Resources xCostBuildable = await _ogameService.GetPrice(buildable, level);
 
 							if (celestial.Resources.IsBuildable(xCostBuildable)) {
@@ -184,7 +199,14 @@ namespace Tbot.Workers.Brain {
 				} else {
 					if (delayProduction) {
 						DoLog(LogLevel.Information, $"Delaying...");
-						interval = delayTime;						
+						interval = delayTime;
+					} else if (delayLFResearch) {
+						DoLog(LogLevel.Information, $"Delaying...");
+						try {
+							interval = (celestial.Constructions.LFResearchCountdown * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.CheckIntervalMax);
+						}
 					} else if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
