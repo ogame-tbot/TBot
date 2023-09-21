@@ -441,6 +441,7 @@
 				"StartSystem": 1,
 				"EndSystem": 128
 		},
+		"ProgressiveRange": true,
 		"MaxSlots": 5,
 		"MaxFailures": 5,
 		"CheckIntervalMin": 30,

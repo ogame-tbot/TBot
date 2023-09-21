@@ -60,12 +60,41 @@ namespace Tbot.Workers {
 						return;
 					}
 
-					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free >= 1) {
-						Coordinate dest = new();
-						dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
-						dest.System = rand.Next((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
-						dest.Position = rand.Next(1, 16);
+					int modulo = 0;
+					int step = 0;
+					int system = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Origin.System;
+					int position = 0;
+					Coordinate dest = new();
 
+					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free >= 1) {
+						
+						if ((bool) _tbotInstance.InstanceSettings.AutoDiscovery.ProgressiveRange) {
+							position++;
+							if (position > 15) {
+								if (modulo%2 == 0)
+									step++;
+								
+								modulo++;
+								position = 1;
+							}
+							if (modulo%2 > 0)
+								system = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Origin.System - step;
+							else if (modulo%2 == 0)
+								system = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Origin.System + step;
+							
+							if (system < 1)
+								system = 499 + system;
+							else if (system > 499)
+								system = 1 + (system - 499);
+
+							dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Origin.Galaxy;
+							dest.System = system;
+							dest.Position = position;
+						} else {
+							dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
+							dest.System = rand.Next((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
+							dest.Position = rand.Next(1, 16);
+						}
 						Coordinate blacklistedCoord = _tbotInstance.UserData.discoveryBlackList.Keys
 							.Where(c => c.Galaxy == dest.Galaxy)
 							.Where(c => c.System == dest.System)
@@ -75,7 +104,9 @@ namespace Tbot.Workers {
 							if (_tbotInstance.UserData.discoveryBlackList.Single(d => d.Key.Galaxy == dest.Galaxy && d.Key.System == dest.System && d.Key.Position == dest.Position).Value > DateTime.Now) {
 								DoLog(LogLevel.Information, $"Skipping {dest.ToString()} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[blacklistedCoord].ToString()}");
 								skips++;
-								if (skips >= ((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem - (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem) * 15) {
+								if ((bool) _tbotInstance.InstanceSettings.AutoDiscovery.ProgressiveRange)
+									position = 16;
+								if ((skips >= ((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem - (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem) * 15) && !((bool) _tbotInstance.InstanceSettings.AutoDiscovery.ProgressiveRange)) {
 									DoLog(LogLevel.Information, $"Range depleted: stopping");
 									stop = true;
 									break;
@@ -90,12 +121,17 @@ namespace Tbot.Workers {
 						if (!result) {
 							failures++;
 							DoLog(LogLevel.Warning, $"Failed to send discovery fleet to {dest.ToString()} from {origin.ToString()}.");
-						}
-						else {
+							if (modulo%2 == 0)
+								step++;							
+							modulo++;
+							position = 0;
+						} else {
 							DoLog(LogLevel.Information, $"Sent discovery fleet to {dest.ToString()} from {origin.ToString()}.");
 						}
+
 						_tbotInstance.UserData.discoveryBlackList.Add(dest, DateTime.Now.AddDays(1));
 						
+						dest = new();
 
 						if (failures >= (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxFailures) {
 							DoLog(LogLevel.Warning, $"Max failures reached");
@@ -104,12 +140,25 @@ namespace Tbot.Workers {
 						
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 						_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
-						if (_tbotInstance.UserData.slots.Free <= 1) {
+						if (_tbotInstance.UserData.slots.Free <= 1 && (int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots) {
 							DoLog(LogLevel.Information, $"AutoDiscoveryWorker: No slots left, dealying");
 							delay = true;
 							break;
 						}
 					}
+					
+					List<Fleet> orderedFleets = _tbotInstance.UserData.fleets
+						.Where(fleet => fleet.Mission == Missions.Discovery)
+						.OrderByDescending(fleet => fleet.BackIn)
+						.ToList();
+					long interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes));
+					DateTime time = await _tbotOgameBridge.GetDateTime();
+					if (interval <= 0)
+						interval = RandomizeHelper.CalcRandomInterval(IntervalType.AboutFiveMinutes);
+					DateTime newTime = time.AddMilliseconds(interval);
+					ChangeWorkerPeriod(interval);
+					DoLog(LogLevel.Information, $"Next check at {newTime.ToString()}");
+					await _tbotOgameBridge.CheckCelestials();
 				}
 				else {
 					stop = true;
@@ -123,18 +172,23 @@ namespace Tbot.Workers {
 					DoLog(LogLevel.Information, $"Stopping feature.");
 					await EndExecution();
 				} else {
-					long interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoDiscovery.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoDiscovery.CheckIntervalMax);
 					if (delay) {
 						DoLog(LogLevel.Information, $"Delaying...");
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-						interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						long interval;
+						try {
+							interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).First().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						} catch {
+							interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoDiscovery.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoDiscovery.CheckIntervalMax);
+						}
+					
+						if (interval <= 0)
+							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						var time = await _tbotOgameBridge.GetDateTime();
+						var newTime = time.AddMilliseconds(interval);
+						ChangeWorkerPeriod(interval);
+						DoLog(LogLevel.Information, $"Next AutoDiscovery check at {newTime.ToString()}");
 					}
-					if (interval <= 0)
-						interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
-					var time = await _tbotOgameBridge.GetDateTime();
-					var newTime = time.AddMilliseconds(interval);
-					ChangeWorkerPeriod(interval);
-					DoLog(LogLevel.Information, $"Next AutoDiscovery check at {newTime.ToString()}");
 				}
 				await _tbotOgameBridge.CheckCelestials();
 			}			
