@@ -69,8 +69,8 @@
 		"WeakAttackRatio": 3,
 		"IgnoreAttackIfIHave": {
 			"Active": false,
-			"MinResourcesValue": 2000000,
-			"MinFleetValue": 20000000
+			"MinResourcesToSave": 2000000,
+			"MinFleetToSave": 20000000
 		},
 		"RandomActivity": true,
 		"Home": {
