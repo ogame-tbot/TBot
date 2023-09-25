@@ -183,7 +183,7 @@ namespace Tbot.Workers {
 				if (
 					(bool) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.Active &&
 					attackedCelestial.Resources.TotalResources < (long) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.MinResourcesToSave &&
-					attackedCelestial.Ships.GetFleetPoints() < (long) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.MinFleetToSave
+					(attackedCelestial.Ships.GetFleetPoints() *1000) < (long) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.MinFleetToSave
 				) {
 					DoLog(LogLevel.Information, $"Attack {attack.ID.ToString()} skipped: it's not worth it.");
 					return;
