@@ -169,6 +169,9 @@ namespace Tbot.Workers {
 
 			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 			Celestial destination = new() { ID = 0 };
+			if (!forceUnsafe)
+				forceUnsafe = (bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceUnsafe; //not used anymore
+
 
 			if (celestial.Resources.Deuterium == 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
@@ -210,7 +213,7 @@ namespace Tbot.Workers {
 			if (TelegramMission != Missions.None)
 				mission = TelegramMission;
 
-			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
+			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 			if (fleetHypotesis.Count() > 0) {
 				if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Active) {
 					var speed = (decimal) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Speed / 10;
@@ -250,19 +253,10 @@ namespace Tbot.Workers {
 			//Doing Deploy
 			if (!AlreadySent) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible, checking next mission..");
+				if (mission == Missions.Harvest) { mission = Missions.Deploy; } else { mission = Missions.Harvest; };
 				mission = Missions.Deploy;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
-					if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Active) {
-						var speed = (decimal) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Speed / 10;
-						var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
-						if (validSpeeds.Contains(speed)) {
-							fleetHypotesis = fleetHypotesis.Where(x => x.Speed == speed).ToList();
-						} else {
-							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Error: Could not parse 'ForceSpeed' from settings, value set to 10%.");
-						}
-						fleetHypotesis = fleetHypotesis.Where(x => x.Speed == Speeds.TenPercent).ToList();
-					}
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 						if (CheckFuel(fleet, celestial)) {
@@ -284,18 +278,8 @@ namespace Tbot.Workers {
 			if (!AlreadySent && celestial.Ships.ColonyShip > 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Colonize destination...");
 				mission = Missions.Colonize;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
-					if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Active) {
-						var speed = (decimal) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Speed / 10;
-						var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
-						if (validSpeeds.Contains(speed)) {
-							fleetHypotesis = fleetHypotesis.Where(x => x.Speed == speed).ToList();
-						} else {
-							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Error: Could not parse 'ForceSpeed' from settings, value set to 10%.");
-						}
-						fleetHypotesis = fleetHypotesis.Where(x => x.Speed == Speeds.TenPercent).ToList();
-					}
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 						if (CheckFuel(fleet, celestial)) {
@@ -316,18 +300,8 @@ namespace Tbot.Workers {
 			if (!AlreadySent && celestial.Ships.EspionageProbe > 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Spy destination...");
 				mission = Missions.Spy;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
 				if (fleetHypotesis.Count > 0) {
-					if ((bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Active) {
-						var speed = (decimal) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceSpeed.Speed / 10;
-						var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
-						if (validSpeeds.Contains(speed)) {
-							fleetHypotesis = fleetHypotesis.Where(x => x.Speed == speed).ToList();
-						} else {
-							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Error: Could not parse 'ForceSpeed' from settings, value set to 10%.");
-						}
-						fleetHypotesis = fleetHypotesis.Where(x => x.Speed == Speeds.TenPercent).ToList();
-					}
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
 						if (CheckFuel(fleet, celestial)) {
@@ -615,7 +589,7 @@ namespace Tbot.Workers {
 			return true;
 		}
 
-		private async Task<List<FleetHypotesis>> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel) {
+		private async Task<List<FleetHypotesis>> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
 			var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 			List<FleetHypotesis> possibleFleets = new();
 			List<Coordinate> possibleDestinations = new();
