@@ -1261,12 +1261,15 @@ namespace Tbot.Services {
 						);
 						// All other Fleets.Mission
 						tempFleets.AddRange(userData.fleets
+							.Where(f => f.Mission != Missions.Discovery)
 							.Where(f => f.BackIn <= timeToWakeup)
 						);
 						if (tempFleets.Count() > 0) {
 							log(LogLevel.Information, LogSender.SleepMode, "There are fleets that would come back during sleep time. Delaying sleep mode.");
 							long interval = 0;
 							foreach (Fleet tempFleet in tempFleets) {
+								if (tempFleet.Mission == Missions.Discovery)
+									continue;
 								if (tempFleet.Mission == Missions.Deploy) {
 									if (tempFleet.ArriveIn > interval)
 										interval = (long) tempFleet.ArriveIn;

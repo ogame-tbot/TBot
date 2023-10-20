@@ -105,7 +105,12 @@ namespace Tbot.Workers {
 				_tbotInstance.UserData.fleets = await UpdateFleets();
 				long interval;
 				try {
-					interval = (_tbotInstance.UserData.fleets.OrderBy(f => f.BackIn).Last().BackIn ?? 0) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+					interval = (_tbotInstance.UserData.fleets
+						.Where(f => f.Mission != Missions.Discovery)
+						.OrderBy(f => f.BackIn)
+						.Last()
+						.BackIn ?? 0
+					) * 1000 + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
 				} catch {
 					interval = 0;
 				}

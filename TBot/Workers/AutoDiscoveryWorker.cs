@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using Microsoft.Extensions.Logging;
 using Tbot.Helpers;
 using Tbot.Includes;
@@ -57,6 +58,14 @@ namespace Tbot.Workers {
 					if (origin.ID == 0) {
 						stop = true;
 						DoLog(LogLevel.Warning, "Unable to parse AutoDiscovery origin");
+						return;
+					}
+					DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep);
+					DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp);
+					DateTime time = await _tbotOgameBridge.GetDateTime();
+					if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
+						DoLog(LogLevel.Warning, "Unable to send discovery fleet: bed time has passed");
+						stop = true;
 						return;
 					}
 
