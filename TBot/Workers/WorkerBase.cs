@@ -86,6 +86,8 @@ namespace Tbot.Workers {
 			}
 		}
 		public void ChangeWorkerPeriod(long periodMs) {
+			if (periodMs >= int.MaxValue)
+				periodMs = int.MaxValue;
 			ChangeWorkerPeriod(TimeSpan.FromMilliseconds(periodMs));
 		}
 		public void ChangeWorkerPeriod(TimeSpan period) {

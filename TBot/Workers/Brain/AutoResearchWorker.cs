@@ -224,6 +224,8 @@ namespace Tbot.Workers.Brain {
 						ChangeWorkerPeriod(interval);
 						DoLog(LogLevel.Information, $"Next AutoResearch check at {newTime.ToString()}");
 					} else if (delayResearch > 0) {
+						if (delayResearch >= int.MaxValue)
+							delayResearch = int.MaxValue;
 						var time = await _tbotOgameBridge.GetDateTime();
 						var newTime = time.AddMilliseconds(delayResearch);
 						ChangeWorkerPeriod(delayResearch);
