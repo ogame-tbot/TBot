@@ -60,14 +60,17 @@ namespace Tbot.Workers {
 						DoLog(LogLevel.Warning, "Unable to parse AutoDiscovery origin");
 						return;
 					}
-					DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep);
-					DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp);
-					DateTime time = await _tbotOgameBridge.GetDateTime();
-					if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
-						DoLog(LogLevel.Warning, "Unable to send discovery fleet: bed time has passed");
-						stop = true;
-						return;
-					}
+					
+					if ((bool) _tbotInstance.InstanceSettings.SleepMode.Active) {
+						DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep);
+						DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp);
+						DateTime time = await _tbotOgameBridge.GetDateTime();
+						if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
+							DoLog(LogLevel.Warning, "Unable to send discovery fleet: bed time has passed");
+							stop = true;
+							return;
+						}
+					}					
 
 					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free >= 1) {
 						Coordinate dest = new();
