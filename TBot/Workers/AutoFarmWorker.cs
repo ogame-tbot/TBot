@@ -842,7 +842,7 @@ namespace Tbot.Workers {
 							target.State = FarmState.AttackSent;
 							_tbotInstance.UserData.farmTargets.Add(target);
 						} else {
-							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}. {_tbotInstance.UserData.slots.Free} free, {slotsToLeaveFree} required.");
+							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}: {slotUsed.Count()} slots used by AutoFarm, {_tbotInstance.InstanceSettings.AutoFarm.MaxSlots} slots usable by AutoFarm, {_tbotInstance.UserData.slots.Free} slots free, {slotsToLeaveFree} must remain free.");
 							return;
 						}
 					}
