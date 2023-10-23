@@ -9,10 +9,15 @@ OGame Bot
 
 TBot is a .NET 6 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogamed deamon](https://github.com/alaingilbert/ogame) by alaingilbert
 
-TBot supports Ogame **v10.4.0**!
+Feel free to publish issues or pull requests
+
+TBot supports Ogame **v11**!
 A basic LifeForm support is provided.
 
-Feel free to publish issues or pull requests
+## How to Update from 0.3.1
+
+Be sure to remove .ogame folder from */home/username/* (linux) or *C:/Users/username* (win) before logging in
+
 
 [![Stories in Ready](https://discordapp.com/api/guilds/801453618770214923/widget.png?style=banner2)](https://discord.gg/NZSaY4aQ7J)
 
