@@ -1092,6 +1092,7 @@ namespace Tbot.Services {
 			await SendTelegramMessage($"Going to sleep, Waking Up at {WakeUpTime.ToString()}");
 			log(LogLevel.Information, LogSender.SleepMode, $"Going to sleep..., Waking Up at {WakeUpTime.ToString()}");
 			if (userData.isSleeping == false) {
+				/* remove?
 				if (
 					SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
 					SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
@@ -1101,7 +1102,7 @@ namespace Tbot.Services {
 					await _ogameService.Logout();
 					log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
 				}
-
+				*/
 				userData.isSleeping = true;
 			}
 		}
@@ -1314,6 +1315,7 @@ namespace Tbot.Services {
 						await SendTelegramMessage($"Going to sleep, Waking Up at {state.ToString()}");
 					}
 					if (userData.isSleeping == false) {
+						/* remove?
 						if (
 							SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
 							SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
@@ -1323,6 +1325,7 @@ namespace Tbot.Services {
 							await _ogameService.Logout();
 							log(LogLevel.Information, LogSender.SleepMode, $"Logged out from ogamed.");
 						}
+						*/
 						userData.isSleeping = true;
 					}
 				}
@@ -1357,6 +1360,7 @@ namespace Tbot.Services {
 
 			if (userData.isSleeping) {
 				userData.isSleeping = false;
+				/* remove?
 				if (
 					SettingsService.IsSettingSet(InstanceSettings, "SleepMode") &&
 					SettingsService.IsSettingSet(InstanceSettings.SleepMode, "LogoutOnSleep") &&
@@ -1366,6 +1370,7 @@ namespace Tbot.Services {
 					loggedIn = true;
 					log(LogLevel.Information, LogSender.SleepMode, "Ogamed logged in again!");
 				}
+				*/
 			}
 			InitializeFeatures();
 		}
