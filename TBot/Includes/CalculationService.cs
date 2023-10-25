@@ -15,6 +15,8 @@ using Microsoft.Extensions.Logging;
 using TBot.Common.Logging;
 using TBot.Model;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.Operations;
+using System.Reflection.Emit;
 
 namespace Tbot.Includes {
 
@@ -1110,6 +1112,1075 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public Resources CalcPrice(LFBuildables buildable, int level) {
+			long metalBaseCost = 0;
+			long crystalbaseCost = 0;
+			long deutBaseCost = 0;
+			long energyBaseCost = 0;
+			double metalFactor = 0;
+			double crystalFactor = 0;
+			double deutFactor = 0;
+			double energyFactor = 0;
+
+			switch (buildable) {
+				case LFBuildables.ResidentialSector:
+					metalBaseCost = 7;
+					crystalbaseCost = 2;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					break;
+				case LFBuildables.BiosphereFarm:
+					metalBaseCost = 5;
+					crystalbaseCost = 2;
+					energyBaseCost = 8;
+					metalFactor = 1.23;
+					crystalFactor = 1.23;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.ResearchCentre:
+					metalBaseCost = 20000;
+					crystalbaseCost = 25000;
+					deutBaseCost = 10000;
+					energyBaseCost = 10;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					energyFactor = 1.08;
+					break;
+				case LFBuildables.AcademyOfSciences:
+					metalBaseCost = 5000;
+					crystalbaseCost = 3200;
+					deutBaseCost = 1500;
+					energyBaseCost = 15;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					energyFactor = 1.25;
+					break;
+				case LFBuildables.NeuroCalibrationCentre:
+					metalBaseCost = 50000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 50000;
+					energyBaseCost = 30;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					energyFactor = 1.25;
+					break;
+				case LFBuildables.HighEnergySmelting:
+					metalBaseCost = 9000;
+					crystalbaseCost = 6000;
+					deutBaseCost = 3000;
+					energyBaseCost = 40;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.FoodSilo:
+					metalBaseCost = 25000;
+					crystalbaseCost = 13000;
+					deutBaseCost = 7000;
+					metalFactor = 1.09;
+					crystalFactor = 1.09;
+					deutFactor = 1.09;
+					break;
+				case LFBuildables.FusionPoweredProduction:
+					metalBaseCost = 50000;
+					crystalbaseCost = 25000;
+					deutBaseCost = 15000;
+					energyBaseCost = 80;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.Skyscraper:
+					metalBaseCost = 75000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 25000;
+					energyBaseCost = 50;
+					metalFactor = 1.09;
+					crystalFactor = 1.09;
+					deutFactor = 1.09;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.BiotechLab:
+					metalBaseCost = 150000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 15000;
+					energyBaseCost = 60;
+					metalFactor = 1.12;
+					crystalFactor = 1.12;
+					deutFactor = 1.12;
+					energyFactor = 1.03;
+					break;
+				case LFBuildables.Metropolis:
+					metalBaseCost = 80000;
+					crystalbaseCost = 35000;
+					deutBaseCost = 60000;
+					energyBaseCost = 90;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.05;
+					break;
+				case LFBuildables.PlanetaryShield:
+					metalBaseCost = 250000;
+					crystalbaseCost = 125000;
+					deutBaseCost = 125000;
+					energyBaseCost = 100;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.MeditationEnclave:
+					metalBaseCost = 9;
+					crystalbaseCost = 3;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					break;
+				case LFBuildables.CrystalFarm:
+					metalBaseCost = 7;
+					crystalbaseCost = 2;
+					energyBaseCost = 10;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					energyFactor = 1.03;
+					break;
+				case LFBuildables.RuneTechnologium:
+					metalBaseCost = 40000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 15000;
+					energyBaseCost = 15;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.RuneForge:
+					metalBaseCost = 5000;
+					crystalbaseCost = 3800;
+					deutBaseCost = 1000;
+					energyBaseCost = 20;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					energyFactor = 1.35;
+					break;
+				case LFBuildables.Oriktorium:
+					metalBaseCost = 50000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 50000;
+					energyBaseCost = 60;
+					metalFactor = 1.65;
+					crystalFactor = 1.65;
+					deutFactor = 1.65;
+					energyFactor = 1.3;
+					break;
+				case LFBuildables.MagmaForge:
+					metalBaseCost = 10000;
+					crystalbaseCost = 8000;
+					deutBaseCost = 1000;
+					energyBaseCost = 40;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.DisruptionChamber:
+					metalBaseCost = 20000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 10000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFBuildables.Megalith:
+					metalBaseCost = 50000;
+					crystalbaseCost = 35000;
+					deutBaseCost = 15000;
+					energyBaseCost = 80;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.3;
+					break;
+				case LFBuildables.CrystalRefinery:
+					metalBaseCost = 85000;
+					crystalbaseCost = 44000;
+					deutBaseCost = 25000;
+					energyBaseCost = 90;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.DeuteriumSynthesiser:
+					metalBaseCost = 120000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					energyBaseCost = 90;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.MineralResearchCentre:
+					metalBaseCost = 250000;
+					crystalbaseCost = 150000;
+					deutBaseCost = 100000;
+					energyBaseCost = 120;
+					metalFactor = 1.8;
+					crystalFactor = 1.8;
+					deutFactor = 1.8;
+					energyFactor = 1.3;
+					break;
+				case LFBuildables.AdvancedRecyclingPlant:
+					metalBaseCost = 250000;
+					crystalbaseCost = 125000;
+					deutBaseCost = 125000;
+					energyBaseCost = 100;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.AssemblyLine:
+					metalBaseCost = 6;
+					crystalbaseCost = 2;
+					metalFactor = 1.21;
+					crystalFactor = 1.21;
+					break;
+				case LFBuildables.FusionCellFactory:
+					metalBaseCost = 5;
+					crystalbaseCost = 2;
+					energyBaseCost = 8;
+					metalFactor = 1.18;
+					crystalFactor = 1.18;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.RoboticsResearchCentre:
+					metalBaseCost = 30000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 10000;
+					energyBaseCost = 13;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					energyFactor = 1.08;
+					break;
+				case LFBuildables.UpdateNetwork:
+					metalBaseCost = 5000;
+					crystalbaseCost = 3800;
+					deutBaseCost = 1000;
+					energyBaseCost = 10;
+					metalFactor = 1.8;
+					crystalFactor = 1.8;
+					deutFactor = 1.8;
+					energyFactor = 1.2;
+					break;
+				case LFBuildables.QuantumComputerCentre:
+					metalBaseCost = 50000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 50000;
+					energyBaseCost = 40;
+					metalFactor = 1.8;
+					crystalFactor = 1.8;
+					deutFactor = 1.8;
+					energyFactor = 1.2;
+					break;
+				case LFBuildables.AutomatisedAssemblyCentre:
+					metalBaseCost = 7500;
+					crystalbaseCost = 7000;
+					deutBaseCost = 1000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFBuildables.HighPerformanceTransformer:
+					metalBaseCost = 35000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 10000;
+					energyBaseCost = 40;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.05;
+					break;
+				case LFBuildables.MicrochipAssemblyLine:
+					metalBaseCost = 50000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 30000;
+					energyBaseCost = 40;
+					metalFactor = 1.07;
+					crystalFactor = 1.07;
+					deutFactor = 1.07;
+					energyFactor = 1.01;
+					break;
+				case LFBuildables.ProductionAssemblyHall:
+					metalBaseCost = 100000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 3000;
+					energyBaseCost = 80;
+					metalFactor = 1.14;
+					crystalFactor = 1.14;
+					deutFactor = 1.14;
+					energyFactor = 1.04;
+					break;
+				case LFBuildables.HighPerformanceSynthesiser:
+					metalBaseCost = 100000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 20000;
+					energyBaseCost = 60;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.1;
+					break;
+				case LFBuildables.ChipMassProduction:
+					metalBaseCost = 55000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 30000;
+					energyBaseCost = 70;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.05;
+					break;
+				case LFBuildables.NanoRepairBots:
+					metalBaseCost = 250000;
+					crystalbaseCost = 125000;
+					deutBaseCost = 125000;
+					energyBaseCost = 100;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					energyFactor = 1.05;
+					break;
+				case LFBuildables.Sanctuary:
+					metalBaseCost = 4;
+					crystalbaseCost = 3;
+					metalFactor = 1.21;
+					crystalFactor = 1.21;
+					break;
+				case LFBuildables.AntimatterCondenser:
+					metalBaseCost = 6;
+					crystalbaseCost = 3;
+					energyBaseCost = 9;
+					metalFactor = 1.21;
+					crystalFactor = 1.21;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.VortexChamber:
+					metalBaseCost = 20000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 30000;
+					energyBaseCost = 10;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					energyFactor = 1.08;
+					break;
+				case LFBuildables.HallsOfRealisation:
+					metalBaseCost = 7500;
+					crystalbaseCost = 5000;
+					deutBaseCost = 800;
+					energyBaseCost = 15;
+					metalFactor = 1.8;
+					crystalFactor = 1.8;
+					deutFactor = 1.8;
+					energyFactor = 1.3;
+					break;
+				case LFBuildables.ForumOfTranscendence:
+					metalBaseCost = 60000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 50000;
+					energyBaseCost = 30;
+					metalFactor = 1.8;
+					crystalFactor = 1.8;
+					deutFactor = 1.8;
+					energyFactor = 1.3;
+					break;
+				case LFBuildables.AntimatterConvector:
+					metalBaseCost = 8500;
+					crystalbaseCost = 5000;
+					deutBaseCost = 3000;
+					metalFactor = 1.25;
+					crystalFactor = 1.25;
+					deutFactor = 1.25;
+					break;
+				case LFBuildables.CloningLaboratory:
+					metalBaseCost = 15000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 20000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFBuildables.ChrysalisAccelerator:
+					metalBaseCost = 75000;
+					crystalbaseCost = 25000;
+					deutBaseCost = 30000;
+					energyBaseCost = 30;
+					metalFactor = 1.05;
+					crystalFactor = 1.05;
+					deutFactor = 1.05;
+					energyFactor = 1.03;
+					break;
+				case LFBuildables.BioModifier:
+					metalBaseCost = 87500;
+					crystalbaseCost = 25000;
+					deutBaseCost = 30000;
+					energyBaseCost = 40;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					energyFactor = 1.02;
+					break;
+				case LFBuildables.PsionicModulator:
+					metalBaseCost = 150000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 30000;
+					energyBaseCost = 140;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					energyFactor = 1.05;
+					break;
+				case LFBuildables.ShipManufacturingHall:
+					metalBaseCost = 75000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 55000;
+					energyBaseCost = 90;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					energyFactor = 1.04;
+					break;
+				case LFBuildables.SupraRefractor:
+					metalBaseCost = 500000;
+					crystalbaseCost = 250000;
+					deutBaseCost = 250000;
+					energyBaseCost = 100;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					energyFactor = 1.05;
+					break;
+				default:
+					break;
+			}
+
+			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor);
+		}
+
+		public Resources CalcPrice(LFTechno buildable, int level, double costReduction) {
+			long metalBaseCost = 0;
+			long crystalbaseCost = 0;
+			long deutBaseCost = 0;
+			double metalFactor = 0;
+			double crystalFactor = 0;
+			double deutFactor = 0;
+
+			switch (buildable) {
+				case LFTechno.IntergalacticEnvoys:
+					metalBaseCost = 5000;
+					crystalbaseCost = 2500;
+					deutBaseCost = 500;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.HighPerformanceExtractors:
+					metalBaseCost = 7000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.FusionDrives:
+					metalBaseCost = 15000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 5000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.StealthFieldGenerator:
+					metalBaseCost = 20000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 7500;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.OrbitalDen:
+					metalBaseCost = 25000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 10000;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					break;
+				case LFTechno.ResearchAI:
+					metalBaseCost = 35000;
+					crystalbaseCost = 25000;
+					deutBaseCost = 15000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.HighPerformanceTerraformer:
+					metalBaseCost = 70000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 20000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.EnhancedProductionTechnologies:
+					metalBaseCost = 80000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.LightFighterMkII:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.CruiserMkII:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.ImprovedLabTechnology:
+					metalBaseCost = 120000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 25000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.PlasmaTerraformer:
+					metalBaseCost = 100000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 30000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.LowTemperatureDrives:
+					metalBaseCost = 200000;
+					crystalbaseCost = 100000;
+					deutBaseCost = 100000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.BomberMkII:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.DestroyerMkII:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.BattlecruiserMkII:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.RobotAssistants:
+					metalBaseCost = 300000;
+					crystalbaseCost = 180000;
+					deutBaseCost = 120000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.Supercomputer:
+					metalBaseCost = 500000;
+					crystalbaseCost = 300000;
+					deutBaseCost = 200000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.VolcanicBatteries:
+					metalBaseCost = 10000;
+					crystalbaseCost = 6000;
+					deutBaseCost = 1000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.AcousticScanning:
+					metalBaseCost = 7500;
+					crystalbaseCost = 12500;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.HighEnergyPumpSystems:
+					metalBaseCost = 15000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.CargoHoldExpansionCivilianShips:
+					metalBaseCost = 20000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 7500;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.MagmaPoweredProduction:
+					metalBaseCost = 25000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 10000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GeothermalPowerPlants:
+					metalBaseCost = 50000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.DepthSounding:
+					metalBaseCost = 70000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 20000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.IonCrystalEnhancementHeavyFighter:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.ImprovedStellarator:
+					metalBaseCost = 75000;
+					crystalbaseCost = 55000;
+					deutBaseCost = 25000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.HardenedDiamondDrillHeads:
+					metalBaseCost = 85000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 35000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.SeismicMiningTechnology:
+					metalBaseCost = 120000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 25000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.MagmaPoweredPumpSystems:
+					metalBaseCost = 100000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 30000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.IonCrystalModules:
+					metalBaseCost = 200000;
+					crystalbaseCost = 100000;
+					deutBaseCost = 100000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFTechno.OptimisedSiloConstructionMethod:
+					metalBaseCost = 220000;
+					crystalbaseCost = 110000;
+					deutBaseCost = 110000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.DiamondEnergyTransmitter:
+					metalBaseCost = 240000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 120000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.ObsidianShieldReinforcement:
+					metalBaseCost = 250000;
+					crystalbaseCost = 250000;
+					deutBaseCost = 250000;
+					metalFactor = 1.4;
+					crystalFactor = 1.4;
+					deutFactor = 1.4;
+					break;
+				case LFTechno.RuneShields:
+					metalBaseCost = 500000;
+					crystalbaseCost = 300000;
+					deutBaseCost = 200000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.RocktalCollectorEnhancement:
+					metalBaseCost = 300000;
+					crystalbaseCost = 180000;
+					deutBaseCost = 120000;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					break;
+				case LFTechno.CatalyserTechnology:
+					metalBaseCost = 10000;
+					crystalbaseCost = 6000;
+					deutBaseCost = 1000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.PlasmaDrive:
+					metalBaseCost = 7500;
+					crystalbaseCost = 12500;
+					deutBaseCost = 5000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.EfficiencyModule:
+					metalBaseCost = 15000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.DepotAI:
+					metalBaseCost = 20000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 7500;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.GeneralOverhaulLightFighter:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.AutomatedTransportLines:
+					metalBaseCost = 50000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.ImprovedDroneAI:
+					metalBaseCost = 70000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 20000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.ExperimentalRecyclingTechnology:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GeneralOverhaulCruiser:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.SlingshotAutopilot:
+					metalBaseCost = 85000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 35000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFTechno.HighTemperatureSuperconductors:
+					metalBaseCost = 120000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 25000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.GeneralOverhaulBattleship:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.ArtificialSwarmIntelligence:
+					metalBaseCost = 200000;
+					crystalbaseCost = 100000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GeneralOverhaulBattlecruiser:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GeneralOverhaulBomber:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GeneralOverhaulDestroyer:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.ExperimentalWeaponsTechnology:
+					metalBaseCost = 500000;
+					crystalbaseCost = 300000;
+					deutBaseCost = 200000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.MechanGeneralEnhancement:
+					metalBaseCost = 300000;
+					crystalbaseCost = 180000;
+					deutBaseCost = 120000;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					break;
+				case LFTechno.HeatRecovery:
+					metalBaseCost = 10000;
+					crystalbaseCost = 6000;
+					deutBaseCost = 1000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.SulphideProcess:
+					metalBaseCost = 7500;
+					crystalbaseCost = 12500;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.PsionicNetwork:
+					metalBaseCost = 15000;
+					crystalbaseCost = 10000;
+					deutBaseCost = 5000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.TelekineticTractorBeam:
+					metalBaseCost = 20000;
+					crystalbaseCost = 15000;
+					deutBaseCost = 7500;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.EnhancedSensorTechnology:
+					metalBaseCost = 25000;
+					crystalbaseCost = 20000;
+					deutBaseCost = 10000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.NeuromodalCompressor:
+					metalBaseCost = 50000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					metalFactor = 1.3;
+					crystalFactor = 1.3;
+					deutFactor = 1.3;
+					break;
+				case LFTechno.NeuroInterface:
+					metalBaseCost = 70000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 20000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.InterplanetaryAnalysisNetwork:
+					metalBaseCost = 80000;
+					crystalbaseCost = 50000;
+					deutBaseCost = 20000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFTechno.OverclockingHeavyFighter:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.TelekineticDrive:
+					metalBaseCost = 85000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 35000;
+					metalFactor = 1.2;
+					crystalFactor = 1.2;
+					deutFactor = 1.2;
+					break;
+				case LFTechno.SixthSense:
+					metalBaseCost = 120000;
+					crystalbaseCost = 30000;
+					deutBaseCost = 25000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.Psychoharmoniser:
+					metalBaseCost = 100000;
+					crystalbaseCost = 40000;
+					deutBaseCost = 30000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.EfficientSwarmIntelligence:
+					metalBaseCost = 200000;
+					crystalbaseCost = 100000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.OverclockingLargeCargo:
+					metalBaseCost = 160000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 50000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.GravitationSensors:
+					metalBaseCost = 240000;
+					crystalbaseCost = 120000;
+					deutBaseCost = 120000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.OverclockingBattleship:
+					metalBaseCost = 320000;
+					crystalbaseCost = 240000;
+					deutBaseCost = 100000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.PsionicShieldMatrix:
+					metalBaseCost = 500000;
+					crystalbaseCost = 300000;
+					deutBaseCost = 200000;
+					metalFactor = 1.5;
+					crystalFactor = 1.5;
+					deutFactor = 1.5;
+					break;
+				case LFTechno.KaeleshDiscovererEnhancement:
+					metalBaseCost = 300000;
+					crystalbaseCost = 180000;
+					deutBaseCost = 120000;
+					metalFactor = 1.7;
+					crystalFactor = 1.7;
+					deutFactor = 1.7;
+					break;
+				default:
+					break;
+			}
+
+			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, 0, 0, costReduction);
+		}
+
+		private long CalcLFPrice(long baseCost, double factor, int level, double costReduction = 0) {
+			return (long) Math.Floor(((double) 1 - costReduction) * Math.Floor((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
+		}
+
+		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, double costReduction = 0) {
+			return new Resources() {
+				Metal = CalcLFPrice(metalBaseCost, metalFactor, level, costReduction),
+				Crystal = CalcLFPrice(crystalBaseCost, crystalFactor, level, costReduction),
+				Deuterium = CalcLFPrice(deutBaseCost, deutFactor, level, costReduction),
+				Energy = CalcLFPrice(energyBaseCost, energyFactor, level, costReduction)
+			};
+		}
+
 		public int CalcCumulativeLabLevel(List<Celestial> celestials, Researches researches) {
 			int output = 0;
 
@@ -1234,6 +2305,529 @@ namespace Tbot.Includes {
 			}
 
 			return (long) Math.Round(output * 3600, 0, MidpointRounding.ToPositiveInfinity);
+		}
+
+		public long CalcProductionTime(LFBuildables buildable, int level, int speed = 1, Facilities facilities = null) {
+			int baseTime = 0;
+			double increaseFactor = 0;
+
+			switch (buildable) {
+				case LFBuildables.ResidentialSector:
+					increaseFactor = 1.21;
+					baseTime = 4000;
+					break;
+				case LFBuildables.BiosphereFarm:
+					increaseFactor = 1.25;
+					baseTime = 4000;
+					break;
+				case LFBuildables.ResearchCentre:
+					increaseFactor = 1.25;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.AcademyOfSciences:
+					increaseFactor = 1.60;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.NeuroCalibrationCentre:
+					increaseFactor = 1.70;
+					baseTime = 6400000;
+					break;
+				case LFBuildables.HighEnergySmelting:
+					increaseFactor = 1.30;
+					baseTime = 200000;
+					break;
+				case LFBuildables.FoodSilo:
+					increaseFactor = 1.17;
+					baseTime = 1200000;
+					break;
+				case LFBuildables.FusionPoweredProduction:
+					increaseFactor = 1.20;
+					baseTime = 2800000;
+					break;
+				case LFBuildables.Skyscraper:
+					increaseFactor = 1.20;
+					baseTime = 4000000;
+					break;
+				case LFBuildables.BiotechLab:
+					increaseFactor = 1.20;
+					baseTime = 5200000;
+					break;
+				case LFBuildables.Metropolis:
+					increaseFactor = 1.30;
+					baseTime = 9000000;
+					break;
+				case LFBuildables.PlanetaryShield:
+					increaseFactor = 1.20;
+					baseTime = 9500000;
+					break;
+				case LFBuildables.MeditationEnclave:
+					increaseFactor = 1.21;
+					baseTime = 4000;
+					break;
+				case LFBuildables.CrystalFarm:
+					increaseFactor = 1.21;
+					baseTime = 4000;
+					break;
+				case LFBuildables.RuneTechnologium:
+					increaseFactor = 1.25;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.RuneForge:
+					increaseFactor = 1.60;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.Oriktorium:
+					increaseFactor = 1.70;
+					baseTime = 6400000;
+					break;
+				case LFBuildables.MagmaForge:
+					increaseFactor = 1.30;
+					baseTime = 200000;
+					break;
+				case LFBuildables.DisruptionChamber:
+					increaseFactor = 1.25;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.Megalith:
+					increaseFactor = 1.40;
+					baseTime = 4000000;
+					break;
+				case LFBuildables.CrystalRefinery:
+					increaseFactor = 1.20;
+					baseTime = 4000000;
+					break;
+				case LFBuildables.DeuteriumSynthesiser:
+					increaseFactor = 1.20;
+					baseTime = 5200000;
+					break;
+				case LFBuildables.MineralResearchCentre:
+					increaseFactor = 1.30;
+					baseTime = 9000000;
+					break;
+				case LFBuildables.AdvancedRecyclingPlant:
+					increaseFactor = 1.30;
+					baseTime = 9500000;
+					break;
+				case LFBuildables.AssemblyLine:
+					increaseFactor = 1.22;
+					baseTime = 4000;
+					break;
+				case LFBuildables.FusionCellFactory:
+					increaseFactor = 1.20;
+					baseTime = 4800;
+					break;
+				case LFBuildables.RoboticsResearchCentre:
+					increaseFactor = 1.25;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.UpdateNetwork:
+					increaseFactor = 1.60;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.QuantumComputerCentre:
+					increaseFactor = 1.70;
+					baseTime = 6400000;
+					break;
+				case LFBuildables.AutomatisedAssemblyCentre:
+					increaseFactor = 1.30;
+					baseTime = 200000;
+					break;
+				case LFBuildables.HighPerformanceTransformer:
+					increaseFactor = 1.40;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.MicrochipAssemblyLine:
+					increaseFactor = 1.17;
+					baseTime = 1200000;
+					break;
+				case LFBuildables.ProductionAssemblyHall:
+					increaseFactor = 1.30;
+					baseTime = 4000000;
+					break;
+				case LFBuildables.HighPerformanceSynthesiser:
+					increaseFactor = 1.20;
+					baseTime = 5200000;
+					break;
+				case LFBuildables.ChipMassProduction:
+					increaseFactor = 1.30;
+					baseTime = 5000000;
+					break;
+				case LFBuildables.NanoRepairBots:
+					increaseFactor = 1.40;
+					baseTime = 9500000;
+					break;
+				case LFBuildables.Sanctuary:
+					increaseFactor = 1.22;
+					baseTime = 4000;
+					break;
+				case LFBuildables.AntimatterCondenser:
+					increaseFactor = 1.22;
+					baseTime = 4000;
+					break;
+				case LFBuildables.VortexChamber:
+					increaseFactor = 1.25;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.HallsOfRealisation:
+					increaseFactor = 1.70;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.ForumOfTranscendence:
+					increaseFactor = 1.80;
+					baseTime = 6400000;
+					break;
+				case LFBuildables.AntimatterConvector:
+					increaseFactor = 1.35;
+					baseTime = 200000;
+					break;
+				case LFBuildables.CloningLaboratory:
+					increaseFactor = 1.20;
+					baseTime = 1200000;
+					break;
+				case LFBuildables.ChrysalisAccelerator:
+					increaseFactor = 1.18;
+					baseTime = 1600000;
+					break;
+				case LFBuildables.BioModifier:
+					increaseFactor = 1.20;
+					baseTime = 4000000;
+					break;
+				case LFBuildables.PsionicModulator:
+					increaseFactor = 1.80;
+					baseTime = 5200000;
+					break;
+				case LFBuildables.ShipManufacturingHall:
+					increaseFactor = 1.30;
+					baseTime = 9000000;
+					break;
+				case LFBuildables.SupraRefractor:
+					increaseFactor = 1.30;
+					baseTime = 9500000;
+					break;
+
+				default:
+					break;
+			}
+			return CalcLFTime(level, baseTime, increaseFactor, speed, facilities.RoboticsFactory, facilities.NaniteFactory);
+		}
+		public long CalcProductionTime(LFBuildables buildable, int level, ServerData serverData, Facilities facilities = null) {
+			return CalcProductionTime(buildable, level, serverData.Speed, facilities);
+		}
+		public long CalcProductionTime(LFTechno buildable, int level, int speed = 1, double speedReduction = 0) {
+			int baseTime = 0;
+			double increaseFactor = 0;
+
+			switch (buildable) {
+				case LFTechno.IntergalacticEnvoys:
+					increaseFactor = 1.2;
+					baseTime = 1000;
+					break;
+				case LFTechno.HighPerformanceExtractors:
+					increaseFactor = 1.3;
+					baseTime = 2000;
+					break;
+				case LFTechno.FusionDrives:
+					increaseFactor = 1.3;
+					baseTime = 2500;
+					break;
+				case LFTechno.StealthFieldGenerator:
+					increaseFactor = 1.3;
+					baseTime = 3500;
+					break;
+				case LFTechno.OrbitalDen:
+					increaseFactor = 1.2;
+					baseTime = 4500;
+					break;
+				case LFTechno.ResearchAI:
+					increaseFactor = 1.3;
+					baseTime = 5000;
+					break;
+				case LFTechno.HighPerformanceTerraformer:
+					increaseFactor = 1.3;
+					baseTime = 8000;
+					break;
+				case LFTechno.EnhancedProductionTechnologies:
+					increaseFactor = 1.3;
+					baseTime = 6000;
+					break;
+				case LFTechno.LightFighterMkII:
+					increaseFactor = 1.4;
+					baseTime = 6500;
+					break;
+				case LFTechno.CruiserMkII:
+					increaseFactor = 1.4;
+					baseTime = 7000;
+					break;
+				case LFTechno.ImprovedLabTechnology:
+					increaseFactor = 1.3;
+					baseTime = 7500;
+					break;
+				case LFTechno.PlasmaTerraformer:
+					increaseFactor = 1.3;
+					baseTime = 10000;
+					break;
+				case LFTechno.LowTemperatureDrives:
+					increaseFactor = 1.3;
+					baseTime = 8500;
+					break;
+				case LFTechno.BomberMkII:
+					increaseFactor = 1.4;
+					baseTime = 9000;
+					break;
+				case LFTechno.DestroyerMkII:
+					increaseFactor = 1.4;
+					baseTime = 9500;
+					break;
+				case LFTechno.BattlecruiserMkII:
+					increaseFactor = 1.4;
+					baseTime = 10000;
+					break;
+				case LFTechno.RobotAssistants:
+					increaseFactor = 1.3;
+					baseTime = 11000;
+					break;
+				case LFTechno.Supercomputer:
+					increaseFactor = 1.3;
+					baseTime = 13000;
+					break;
+				case LFTechno.VolcanicBatteries:
+					increaseFactor = 1.3;
+					baseTime = 1000;
+					break;
+				case LFTechno.AcousticScanning:
+					increaseFactor = 1.3;
+					baseTime = 2000;
+					break;
+				case LFTechno.HighEnergyPumpSystems:
+					increaseFactor = 1.3;
+					baseTime = 2500;
+					break;
+				case LFTechno.CargoHoldExpansionCivilianShips:
+					increaseFactor = 1.4;
+					baseTime = 3500;
+					break;
+				case LFTechno.MagmaPoweredProduction:
+					increaseFactor = 1.3;
+					baseTime = 4500;
+					break;
+				case LFTechno.GeothermalPowerPlants:
+					increaseFactor = 1.3;
+					baseTime = 5000;
+					break;
+				case LFTechno.DepthSounding:
+					increaseFactor = 1.3;
+					baseTime = 5500;
+					break;
+				case LFTechno.IonCrystalEnhancementHeavyFighter:
+					increaseFactor = 1.4;
+					baseTime = 6000;
+					break;
+				case LFTechno.ImprovedStellarator:
+					increaseFactor = 1.3;
+					baseTime = 6500;
+					break;
+				case LFTechno.HardenedDiamondDrillHeads:
+					increaseFactor = 1.3;
+					baseTime = 7000;
+					break;
+				case LFTechno.SeismicMiningTechnology:
+					increaseFactor = 1.3;
+					baseTime = 7500;
+					break;
+				case LFTechno.MagmaPoweredPumpSystems:
+					increaseFactor = 1.3;
+					baseTime = 8000;
+					break;
+				case LFTechno.IonCrystalModules:
+					increaseFactor = 1.3;
+					baseTime = 8500;
+					break;
+				case LFTechno.OptimisedSiloConstructionMethod:
+					increaseFactor = 1.3;
+					baseTime = 9000;
+					break;
+				case LFTechno.DiamondEnergyTransmitter:
+					increaseFactor = 1.3;
+					baseTime = 9500;
+					break;
+				case LFTechno.ObsidianShieldReinforcement:
+					increaseFactor = 1.4;
+					baseTime = 10000;
+					break;
+				case LFTechno.RuneShields:
+					increaseFactor = 1.3;
+					baseTime = 13000;
+					break;
+				case LFTechno.RocktalCollectorEnhancement:
+					increaseFactor = 1.4;
+					baseTime = 11000;
+					break;
+				case LFTechno.CatalyserTechnology:
+					increaseFactor = 1.3;
+					baseTime = 1000;
+					break;
+				case LFTechno.PlasmaDrive:
+					increaseFactor = 1.3;
+					baseTime = 2000;
+					break;
+				case LFTechno.EfficiencyModule:
+					increaseFactor = 1.4;
+					baseTime = 2500;
+					break;
+				case LFTechno.DepotAI:
+					increaseFactor = 1.3;
+					baseTime = 3500;
+					break;
+				case LFTechno.GeneralOverhaulLightFighter:
+					increaseFactor = 1.4;
+					baseTime = 4500;
+					break;
+				case LFTechno.AutomatedTransportLines:
+					increaseFactor = 1.3;
+					baseTime = 5000;
+					break;
+				case LFTechno.ImprovedDroneAI:
+					increaseFactor = 1.3;
+					baseTime = 5500;
+					break;
+				case LFTechno.ExperimentalRecyclingTechnology:
+					increaseFactor = 1.4;
+					baseTime = 6000;
+					break;
+				case LFTechno.GeneralOverhaulCruiser:
+					increaseFactor = 1.4;
+					baseTime = 6500;
+					break;
+				case LFTechno.SlingshotAutopilot:
+					increaseFactor = 1.3;
+					baseTime = 7000;
+					break;
+				case LFTechno.HighTemperatureSuperconductors:
+					increaseFactor = 1.3;
+					baseTime = 7500;
+					break;
+				case LFTechno.GeneralOverhaulBattleship:
+					increaseFactor = 1.4;
+					baseTime = 8000;
+					break;
+				case LFTechno.ArtificialSwarmIntelligence:
+					increaseFactor = 1.3;
+					baseTime = 8500;
+					break;
+				case LFTechno.GeneralOverhaulBattlecruiser:
+					increaseFactor = 1.4;
+					baseTime = 9000;
+					break;
+				case LFTechno.GeneralOverhaulBomber:
+					increaseFactor = 1.4;
+					baseTime = 9500;
+					break;
+				case LFTechno.GeneralOverhaulDestroyer:
+					increaseFactor = 1.4;
+					baseTime = 10000;
+					break;
+				case LFTechno.ExperimentalWeaponsTechnology:
+					increaseFactor = 1.3;
+					baseTime = 13000;
+					break;
+				case LFTechno.MechanGeneralEnhancement:
+					increaseFactor = 1.4;
+					baseTime = 11000;
+					break;
+				case LFTechno.HeatRecovery:
+					increaseFactor = 1.4;
+					baseTime = 1000;
+					break;
+				case LFTechno.SulphideProcess:
+					increaseFactor = 1.3;
+					baseTime = 2000;
+					break;
+				case LFTechno.PsionicNetwork:
+					increaseFactor = 1.4;
+					baseTime = 2500;
+					break;
+				case LFTechno.TelekineticTractorBeam:
+					increaseFactor = 1.4;
+					baseTime = 3500;
+					break;
+				case LFTechno.EnhancedSensorTechnology:
+					increaseFactor = 1.4;
+					baseTime = 4500;
+					break;
+				case LFTechno.NeuromodalCompressor:
+					increaseFactor = 1.4;
+					baseTime = 5000;
+					break;
+				case LFTechno.NeuroInterface:
+					increaseFactor = 1.3;
+					baseTime = 5500;
+					break;
+				case LFTechno.InterplanetaryAnalysisNetwork:
+					increaseFactor = 1.2;
+					baseTime = 6000;
+					break;
+				case LFTechno.OverclockingHeavyFighter:
+					increaseFactor = 1.4;
+					baseTime = 6500;
+					break;
+				case LFTechno.TelekineticDrive:
+					increaseFactor = 1.2;
+					baseTime = 7000;
+					break;
+				case LFTechno.SixthSense:
+					increaseFactor = 1.4;
+					baseTime = 7500;
+					break;
+				case LFTechno.Psychoharmoniser:
+					increaseFactor = 1.3;
+					baseTime = 8000;
+					break;
+				case LFTechno.EfficientSwarmIntelligence:
+					increaseFactor = 1.3;
+					baseTime = 8500;
+					break;
+				case LFTechno.OverclockingLargeCargo:
+					increaseFactor = 1.4;
+					baseTime = 9000;
+					break;
+				case LFTechno.GravitationSensors:
+					increaseFactor = 1.4;
+					baseTime = 9500;
+					break;
+				case LFTechno.OverclockingBattleship:
+					increaseFactor = 1.4;
+					baseTime = 10000;
+					break;
+				case LFTechno.PsionicShieldMatrix:
+					increaseFactor = 1.3;
+					baseTime = 13000;
+					break;
+				case LFTechno.KaeleshDiscovererEnhancement:
+					increaseFactor = 1.4;
+					baseTime = 11000;
+					break;
+
+				default:
+					break;
+			}
+			return CalcLFTime(level, baseTime, increaseFactor, speed, speedReduction);
+		}
+		public long CalcProductionTime(LFTechno buildable, int level, ServerData serverData, double speedReduction = 0) {
+			return CalcProductionTime(buildable, level, serverData.Speed, speedReduction);
+		}
+
+		private long CalcLFTime(int level, int baseTime, double increaseFactor, int speed = 1, double speedReduction = 0) {
+			long duration = (long) Math.Floor((double) level * (double) baseTime * (double) Math.Pow(increaseFactor, level));
+			duration = (long) Math.Floor((double)(1 - 0.01 * speedReduction) * duration);
+			duration = (long) Math.Floor((double) duration / (double) speed);
+			return duration;
+		}
+
+		private long CalcLFTime(int level, int baseTime, double increaseFactor, int speed = 1, int robots = 0, int nanites = 1) {
+			long duration = (long) Math.Floor((double) level * (double) baseTime * (double) Math.Pow(increaseFactor, level));
+			duration = (long) Math.Floor((double) duration / (double) ((double) (robots + 1) * Math.Pow(2, nanites)));
+			duration = (long) Math.Floor((double) duration / (double) speed);
+			return duration;
 		}
 
 		public long CalcMaxBuildableNumber(Buildables buildable, Resources resources) {
@@ -1685,7 +3279,7 @@ namespace Tbot.Includes {
 				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 2 } };
 			} else if (buildable == LFBuildables.MineralResearchCentre) {
 				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 1 }, { LFBuildables.CrystalRefinery, 6 }, { LFBuildables.Oriktorium, 1 } };
-			} else if (buildable == LFBuildables.MetalRecyclingPlant) {
+			} else if (buildable == LFBuildables.AdvancedRecyclingPlant) {
 				rez = new Dictionary<LFBuildables, int> { { LFBuildables.MeditationEnclave, 41 }, { LFBuildables.CrystalFarm, 22 }, { LFBuildables.RuneForge, 1 }, { LFBuildables.Megalith, 5 }, { LFBuildables.CrystalRefinery, 6 }, { LFBuildables.Oriktorium, 5 }, { LFBuildables.RuneTechnologium, 5 }, { LFBuildables.MagmaForge, 3 }, { LFBuildables.DisruptionChamber, 4 }, { LFBuildables.MineralResearchCentre, 5 } };
 			}
 			//Mechas
@@ -2028,7 +3622,7 @@ namespace Tbot.Includes {
 				list.Add(LFBuildables.CrystalRefinery);
 				list.Add(LFBuildables.DeuteriumSynthesiser);
 				list.Add(LFBuildables.MineralResearchCentre);
-				list.Add(LFBuildables.MetalRecyclingPlant);
+				list.Add(LFBuildables.AdvancedRecyclingPlant);
 			} else if (LFtype == LFTypes.Mechas) {
 				list.Add(LFBuildables.AutomatisedAssemblyCentre);
 				list.Add(LFBuildables.HighPerformanceTransformer);
