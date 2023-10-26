@@ -104,15 +104,15 @@ namespace Tbot.Workers.Brain {
 
 					if (buildable != LFTechno.None) {
 						level = _calculationService.GetNextLevel(celestial, buildable);
-						Resources nextLFTechCost = await _ogameService.GetPrice(buildable, level);
-						var isLessCostLFTechToBuild = await _calculationService.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost, maxResearchLevel);
+						Resources nextLFTechCost = _calculationService.CalcPrice(buildable, level);
+						var isLessCostLFTechToBuild = _calculationService.GetLessExpensiveLFTechToBuild(celestial, nextLFTechCost, maxResearchLevel);
 						if (isLessCostLFTechToBuild != LFTechno.None) {
 							level = _calculationService.GetNextLevel(celestial, isLessCostLFTechToBuild);
 							buildable = isLessCostLFTechToBuild;
 						}
 						DoLog(LogLevel.Information, $"Best Lifeform Research for {celestial.ToString()}: {buildable.ToString()}");
 
-						Resources xCostBuildable = await _ogameService.GetPrice(buildable, level);
+						Resources xCostBuildable = _calculationService.CalcPrice(buildable, level);
 
 						if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
 							DoLog(LogLevel.Information, $"Lifeform Research {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");

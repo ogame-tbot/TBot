@@ -112,7 +112,7 @@ namespace Tbot.Workers.Brain {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = await _calculationService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
+						buildable = _calculationService.GetNextLFBuildingToBuild(celestial, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
 
 						if (buildable != LFBuildables.None) {
 							level = _calculationService.GetNextLevel(celestial, buildable);
@@ -131,7 +131,7 @@ namespace Tbot.Workers.Brain {
 								delayLFResearch = true;
 								return;
 							}
-							Resources xCostBuildable = await _ogameService.GetPrice(buildable, level);
+							Resources xCostBuildable = _calculationService.CalcPrice(buildable, level);
 
 							if (celestial.Resources.IsBuildable(xCostBuildable)) {
 								DoLog(LogLevel.Information, $"Building {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");

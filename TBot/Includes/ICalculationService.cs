@@ -80,7 +80,7 @@ namespace Tbot.Includes {
 		Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleetsWithResources(Celestial celestial, List<Fleet> fleets);
-		Task<LFTechno> GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel);
+		LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel, double costReduction = 0);
 		Buildings GetMaxBuildings(int maxMetalMine, int maxCrystalMine, int maxDeuteriumSynthetizer, int maxSolarPlant, int maxFusionReactor, int maxMetalStorage, int maxCrystalStorage, int maxDeuteriumTank);
 		Facilities GetMaxFacilities(int maxRoboticsFactory, int maxShipyard, int maxResearchLab, int maxMissileSilo, int maxNaniteFactory, int maxTerraformer, int maxSpaceDock);
 		Facilities GetMaxLunarFacilities(int maxLunarBase, int maxLunarShipyard, int maxLunarRoboticsFactory, int maxSensorPhalanx, int maxJumpGate);
@@ -94,7 +94,7 @@ namespace Tbot.Includes {
 		int GetNextLevel(Celestial planet, LFBuildables buildable);
 		int GetNextLevel(Celestial planet, LFTechno buildable);
 		int GetNextLevel(Researches researches, Buildables buildable);
-		Task<LFBuildables> GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false);
+		LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false);
 		LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel);
 		Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0);
 		Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, Facilities maxLunarFacilities);
@@ -110,7 +110,7 @@ namespace Tbot.Includes {
 		bool isUnlocked(Celestial celestial, LFBuildables buildable);
 		bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber);
 		List<Celestial> ParseCelestialsList(dynamic source, List<Celestial> currentCelestials);
-				bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
+		bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
 		bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false);
 		bool ShouldBuildEnergySource(Planet planet);
 		bool ShouldBuildJumpGate(Moon moon, int maxLevel = 1, Researches researches = null);

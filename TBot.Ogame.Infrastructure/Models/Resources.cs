@@ -26,8 +26,12 @@ namespace TBot.Ogame.Infrastructure.Models {
 
 		public long ConvertedDeuterium {
 			get {
-				return (long) Math.Round((Metal / 2.5) + (Crystal / 1.5) + Deuterium, 0, MidpointRounding.ToPositiveInfinity);
+				return GetConvertedDeuterium();
 			}
+		}
+
+		public long GetConvertedDeuterium(double metalRatio = 2.5, double crystalRatio = 1.5) {
+			return (long) Math.Round((Metal / metalRatio) + (Crystal / crystalRatio) + Deuterium, 0, MidpointRounding.ToPositiveInfinity);
 		}
 
 		public long TotalResources {

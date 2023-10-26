@@ -76,8 +76,8 @@ namespace Tbot.Workers.Brain {
 						var nextLFTechToBuild = _calculationService.GetNextLFTechToBuild(cel, maxResearchLevel);
 						if (nextLFTechToBuild != LFTechno.None) {
 							var level = _calculationService.GetNextLevel(cel, nextLFTechToBuild);
-							Resources nextLFTechCost = await _ogameService.GetPrice(nextLFTechToBuild, level);
-							var isLessCostLFTechToBuild = await _calculationService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
+							Resources nextLFTechCost = _calculationService.CalcPrice(nextLFTechToBuild, level);
+							var isLessCostLFTechToBuild = _calculationService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
 							if (isLessCostLFTechToBuild != LFTechno.None) {
 								level = _calculationService.GetNextLevel(cel, isLessCostLFTechToBuild);
 								nextLFTechToBuild = isLessCostLFTechToBuild;

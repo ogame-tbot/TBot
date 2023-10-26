@@ -1117,10 +1117,12 @@ namespace Tbot.Includes {
 			long crystalbaseCost = 0;
 			long deutBaseCost = 0;
 			long energyBaseCost = 0;
+			long populationBaseCost = 0;
 			double metalFactor = 0;
 			double crystalFactor = 0;
 			double deutFactor = 0;
 			double energyFactor = 0;
+			double populationFactor = 0;
 
 			switch (buildable) {
 				case LFBuildables.ResidentialSector:
@@ -1152,20 +1154,24 @@ namespace Tbot.Includes {
 					crystalbaseCost = 3200;
 					deutBaseCost = 1500;
 					energyBaseCost = 15;
+					populationBaseCost = 20000000;
 					metalFactor = 1.7;
 					crystalFactor = 1.7;
 					deutFactor = 1.7;
 					energyFactor = 1.25;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.NeuroCalibrationCentre:
 					metalBaseCost = 50000;
 					crystalbaseCost = 40000;
 					deutBaseCost = 50000;
 					energyBaseCost = 30;
+					populationBaseCost = 100000000;
 					metalFactor = 1.7;
 					crystalFactor = 1.7;
 					deutFactor = 1.7;
 					energyFactor = 1.25;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.HighEnergySmelting:
 					metalBaseCost = 9000;
@@ -1264,20 +1270,24 @@ namespace Tbot.Includes {
 					crystalbaseCost = 3800;
 					deutBaseCost = 1000;
 					energyBaseCost = 20;
+					populationBaseCost = 16000000;
 					metalFactor = 1.7;
 					crystalFactor = 1.7;
 					deutFactor = 1.7;
 					energyFactor = 1.35;
+					populationFactor = 1.14;
 					break;
 				case LFBuildables.Oriktorium:
 					metalBaseCost = 50000;
 					crystalbaseCost = 40000;
 					deutBaseCost = 50000;
 					energyBaseCost = 60;
+					populationBaseCost = 90000000;
 					metalFactor = 1.65;
 					crystalFactor = 1.65;
 					deutFactor = 1.65;
 					energyFactor = 1.3;
+					populationFactor = 1.65;
 					break;
 				case LFBuildables.MagmaForge:
 					metalBaseCost = 10000;
@@ -1376,20 +1386,24 @@ namespace Tbot.Includes {
 					crystalbaseCost = 3800;
 					deutBaseCost = 1000;
 					energyBaseCost = 10;
+					populationBaseCost = 40000000;
 					metalFactor = 1.8;
 					crystalFactor = 1.8;
 					deutFactor = 1.8;
 					energyFactor = 1.2;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.QuantumComputerCentre:
 					metalBaseCost = 50000;
 					crystalbaseCost = 40000;
 					deutBaseCost = 50000;
 					energyBaseCost = 40;
+					populationBaseCost = 130000000;
 					metalFactor = 1.8;
 					crystalFactor = 1.8;
 					deutFactor = 1.8;
 					energyFactor = 1.2;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.AutomatisedAssemblyCentre:
 					metalBaseCost = 7500;
@@ -1488,20 +1502,24 @@ namespace Tbot.Includes {
 					crystalbaseCost = 5000;
 					deutBaseCost = 800;
 					energyBaseCost = 15;
+					populationBaseCost = 30000000;
 					metalFactor = 1.8;
 					crystalFactor = 1.8;
 					deutFactor = 1.8;
 					energyFactor = 1.3;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.ForumOfTranscendence:
 					metalBaseCost = 60000;
 					crystalbaseCost = 30000;
 					deutBaseCost = 50000;
 					energyBaseCost = 30;
+					populationBaseCost = 100000000;
 					metalFactor = 1.8;
 					crystalFactor = 1.8;
 					deutFactor = 1.8;
 					energyFactor = 1.3;
+					populationFactor = 1.1;
 					break;
 				case LFBuildables.AntimatterConvector:
 					metalBaseCost = 8500;
@@ -1573,7 +1591,7 @@ namespace Tbot.Includes {
 					break;
 			}
 
-			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor);
+			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor, populationBaseCost, populationFactor);
 		}
 
 		public Resources CalcPrice(LFTechno buildable, int level, double costReduction) {
@@ -2165,19 +2183,24 @@ namespace Tbot.Includes {
 					break;
 			}
 
-			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, 0, 0, costReduction);
+			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, 0, 0, 0, 0, costReduction);
 		}
 
 		private long CalcLFPrice(long baseCost, double factor, int level, double costReduction = 0) {
 			return (long) Math.Floor(((double) 1 - costReduction) * Math.Floor((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
 		}
 
-		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, double costReduction = 0) {
+		private long CalcLFPopulationPrice(long baseCost, double factor, int level) {
+			return (long)  Math.Floor((double) baseCost * Math.Pow(factor, level - 1));
+		}
+
+		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, long populationBaseCost = 0, double populationFactor = 0, double costReduction = 0) {
 			return new Resources() {
 				Metal = CalcLFPrice(metalBaseCost, metalFactor, level, costReduction),
 				Crystal = CalcLFPrice(crystalBaseCost, crystalFactor, level, costReduction),
 				Deuterium = CalcLFPrice(deutBaseCost, deutFactor, level, costReduction),
-				Energy = CalcLFPrice(energyBaseCost, energyFactor, level, costReduction)
+				Energy = CalcLFPrice(energyBaseCost, energyFactor, level, costReduction),
+				Population = CalcLFPopulationPrice(populationBaseCost, populationFactor, level)
 			};
 		}
 
@@ -3345,7 +3368,7 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public async Task<LFBuildables> GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
+		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
 			LFBuildables nextLFbuild = LFBuildables.None;
 			if (planet is Moon || planet.LFtype == LFTypes.None)
 				return nextLFbuild;
@@ -3391,15 +3414,15 @@ namespace Tbot.Includes {
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
-				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
-				var lessExpensiveBuilding = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory);
+				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
+				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory);
 				if (lessExpensiveBuilding != LFBuildables.None) {
 					nextLFbuild = lessExpensiveBuilding;
 				}
 
 				if (preventIfMoreExpensiveThanNextMine) {
 					var nextlvl = GetNextLevel(planet, nextLFbuild);
-					var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
+					var nextlvlcost = CalcPrice(nextLFbuild, nextlvl);
 					var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);
 					var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
 					if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
@@ -3408,129 +3431,6 @@ namespace Tbot.Includes {
 					}
 				}
 			}
-			
-
-			
-
-			/*
-			LFBuildables T2 = LFBuildables.None;
-			LFBuildables T3 = LFBuildables.None;
-			var T2lifeformNextlvl = 0;
-			var T3lifeformNextlvl = 0;
-			if (ShouldBuildLFBasics(planet, maxPopuFactory, maxFoodFactory)) {
-				if ((planet.ResourcesProduction.Population.LivingSpace < planet.ResourcesProduction.Population.Satisfied) || planet.ResourcesProduction.Food.Overproduction > 0) {
-					if (planet.LFtype == LFTypes.Humans) {
-						nextLFbuild = LFBuildables.ResidentialSector;
-					} else if (planet.LFtype == LFTypes.Rocktal) {
-						nextLFbuild = LFBuildables.MeditationEnclave;
-					} else if (planet.LFtype == LFTypes.Mechas) {
-						nextLFbuild = LFBuildables.AssemblyLine;
-					} else if (planet.LFtype == LFTypes.Kaelesh) {
-						nextLFbuild = LFBuildables.Sanctuary;
-					}
-					//Force building population if max population reached
-					if (planet.ResourcesProduction.Population.Available == planet.ResourcesProduction.Population.LivingSpace) {
-						return nextLFbuild;
-					}
-
-				} else if ((planet.ResourcesProduction.Population.LivingSpace / planet.ResourcesProduction.Population.Satisfied > 0.86) || planet.ResourcesProduction.Population.Hungry > 0) {
-					if (planet.LFtype == LFTypes.Humans) {
-						nextLFbuild = LFBuildables.BiosphereFarm;
-					} else if (planet.LFtype == LFTypes.Rocktal) {
-						nextLFbuild = LFBuildables.CrystalFarm;
-					} else if (planet.LFtype == LFTypes.Mechas) {
-						nextLFbuild = LFBuildables.FusionCellFactory;
-					} else if (planet.LFtype == LFTypes.Kaelesh) {
-						nextLFbuild = LFBuildables.AntimatterCondenser;
-					}
-					//Forced build food if people are dying or livingspace higher than food (people gonna die)
-					if ((planet.ResourcesProduction.Population.Hungry > 0 || planet.ResourcesProduction.Population.LivingSpace > planet.ResourcesProduction.Population.Satisfied)) {
-						return nextLFbuild;
-					}
-				}
-			} else {
-				_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"Careful! Celestial {planet.ToString()} reached max basics building level specified in settings!");
-			}
-
-			if (nextLFbuild != LFBuildables.None) {
-				var nextLFbuildLvl = GetNextLevel(planet, nextLFbuild);
-				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, nextLFbuildLvl);
-				//Check if less expensive building found (allow build all LF building once basic building are high lvl, instead of checkin them one by one for each lifeform)
-				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost);
-				// Prevent chosing food building because less expensive whereas it is not needed
-				if (LessExpensiveLFbuild != LFBuildables.None) {
-					nextLFbuild = LessExpensiveLFbuild;
-				}
-			} else {
-				//Up other building if less expensive than population building even if popu max level reached
-				if (planet.LFtype == LFTypes.Humans) {
-					nextLFbuild = LFBuildables.ResidentialSector;
-				} else if (planet.LFtype == LFTypes.Rocktal) {
-					nextLFbuild = LFBuildables.MeditationEnclave;
-				} else if (planet.LFtype == LFTypes.Mechas) {
-					nextLFbuild = LFBuildables.AssemblyLine;
-				} else if (planet.LFtype == LFTypes.Kaelesh) {
-					nextLFbuild = LFBuildables.Sanctuary;
-				}
-				var nextLFbuildLvl = GetNextLevel(planet, nextLFbuild);
-				Resources nextLFbuildcost = await _ogameService.GetPrice(nextLFbuild, nextLFbuildLvl);
-				LFBuildables LessExpensiveLFbuild = await GetLessExpensiveLFBuilding(planet, nextLFbuildcost);
-				if (LessExpensiveLFbuild != LFBuildables.None) {
-					nextLFbuild = LessExpensiveLFbuild;
-				} else {
-					nextLFbuild = LFBuildables.None;
-				}
-			}
-
-			//Check if can build T2 or T3 Lifeorms
-			if (planet.LFtype == LFTypes.Humans) {
-				T2 = LFBuildables.AcademyOfSciences;
-				T3 = LFBuildables.NeuroCalibrationCentre;
-			} else if (planet.LFtype == LFTypes.Rocktal) {
-				T2 = LFBuildables.RuneForge;
-				T3 = LFBuildables.Oriktorium;
-			} else if (planet.LFtype == LFTypes.Mechas) {
-				T2 = LFBuildables.UpdateNetwork;
-				T3 = LFBuildables.QuantumComputerCentre;
-			} else if (planet.LFtype == LFTypes.Kaelesh) {
-				T2 = LFBuildables.HallsOfRealisation;
-				T3 = LFBuildables.ForumOfTranscendence;
-			}
-
-			if (T2 != LFBuildables.None && isUnlocked(planet, T2)) {
-				if (planet.ResourcesProduction.Population.T2Lifeforms < 11000000) { //Require 11M T2 lifeform to unlock last level2 LFTech
-					T2lifeformNextlvl = GetNextLevel(planet, T2);
-					Resources T2cost = await _ogameService.GetPrice(T2, T2lifeformNextlvl);
-					if ((int) planet.ResourcesProduction.Population.Available >= (int) T2cost.Population) {
-						nextLFbuild = T2;
-					}
-				}
-			}
-
-			if (T3 != LFBuildables.None && isUnlocked(planet, T3)) {
-				if (planet.ResourcesProduction.Population.T3Lifeforms < 435000000) { //Require 435M T3 lifeform to unlock last level3 LFTech
-					T3lifeformNextlvl = GetNextLevel(planet, T3);
-					Resources T3cost = await _ogameService.GetPrice(T3, T3lifeformNextlvl);
-					if ((int) planet.ResourcesProduction.Population.Available >= (int) T3cost.Population) {
-						nextLFbuild = T3;
-					}
-				}
-			}
-			
-			if (nextLFbuild != LFBuildables.None) {
-				//Do not build next LF building if cost is higher than current metal mine (prioritize resources for mine first)
-				var nextlvl = GetNextLevel(planet, nextLFbuild);
-				var nextlvlcost = await _ogameService.GetPrice(nextLFbuild, nextlvl);
-				var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);				
-				var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
-				if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
-					_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"{nextLFbuild.ToString()} level {nextlvl} is more expensive than this planet's next mine, build {nextMine.ToString()} first.");
-					nextLFbuild = await GetLessExpensiveLFBuilding(planet, nextlvlcost);
-				}
-			}
-
-			*/
-
 			return nextLFbuild;
 		}
 
@@ -3643,7 +3543,7 @@ namespace Tbot.Includes {
 			return list;
 		}
 
-		private async Task<LFBuildables> GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
+		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
 			Resources nextlfcost = new();
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 
@@ -3654,7 +3554,7 @@ namespace Tbot.Includes {
 						continue;
 					}
 					else {
-						nextlfcost = await _ogameService.GetPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
+						nextlfcost = CalcPrice((LFBuildables) nextbuildable, nextLFbuildlvl);
 						if (nextlfcost.ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium) {
 							Currentlfbuildingcost = nextlfcost;
 							lessExpensiveLFBuild = (LFBuildables) nextbuildable;
@@ -3681,14 +3581,14 @@ namespace Tbot.Includes {
 			return LFTechno.None;
 		}
 
-		public async Task<LFTechno> GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel) {
+		public LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel, double costReduction = 0) {
 			LFTechno nextLFtech = LFTechno.None;
 			Resource nextLFtechcost = new();
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
 					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
 						var nextLFtechlvl = GetNextLevel(celestial, next);
-						Resources newcost = await _ogameService.GetPrice(next, nextLFtechlvl);
+						Resources newcost = CalcPrice(next, nextLFtechlvl, costReduction);
 						if (newcost.ConvertedDeuterium < currentcost.ConvertedDeuterium) {
 							currentcost = newcost;
 							nextLFtech = next;
