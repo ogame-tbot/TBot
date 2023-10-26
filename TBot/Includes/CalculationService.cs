@@ -17,6 +17,7 @@ using TBot.Model;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Operations;
 using System.Reflection.Emit;
+using System.Data;
 
 namespace Tbot.Includes {
 
@@ -2187,21 +2188,26 @@ namespace Tbot.Includes {
 		}
 
 		private long CalcLFPrice(long baseCost, double factor, int level, double costReduction = 0) {
-			return (long) Math.Floor(((double) 1 - costReduction) * Math.Floor((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
+			return (long) Math.Ceiling(((double) 1 - costReduction) * ((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
+		}
+
+		private long CalcLFEnergyPrice(long baseCost, double factor, int level) {
+			return (long) Math.Round((double) baseCost * (double) level * Math.Pow(factor, level));
 		}
 
 		private long CalcLFPopulationPrice(long baseCost, double factor, int level) {
-			return (long)  Math.Floor((double) baseCost * Math.Pow(factor, level - 1));
+			return (long)  Math.Ceiling((double) baseCost * Math.Pow(factor, level - 1));
 		}
 
 		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, long populationBaseCost = 0, double populationFactor = 0, double costReduction = 0) {
-			return new Resources() {
+			var output = new Resources() {
 				Metal = CalcLFPrice(metalBaseCost, metalFactor, level, costReduction),
 				Crystal = CalcLFPrice(crystalBaseCost, crystalFactor, level, costReduction),
 				Deuterium = CalcLFPrice(deutBaseCost, deutFactor, level, costReduction),
-				Energy = CalcLFPrice(energyBaseCost, energyFactor, level, costReduction),
+				Energy = CalcLFEnergyPrice(energyBaseCost, energyFactor, level),
 				Population = CalcLFPopulationPrice(populationBaseCost, populationFactor, level)
 			};
+			return output;
 		}
 
 		public int CalcCumulativeLabLevel(List<Celestial> celestials, Researches researches) {
@@ -2337,195 +2343,195 @@ namespace Tbot.Includes {
 			switch (buildable) {
 				case LFBuildables.ResidentialSector:
 					increaseFactor = 1.21;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.BiosphereFarm:
 					increaseFactor = 1.25;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.ResearchCentre:
 					increaseFactor = 1.25;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.AcademyOfSciences:
 					increaseFactor = 1.60;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.NeuroCalibrationCentre:
 					increaseFactor = 1.70;
-					baseTime = 6400000;
+					baseTime = 64000;
 					break;
 				case LFBuildables.HighEnergySmelting:
 					increaseFactor = 1.30;
-					baseTime = 200000;
+					baseTime = 2000;
 					break;
 				case LFBuildables.FoodSilo:
 					increaseFactor = 1.17;
-					baseTime = 1200000;
+					baseTime = 12000;
 					break;
 				case LFBuildables.FusionPoweredProduction:
 					increaseFactor = 1.20;
-					baseTime = 2800000;
+					baseTime = 28000;
 					break;
 				case LFBuildables.Skyscraper:
 					increaseFactor = 1.20;
-					baseTime = 4000000;
+					baseTime = 40000;
 					break;
 				case LFBuildables.BiotechLab:
 					increaseFactor = 1.20;
-					baseTime = 5200000;
+					baseTime = 52000;
 					break;
 				case LFBuildables.Metropolis:
 					increaseFactor = 1.30;
-					baseTime = 9000000;
+					baseTime = 90000;
 					break;
 				case LFBuildables.PlanetaryShield:
 					increaseFactor = 1.20;
-					baseTime = 9500000;
+					baseTime = 95000;
 					break;
 				case LFBuildables.MeditationEnclave:
 					increaseFactor = 1.21;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.CrystalFarm:
 					increaseFactor = 1.21;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.RuneTechnologium:
 					increaseFactor = 1.25;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.RuneForge:
 					increaseFactor = 1.60;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.Oriktorium:
 					increaseFactor = 1.70;
-					baseTime = 6400000;
+					baseTime = 64000;
 					break;
 				case LFBuildables.MagmaForge:
 					increaseFactor = 1.30;
-					baseTime = 200000;
+					baseTime = 2000;
 					break;
 				case LFBuildables.DisruptionChamber:
 					increaseFactor = 1.25;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.Megalith:
 					increaseFactor = 1.40;
-					baseTime = 4000000;
+					baseTime = 40000;
 					break;
 				case LFBuildables.CrystalRefinery:
 					increaseFactor = 1.20;
-					baseTime = 4000000;
+					baseTime = 40000;
 					break;
 				case LFBuildables.DeuteriumSynthesiser:
 					increaseFactor = 1.20;
-					baseTime = 5200000;
+					baseTime = 52000;
 					break;
 				case LFBuildables.MineralResearchCentre:
 					increaseFactor = 1.30;
-					baseTime = 9000000;
+					baseTime = 90000;
 					break;
 				case LFBuildables.AdvancedRecyclingPlant:
 					increaseFactor = 1.30;
-					baseTime = 9500000;
+					baseTime = 95000;
 					break;
 				case LFBuildables.AssemblyLine:
 					increaseFactor = 1.22;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.FusionCellFactory:
 					increaseFactor = 1.20;
-					baseTime = 4800;
+					baseTime = 48;
 					break;
 				case LFBuildables.RoboticsResearchCentre:
 					increaseFactor = 1.25;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.UpdateNetwork:
 					increaseFactor = 1.60;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.QuantumComputerCentre:
 					increaseFactor = 1.70;
-					baseTime = 6400000;
+					baseTime = 64000;
 					break;
 				case LFBuildables.AutomatisedAssemblyCentre:
 					increaseFactor = 1.30;
-					baseTime = 200000;
+					baseTime = 2000;
 					break;
 				case LFBuildables.HighPerformanceTransformer:
 					increaseFactor = 1.40;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.MicrochipAssemblyLine:
 					increaseFactor = 1.17;
-					baseTime = 1200000;
+					baseTime = 12000;
 					break;
 				case LFBuildables.ProductionAssemblyHall:
 					increaseFactor = 1.30;
-					baseTime = 4000000;
+					baseTime = 40000;
 					break;
 				case LFBuildables.HighPerformanceSynthesiser:
 					increaseFactor = 1.20;
-					baseTime = 5200000;
+					baseTime = 52000;
 					break;
 				case LFBuildables.ChipMassProduction:
 					increaseFactor = 1.30;
-					baseTime = 5000000;
+					baseTime = 50000;
 					break;
 				case LFBuildables.NanoRepairBots:
 					increaseFactor = 1.40;
-					baseTime = 9500000;
+					baseTime = 95000;
 					break;
 				case LFBuildables.Sanctuary:
 					increaseFactor = 1.22;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.AntimatterCondenser:
 					increaseFactor = 1.22;
-					baseTime = 4000;
+					baseTime = 40;
 					break;
 				case LFBuildables.VortexChamber:
 					increaseFactor = 1.25;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.HallsOfRealisation:
 					increaseFactor = 1.70;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.ForumOfTranscendence:
 					increaseFactor = 1.80;
-					baseTime = 6400000;
+					baseTime = 64000;
 					break;
 				case LFBuildables.AntimatterConvector:
 					increaseFactor = 1.35;
-					baseTime = 200000;
+					baseTime = 2000;
 					break;
 				case LFBuildables.CloningLaboratory:
 					increaseFactor = 1.20;
-					baseTime = 1200000;
+					baseTime = 12000;
 					break;
 				case LFBuildables.ChrysalisAccelerator:
 					increaseFactor = 1.18;
-					baseTime = 1600000;
+					baseTime = 16000;
 					break;
 				case LFBuildables.BioModifier:
 					increaseFactor = 1.20;
-					baseTime = 4000000;
+					baseTime = 40000;
 					break;
 				case LFBuildables.PsionicModulator:
 					increaseFactor = 1.80;
-					baseTime = 5200000;
+					baseTime = 52000;
 					break;
 				case LFBuildables.ShipManufacturingHall:
 					increaseFactor = 1.30;
-					baseTime = 9000000;
+					baseTime = 90000;
 					break;
 				case LFBuildables.SupraRefractor:
 					increaseFactor = 1.30;
-					baseTime = 9500000;
+					baseTime = 95000;
 					break;
 
 				default:
@@ -2847,9 +2853,9 @@ namespace Tbot.Includes {
 		}
 
 		private long CalcLFTime(int level, int baseTime, double increaseFactor, int speed = 1, int robots = 0, int nanites = 1) {
-			long duration = (long) Math.Floor((double) level * (double) baseTime * (double) Math.Pow(increaseFactor, level));
-			duration = (long) Math.Floor((double) duration / (double) ((double) (robots + 1) * Math.Pow(2, nanites)));
-			duration = (long) Math.Floor((double) duration / (double) speed);
+			long duration = (long) Math.Round((double) level * (double) baseTime * (double) Math.Pow(increaseFactor, level));
+			duration = (long) Math.Round((double) duration / (double) ((double) (robots + 1) * Math.Pow(2, nanites)));
+			duration = (long) Math.Round((double) duration / (double) speed);
 			return duration;
 		}
 
@@ -3381,26 +3387,15 @@ namespace Tbot.Includes {
 
 			if (
 				planet.GetLevel(foodBuilding) < maxFoodFactory &&
-				planet.ResourcesProduction.Population.IsStarving() 
+				planet.ResourcesProduction.Population.WillStarve() 
 			) {
 				return foodBuilding;
 			}
 			else if (
 				planet.GetLevel(populationBuilding) < maxPopuFactory &&
-				(
-					planet.ResourcesProduction.Population.IsThereFoodForMore() ||
-					planet.ResourcesProduction.Population.IsFull()
-				)
+				(planet.ResourcesProduction.Population.IsThereFoodForMore() || planet.ResourcesProduction.Population.IsFull())
 			) {
 				nextLFbuild = populationBuilding;
-			} else if (
-				planet.GetLevel(foodBuilding) < maxFoodFactory &&
-				(
-					planet.ResourcesProduction.Population.IsStarving() ||
-					planet.ResourcesProduction.Population.WillStarve()
-				)
-			) {
-				nextLFbuild = foodBuilding;
 			} else  if (
 				isUnlocked(planet, T2Building) &&
 				planet.ResourcesProduction.Population.NeedsMoreT2()
@@ -3434,7 +3429,7 @@ namespace Tbot.Includes {
 			return nextLFbuild;
 		}
 
-		private LFBuildables GetPopulationBuilding(LFTypes LFtype) {
+		public LFBuildables GetPopulationBuilding(LFTypes LFtype) {
 			LFBuildables populationBuilding = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
 				populationBuilding = LFBuildables.ResidentialSector;
@@ -3448,7 +3443,7 @@ namespace Tbot.Includes {
 			return populationBuilding;
 		}
 
-		private LFBuildables GetFoodBuilding(LFTypes LFtype) {
+		public LFBuildables GetFoodBuilding(LFTypes LFtype) {
 			LFBuildables foodBuilding = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
 				foodBuilding = LFBuildables.BiosphereFarm;
@@ -3462,7 +3457,7 @@ namespace Tbot.Includes {
 			return foodBuilding;
 		}
 
-		private LFBuildables GetTechBuilding(LFTypes LFtype) {
+		public LFBuildables GetTechBuilding(LFTypes LFtype) {
 			LFBuildables techBuilding = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
 				techBuilding = LFBuildables.ResearchCentre;
@@ -3476,7 +3471,7 @@ namespace Tbot.Includes {
 			return techBuilding;
 		}
 
-		private LFBuildables GetT2Building(LFTypes LFtype) {
+		public LFBuildables GetT2Building(LFTypes LFtype) {
 			LFBuildables t2Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
 				t2Building = LFBuildables.NeuroCalibrationCentre;
@@ -3490,7 +3485,7 @@ namespace Tbot.Includes {
 			return t2Building;
 		}
 
-		private LFBuildables GetT3Building(LFTypes LFtype) {
+		public LFBuildables GetT3Building(LFTypes LFtype) {
 			LFBuildables t3Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
 				t3Building = LFBuildables.AcademyOfSciences;
@@ -3504,7 +3499,7 @@ namespace Tbot.Includes {
 			return t3Building;
 		}
 
-		private List<LFBuildables> GetOtherBuildings(LFTypes LFtype) {
+		public List<LFBuildables> GetOtherBuildings(LFTypes LFtype) {
 			List<LFBuildables> list = new();
 			list.Add(GetTechBuilding(LFtype));
 			if (LFtype == LFTypes.Humans) {
@@ -3563,6 +3558,129 @@ namespace Tbot.Includes {
 				}
 			}
 			return lessExpensiveLFBuild;
+		}
+
+		public long CalcFoodProduction(Planet planet) {
+			var foodFactory = GetFoodBuilding(planet.LFtype);
+			var level = planet.GetLevel(foodFactory);
+			return CalcFoodProduction(foodFactory, level);
+		}
+
+		public long CalcFoodProduction(LFBuildables foodFactory, int level, double bonus = 0) {
+			long output = 0;
+			long baseProd = 0;
+			double increaseFactor = 0;
+
+			switch (foodFactory) {
+				case LFBuildables.BiosphereFarm:
+					baseProd = 10;
+					increaseFactor = 1.14;
+					break;
+				case LFBuildables.CrystalFarm:
+					baseProd = 6;
+					increaseFactor = 1.14;
+					break;
+				case LFBuildables.FusionCellFactory:
+					baseProd = 23;
+					increaseFactor = 1.12;
+					break;
+				case LFBuildables.AntimatterCondenser:
+					baseProd = 12;
+					increaseFactor = 1.14;
+					break;
+				default:
+					break;
+			}
+
+			output = (long) Math.Round(baseProd * Math.Pow(increaseFactor, level) * (level + 1) * (1 + bonus));
+			return output;
+		}
+
+		public long CalcLivingSpace(Planet planet) {
+			var popuFactory = GetPopulationBuilding(planet.LFtype);
+			var level = planet.GetLevel(popuFactory);
+			return CalcLivingSpace(popuFactory, level);
+		}
+
+		public long CalcLivingSpace(LFBuildables populationFactory, int level, double bonus = 0) {
+			long output = 0;
+			long baseProd = 0;			
+			double prodIncreaseFactor = 0;
+
+			switch (populationFactory) {
+				case LFBuildables.ResidentialSector:
+					baseProd = 210;
+					prodIncreaseFactor = 1.21;
+					break;
+				case LFBuildables.MeditationEnclave:
+					baseProd = 150;
+					prodIncreaseFactor = 1.216;
+					break;
+				case LFBuildables.AssemblyLine:
+					baseProd = 500;
+					prodIncreaseFactor = 1.205;
+					break;
+				case LFBuildables.Sanctuary:
+					baseProd = 250;
+					prodIncreaseFactor = 1.21;
+					break;
+				default:
+					break;
+			}
+
+			output = (long) Math.Round(baseProd * Math.Pow(prodIncreaseFactor, level) * (level + 1) * (1 + bonus));
+			return output;
+		}
+
+		public long CalcFoodConsumption(Planet planet) {
+			var popuFactory = GetPopulationBuilding(planet.LFtype);
+			var level = planet.GetLevel(popuFactory);
+			return CalcFoodConsumption(popuFactory, level);
+		}
+
+		public long CalcFoodConsumption(LFBuildables populationFactory, int level, double bonus = 0) {
+			long output = 0;
+			long consumptionBase = 0;
+			double consumptionIncreaseFactor = 0;
+
+			switch (populationFactory) {
+				case LFBuildables.ResidentialSector:
+					consumptionBase = 9;
+					consumptionIncreaseFactor = 1.15;
+					break;
+				case LFBuildables.MeditationEnclave:
+					consumptionBase = 5;
+					consumptionIncreaseFactor = 1.15;
+					break;
+				case LFBuildables.AssemblyLine:
+					consumptionBase = 22;
+					consumptionIncreaseFactor = 1.15;
+					break;
+				case LFBuildables.Sanctuary:
+					consumptionBase = 11;
+					consumptionIncreaseFactor = 1.15;
+					break;
+				default:
+					break;
+			}
+
+			output = (long) Math.Round(consumptionBase * Math.Pow(consumptionIncreaseFactor, level) * (level + 1) * (1 + bonus));
+			return output;
+		}
+
+		public long CalcSatisfied(Planet planet) {
+			var popuFactory = GetPopulationBuilding(planet.LFtype);
+			var popuFactoryLevel = planet.GetLevel(popuFactory);
+			var foodFactory = GetFoodBuilding(planet.LFtype);
+			var foodFactoryLevel = planet.GetLevel(foodFactory);
+			return CalcSatisfied(popuFactory, popuFactoryLevel, foodFactory, foodFactoryLevel);
+		}
+
+		public long CalcSatisfied(LFBuildables populationFactory, int populationFactoryLevel, LFBuildables foodFactory, int foodFactoryLevel, double populationBonus = 0, double foodProductionBonus = 0, double foodConsumptionBonus = 0) {
+			long livingSpace = CalcLivingSpace(populationFactory, populationFactoryLevel, populationBonus);
+			long foodConsumption = CalcFoodConsumption(populationFactory, populationFactoryLevel, foodConsumptionBonus);
+			long foodProduction = CalcFoodProduction(foodFactory, foodFactoryLevel, foodProductionBonus);
+			return (long) Math.Round((double) foodProduction / (double) foodConsumption * (double) livingSpace);
 		}
 
 		public LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel) {

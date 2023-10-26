@@ -97,6 +97,15 @@ namespace TBot.Ogame.Infrastructure.Models {
 			return output;
 		}
 
+		public Celestial SetLevel(LFBuildables building, int level) {
+			foreach (PropertyInfo prop in LFBuildings.GetType().GetProperties()) {
+				if (prop.Name == building.ToString()) {
+					prop.SetValue(this.LFBuildings, level);
+				}
+			}
+			return this;
+		}
+
 		public int GetLevel(LFTechno techno) {
 			int output = 0;
 			foreach (PropertyInfo prop in LFTechs.GetType().GetProperties()) {

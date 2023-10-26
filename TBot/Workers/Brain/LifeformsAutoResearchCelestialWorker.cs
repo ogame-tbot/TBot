@@ -148,7 +148,7 @@ namespace Tbot.Workers.Brain {
 											.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
 											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
 											.SingleOrDefault() ?? new() { ID = 0 };
-									fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable);
+									fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable, Buildables.Null);
 									if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 										stop = true;
 										return;

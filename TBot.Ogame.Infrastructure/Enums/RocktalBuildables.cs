@@ -13,6 +13,6 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		CrystalRefinery = 12109,
 		DeuteriumSynthesiser = 12110,
 		MineralResearchCentre = 12111,
-		MetalRecyclingPlant = 12112
+		AdvancedRecyclingPlant = 12112
 	}
 }

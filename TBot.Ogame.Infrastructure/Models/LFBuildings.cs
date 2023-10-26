@@ -36,7 +36,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public int CrystalRefinery { get; set; }
 		public int DeuteriumSynthesiser { get; set; }
 		public int MineralResearchCentre { get; set; }
-		public int MetalRecyclingPlant { get; set; }
+		public int AdvancedRecyclingPlant { get; set; }
 
 		//Mechas
 		public int AssemblyLine { get; set; }
