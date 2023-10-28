@@ -72,7 +72,7 @@ namespace Tbot.Workers {
 						}
 					}					
 
-					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free >= 1) {
+					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free > (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree) {
 						Coordinate dest = new();
 						dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
 						dest.System = rand.Next((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
