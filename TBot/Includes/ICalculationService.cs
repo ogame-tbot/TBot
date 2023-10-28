@@ -100,6 +100,7 @@ namespace Tbot.Includes {
 		LFBuildables GetTechBuilding(LFTypes LFtype);
 		LFBuildables GetT2Building(LFTypes LFtype);
 		LFBuildables GetT3Building(LFTypes LFtype);
+		LFBuildables GetLeastExpensiveLFBuilding(Celestial planet);
 		List<LFBuildables> GetOtherBuildings(LFTypes LFtype);
 		long CalcFoodProduction(Planet planet);
 		long CalcFoodProduction(LFBuildables foodFactory, int level, double bonus = 0);

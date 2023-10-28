@@ -15,10 +15,10 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public long GrowthRate { get; set; }
 		public long BunkerSpace { get; set; }
 		public bool IsFull() {
-			return Available == LivingSpace;
+			return Available >= LivingSpace;
 		}
 		public bool IsStarving() {
-			return Hungry > 0;
+			return Hungry > 0 && WillStarve();
 		}
 		public bool WillStarve() {
 			return LivingSpace > Satisfied;

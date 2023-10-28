@@ -154,6 +154,8 @@ namespace Tbot.Workers.Brain {
 								} catch {
 									DoLog(LogLevel.Warning, "Unable to start building construction: a network error has occurred");
 								}
+							} else if (xCostBuildable.Population > celestial.Resources.Population) {
+								DoLog(LogLevel.Information, $"Not enough population to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.Population.ToString()} - Available: {celestial.Resources.Population.ToString()}");
 							} else {
 								DoLog(LogLevel.Information, $"Not enough resources to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}. Needed: {xCostBuildable.LFBuildingCostResources.ToString()} - Available: {celestial.Resources.LFBuildingCostResources.ToString()}");
 

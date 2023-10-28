@@ -437,10 +437,10 @@ namespace Tbot.Workers {
 				return (int) SendFleetCode.GenericError;
 			}
 			if (
-			(bool) _tbotInstance.InstanceSettings.SleepMode.Active &&
-			DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep) &&
-			DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp) &&
-			!force
+				(bool) _tbotInstance.InstanceSettings.SleepMode.Active &&
+				DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.GoToSleep, out DateTime goToSleep) &&
+				DateTime.TryParse((string) _tbotInstance.InstanceSettings.SleepMode.WakeUp, out DateTime wakeUp) &&
+				!force
 			) {
 				DateTime time = await _tbotOgameBridge.GetDateTime();
 				if (GeneralHelper.ShouldSleep(time, goToSleep, wakeUp)) {
@@ -924,9 +924,14 @@ namespace Tbot.Workers {
 							if (maxPopuFactory != 0 && maxFoodFactory != 0 && maxTechFactory != 0) {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
+									var livingSpace = _calcService.CalcLivingSpace(tempCelestial as Planet);
+									var satisfied = _calcService.CalcSatisfied(tempCelestial as Planet);
+									
 									tempCelestial.SetLevel(buildable, level);
-									var nextBuildable = LFBuildables.None;
-									//TODO: update food production/consumption and population cap
+									tempCelestial.ResourcesProduction.Population.LivingSpace = livingSpace;
+									tempCelestial.ResourcesProduction.Population.Satisfied = satisfied;
+
+									var nextBuildable = LFBuildables.None;									
 									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxPopuFactory, maxFoodFactory, maxTechFactory);
 									if (nextBuildable != LFBuildables.None) {
 										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
