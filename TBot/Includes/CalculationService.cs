@@ -3395,10 +3395,14 @@ namespace Tbot.Includes {
 				nextLFbuild = populationBuilding;
 			}
 			else  if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
-				nextLFbuild = T2Building;
+				if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
+					nextLFbuild = T2Building;
+				}
 			}
 			else if (isUnlocked(planet, T3Building) && planet.ResourcesProduction.Population.NeedsMoreT3()) {
-				nextLFbuild = T3Building;
+				if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).Population) {
+					nextLFbuild = T3Building;
+				}
 			}
 			else if (isUnlocked(planet, techBuilding) && maxTechFactory < planet.GetLevel(techBuilding)) {
 				nextLFbuild = techBuilding;
