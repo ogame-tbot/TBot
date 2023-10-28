@@ -3384,7 +3384,7 @@ namespace Tbot.Includes {
 			LFBuildables techBuilding = GetTechBuilding(planet.LFtype);
 			LFBuildables T2Building = GetT2Building(planet.LFtype);
 			LFBuildables T3Building = GetT3Building(planet.LFtype);
-
+			
 			if (planet.GetLevel(foodBuilding) < maxFoodFactory && planet.ResourcesProduction.Population.IsStarving()) {
 				return foodBuilding;
 			}
@@ -3539,9 +3539,12 @@ namespace Tbot.Includes {
 		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
+			var livingSpace = CalcLivingSpace(planet as Planet);
+
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium)
 				.Where(b => b != GetTechBuilding(planet.LFtype) || (b == GetTechBuilding(planet.LFtype) && planet.GetLevel(b) < maxTechBuilding))
+				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
 				.ToList();
 
@@ -3555,9 +3558,11 @@ namespace Tbot.Includes {
 		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet) {
 			Resources nextlfcost = new();
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
-
+			var livingSpace = CalcLivingSpace(planet as Planet);
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
+			
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
+				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
 				.ToList();
 
