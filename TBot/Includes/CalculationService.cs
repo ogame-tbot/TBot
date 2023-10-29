@@ -3755,7 +3755,10 @@ namespace Tbot.Includes {
 			var popuFactoryLevel = planet.GetLevel(popuFactory);
 			var foodFactory = GetFoodBuilding(planet.LFtype);
 			var foodFactoryLevel = planet.GetLevel(foodFactory);
-			return CalcSatisfied(popuFactory, popuFactoryLevel, foodFactory, foodFactoryLevel);
+			var populationBonus = CalcLivingSpaceBonus(planet);
+			var foodProductionBonus = CalcFoodProductionBonus(planet);
+			var foodConsumptionBonus = CalcFoodConsumption(planet);
+			return CalcSatisfied(popuFactory, popuFactoryLevel, foodFactory, foodFactoryLevel, populationBonus, foodProductionBonus, foodConsumptionBonus);
 		}
 
 		public long CalcSatisfied(LFBuildables populationFactory, int populationFactoryLevel, LFBuildables foodFactory, int foodFactoryLevel, double populationBonus = 0, double foodProductionBonus = 0, double foodConsumptionBonus = 0) {
