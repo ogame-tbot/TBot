@@ -104,10 +104,13 @@ namespace Tbot.Includes {
 		List<LFBuildables> GetOtherBuildings(LFTypes LFtype);
 		long CalcFoodProduction(Planet planet);
 		long CalcFoodProduction(LFBuildables foodFactory, int level, double bonus = 0);
+		double CalcFoodProductionBonus(Planet planet);
 		long CalcLivingSpace(Planet planet);
 		long CalcLivingSpace(LFBuildables populationFactory, int level, double bonus = 0);
+		double CalcLivingSpaceBonus(Planet planet);
 		long CalcFoodConsumption(Planet planet);
 		long CalcFoodConsumption(LFBuildables populationFactory, int level, double bonus = 0);
+		double CalcFoodConsumptionBonus(Planet planet);
 		long CalcSatisfied(Planet planet);
 		long CalcSatisfied(LFBuildables populationFactory, int populationFactoryLevel, LFBuildables foodFactory, int foodFactoryLevel, double populationBonus = 0, double foodProductionBonus = 0, double foodConsumptionBonus = 0);
 		LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel);

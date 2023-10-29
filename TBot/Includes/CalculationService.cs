@@ -3583,7 +3583,8 @@ namespace Tbot.Includes {
 		public long CalcFoodProduction(Planet planet) {
 			var foodFactory = GetFoodBuilding(planet.LFtype);
 			var level = planet.GetLevel(foodFactory);
-			return CalcFoodProduction(foodFactory, level);
+			var bonus = CalcFoodProductionBonus(planet);
+			return CalcFoodProduction(foodFactory, level, bonus);
 		}
 
 		public long CalcFoodProduction(LFBuildables foodFactory, int level, double bonus = 0) {
@@ -3616,10 +3617,30 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public double CalcFoodProductionBonus(Planet planet) {
+			double bonus = 0;
+
+			switch (planet.LFtype) {
+				case LFTypes.Humans:
+					bonus += planet.GetLevel(LFBuildables.BiotechLab) * 0.05;
+					break;
+				case LFTypes.Mechas:
+					bonus += planet.GetLevel(LFBuildables.MicrochipAssemblyLine) * 0.02;
+					break;
+				case LFTypes.Rocktal:
+				case LFTypes.Kaelesh:
+				default:
+					break;
+			}
+
+			return bonus;
+		}
+
 		public long CalcLivingSpace(Planet planet) {
 			var popuFactory = GetPopulationBuilding(planet.LFtype);
 			var level = planet.GetLevel(popuFactory);
-			return CalcLivingSpace(popuFactory, level);
+			var bonus = CalcLivingSpaceBonus(planet);
+			return CalcLivingSpace(popuFactory, level, bonus);
 		}
 
 		public long CalcLivingSpace(LFBuildables populationFactory, int level, double bonus = 0) {
@@ -3652,10 +3673,32 @@ namespace Tbot.Includes {
 			return output;
 		}
 
+		public double CalcLivingSpaceBonus(Planet planet) {
+			double bonus = 0;
+
+			switch (planet.LFtype) {
+				case LFTypes.Humans:
+					bonus += planet.GetLevel(LFBuildables.Skyscraper) * 0.015;
+					break;
+				case LFTypes.Mechas:
+					bonus += planet.GetLevel(LFBuildables.ProductionAssemblyHall) * 0.02;
+					break;
+				case LFTypes.Kaelesh:
+					bonus += planet.GetLevel(LFBuildables.ChrysalisAccelerator) * 0.02;
+					break;
+				case LFTypes.Rocktal:
+				default:
+					break;
+			}
+
+			return bonus;
+		}
+		
 		public long CalcFoodConsumption(Planet planet) {
 			var popuFactory = GetPopulationBuilding(planet.LFtype);
 			var level = planet.GetLevel(popuFactory);
-			return CalcFoodConsumption(popuFactory, level);
+			var bonus = CalcFoodConsumptionBonus(planet);
+			return CalcFoodConsumption(popuFactory, level, bonus);
 		}
 
 		public long CalcFoodConsumption(LFBuildables populationFactory, int level, double bonus = 0) {
@@ -3686,6 +3729,25 @@ namespace Tbot.Includes {
 
 			output = (long) Math.Floor(consumptionBase * Math.Pow(consumptionIncreaseFactor, level) * (level + 1) * (1 + bonus));
 			return output;
+		}
+
+		public double CalcFoodConsumptionBonus(Planet planet) {
+			double bonus = 0;
+
+			switch (planet.LFtype) {
+				case LFTypes.Humans:
+					bonus += planet.GetLevel(LFBuildables.FoodSilo) * 0.01;
+					break;
+				case LFTypes.Kaelesh:
+					bonus += planet.GetLevel(LFBuildables.AntimatterConvector) * 0.01;
+					break;
+				case LFTypes.Rocktal:
+				case LFTypes.Mechas:
+				default:
+					break;
+			}
+
+			return bonus;
 		}
 
 		public long CalcSatisfied(Planet planet) {
