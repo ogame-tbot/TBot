@@ -3008,17 +3008,20 @@ namespace Tbot.Includes {
 				return false;
 		}
 
-		public Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor) {
+		public Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor, bool buildSolarSatellites = true) {
 			if (planet.Buildings.SolarPlant < maxSolarPlant)
 				return Buildables.SolarPlant;
 			if (planet.Buildings.DeuteriumSynthesizer >= 5 && planet.Buildings.FusionReactor < maxFusionReactor)
 				return Buildables.FusionReactor;
-			if (planet.Facilities.Shipyard >= 1)
-				return Buildables.SolarSatellite;
-			else if (planet.Facilities.RoboticsFactory >= 2)
-				return Buildables.Shipyard;
-			else
-				return Buildables.RoboticsFactory;
+			if (buildSolarSatellites) {
+				if (planet.Facilities.Shipyard >= 1)
+					return Buildables.SolarSatellite;
+				else if (planet.Facilities.RoboticsFactory >= 2)
+					return Buildables.Shipyard;
+				else
+					return Buildables.RoboticsFactory;
+			}
+			return Buildables.Null;
 		}
 
 		public int GetSolarSatelliteOutput(Planet planet, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false) {
@@ -3814,7 +3817,7 @@ namespace Tbot.Includes {
 			if (ShouldBuildTerraformer(planet, researches, maxFacilities.Terraformer))
 				buildableToBuild = Buildables.Terraformer;
 			if (buildableToBuild == Buildables.Null && ShouldBuildEnergySource(planet))
-				buildableToBuild = GetNextEnergySourceToBuild(planet, maxBuildings.SolarPlant, maxBuildings.FusionReactor);
+				buildableToBuild = GetNextEnergySourceToBuild(planet, maxBuildings.SolarPlant, maxBuildings.FusionReactor, settings.BuildSolarSatellites);
 			if (buildableToBuild == Buildables.Null)
 				buildableToBuild = GetNextDepositToBuild(planet, researches, maxBuildings, playerClass, staff, serverData, settings, ratio);
 			if (buildableToBuild == Buildables.Null)

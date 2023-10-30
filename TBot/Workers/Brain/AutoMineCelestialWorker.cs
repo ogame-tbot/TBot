@@ -89,7 +89,8 @@ namespace Tbot.Workers.Brain {
 					MaxDaysOfInvestmentReturn = (float) _tbotInstance.InstanceSettings.Brain.AutoMine.MaxDaysOfInvestmentReturn,
 					DepositHours = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DepositHours,
 					BuildDepositIfFull = (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildDepositIfFull,
-					DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons
+					DeutToLeaveOnMoons = (int) _tbotInstance.InstanceSettings.Brain.AutoMine.DeutToLeaveOnMoons,
+					BuildSolarSatellites = (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellites
 				};
 				Fields fieldsSettings = new() {
 					Total = (int) _tbotInstance.InstanceSettings.AutoColonize.Abandon.MinFields
@@ -185,7 +186,6 @@ namespace Tbot.Workers.Brain {
 					}
 
 					if (celestial is Planet) {
-
 						buildable = _calculationService.GetNextBuildingToBuild(celestial as Planet, _tbotInstance.UserData.researches, maxBuildings, maxFacilities, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.staff, _tbotInstance.UserData.serverData, autoMinerSettings);
 						level = _calculationService.GetNextLevel(celestial as Planet, buildable, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
 					} else {
@@ -208,15 +208,22 @@ namespace Tbot.Workers.Brain {
 					if (buildable == Buildables.Terraformer) {
 						if (xCostBuildable.Energy > celestial.ResourcesProduction.Energy.CurrentProduction) {
 							DoLog(LogLevel.Information, $"Not enough energy to build: {buildable.ToString()} level {level.ToString()} on {celestial.ToString()}");
-							buildable = Buildables.SolarSatellite;
-							level = _calculationService.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
-							xCostBuildable = _calculationService.CalcPrice(buildable, level);
+							if ((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellites) {
+								buildable = Buildables.SolarSatellite;
+								level = _calculationService.CalcNeededSolarSatellites(celestial as Planet, xCostBuildable.Energy - celestial.ResourcesProduction.Energy.CurrentProduction, _tbotInstance.UserData.userInfo.Class == CharacterClass.Collector, _tbotInstance.UserData.staff.Engineer, _tbotInstance.UserData.staff.IsFull);
+								xCostBuildable = _calculationService.CalcPrice(buildable, level);
+							}
+							else {
+								DoLog(LogLevel.Information, $"Unable to build SolarSatellites for Terraformer. Stopping AutoMiner for celestial {celestial.ToString()}");
+								stop = true;
+								return;
+							}
 						}
 					}
 
-					if (celestial.Resources.IsEnoughFor(xCostBuildable)) {
+					if (celestial.Resources.IsEnoughFor(xCostBuildable) && buildable != Buildables.Null) {
 						bool result = false;
-						if ((buildable == Buildables.SolarSatellite && (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellite) || buildable == Buildables.Crawler) {
+						if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 							if (!celestial.HasProduction()) {
 								DoLog(LogLevel.Information, $"Building {level.ToString()} x {buildable.ToString()} on {celestial.ToString()}");
 								try {
@@ -242,7 +249,7 @@ namespace Tbot.Workers.Brain {
 									_tbotInstance.UserData.lastDOIR = DOIR;
 								}
 							}
-							if ((buildable == Buildables.SolarSatellite && (bool) _tbotInstance.InstanceSettings.Brain.AutoMine.BuildSolarSatellite) || buildable == Buildables.Crawler) {
+							if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler) {
 								celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Productions);
 								try {
 									if (celestial.Productions.First().ID == (int) buildable) {

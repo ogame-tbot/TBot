@@ -88,7 +88,7 @@ namespace Tbot.Includes {
 		List<Fleet> GetMissionsInProgress(Missions mission, List<Fleet> fleets);
 		Buildables GetNextBuildingToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1);
 		Buildables GetNextDepositToBuild(Planet planet, Researches researches, Buildings maxBuildings, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1);
-		Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor);
+		Buildables GetNextEnergySourceToBuild(Planet planet, int maxSolarPlant, int maxFusionReactor, bool buildSolarSatellites = true);
 		Buildables GetNextFacilityToBuild(Planet planet, Researches researches, Buildings maxBuildings, Facilities maxFacilities, CharacterClass playerClass, Staff staff, ServerData serverData, AutoMinerSettings settings, float ratio = 1, bool force = false);
 		int GetNextLevel(Celestial planet, Buildables buildable, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false);
 		int GetNextLevel(Celestial planet, LFBuildables buildable);

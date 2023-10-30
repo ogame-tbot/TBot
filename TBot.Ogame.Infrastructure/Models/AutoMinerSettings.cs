@@ -12,7 +12,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public int DepositHours { get; set; }
 		public bool BuildDepositIfFull { get; set; }
 		public int DeutToLeaveOnMoons { get; set; }
-
+		public bool BuildSolarSatellites { get; set; }
 		public AutoMinerSettings() {
 			OptimizeForStart = true;
 			PrioritizeRobotsAndNanites = false;
@@ -20,6 +20,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 			DepositHours = 6;
 			BuildDepositIfFull = false;
 			DeutToLeaveOnMoons = 1000000;
+			BuildSolarSatellites = true;
 		}
 	}
 
