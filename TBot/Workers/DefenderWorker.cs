@@ -153,13 +153,47 @@ namespace Tbot.Workers {
 
 			try {
 				if (attack.MissionType == Missions.MissileAttack) {
-					if (
-						!SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Defender, "IgnoreMissiles") ||
-						(SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Defender, "IgnoreMissiles") && (bool) _tbotInstance.InstanceSettings.Defender.IgnoreMissiles)
-					) {
-						DoLog(LogLevel.Information, $"Attack {attack.ID.ToString()} skipped: missiles attack.");
-						return;
+					if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+						await _tbotInstance.SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} with IPM!");
 					}
+					DoLog(LogLevel.Information, $"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} with IPM!");
+					if (
+						!SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Defender, "DefendFromMissiles") ||
+						(SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Defender, "DefendFromMissiles") && (bool) _tbotInstance.InstanceSettings.Defender.DefendFromMissiles)
+					) {
+						Celestial defenderCelestial = attackedCelestial;
+						if (attackedCelestial.Coordinate.Type == Celestials.Moon) {
+							 defenderCelestial = _tbotInstance.UserData.celestials.Unique().SingleOrDefault(planet => planet.HasCoords(new Coordinate {
+								 Galaxy = attackedCelestial.Coordinate.Galaxy,
+								 System = attackedCelestial.Coordinate.System,
+								 Position = attackedCelestial.Coordinate.Position,
+								 Type = Celestials.Planet
+							}));
+						}
+						defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Facilities);
+						if (defenderCelestial.Facilities.MissileSilo > 0) {
+							defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Defences);
+							defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Productions);
+							if (defenderCelestial.Productions.Count == 0) {
+								var availableSpace = defenderCelestial.Facilities.MissileSilo - defenderCelestial.Defences.AntiBallisticMissiles - (2 * defenderCelestial.Defences.InterplanetaryMissiles);
+								defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Resources);
+								if (availableSpace > 0) {
+									DoLog(LogLevel.Information, $"Building {availableSpace} AntiBallisticMissiles on {defenderCelestial.ToString()}");
+									await _ogameService.BuildDefences(defenderCelestial, Buildables.AntiBallisticMissiles, availableSpace);
+								}
+								else {
+									DoLog(LogLevel.Information, $"Unable to build AntiBallisticMissiles on {defenderCelestial.ToString()}: there is no space");
+								}
+							}
+							else {
+								DoLog(LogLevel.Information, $"Unable to build AntiBallisticMissiles on {defenderCelestial.ToString()}: a production is ongoing");
+							}
+						}
+						else {
+							DoLog(LogLevel.Information, $"No MissileSilo on {defenderCelestial.ToString()}");
+						}
+					}
+					return;
 				}
 				if (attack.Ships != null && _tbotInstance.UserData.researches.EspionageTechnology >= 8) {
 					if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Defender, "IgnoreProbes") && (bool) _tbotInstance.InstanceSettings.Defender.IgnoreProbes && attack.IsOnlyProbes()) {

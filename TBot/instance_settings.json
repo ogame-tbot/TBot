@@ -59,7 +59,7 @@
 		"CheckIntervalMin": 1,
 		"CheckIntervalMax": 22,
 		"IgnoreProbes": true,
-		"IgnoreMissiles": true,
+		"DefendFromMissiles": true,
 		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
 		"RandomActivity": true,
