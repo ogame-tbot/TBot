@@ -3013,7 +3013,12 @@ namespace Tbot.Includes {
 				return Buildables.SolarPlant;
 			if (planet.Buildings.DeuteriumSynthesizer >= 5 && planet.Buildings.FusionReactor < maxFusionReactor)
 				return Buildables.FusionReactor;
-			return Buildables.SolarSatellite;
+			if (planet.Facilities.Shipyard >= 1)
+				return Buildables.SolarSatellite;
+			else if (planet.Facilities.RoboticsFactory >= 2)
+				return Buildables.Shipyard;
+			else
+				return Buildables.RoboticsFactory;
 		}
 
 		public int GetSolarSatelliteOutput(Planet planet, bool isCollector = false, bool hasEngineer = false, bool hasFullStaff = false) {
