@@ -97,7 +97,7 @@ namespace Tbot.Workers {
 			return;
 		}
 
-		public async Task AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false) {
+		public async Task AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false) {
 			DateTime departureTime = await _tbotOgameBridge.GetDateTime();
 			_tbotInstance.SleepDuration = minDuration;
 
@@ -175,9 +175,6 @@ namespace Tbot.Workers {
 
 			celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 			Celestial destination = new() { ID = 0 };
-			if (!forceUnsafe)
-				forceUnsafe = (bool) _tbotInstance.InstanceSettings.SleepMode.AutoFleetSave.ForceUnsafe; //not used anymore
-
 
 			if (celestial.Resources.Deuterium == 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Skipping fleetsave from {celestial.ToString()}: there is no fuel!");
@@ -219,7 +216,7 @@ namespace Tbot.Workers {
 			if (TelegramMission != Missions.None)
 				mission = TelegramMission;
 
-			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+			List<FleetHypotesis> fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
 			if (fleetHypotesis.Count() > 0) {
 				foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 					_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
@@ -251,7 +248,7 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} possible, checking next mission..");
 				if (mission == Missions.Harvest) { mission = Missions.Deploy; } else { mission = Missions.Harvest; };
 				mission = Missions.Deploy;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
 				if (fleetHypotesis.Count > 0) {
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
@@ -274,7 +271,7 @@ namespace Tbot.Workers {
 			if (!AlreadySent && celestial.Ships.ColonyShip > 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Colonize destination...");
 				mission = Missions.Colonize;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
 				if (fleetHypotesis.Count > 0) {
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
@@ -296,7 +293,7 @@ namespace Tbot.Workers {
 			if (!AlreadySent && celestial.Ships.EspionageProbe > 0) {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"Fleetsave from {celestial.ToString()} no {mission} found, checking Spy destination...");
 				mission = Missions.Spy;
-				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium, forceUnsafe);
+				fleetHypotesis = await GetFleetSaveDestination(_tbotInstance.UserData.celestials, celestial, departureTime, minDuration, mission, maxDeuterium);
 				if (fleetHypotesis.Count > 0) {
 					foreach (FleetHypotesis fleet in fleetHypotesis.OrderBy(pf => pf.Fuel).ThenBy(pf => pf.Duration <= minDuration)) {
 						_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, $"checking {mission} fleet to: {fleet.Destination}");
@@ -558,7 +555,7 @@ namespace Tbot.Workers {
 				celestialsToFleetsave = celestialsToFleetsave.Where(c => c.Coordinate.Type == Celestials.Planet).ToList();
 
 			foreach (Celestial celestial in celestialsToFleetsave)
-				await AutoFleetSave(celestial, false, _tbotInstance.SleepDuration, false, false, _tbotInstance.TelegramUserData.Mission, true);
+				await AutoFleetSave(celestial, false, _tbotInstance.SleepDuration, false, _tbotInstance.TelegramUserData.Mission, true);
 
 			await _tbotInstance.SleepNow(_tbotInstance.NextWakeUpTime);
 		}
@@ -568,7 +565,7 @@ namespace Tbot.Workers {
 				value.Dispose();
 			timers.Remove("GhostSleepTimer");
 
-			await AutoFleetSave(_tbotInstance.TelegramUserData.CurrentCelestialToSave, false, _tbotInstance.SleepDuration, false, false, _tbotInstance.TelegramUserData.Mission, true);
+			await AutoFleetSave(_tbotInstance.TelegramUserData.CurrentCelestialToSave, false, _tbotInstance.SleepDuration, false, _tbotInstance.TelegramUserData.Mission, true);
 
 			await _tbotInstance.SleepNow(_tbotInstance.NextWakeUpTime);
 		}
@@ -585,7 +582,7 @@ namespace Tbot.Workers {
 			return true;
 		}
 
-		private async Task<List<FleetHypotesis>> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel, bool forceUnsafe = false) {
+		private async Task<List<FleetHypotesis>> GetFleetSaveDestination(List<Celestial> source, Celestial origin, DateTime departureDate, long minFlightTime, Missions mission, long maxFuel) {
 			var validSpeeds = _tbotInstance.UserData.userInfo.Class == CharacterClass.General ? Speeds.GetGeneralSpeedsList() : Speeds.GetNonGeneralSpeedsList();
 			List<FleetHypotesis> possibleFleets = new();
 			List<Coordinate> possibleDestinations = new();

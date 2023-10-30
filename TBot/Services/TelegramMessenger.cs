@@ -534,7 +534,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(arg);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, Missions.None, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, Missions.None, true);
 
 								return;
 
@@ -554,7 +554,7 @@ namespace Tbot.Services {
 								duration = FormattingHelper.ParseDurationFromString(args[1]);
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, false, mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, mission, true);
 
 								return;
 
@@ -576,7 +576,7 @@ namespace Tbot.Services {
 									int fleetSaved = 0;
 									foreach (Celestial moon in myMoons) {
 										await SendMessage(botClient, message.Chat, $"Enqueueign FleetSave for {moon.ToString()}...");
-										await currInstance.FleetScheduler.AutoFleetSave(moon, false, duration, false, false, mission_to_do, true);
+										await currInstance.FleetScheduler.AutoFleetSave(moon, false, duration, false, mission_to_do, true);
 										// Let's sleep a bit :)
 										fleetSaved++;
 										if (fleetSaved != myMoons.Count)
@@ -605,7 +605,7 @@ namespace Tbot.Services {
 								celestial = await currInstance.TelegramGetCurrentCelestial();
 								currInstance.telegramUserData.CurrentCelestialToSave = celestial;
 								currInstance.telegramUserData.Mission = mission;
-								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, currInstance.telegramUserData.Mission, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, true, currInstance.telegramUserData.Mission, true);
 								return;
 
 
@@ -623,7 +623,7 @@ namespace Tbot.Services {
 								}
 
 								celestial = await currInstance.TelegramGetCurrentCelestial();
-								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, false, true, mission, true, true);
+								await currInstance.FleetScheduler.AutoFleetSave(celestial, false, duration, true, mission, true, true);
 								return;
 
 

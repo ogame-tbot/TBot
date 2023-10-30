@@ -49,7 +49,6 @@
 		"AutoFleetSave": {
 			"Active": true,
 			"OnlyMoons": true,
-			"ForceUnsafe": true,
 			"DeutToLeave": 200000,
 			"Recall": true,
 			"DefaultMission": "Deploy"

@@ -13,7 +13,7 @@ namespace Tbot.Includes {
 		void SetTBotInstance(ITBotMain tbotInstance);
 		void SetTBotOgameBridge(ITBotOgamedBridge tbotOgameBridge);
 		Task SpyCrash(Celestial fromCelestial, Coordinate target = null);
-		Task AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool forceUnsafe = false, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false);
+		Task AutoFleetSave(Celestial celestial, bool isSleepTimeFleetSave = false, long minDuration = 0, bool WaitFleetsReturn = false, Missions TelegramMission = Missions.None, bool fromTelegram = false, bool saveall = false);
 		Task<int> SendFleet(Celestial origin, Ships ships, Coordinate destination, Missions mission, decimal speed, Resources payload = null, CharacterClass playerClass = CharacterClass.NoClass, bool force = false);
 		Task CancelFleet(Fleet fleet);
 		Task<List<Fleet>> UpdateFleets();

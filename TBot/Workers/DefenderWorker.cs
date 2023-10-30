@@ -239,7 +239,7 @@ namespace Tbot.Workers {
 			if ((bool) _tbotInstance.InstanceSettings.Defender.Autofleet.Active) {
 				try {
 					var minFlightTime = attack.ArriveIn + (attack.ArriveIn / 100 * 30) + (RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds) / 1000);
-					await _fleetScheduler.AutoFleetSave(attackedCelestial, false, minFlightTime, true);
+					await _fleetScheduler.AutoFleetSave(attackedCelestial, false, minFlightTime);
 				} catch (Exception e) {
 					DoLog(LogLevel.Error, $"Could not fleetsave: an exception has occurred: {e.Message}");
 					DoLog(LogLevel.Warning, $"Stacktrace: {e.StackTrace}");
