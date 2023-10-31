@@ -3402,19 +3402,33 @@ namespace Tbot.Includes {
 			else if (planet.GetLevel(populationBuilding) < maxPopuFactory && planet.ResourcesProduction.Population.IsThereFoodForMore()) {
 				nextLFbuild = populationBuilding;
 			}
-			else  if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
-				if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
-					nextLFbuild = T2Building;
-				}
-			}
-			else if (isUnlocked(planet, T3Building) && planet.ResourcesProduction.Population.NeedsMoreT3()) {
-				if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).Population) {
-					nextLFbuild = T3Building;
-				}
-			}
 			else if (isUnlocked(planet, techBuilding) && maxTechFactory < planet.GetLevel(techBuilding)) {
 				nextLFbuild = techBuilding;
-			} else {
+			}
+			else if (planet.ResourcesProduction.Population.NeedsMoreT2() || planet.ResourcesProduction.Population.NeedsMoreT3()) {
+				if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
+					if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
+						nextLFbuild = T2Building;
+					}
+				}
+				else if (planet.ResourcesProduction.Population.NeedsMoreT3()) {
+					Dictionary<LFBuildables, long> list = new();					
+					if (isUnlocked(planet, T2Building)) {
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
+							list.Add(T2Building, CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).ConvertedDeuterium);
+						}
+					}
+					if (isUnlocked(planet, T3Building)) {
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).Population) {
+							list.Add(T3Building, CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).ConvertedDeuterium);
+						}
+					}
+					if (list.Count > 0) {
+						nextLFbuild = list.OrderBy(x => x.Value).First().Key;
+					}
+				}				
+			}
+			else {
 				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
 			}
 			
@@ -3424,16 +3438,18 @@ namespace Tbot.Includes {
 				if (lessExpensiveBuilding != LFBuildables.None) {
 					nextLFbuild = lessExpensiveBuilding;
 				}
-
-				if (preventIfMoreExpensiveThanNextMine) {
-					var nextlvl = GetNextLevel(planet, nextLFbuild);
-					var nextlvlcost = CalcPrice(nextLFbuild, nextlvl);
-					var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);
-					var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
-					if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
-						_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"{nextLFbuild.ToString()} level {nextlvl} is more expensive than this planet's next mine, build {nextMine.ToString()} first.");
-						nextLFbuild = LFBuildables.None;
-					}
+			}
+			else {
+				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
+			}
+			if (preventIfMoreExpensiveThanNextMine) {
+				var nextlvl = GetNextLevel(planet, nextLFbuild);
+				var nextlvlcost = CalcPrice(nextLFbuild, nextlvl);
+				var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);
+				var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
+				if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
+					_logger.WriteLog(LogLevel.Debug, LogSender.Brain, $"{nextLFbuild.ToString()} level {nextlvl} is more expensive than this planet's next mine, build {nextMine.ToString()} first.");
+					nextLFbuild = LFBuildables.None;
 				}
 			}
 			return nextLFbuild;
