@@ -3402,8 +3402,9 @@ namespace Tbot.Includes {
 			else if (planet.GetLevel(populationBuilding) < maxPopuFactory && planet.ResourcesProduction.Population.IsThereFoodForMore()) {
 				nextLFbuild = populationBuilding;
 			}
-			else if (isUnlocked(planet, techBuilding) && maxTechFactory < planet.GetLevel(techBuilding)) {
+			else if (isUnlocked(planet, techBuilding) && planet.GetLevel(techBuilding) < maxTechFactory) {
 				nextLFbuild = techBuilding;
+				var techBuildingLevel = planet.GetLevel(techBuilding);
 			}
 			else if (planet.ResourcesProduction.Population.NeedsMoreT2() || planet.ResourcesProduction.Population.NeedsMoreT3()) {
 				if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
@@ -3527,7 +3528,6 @@ namespace Tbot.Includes {
 
 		public List<LFBuildables> GetOtherBuildings(LFTypes LFtype) {
 			List<LFBuildables> list = new();
-			list.Add(GetTechBuilding(LFtype));
 			if (LFtype == LFTypes.Humans) {
 				list.Add(LFBuildables.HighEnergySmelting);
 				list.Add(LFBuildables.FoodSilo);
