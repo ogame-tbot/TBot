@@ -921,15 +921,13 @@ namespace Tbot.Workers {
 							if (maxPopuFactory != 0 && maxFoodFactory != 0 && maxTechFactory != 0) {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
-									var livingSpace = _calcService.CalcLivingSpace(tempCelestial as Planet);
-									var satisfied = _calcService.CalcSatisfied(tempCelestial as Planet);
-									
 									tempCelestial.SetLevel(buildable, level);
-									tempCelestial.ResourcesProduction.Population.LivingSpace = livingSpace;
-									tempCelestial.ResourcesProduction.Population.Satisfied = satisfied;
+
+									tempCelestial.ResourcesProduction.Population.LivingSpace = _calcService.CalcLivingSpace(tempCelestial as Planet);
+									tempCelestial.ResourcesProduction.Population.Satisfied = _calcService.CalcSatisfied(tempCelestial as Planet);
 
 									var nextBuildable = LFBuildables.None;									
-									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxPopuFactory, maxFoodFactory, maxTechFactory);
+									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxPopuFactory, maxFoodFactory, maxTechFactory, true);
 									if (nextBuildable != LFBuildables.None) {
 										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
 										var newMissingRes = missingResources.Sum(_calcService.CalcPrice(nextBuildable, nextLevel));
