@@ -2971,9 +2971,9 @@ namespace Tbot.Includes {
 		public bool ShouldBuildMetalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false) {
 			long metalProduction = CalcMetalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
 			long metalCapacity = CalcDepositCapacity(planet.Buildings.MetalStorage);
-			if (forceIfFull && planet.Resources.Metal >= metalCapacity && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
+			if (forceIfFull && planet.Resources.Metal >= metalCapacity && GetNextLevel(planet, Buildables.MetalStorage) <= maxLevel)
 				return true;
-			if (metalCapacity < hours * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) < maxLevel)
+			if (metalCapacity < hours * metalProduction && GetNextLevel(planet, Buildables.MetalStorage) <= maxLevel)
 				return true;
 			else
 				return false;
@@ -2982,9 +2982,9 @@ namespace Tbot.Includes {
 		public bool ShouldBuildCrystalStorage(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false) {
 			long crystalProduction = CalcCrystalProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
 			long crystalCapacity = CalcDepositCapacity(planet.Buildings.CrystalStorage);
-			if (forceIfFull && planet.Resources.Crystal >= crystalCapacity && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
+			if (forceIfFull && planet.Resources.Crystal >= crystalCapacity && GetNextLevel(planet, Buildables.CrystalStorage) <= maxLevel)
 				return true;
-			if (crystalCapacity < hours * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) < maxLevel)
+			if (crystalCapacity < hours * crystalProduction && GetNextLevel(planet, Buildables.CrystalStorage) <= maxLevel)
 				return true;
 			else
 				return false;
@@ -2993,9 +2993,9 @@ namespace Tbot.Includes {
 		public bool ShouldBuildDeuteriumTank(Planet planet, int maxLevel, int speedFactor, int hours = 12, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, bool forceIfFull = false) {
 			long deuteriumProduction = CalcDeuteriumProduction(planet, speedFactor, ratio, researches, playerClass, hasGeologist, hasStaff);
 			long deuteriumCapacity = CalcDepositCapacity(planet.Buildings.DeuteriumTank);
-			if (forceIfFull && planet.Resources.Deuterium >= deuteriumCapacity && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
+			if (forceIfFull && planet.Resources.Deuterium >= deuteriumCapacity && GetNextLevel(planet, Buildables.DeuteriumTank) <= maxLevel)
 				return true;
-			if (deuteriumCapacity < hours * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) < maxLevel)
+			if (deuteriumCapacity < hours * deuteriumProduction && GetNextLevel(planet, Buildables.DeuteriumTank) <= maxLevel)
 				return true;
 			else
 				return false;
