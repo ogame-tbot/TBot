@@ -431,11 +431,6 @@
 			"Position": 8,
 			"Type": "Planet"
 		},
-		"Range": {
-			"Galaxy": 5,
-			"StartSystem": 1,
-			"EndSystem": 128
-		},
 		"MaxSlots": 5,
 		"MaxFailures": 5,
 		"CheckIntervalMin": 30,

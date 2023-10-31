@@ -70,13 +70,26 @@ namespace Tbot.Workers {
 							stop = true;
 							return;
 						}
-					}					
+					}
 
-					while (_tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free > (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree) {
-						Coordinate dest = new();
-						dest.Galaxy = (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.Galaxy;
-						dest.System = rand.Next((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem, (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem + 1);
-						dest.Position = rand.Next(1, 16);
+					List<Coordinate> possibleDestinations = new();
+					for (int i = 1; i <= _tbotInstance.UserData.serverData.Systems; i++) {
+						for (int j = 1; j <= 15; j++) {
+							possibleDestinations.Add(new Coordinate() {
+								Galaxy = origin.Coordinate.Galaxy,
+								System = i,
+								Position = j
+							});
+						}
+					}
+					possibleDestinations = possibleDestinations
+						.Shuffle()
+						.OrderBy(c => _calculationService.CalcDistance(origin.Coordinate, c, _tbotInstance.UserData.serverData))
+						.ToList();
+
+					while (possibleDestinations.Count > 0 && _tbotInstance.UserData.fleets.Where(s => s.Mission == Missions.Discovery).Count() < (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots && _tbotInstance.UserData.slots.Free > (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree) {
+						Coordinate dest = possibleDestinations.First();
+						possibleDestinations.Remove(dest);
 
 						Coordinate blacklistedCoord = _tbotInstance.UserData.discoveryBlackList.Keys
 							.Where(c => c.Galaxy == dest.Galaxy)
@@ -85,10 +98,10 @@ namespace Tbot.Workers {
 							.SingleOrDefault() ?? null;
 						if (blacklistedCoord != null) {
 							if (_tbotInstance.UserData.discoveryBlackList.Single(d => d.Key.Galaxy == dest.Galaxy && d.Key.System == dest.System && d.Key.Position == dest.Position).Value > DateTime.Now) {
-								DoLog(LogLevel.Information, $"Skipping {dest.ToString()} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[blacklistedCoord].ToString()}");
+								//DoLog(LogLevel.Information, $"Skipping {dest.ToString()} because it's blacklisted until {_tbotInstance.UserData.discoveryBlackList[blacklistedCoord].ToString()}");
 								skips++;
-								if (skips >= ((int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.EndSystem - (int) _tbotInstance.InstanceSettings.AutoDiscovery.Range.StartSystem) * 15) {
-									DoLog(LogLevel.Information, $"Range depleted: stopping");
+								if (skips >= _tbotInstance.UserData.serverData.Systems * 15) {
+									DoLog(LogLevel.Information, $"Galaxy depleted: stopping");
 									stop = true;
 									break;
 								} else {
