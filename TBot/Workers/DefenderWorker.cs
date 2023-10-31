@@ -171,7 +171,7 @@ namespace Tbot.Workers {
 							}));
 						}
 						defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Facilities);
-						if (defenderCelestial.Facilities.MissileSilo > 0) {
+						if (defenderCelestial.Facilities.MissileSilo >= 2) {
 							defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Defences);
 							defenderCelestial = await _tbotOgameBridge.UpdatePlanet(attackedCelestial, UpdateTypes.Productions);
 							if (defenderCelestial.Productions.Count == 0) {
@@ -190,7 +190,7 @@ namespace Tbot.Workers {
 							}
 						}
 						else {
-							DoLog(LogLevel.Information, $"No MissileSilo on {defenderCelestial.ToString()}");
+							DoLog(LogLevel.Information, $"No MissileSilo level >= 2 on {defenderCelestial.ToString()}");
 						}
 					}
 					return;
