@@ -8,6 +8,7 @@ namespace TBot.Ogame.Infrastructure.Enums {
 	public enum SendFleetCode : int {
 		GenericError = 0,
 		AfterSleepTime = -1,
-		NotEnoughSlots = -2
+		NotEnoughSlots = -2,
+		QuickerToWaitForProduction = -3
 	}
 }

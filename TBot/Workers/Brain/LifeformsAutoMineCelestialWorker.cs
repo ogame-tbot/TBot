@@ -180,6 +180,17 @@ namespace Tbot.Workers.Brain {
 										}
 									} else {
 										DoLog(LogLevel.Information, $"Skipping transport: there is already a transport incoming in {celestial.ToString()}");
+										try {
+											fleetId = _tbotInstance.UserData.fleets.Where(f => f.Mission == Missions.Transport)
+											.Where(f => f.Resources.TotalResources > 0)
+											.Where(f => f.ReturnFlight == false)
+											.Where(f => f.Destination.Galaxy == celestial.Coordinate.Galaxy)
+											.Where(f => f.Destination.System == celestial.Coordinate.System)
+											.Where(f => f.Destination.Position == celestial.Coordinate.Position)
+											.Where(f => f.Destination.Type == celestial.Coordinate.Type)
+											.First().ID;
+										}
+										catch { }
 									}
 								}
 							}
@@ -222,7 +233,38 @@ namespace Tbot.Workers.Brain {
 					} else if (delayTime > 0) {
 						interval = delayTime;
 					} else {
-						if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
+						if (fleetId == (int) SendFleetCode.QuickerToWaitForProduction) {
+							var price = _calculationService.CalcPrice(buildable, level);
+							long productionTime = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.CheckIntervalMax);
+							celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
+							DateTime now = await _tbotOgameBridge.GetDateTime();
+							if (
+								celestial.Coordinate.Type == Celestials.Planet &&
+								(price.Metal <= celestial.ResourcesProduction.Metal.StorageCapacity || price.Metal <= celestial.Resources.Metal) &&
+								(price.Crystal <= celestial.ResourcesProduction.Crystal.StorageCapacity || price.Crystal <= celestial.Resources.Crystal) &&
+								(price.Deuterium <= celestial.ResourcesProduction.Deuterium.StorageCapacity || price.Deuterium <= celestial.Resources.Deuterium)
+							) {
+								var missingResources = price.Difference(celestial.Resources);
+								float metProdInASecond = celestial.ResourcesProduction.Metal.CurrentProduction / (float) 3600;
+								float cryProdInASecond = celestial.ResourcesProduction.Crystal.CurrentProduction / (float) 3600;
+								float deutProdInASecond = celestial.ResourcesProduction.Deuterium.CurrentProduction / (float) 3600;
+								if (
+									!(
+										(missingResources.Metal > 0 && (metProdInASecond == 0 && celestial.Resources.Metal < price.Metal)) ||
+										(missingResources.Crystal > 0 && (cryProdInASecond == 0 && celestial.Resources.Crystal < price.Crystal)) ||
+										(missingResources.Deuterium > 0 && (deutProdInASecond == 0 && celestial.Resources.Deuterium < price.Deuterium))
+									)
+								) {
+									float metProductionTime = float.IsNaN(missingResources.Metal / metProdInASecond) ? 0.0F : missingResources.Metal / metProdInASecond;
+									float cryProductionTime = float.IsNaN(missingResources.Crystal / cryProdInASecond) ? 0.0F : missingResources.Crystal / cryProdInASecond;
+									float deutProductionTime = float.IsNaN(missingResources.Deuterium / deutProdInASecond) ? 0.0F : missingResources.Deuterium / deutProdInASecond;
+									productionTime = (long) (Math.Round(Math.Max(Math.Max(metProductionTime, cryProductionTime), deutProductionTime), 0) * 1000);
+									//DoLog(LogLevel.Debug, $"The required resources will be produced by {now.AddMilliseconds(productionTime).ToString()}");
+								}
+							}
+							interval = productionTime + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						}
+						else if (fleetId != 0 && fleetId != -1 && fleetId != -2) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 							var transportfleet = _tbotInstance.UserData.fleets.Single(f => f.ID == fleetId && f.Mission == Missions.Transport);
 							interval = (transportfleet.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
