@@ -12,7 +12,7 @@
                 <input class="mb-2 mb-md-0" type="text" id="logsearch" name="logsearch" placeholder="Search...">
             </div>
             <div id="logsendercol" class="col-4 col-md-3">
-                <select id="logsenderfilter" name="logsenderfilter" onchange="applyFilter()" ">
+                <select id="logsenderfilter" name="logsenderfilter" onchange="applyFilter()">
                     <option value="">All</option>
                     @foreach (var logSender in Enum.GetNames(typeof(LogSender)).OrderBy(c => c))
                     {
