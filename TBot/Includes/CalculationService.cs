@@ -4162,9 +4162,10 @@ namespace Tbot.Includes {
 		}
 
 		public Buildables GetNextResearchToBuild(Planet celestial, Researches researches, int maxResearchLab, bool prioritizeRobotsAndNanitesOnNewPlanets = false, Slots slots = null, int maxEnergyTechnology = 20, int maxLaserTechnology = 12, int maxIonTechnology = 5, int maxHyperspaceTechnology = 20, int maxPlasmaTechnology = 20, int maxCombustionDrive = 19, int maxImpulseDrive = 17, int maxHyperspaceDrive = 15, int maxEspionageTechnology = 8, int maxComputerTechnology = 20, int maxAstrophysics = 23, int maxIntergalacticResearchNetwork = 12, int maxWeaponsTechnology = 25, int maxShieldingTechnology = 25, int maxArmourTechnology = 25, bool optimizeForStart = true, bool ensureExpoSlots = true, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasAdmiral = false) {
+			/*
 			if (ShouldBuildResearchLab(celestial, Math.Min(12, maxResearchLab), researches))
 				return Buildables.Null;
-
+			*/
 			if (optimizeForStart) {
 				if (researches.EnergyTechnology == 0 && celestial.Facilities.ResearchLab > 0 && researches.EnergyTechnology < maxEnergyTechnology)
 					return Buildables.EnergyTechnology;
