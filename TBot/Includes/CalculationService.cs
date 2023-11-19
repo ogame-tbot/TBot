@@ -1113,7 +1113,7 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		public Resources CalcPrice(LFBuildables buildable, int level) {
+		public Resources CalcPrice(LFBuildables buildable, int level, double costReduction = 0, double energyCostReduction = 0, double populationCostReduction = 0) {
 			long metalBaseCost = 0;
 			long crystalbaseCost = 0;
 			long deutBaseCost = 0;
@@ -1592,7 +1592,7 @@ namespace Tbot.Includes {
 					break;
 			}
 
-			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor, populationBaseCost, populationFactor);
+			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor, populationBaseCost, populationFactor, costReduction, energyCostReduction, populationCostReduction);
 		}
 
 		public Resources CalcPrice(LFTechno buildable, int level, double costReduction) {
@@ -2191,21 +2191,21 @@ namespace Tbot.Includes {
 			return (long) Math.Ceiling(((double) 1 - costReduction) * ((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
 		}
 
-		private long CalcLFEnergyPrice(long baseCost, double factor, int level) {
-			return (long) Math.Round((double) baseCost * (double) level * Math.Pow(factor, level));
+		private long CalcLFEnergyPrice(long baseCost, double factor, int level, double costReduction = 0) {
+			return (long) Math.Round(((double) 1 - costReduction) * ((double) baseCost * (double) level * Math.Pow(factor, level)));
 		}
 
-		private long CalcLFPopulationPrice(long baseCost, double factor, int level) {
-			return (long)  Math.Ceiling((double) baseCost * Math.Pow(factor, level - 1));
+		private long CalcLFPopulationPrice(long baseCost, double factor, int level, double costReduction = 0) {
+			return (long)  Math.Ceiling(((double) 1 - costReduction) * ((double) baseCost * Math.Pow(factor, level - 1)));
 		}
 
-		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, long populationBaseCost = 0, double populationFactor = 0, double costReduction = 0) {
+		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, long populationBaseCost = 0, double populationFactor = 0, double costReduction = 0, double energyCostReduction = 0, double populationCostReduction = 0) {
 			var output = new Resources() {
 				Metal = CalcLFPrice(metalBaseCost, metalFactor, level, costReduction),
 				Crystal = CalcLFPrice(crystalBaseCost, crystalFactor, level, costReduction),
 				Deuterium = CalcLFPrice(deutBaseCost, deutFactor, level, costReduction),
-				Energy = CalcLFEnergyPrice(energyBaseCost, energyFactor, level),
-				Population = CalcLFPopulationPrice(populationBaseCost, populationFactor, level)
+				Energy = CalcLFEnergyPrice(energyBaseCost, energyFactor, level, energyCostReduction),
+				Population = CalcLFPopulationPrice(populationBaseCost, populationFactor, level, populationCostReduction)
 			};
 			return output;
 		}
