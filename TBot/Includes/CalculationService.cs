@@ -1595,7 +1595,7 @@ namespace Tbot.Includes {
 			return CalcLFPrice(level, metalBaseCost, metalFactor, crystalbaseCost, crystalFactor, deutBaseCost, deutFactor, energyBaseCost, energyFactor, populationBaseCost, populationFactor, costReduction, energyCostReduction, populationCostReduction);
 		}
 
-		public Resources CalcPrice(LFTechno buildable, int level, double costReduction) {
+		public Resources CalcPrice(LFTechno buildable, int level, double costReduction = 0) {
 			long metalBaseCost = 0;
 			long crystalbaseCost = 0;
 			long deutBaseCost = 0;

@@ -56,7 +56,7 @@ namespace Tbot.Includes {
 		decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass);
 		Resources CalcPlanetHourlyProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1);
 		Resources CalcPrice(Buildables buildable, int level);
-		Resources CalcPrice(LFBuildables buildable, int level);
+		Resources CalcPrice(LFBuildables buildable, int level, double costReduction = 0, double energyCostReduction = 0, double populationCostReduction = 0);
 		Resources CalcPrice(LFTechno buildable, int level, double costReduction = 0);
 		long CalcProductionTime(Buildables buildable, int level, int speed = 1, Facilities facilities = null, int cumulativeLabLevel = 0, bool isDiscoverer = false, bool hasTechnocrat = false);
 		long CalcProductionTime(Buildables buildable, int level, ServerData serverData, Facilities facilities, int cumulativeLabLevel = 0);
