@@ -594,7 +594,9 @@ namespace Tbot.Workers {
 						attackTargets = _tbotInstance.UserData.farmTargets.Where(t => t.State == FarmState.AttackPending).OrderByDescending(t => t.Report.Loot(_tbotInstance.UserData.userInfo.Class).TotalResources).ToList();
 
 					if (attackTargets.Count() > 0) {
-						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Attacking suitable farm targets...");
+						var resourceAmount = new Resources();
+						attackTargets.ForEach(target => resourceAmount = resourceAmount.Sum(target.Report.Loot(_tbotInstance.UserData.userInfo.Class)));
+						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacking suitable farm targets... (Estimated total profit: {resourceAmount.TransportableResources})");
 					} else {
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "No suitable targets found.");
 						return;
