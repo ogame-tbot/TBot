@@ -910,6 +910,7 @@ namespace Tbot.Workers {
 						long idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						Ships ships = new();
 						Ships tempShips = new();
+						LFBuildings maxLFBuildings = new();
 						tempShips.Add(preferredShip, 1);
 						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
 						long flightTime = flightPrediction.Time;
@@ -927,7 +928,7 @@ namespace Tbot.Workers {
 									tempCelestial.ResourcesProduction.Population.Satisfied = _calcService.CalcSatisfied(tempCelestial as Planet);
 
 									var nextBuildable = LFBuildables.None;									
-									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxPopuFactory, maxFoodFactory, maxTechFactory, true);
+									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, true);
 									if (nextBuildable != LFBuildables.None) {
 										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
 										var newMissingRes = missingResources.Sum(_calcService.CalcPrice(nextBuildable, nextLevel));

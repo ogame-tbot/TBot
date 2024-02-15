@@ -168,6 +168,15 @@
 			"MaxBasePopulationBuilding": 60,
 			"MaxBaseFoodBuilding": 62,
 			"MaxBaseTechBuilding": 6,
+			"MaxBuilding4": 10,
+			"MaxBuilding5": 0,
+			"MaxBuilding6": 0,
+			"MaxBuilding7": 0,
+			"MaxBuilding8": 0,
+			"MaxBuilding9": 0,
+			"MaxBuilding10": 0,
+			"MaxBuilding11": 0,
+			"MaxBuilding12": 0,
 			"Exclude": [
 				{
 					"Galaxy": 3,

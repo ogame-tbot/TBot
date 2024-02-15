@@ -3382,10 +3382,11 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
+		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
 			LFBuildables nextLFbuild = LFBuildables.None;
-			if (planet is Moon || planet.LFtype == LFTypes.None)
+			if (planet is Moon || planet.LFtype == LFTypes.None) {
 				return nextLFbuild;
+			}
 
 			LFBuildables foodBuilding = GetFoodBuilding(planet.LFtype);
 			LFBuildables populationBuilding = GetPopulationBuilding(planet.LFtype);
@@ -3427,21 +3428,24 @@ namespace Tbot.Includes {
 					if (list.Count > 0) {
 						nextLFbuild = list.OrderBy(x => x.Value).First().Key;
 					}
+					if (GetNextLevel(planet, nextLFbuild) > maxLFBuilding.GetLevel(nextLFbuild)) {
+						nextLFbuild = LFBuildables.None;
+					}
 				}				
 			}
 			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
+				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
 				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
-				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory);
+				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory, maxLFBuilding);
 				if (lessExpensiveBuilding != LFBuildables.None) {
 					nextLFbuild = lessExpensiveBuilding;
 				}
 			}
 			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
+				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
 			}
 			if (preventIfMoreExpensiveThanNextMine) {
 				var nextlvl = GetNextLevel(planet, nextLFbuild);
@@ -3564,7 +3568,7 @@ namespace Tbot.Includes {
 			return list;
 		}
 
-		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
+		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding, LFBuildings maxlvlLFBuilding) {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
 			var livingSpace = CalcLivingSpace(planet as Planet);
@@ -3574,16 +3578,20 @@ namespace Tbot.Includes {
 				.Where(b => b != GetTechBuilding(planet.LFtype) || (b == GetTechBuilding(planet.LFtype) && planet.GetLevel(b) < maxTechBuilding))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
+				.ToList();	
+			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
 				.ToList();
 
 			if (possibleBuildings.Count > 0) {
 				lessExpensiveLFBuild = possibleBuildings.First();
+			} else {
+				lessExpensiveLFBuild = LFBuildables.None;
 			}
 
 			return lessExpensiveLFBuild;
 		}
 
-		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet) {
+		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet, LFBuildings maxlvlLFBuilding) {
 			Resources nextlfcost = new();
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			var livingSpace = CalcLivingSpace(planet as Planet);
@@ -3593,12 +3601,13 @@ namespace Tbot.Includes {
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
 				.ToList();
+			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.ToList();
 
 			if (possibleBuildings.Count > 0) {
 				lessExpensiveLFBuild = possibleBuildings.First();
-			}
-			else {
-				return LFBuildables.None;
+			} else {
+				lessExpensiveLFBuild = LFBuildables.None;
 			}
 
 			return lessExpensiveLFBuild;
