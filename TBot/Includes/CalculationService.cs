@@ -3506,7 +3506,7 @@ namespace Tbot.Includes {
 		public LFBuildables GetT2Building(LFTypes LFtype) {
 			LFBuildables t2Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
-				t2Building = LFBuildables.NeuroCalibrationCentre;
+				t2Building = LFBuildables.AcademyOfSciences;
 			} else if (LFtype == LFTypes.Rocktal) {
 				t2Building = LFBuildables.RuneForge;
 			} else if (LFtype == LFTypes.Mechas) {
@@ -3520,7 +3520,7 @@ namespace Tbot.Includes {
 		public LFBuildables GetT3Building(LFTypes LFtype) {
 			LFBuildables t3Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
-				t3Building = LFBuildables.AcademyOfSciences;
+				t3Building = LFBuildables.NeuroCalibrationCentre;
 			} else if (LFtype == LFTypes.Rocktal) {
 				t3Building = LFBuildables.Oriktorium;
 			} else if (LFtype == LFTypes.Mechas) {
