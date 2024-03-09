@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using TBot.Ogame.Infrastructure.Enums;
 
 namespace TBot.Ogame.Infrastructure.Models {
 	public class LFTechs {
@@ -87,7 +88,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public int PsionicShieldMatrix { get; set; }
 		public int KaeleshDiscovererEnhancement { get; set; }
 
-		public int GetLevel(LFTechs building) {
+		public int GetLevel(LFTechno building) {
 			int output = 0;
 			foreach (PropertyInfo prop in GetType().GetProperties()) {
 				if (prop.Name == building.ToString()) {
@@ -97,7 +98,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 			return output;
 		}
 
-		public LFTechs SetLevel(LFTechs buildable, int level) {
+		public LFTechs SetLevel(LFTechno buildable, int level) {
 			foreach (PropertyInfo prop in this.GetType().GetProperties()) {
 				if (prop.Name == buildable.ToString()) {
 					prop.SetValue(this, level);

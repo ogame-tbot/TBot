@@ -87,7 +87,67 @@ namespace Tbot.Workers.Brain {
 
 						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
 						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
-						var nextLFBuilding = _calculationService.GetNextLFBuildingToBuild(cel, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
+						switch (cel.LFtype) {
+							case LFTypes.Humans:
+								maxLFBuildings.ResidentialSector = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+								maxLFBuildings.BiosphereFarm = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+								maxLFBuildings.ResearchCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+								maxLFBuildings.AcademyOfSciences = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding4;
+								maxLFBuildings.NeuroCalibrationCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding5;
+								maxLFBuildings.HighEnergySmelting = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding6;
+								maxLFBuildings.FoodSilo = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding7;
+								maxLFBuildings.FusionPoweredProduction = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding8;
+								maxLFBuildings.Skyscraper = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding9;
+								maxLFBuildings.BiotechLab = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding10;
+								maxLFBuildings.Metropolis = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding11;
+								maxLFBuildings.PlanetaryShield = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding12;
+								break;
+							case LFTypes.Mechas:
+								maxLFBuildings.AssemblyLine = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+								maxLFBuildings.FusionCellFactory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+								maxLFBuildings.RoboticsResearchCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+								maxLFBuildings.UpdateNetwork = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding4;
+								maxLFBuildings.QuantumComputerCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding5;
+								maxLFBuildings.AutomatisedAssemblyCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding6;
+								maxLFBuildings.HighPerformanceTransformer = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding7;
+								maxLFBuildings.MicrochipAssemblyLine = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding8;
+								maxLFBuildings.ProductionAssemblyHall = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding9;
+								maxLFBuildings.HighPerformanceSynthesiser = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding10;
+								maxLFBuildings.ChipMassProduction = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding11;
+								maxLFBuildings.NanoRepairBots = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding12;
+								break;
+							case LFTypes.Rocktal:
+								maxLFBuildings.MeditationEnclave = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+								maxLFBuildings.CrystalFarm = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+								maxLFBuildings.RuneTechnologium = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+								maxLFBuildings.RuneForge = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding4;
+								maxLFBuildings.Oriktorium = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding5;
+								maxLFBuildings.MagmaForge = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding6;
+								maxLFBuildings.DisruptionChamber = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding7;
+								maxLFBuildings.Megalith = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding8;
+								maxLFBuildings.CrystalRefinery = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding9;
+								maxLFBuildings.DeuteriumSynthesiser = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding10;
+								maxLFBuildings.MineralResearchCentre = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding11;
+								maxLFBuildings.AdvancedRecyclingPlant = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding12;
+								break;
+							case LFTypes.Kaelesh:
+								maxLFBuildings.Sanctuary = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
+								maxLFBuildings.AntimatterCondenser = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
+								maxLFBuildings.VortexChamber = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseTechBuilding;
+								maxLFBuildings.HallsOfRealisation = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding4;
+								maxLFBuildings.ForumOfTranscendence = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding5;
+								maxLFBuildings.AntimatterConvector = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding6;
+								maxLFBuildings.CloningLaboratory = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding7;
+								maxLFBuildings.ChrysalisAccelerator = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding8;
+								maxLFBuildings.BioModifier = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding9;
+								maxLFBuildings.PsionicModulator = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding10;
+								maxLFBuildings.ShipManufacturingHall = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding11;
+								maxLFBuildings.SupraRefractor = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBuilding12;
+								break;
+							default:
+								break;
+						}
+						var nextLFBuilding = _calculationService.GetNextLFBuildingToBuild(cel, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
 						if (nextLFBuilding != LFBuildables.None) {
 							var lv = _calculationService.GetNextLevel(celestial, nextLFBuilding);
 							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Lifeform building: {nextLFBuilding.ToString()} lv {lv.ToString()}.");

@@ -263,6 +263,11 @@ namespace Tbot.Services {
 
 			loggedIn = true;
 			log(LogLevel.Information, LogSender.Tbot, "Logged in!");
+			log(LogLevel.Information, LogSender.Tbot, "------------------------------------------------");
+			log(LogLevel.Information, LogSender.Tbot, "--------------Snapshot maxLF v0.01--------------");
+			log(LogLevel.Information, LogSender.Tbot, "------------------------------------------------");
+
+			
 
 			await InitUserData();
 

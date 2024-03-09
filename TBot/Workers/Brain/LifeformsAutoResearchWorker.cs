@@ -58,11 +58,29 @@ namespace Tbot.Workers.Brain {
 				DoLog(LogLevel.Information, "Running Lifeform autoresearch...");
 
 				if (((bool) _tbotInstance.InstanceSettings.Brain.Active && (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Active)) {
+					LFTechs maxLFTechs = new();
+					maxLFTechs.IntergalacticEnvoys = maxLFTechs.VolcanicBatteries = maxLFTechs.CatalyserTechnology = maxLFTechs.HeatRecovery = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs11;
+					maxLFTechs.HighPerformanceExtractors = maxLFTechs.AcousticScanning = maxLFTechs.PlasmaDrive = maxLFTechs.SulphideProcess = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs12;
+					maxLFTechs.FusionDrives = maxLFTechs.HighEnergyPumpSystems = maxLFTechs.EfficiencyModule = maxLFTechs.PsionicNetwork = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs13;
+					maxLFTechs.StealthFieldGenerator = maxLFTechs.CargoHoldExpansionCivilianShips = maxLFTechs.DepotAI = maxLFTechs.TelekineticTractorBeam = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs14;
+					maxLFTechs.OrbitalDen = maxLFTechs.MagmaPoweredProduction = maxLFTechs.GeneralOverhaulLightFighter = maxLFTechs.EnhancedSensorTechnology = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs15;
+					maxLFTechs.ResearchAI = maxLFTechs.GeothermalPowerPlants = maxLFTechs.AutomatedTransportLines = maxLFTechs.NeuromodalCompressor = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs16;
+					maxLFTechs.HighPerformanceTerraformer = maxLFTechs.DepthSounding = maxLFTechs.ImprovedDroneAI = maxLFTechs.NeuroInterface = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs21;
+					maxLFTechs.EnhancedProductionTechnologies = maxLFTechs.IonCrystalEnhancementHeavyFighter = maxLFTechs.ExperimentalRecyclingTechnology = maxLFTechs.InterplanetaryAnalysisNetwork = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs22;
+					maxLFTechs.LightFighterMkII = maxLFTechs.ImprovedStellarator = maxLFTechs.GeneralOverhaulCruiser = maxLFTechs.OverclockingHeavyFighter = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs23;
+					maxLFTechs.CruiserMkII = maxLFTechs.HardenedDiamondDrillHeads = maxLFTechs.SlingshotAutopilot = maxLFTechs.TelekineticDrive = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs24;
+					maxLFTechs.ImprovedLabTechnology = maxLFTechs.SeismicMiningTechnology = maxLFTechs.HighTemperatureSuperconductors = maxLFTechs.SixthSense = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs25;
+					maxLFTechs.PlasmaTerraformer = maxLFTechs.MagmaPoweredPumpSystems = maxLFTechs.GeneralOverhaulBattleship = maxLFTechs.Psychoharmoniser = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs26;
+					maxLFTechs.LowTemperatureDrives = maxLFTechs.IonCrystalModules = maxLFTechs.ArtificialSwarmIntelligence = maxLFTechs.EfficientSwarmIntelligence = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs31;
+					maxLFTechs.BomberMkII = maxLFTechs.OptimisedSiloConstructionMethod = maxLFTechs.GeneralOverhaulBattlecruiser = maxLFTechs.OverclockingLargeCargo = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs32;
+					maxLFTechs.DestroyerMkII = maxLFTechs.DiamondEnergyTransmitter = maxLFTechs.GeneralOverhaulBomber = maxLFTechs.GravitationSensors = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs33;
+					maxLFTechs.BattlecruiserMkII = maxLFTechs.ObsidianShieldReinforcement = maxLFTechs.GeneralOverhaulDestroyer = maxLFTechs.OverclockingBattleship = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs34;
+					maxLFTechs.RobotAssistants = maxLFTechs.RuneShields = maxLFTechs.ExperimentalWeaponsTechnology = maxLFTechs.PsionicShieldMatrix = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs35;
+					maxLFTechs.Supercomputer = maxLFTechs.RocktalCollectorEnhancement = maxLFTechs.MechanGeneralEnhancement = maxLFTechs.KaeleshDiscovererEnhancement = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxTechs36;
 					int maxResearchLevel = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.MaxResearchLevel;
 					
 					List<Celestial> celestialsToExclude = _calculationService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Exclude, _tbotInstance.UserData.celestials);
 					List<Celestial> celestialsToMine = new();
-					LFBuildings maxLFBuildings = new();
 
 					foreach (Celestial celestial in _tbotInstance.UserData.celestials.Where(p => p is Planet)) {
 						var cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
@@ -73,11 +91,11 @@ namespace Tbot.Workers.Brain {
 							DoLog(LogLevel.Information, $"Skipping {cel.ToString()}: No Lifeform active on this planet.");
 							continue;
 						}
-						var nextLFTechToBuild = _calculationService.GetNextLFTechToBuild(cel, maxResearchLevel);
+						var nextLFTechToBuild = _calculationService.GetNextLFTechToBuild(cel, maxLFTechs);//maxResearchLevel);
 						if (nextLFTechToBuild != LFTechno.None) {
 							var level = _calculationService.GetNextLevel(cel, nextLFTechToBuild);
 							Resources nextLFTechCost = _calculationService.CalcPrice(nextLFTechToBuild, level);
-							var isLessCostLFTechToBuild = _calculationService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxResearchLevel);
+							var isLessCostLFTechToBuild = _calculationService.GetLessExpensiveLFTechToBuild(cel, nextLFTechCost, maxLFTechs);//maxResearchLevel);
 							if (isLessCostLFTechToBuild != LFTechno.None) {
 								level = _calculationService.GetNextLevel(cel, isLessCostLFTechToBuild);
 								nextLFTechToBuild = isLessCostLFTechToBuild;
