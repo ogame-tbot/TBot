@@ -80,7 +80,7 @@ namespace Tbot.Includes {
 		Fleet GetFirstReturningExpedition(Coordinate coord, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleets(Celestial celestial, List<Fleet> fleets);
 		List<Fleet> GetIncomingFleetsWithResources(Celestial celestial, List<Fleet> fleets);
-		LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel, double costReduction = 0);
+		LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, LFTechs MaxReasearchLevel, double costReduction = 0);
 		Buildings GetMaxBuildings(int maxMetalMine, int maxCrystalMine, int maxDeuteriumSynthetizer, int maxSolarPlant, int maxFusionReactor, int maxMetalStorage, int maxCrystalStorage, int maxDeuteriumTank);
 		Facilities GetMaxFacilities(int maxRoboticsFactory, int maxShipyard, int maxResearchLab, int maxMissileSilo, int maxNaniteFactory, int maxTerraformer, int maxSpaceDock);
 		Facilities GetMaxLunarFacilities(int maxLunarBase, int maxLunarShipyard, int maxLunarRoboticsFactory, int maxSensorPhalanx, int maxJumpGate);
@@ -113,7 +113,7 @@ namespace Tbot.Includes {
 		double CalcFoodConsumptionBonus(Planet planet);
 		long CalcSatisfied(Planet planet);
 		long CalcSatisfied(LFBuildables populationFactory, int populationFactoryLevel, LFBuildables foodFactory, int foodFactoryLevel, double populationBonus = 0, double foodProductionBonus = 0, double foodConsumptionBonus = 0);
-		LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel);
+		LFTechno GetNextLFTechToBuild(Celestial celestial, LFTechs MaxReasearchLevel);
 		Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, int maxLunarBase = 8, int maxRoboticsFactory = 8, int maxSensorPhalanx = 6, int maxJumpGate = 1, int maxShipyard = 0);
 		Buildables GetNextLunarFacilityToBuild(Moon moon, Researches researches, Facilities maxLunarFacilities);
 		Buildables GetNextMineToBuild(Planet planet, int maxMetalMine = 100, int maxCrystalMine = 100, int maxDeuteriumSynthetizer = 100, bool optimizeForStart = true);

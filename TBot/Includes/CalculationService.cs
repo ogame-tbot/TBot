@@ -3428,13 +3428,14 @@ namespace Tbot.Includes {
 					if (list.Count > 0) {
 						nextLFbuild = list.OrderBy(x => x.Value).First().Key;
 					}
-					if (GetNextLevel(planet, nextLFbuild) > maxLFBuilding.GetLevel(nextLFbuild)) {
-						nextLFbuild = LFBuildables.None;
-					}
 				}				
 			}
 			else {
 				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
+			}
+			
+			if (GetNextLevel(planet, nextLFbuild) > maxLFBuilding.GetLevel(nextLFbuild)) {
+				nextLFbuild = LFBuildables.None;
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
@@ -3801,13 +3802,14 @@ namespace Tbot.Includes {
 			return (long) Math.Floor(((double) foodProduction / (double) foodConsumption) * (double) livingSpace);
 		}
 
-		public LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel) {
+		public LFTechno GetNextLFTechToBuild(Celestial celestial, LFTechs MaxReasearchLevel) {
 			//TODO
 			//As planets can have any lifeform techs, its complicated to find which techs are existing on a planet if the techs are not at least level 1
 			//Therefore, for the moment, up only techs that are minimum level 1, its a way to also allows player to chose which research to up
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == nextLFTech.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && GetNextLevel(celestial, nextLFTech) <= MaxReasearchLevel.GetLevel(nextLFTech) && prop.Name == nextLFTech.ToString()) {
+						//Console.WriteLine($"-----------------------------> {nextLFTech}: {GetNextLevel(celestial, nextLFTech)} / {MaxReasearchLevel.GetLevel(nextLFTech)}");
 						return nextLFTech;
 					}
 
@@ -3817,12 +3819,13 @@ namespace Tbot.Includes {
 			return LFTechno.None;
 		}
 
-		public LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel, double costReduction = 0) {
+		public LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, LFTechs MaxReasearchLevel, double costReduction = 0) {
 			LFTechno nextLFtech = LFTechno.None;
 			Resource nextLFtechcost = new();
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && GetNextLevel(celestial, next) <= MaxReasearchLevel.GetLevel(next) && prop.Name == next.ToString()) {
+						//Console.WriteLine($"-----------------------------> {next}: {GetNextLevel(celestial, next)} / {MaxReasearchLevel.GetLevel(next)}");
 						var nextLFtechlvl = GetNextLevel(celestial, next);
 						Resources newcost = CalcPrice(next, nextLFtechlvl, costReduction);
 						if (newcost.ConvertedDeuterium < currentcost.ConvertedDeuterium) {
