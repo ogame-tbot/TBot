@@ -401,6 +401,12 @@
 			"MinTemperatureAcceptable": -130,
 			"MaxTemperatureAcceptable": 260
 		},
+		"IntensiveResearch" : {
+			"Active": false,
+			"MaxSlots": 10,
+			"MinWaitNextFleet": 25,
+			"MaxWaitNextFleet": 55
+		},
 		"Targets": [
 			{
 				"Galaxy": 1,

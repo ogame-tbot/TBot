@@ -99,12 +99,15 @@ namespace Tbot.Workers {
 						_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "A new planet is needed.");
 
 						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-						if (_tbotInstance.UserData.fleets.Count(f => f.Mission == Missions.Colonize && !f.ReturnFlight) >= maxPlanets - currentPlanets) {
+						if (
+							(!(bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active && _tbotInstance.UserData.fleets.Count(f => f.Mission == Missions.Colonize && !f.ReturnFlight) >= maxPlanets - currentPlanets)
+							|| ((bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active && _tbotInstance.UserData.fleets.Count(f => f.Mission == Missions.Colonize && !f.ReturnFlight) > 0)
+						) {
 							_tbotInstance.log(LogLevel.Information, LogSender.Colonize, "Colony Ship(s) already in flight.");
-							interval = _tbotInstance.UserData.fleets
+							interval = (_tbotInstance.UserData.fleets
 								.OrderBy(f => f.ArriveIn)
-							.Last(f => !f.ReturnFlight)
-								.ArriveIn * 1000;
+							.First(f => !f.ReturnFlight)
+								.ArriveIn * 1000) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds);
 						} else {
 							Coordinate originCoords = new(
 								(int) _tbotInstance.InstanceSettings.AutoColonize.Origin.Galaxy,
@@ -161,17 +164,42 @@ namespace Tbot.Workers {
 											filteredTargetsRdm.Add(filteredTargets[index]);
 											filteredTargets.RemoveAt(index);
 										}
-										filteredTargets = filteredTargetsRdm
+										/*filteredTargets = filteredTargetsRdm
 											.Take(maxPlanets - currentPlanets)
-											.ToList();
+											.ToList();*/
+										filteredTargets = (bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active
+											? filteredTargetsRdm
+												.Take((int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MaxSlots)
+												.ToList()
+											: filteredTargetsRdm
+												.Take(maxPlanets - currentPlanets)
+												.ToList();
 									} else {
-										filteredTargets = filteredTargets
+										filteredTargets = (bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active
+											? filteredTargets
+												.OrderBy(t => _calculationService.CalcDistance(origin.Coordinate, t, _tbotInstance.UserData.serverData))
+												.Take((int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MaxSlots)
+												.ToList()
+											: filteredTargets
+												.OrderBy(t => _calculationService.CalcDistance(origin.Coordinate, t, _tbotInstance.UserData.serverData))
+												.Take(maxPlanets - currentPlanets)
+												.ToList();
+										/*filteredTargets = filteredTargets
 											.OrderBy(t => _calculationService.CalcDistance(origin.Coordinate, t, _tbotInstance.UserData.serverData))
 											.Take(maxPlanets - currentPlanets)
-											.ToList();
+											.ToList();*/
 									}
+									Ships ships = new() { ColonyShip = 1 };
+									filteredTargets = filteredTargets
+										.OrderBy(t => _calculationService.CalcFleetPrediction(origin, t, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class).Time)
+										.ToList();
+									/*for (int i = 0; i < filteredTargets.Count; i++) {
+										predictionFleets.Add(_calculationService.CalcFleetPrediction(origin, filteredTargets[i], ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class));
+									}
+									predictionFleets
+										.OrderBy(t => t.Time)
+										.ToList();*/
 									foreach (var target in filteredTargets) {
-										Ships ships = new() { ColonyShip = 1 };
 										_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 										var colonize = _tbotInstance.UserData.fleets
 											.Where(f => f.Mission == Missions.Colonize)
@@ -189,11 +217,15 @@ namespace Tbot.Workers {
 											List<Fleet> orderedFleet = _tbotInstance.UserData.fleets
 												.Where(fleet => fleet.Mission == Missions.Colonize)
 												.ToList();
-											orderedFleet = orderedFleet
-												.OrderByDescending(fleet => fleet.ArriveIn)
-												.ToList();
+											orderedFleet = (bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active
+												? orderedFleet
+													.OrderBy(fleet => fleet.ArriveIn)
+													.ToList()
+												: orderedFleet
+													.OrderByDescending(fleet => fleet.ArriveIn)
+													.ToList();
 											if (orderedFleet.Count() > 0) {
-												interval = (int) ((1000 * orderedFleet.First().ArriveIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AMinuteOrTwo));
+												interval = (int) ((1000 * orderedFleet.First().ArriveIn) + RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 											}
 
 											if (fleetId == (int) SendFleetCode.AfterSleepTime) {
@@ -204,6 +236,18 @@ namespace Tbot.Workers {
 												delay = true;
 												return;
 											}
+											var minWaitNextFleet = (int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MinWaitNextFleet;
+											var maxWaitNextFleet = (int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MaxWaitNextFleet;
+
+											if (minWaitNextFleet < 0)
+												minWaitNextFleet = 0;
+											if (maxWaitNextFleet < 1)
+												maxWaitNextFleet = 1;
+
+											var rndWaitTimeMs = (int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);											
+
+											DoLog(LogLevel.Information, $"Wait {((float) rndWaitTimeMs / 1000).ToString("0.00")}s for next Colonization");
+											await Task.Delay(rndWaitTimeMs, _ct);
 										}
 									}
 								} else {
