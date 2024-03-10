@@ -22,8 +22,8 @@ namespace Tbot.Includes {
 		int CalcDistance(Coordinate origin, Coordinate destination, ServerData serverData);
 		long CalcEnergyProduction(Buildables buildable, int level, int energyTechnology = 0, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
 		long CalcEnergyProduction(Buildables buildable, int level, Researches researches, float ratio = 1, CharacterClass playerClass = CharacterClass.NoClass, bool hasEngineer = false, bool hasStaff = false);
-		Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
-		Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
+		Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, float expeditionResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
+		Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, LFBonuses LFBonuses, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
 		long CalcFleetCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
 		long CalcFleetFuelCapacity(Ships fleet, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
 		FleetPrediction CalcFleetPrediction(Celestial origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass);
@@ -34,8 +34,8 @@ namespace Tbot.Includes {
 		long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass);
 		long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, CharacterClass playerClass = CharacterClass.NoClass);
 		long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass);
-		Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
-		Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
+		Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, LFBonuses LFBonuses, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
+		Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, float expeditionResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0);
 		long CalcMaxBuildableNumber(Buildables buildable, Resources resources);
 		int CalcMaxCrawlers(Planet planet, CharacterClass userClass, bool hasGeologist);
 		int CalcMaxExpeditions(int astrophysics, bool isDiscoverer, bool hasAdmiral);

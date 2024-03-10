@@ -503,7 +503,7 @@ namespace Tbot.Includes {
 			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
 		}
 
-		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, float expeditionResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			var fleet = new Ships();
 
 			int ecoSpeed = serverData.Speed;
@@ -532,6 +532,9 @@ namespace Tbot.Includes {
 				freightCap = freightCap * ecoSpeed * 3;
 			else
 				freightCap *= 2;
+
+			if(expeditionResourcesBonus > 0)
+				freightCap += (int) Math.Round((float) freightCap * expeditionResourcesBonus / 100, MidpointRounding.ToPositiveInfinity);
 
 			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 			int cargoNumber = (int) Math.Round((float) freightCap / (float) oneCargoCapacity, MidpointRounding.ToPositiveInfinity);
@@ -564,8 +567,8 @@ namespace Tbot.Includes {
 				return Buildables.Null;
 		}
 
-		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			Ships ideal = CalcIdealExpeditionShips(primaryShip, hyperspaceTech, serverData, playerClass, probeCargo);
+		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, float expeditionsResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			Ships ideal = CalcIdealExpeditionShips(primaryShip, hyperspaceTech, expeditionsResourcesBonus, serverData, playerClass, probeCargo);
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				if (prop.Name == primaryShip.ToString()) {
 					long availableVal = (long) prop.GetValue(fleet);
@@ -579,8 +582,8 @@ namespace Tbot.Includes {
 			return ideal;
 		}
 
-		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, researches.HyperspaceTechnology, serverdata, playerClass, probeCargo);
+		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, LFBonuses LFBonuses, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, researches.HyperspaceTechnology, LFBonuses.Expeditions.Resources, serverdata, playerClass, probeCargo);
 		}
 
 		public bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber) {
@@ -594,8 +597,8 @@ namespace Tbot.Includes {
 			return false;
 		}
 
-		public Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			Ships oneExpeditionFleet = CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata, researches, playerClass, probeCargo);
+		public Ships CalcFullExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, LFBonuses LFBonuses, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			Ships oneExpeditionFleet = CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, serverdata, researches, LFBonuses, playerClass, probeCargo);
 
 			if (MayAddShipToExpedition(fleet, Buildables.EspionageProbe, expeditionsNumber))
 				oneExpeditionFleet.Add(Buildables.EspionageProbe, 1);
