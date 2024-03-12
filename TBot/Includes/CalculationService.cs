@@ -4491,6 +4491,12 @@ namespace Tbot.Includes {
 			return researches == null ? 1 : CalcMaxPlanets(researches.Astrophysics);
 		}
 
+		public bool CalcLimitAstro(int pos, Researches researches) {
+			return ((pos >= 4 && pos <= 13 && (int)researches.Astrophysics >= 4) ||
+				(pos >= 2 && pos <= 14 && (int)researches.Astrophysics >= 6) ||
+				(pos >= 1 && pos <= 15 && (int)researches.Astrophysics >= 8));
+		}
+
 		public int CalcMaxCrawlers(Planet planet, CharacterClass userClass, bool hasGeologist) {
 			if (userClass == CharacterClass.Collector && hasGeologist) {
 				return (int) Math.Round(8.8 * (planet.Buildings.MetalMine + planet.Buildings.CrystalMine + planet.Buildings.DeuteriumSynthesizer));
