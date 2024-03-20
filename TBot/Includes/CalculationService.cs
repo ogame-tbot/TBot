@@ -94,6 +94,69 @@ namespace Tbot.Includes {
 			return baseCargo * (bonus + 100) / 100;
 		}
 
+		public int CalcShipCapacity(Buildables buildable, int hyperspaceTech, float buildableCargoBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			int baseCargo;
+			int bonus = (hyperspaceTech * serverData.CargoHyperspaceTechMultiplier);
+			switch (buildable) {
+				case Buildables.SmallCargo:
+					baseCargo = 5000;
+					if (playerClass == CharacterClass.Collector)
+						bonus += 25;
+					break;
+				case Buildables.LargeCargo:
+					baseCargo = 25000;
+					if (playerClass == CharacterClass.Collector)
+						bonus += 25;
+					break;
+				case Buildables.LightFighter:
+					baseCargo = 50;
+					break;
+				case Buildables.HeavyFighter:
+					baseCargo = 100;
+					break;
+				case Buildables.Cruiser:
+					baseCargo = 800;
+					break;
+				case Buildables.Battleship:
+					baseCargo = 1500;
+					break;
+				case Buildables.ColonyShip:
+					baseCargo = 7500;
+					break;
+				case Buildables.Recycler:
+					baseCargo = 20000;
+					if (playerClass == CharacterClass.General)
+						bonus += 20;
+					break;
+				case Buildables.EspionageProbe:
+					baseCargo = probeCargo;
+					break;
+				case Buildables.Bomber:
+					baseCargo = 500;
+					break;
+				case Buildables.Destroyer:
+					baseCargo = 2000;
+					break;
+				case Buildables.Deathstar:
+					baseCargo = 1000000;
+					break;
+				case Buildables.Battlecruiser:
+					baseCargo = 750;
+					break;
+				case Buildables.Reaper:
+					baseCargo = 10000;
+					break;
+				case Buildables.Pathfinder:
+					baseCargo = 10000;
+					if (playerClass == CharacterClass.General)
+						bonus += 25;
+					break;
+				default:
+					return 0;
+			}
+			return (int) Math.Floor(baseCargo * (bonus + buildableCargoBonus + 100) / 100);
+		}
+
 		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			return CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
 		}
@@ -503,11 +566,12 @@ namespace Tbot.Includes {
 			return (long) Math.Round(((float) payload.TotalResources / (float) CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCapacity)), MidpointRounding.ToPositiveInfinity);
 		}
 
-		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, float expeditionResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+		public Ships CalcIdealExpeditionShips(Buildables buildable, int hyperspaceTech, float expeditionResourcesBonus, Dictionary<int, LFBonusesShip> shipBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
 			var fleet = new Ships();
 
 			int ecoSpeed = serverData.Speed;
 			float topOnePoints = serverData.TopScore;
+			float buildableCargoBonus = shipBonus.GetValueOrDefault((int)buildable).Cargo;
 			int freightCap;
 			if (topOnePoints < 10000)
 				freightCap = 40000;
@@ -536,7 +600,7 @@ namespace Tbot.Includes {
 			if(expeditionResourcesBonus > 0)
 				freightCap += (int) Math.Round((float) freightCap * expeditionResourcesBonus / 100, MidpointRounding.ToPositiveInfinity);
 
-			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, serverData, playerClass, probeCargo);
+			int oneCargoCapacity = CalcShipCapacity(buildable, hyperspaceTech, buildableCargoBonus, serverData, playerClass, probeCargo);
 			int cargoNumber = (int) Math.Round((float) freightCap / (float) oneCargoCapacity, MidpointRounding.ToPositiveInfinity);
 
 			fleet = fleet.Add(buildable, cargoNumber);
@@ -567,8 +631,8 @@ namespace Tbot.Includes {
 				return Buildables.Null;
 		}
 
-		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, float expeditionsResourcesBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			Ships ideal = CalcIdealExpeditionShips(primaryShip, hyperspaceTech, expeditionsResourcesBonus, serverData, playerClass, probeCargo);
+		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, int hyperspaceTech, float expeditionsResourcesBonus, Dictionary<int, LFBonusesShip> shipsBonus, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
+			Ships ideal = CalcIdealExpeditionShips(primaryShip, hyperspaceTech, expeditionsResourcesBonus, shipsBonus, serverData, playerClass, probeCargo);
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				if (prop.Name == primaryShip.ToString()) {
 					long availableVal = (long) prop.GetValue(fleet);
@@ -583,7 +647,7 @@ namespace Tbot.Includes {
 		}
 
 		public Ships CalcExpeditionShips(Ships fleet, Buildables primaryShip, int expeditionsNumber, ServerData serverdata, Researches researches, LFBonuses LFBonuses, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
-			return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, researches.HyperspaceTechnology, LFBonuses.Expeditions.Resources, serverdata, playerClass, probeCargo);
+			return CalcExpeditionShips(fleet, primaryShip, expeditionsNumber, researches.HyperspaceTechnology, LFBonuses.Expeditions.Resources, LFBonuses.Ships, serverdata, playerClass, probeCargo);
 		}
 
 		public bool MayAddShipToExpedition(Ships fleet, Buildables buildable, int expeditionsNumber) {
