@@ -13,6 +13,7 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		Buildings,
 		LFBuildings,
 		LFTechs,
+		LFBonuses,
 		Ships,
 		Facilities,
 		Defences,
