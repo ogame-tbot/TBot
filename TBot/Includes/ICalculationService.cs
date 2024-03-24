@@ -42,6 +42,7 @@ namespace Tbot.Includes {
 		int CalcMaxExpeditions(Researches researches, CharacterClass playerClass, Staff staff);
 		int CalcMaxPlanets(int astrophysics);
 		int CalcMaxPlanets(Researches researches);
+		bool CalcLimitAstro(int pos, Researches researches);
 		Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, long deutToLeave = 0, int probeCargo = 0);
 		long CalcMetalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1);
 		long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1);
