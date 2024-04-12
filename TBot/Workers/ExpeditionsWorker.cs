@@ -109,6 +109,7 @@ namespace Tbot.Workers {
 												.Unique()
 												.Single(planet => planet.HasCoords(customOriginCoords));
 											customOrigin = await _tbotOgameBridge.UpdatePlanet(customOrigin, UpdateTypes.Ships);
+											customOrigin = await _tbotOgameBridge.UpdatePlanet(customOrigin, UpdateTypes.LFBonuses);
 											origins.Add(customOrigin);
 										}
 									} catch (Exception e) {
@@ -117,6 +118,7 @@ namespace Tbot.Workers {
 										DoLog(LogLevel.Warning, "Unable to parse custom origin");
 
 										_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
+										_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.LFBonuses);
 										origins.Add(_tbotInstance.UserData.celestials
 											.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
 											.ThenByDescending(planet => _calculationService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
@@ -125,6 +127,7 @@ namespace Tbot.Workers {
 									}
 								} else {
 									_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.Ships);
+									_tbotInstance.UserData.celestials = await _tbotOgameBridge.UpdatePlanets(UpdateTypes.LFBonuses);
 									origins.Add(_tbotInstance.UserData.celestials
 										.OrderBy(planet => planet.Coordinate.Type == Celestials.Moon)
 										.ThenByDescending(planet => _calculationService.CalcFleetCapacity(planet.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo))
@@ -134,6 +137,7 @@ namespace Tbot.Workers {
 								if ((bool) _tbotInstance.InstanceSettings.Expeditions.RandomizeOrder) {
 									origins = origins.Shuffle().ToList();
 								}
+								LFBonuses lfBonuses = origins.First().LFBonuses;
 								foreach (var origin in origins) {
 									int expsToSendFromThisOrigin;
 									if (origins.Count() >= expsToSend) {
@@ -192,7 +196,7 @@ namespace Tbot.Workers {
 												}
 											}
 											DoLog(LogLevel.Warning, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)} ({_tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep} must be kept at dock)");
-											fleet = _calculationService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+											fleet = _calculationService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, lfBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 											if (fleet.GetAmount(primaryShip) < (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend) {
 												fleet.SetAmount(primaryShip, (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend);
 												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
