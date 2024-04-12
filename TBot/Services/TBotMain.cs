@@ -636,10 +636,7 @@ namespace Tbot.Services {
 			return;
 		}
 
-		public async Task TelegramGetCurrentAuction() {
-			await SendTelegramMessage($"Currently not working - DISABLED");
-			return;
-			
+		public async Task TelegramGetCurrentAuction() {		
 			Auction auction;
 			try {
 				auction = await _ogameService.GetCurrentAuction();
@@ -665,9 +662,6 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramSubscribeToNextAuction() {
-			await SendTelegramMessage($"Currently not working - DISABLED");
-			return;
-			
 			var auction = await _ogameService.GetCurrentAuction();
 			if (auction.HasFinished) {
 				// Dispose existing
@@ -702,9 +696,6 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramBidAuctionMinimum() {
-			await SendTelegramMessage($"Currently not working - DISABLED");
-			return;
-			
 			var auction = await _ogameService.GetCurrentAuction();
 			if (auction.HasFinished) {
 				await SendTelegramMessage("No auction in progress!");
@@ -808,9 +799,6 @@ namespace Tbot.Services {
 		}
 
 		public async Task TelegramBidAuction(Celestial celestial, Resources res) {
-			await SendTelegramMessage($"Currently not working - DISABLED");
-			return;
-			
 			log(LogLevel.Information, LogSender.Tbot, $"Bidding auction with {celestial.Name} {res.ToString()}");
 			try {
 				await _ogameService.DoAuction(celestial, res);
