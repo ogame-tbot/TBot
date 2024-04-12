@@ -22,6 +22,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public LFTypes LFtype { get; set; }
 		public LFBuildings LFBuildings { get; set; }
 		public LFTechs LFTechs { get; set; }
+		public LFBonuses LFBonuses {get; set; }
 		public Facilities Facilities { get; set; }
 		public List<Production> Productions { get; set; }
 		public Constructions Constructions { get; set; }

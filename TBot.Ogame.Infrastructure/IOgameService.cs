@@ -44,6 +44,7 @@ namespace TBot.Ogame.Infrastructure {
 		Task<GalaxyInfo> GetGalaxyInfo(int galaxy, int system);
 		Task<LFBuildings> GetLFBuildings(Celestial celestial);
 		Task<LFTechs> GetLFTechs(Celestial celestial);
+		Task<LFBonuses> GetLFBonuses(Celestial celestial);
 		Task<Moon> GetMoon(Moon moon);
 		Task<List<Moon>> GetMoons();
 		Task<string> GetOgamedIP();
