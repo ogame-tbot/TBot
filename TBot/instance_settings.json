@@ -62,6 +62,11 @@
 		"DefendFromMissiles": true,
 		"IgnoreWeakAttack": false,
 		"WeakAttackRatio": 3,
+		"IgnoreAttackIfIHave": {
+			"Active": false,
+			"MinResourcesToSave": 2000000,
+			"MinFleetToSave": 20000000
+		},
 		"RandomActivity": true,
 		"Home": {
 			"Galaxy": 1,

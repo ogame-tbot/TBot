@@ -214,6 +214,14 @@ namespace Tbot.Workers {
 				} else {
 					DoLog(LogLevel.Information, "Unable to detect fleet composition.");
 				}
+				if (
+					(bool) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.Active &&
+					attackedCelestial.Resources.TotalResources < (long) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.MinResourcesToSave &&
+					(attackedCelestial.Ships.GetFleetPoints() *1000) < (long) _tbotInstance.InstanceSettings.Defender.IgnoreAttackIfIHave.MinFleetToSave
+				) {
+					DoLog(LogLevel.Information, $"Attack {attack.ID.ToString()} skipped: it's not worth it.");
+					return;
+				}
 			} catch {
 				DoLog(LogLevel.Warning, "An error has occurred while checking attacker fleet composition");
 			}
