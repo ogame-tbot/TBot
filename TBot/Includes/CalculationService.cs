@@ -3449,10 +3449,11 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
+		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
 			LFBuildables nextLFbuild = LFBuildables.None;
-			if (planet is Moon || planet.LFtype == LFTypes.None)
+			if (planet is Moon || planet.LFtype == LFTypes.None) {
 				return nextLFbuild;
+			}
 
 			LFBuildables foodBuilding = GetFoodBuilding(planet.LFtype);
 			LFBuildables populationBuilding = GetPopulationBuilding(planet.LFtype);
@@ -3497,18 +3498,22 @@ namespace Tbot.Includes {
 				}				
 			}
 			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
+				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
+			}
+			
+			if (GetNextLevel(planet, nextLFbuild) > maxLFBuilding.GetLevel(nextLFbuild)) {
+				nextLFbuild = LFBuildables.None;
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
 				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
-				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory);
+				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory, maxLFBuilding);
 				if (lessExpensiveBuilding != LFBuildables.None) {
 					nextLFbuild = lessExpensiveBuilding;
 				}
 			}
 			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet);
+				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
 			}
 			if (preventIfMoreExpensiveThanNextMine) {
 				var nextlvl = GetNextLevel(planet, nextLFbuild);
@@ -3568,7 +3573,7 @@ namespace Tbot.Includes {
 		public LFBuildables GetT2Building(LFTypes LFtype) {
 			LFBuildables t2Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
-				t2Building = LFBuildables.NeuroCalibrationCentre;
+				t2Building = LFBuildables.AcademyOfSciences;
 			} else if (LFtype == LFTypes.Rocktal) {
 				t2Building = LFBuildables.RuneForge;
 			} else if (LFtype == LFTypes.Mechas) {
@@ -3582,7 +3587,7 @@ namespace Tbot.Includes {
 		public LFBuildables GetT3Building(LFTypes LFtype) {
 			LFBuildables t3Building = LFBuildables.None;
 			if (LFtype == LFTypes.Humans) {
-				t3Building = LFBuildables.AcademyOfSciences;
+				t3Building = LFBuildables.NeuroCalibrationCentre;
 			} else if (LFtype == LFTypes.Rocktal) {
 				t3Building = LFBuildables.Oriktorium;
 			} else if (LFtype == LFTypes.Mechas) {
@@ -3631,7 +3636,7 @@ namespace Tbot.Includes {
 			return list;
 		}
 
-		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding) {
+		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding, LFBuildings maxlvlLFBuilding) {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
 			var livingSpace = CalcLivingSpace(planet as Planet);
@@ -3641,16 +3646,20 @@ namespace Tbot.Includes {
 				.Where(b => b != GetTechBuilding(planet.LFtype) || (b == GetTechBuilding(planet.LFtype) && planet.GetLevel(b) < maxTechBuilding))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
+				.ToList();	
+			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
 				.ToList();
 
 			if (possibleBuildings.Count > 0) {
 				lessExpensiveLFBuild = possibleBuildings.First();
+			} else {
+				lessExpensiveLFBuild = LFBuildables.None;
 			}
 
 			return lessExpensiveLFBuild;
 		}
 
-		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet) {
+		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet, LFBuildings maxlvlLFBuilding) {
 			Resources nextlfcost = new();
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			var livingSpace = CalcLivingSpace(planet as Planet);
@@ -3660,12 +3669,13 @@ namespace Tbot.Includes {
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
 				.ToList();
+			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.ToList();
 
 			if (possibleBuildings.Count > 0) {
 				lessExpensiveLFBuild = possibleBuildings.First();
-			}
-			else {
-				return LFBuildables.None;
+			} else {
+				lessExpensiveLFBuild = LFBuildables.None;
 			}
 
 			return lessExpensiveLFBuild;
@@ -3859,13 +3869,14 @@ namespace Tbot.Includes {
 			return (long) Math.Floor(((double) foodProduction / (double) foodConsumption) * (double) livingSpace);
 		}
 
-		public LFTechno GetNextLFTechToBuild(Celestial celestial, int MaxReasearchLevel) {
+		public LFTechno GetNextLFTechToBuild(Celestial celestial, LFTechs MaxReasearchLevel) {
 			//TODO
 			//As planets can have any lifeform techs, its complicated to find which techs are existing on a planet if the techs are not at least level 1
 			//Therefore, for the moment, up only techs that are minimum level 1, its a way to also allows player to chose which research to up
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno nextLFTech in Enum.GetValues<LFTechno>()) {
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == nextLFTech.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && GetNextLevel(celestial, nextLFTech) <= MaxReasearchLevel.GetLevel(nextLFTech) && prop.Name == nextLFTech.ToString()) {
+						//Console.WriteLine($"-----------------------------> {nextLFTech}: {GetNextLevel(celestial, nextLFTech)} / {MaxReasearchLevel.GetLevel(nextLFTech)}");
 						return nextLFTech;
 					}
 
@@ -3875,12 +3886,13 @@ namespace Tbot.Includes {
 			return LFTechno.None;
 		}
 
-		public LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, int MaxReasearchLevel, double costReduction = 0) {
+		public LFTechno GetLessExpensiveLFTechToBuild(Celestial celestial, Resources currentcost, LFTechs MaxReasearchLevel, double costReduction = 0) {
 			LFTechno nextLFtech = LFTechno.None;
 			Resource nextLFtechcost = new();
 			foreach (PropertyInfo prop in celestial.LFTechs.GetType().GetProperties()) {
 				foreach (LFTechno next in Enum.GetValues<LFTechno>()) {
-					if ((int) prop.GetValue(celestial.LFTechs) > 0 && (int) prop.GetValue(celestial.LFTechs) < MaxReasearchLevel && prop.Name == next.ToString()) {
+					if ((int) prop.GetValue(celestial.LFTechs) > 0 && GetNextLevel(celestial, next) <= MaxReasearchLevel.GetLevel(next) && prop.Name == next.ToString()) {
+						//Console.WriteLine($"-----------------------------> {next}: {GetNextLevel(celestial, next)} / {MaxReasearchLevel.GetLevel(next)}");
 						var nextLFtechlvl = GetNextLevel(celestial, next);
 						Resources newcost = CalcPrice(next, nextLFtechlvl, costReduction);
 						if (newcost.ConvertedDeuterium < currentcost.ConvertedDeuterium) {
