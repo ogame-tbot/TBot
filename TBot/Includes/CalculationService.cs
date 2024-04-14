@@ -571,7 +571,10 @@ namespace Tbot.Includes {
 
 			int ecoSpeed = serverData.Speed;
 			float topOnePoints = serverData.TopScore;
-			float buildableCargoBonus = shipBonus.GetValueOrDefault((int)buildable).Cargo;
+			float buildableCargoBonus = 0;
+			if (shipBonus != null && shipBonus.Count > 0 && shipBonus.ContainsKey((int) buildable)) {
+				buildableCargoBonus = shipBonus.GetValueOrDefault((int) buildable).Cargo;
+			}
 			int freightCap;
 			if (topOnePoints < 10000)
 				freightCap = 40000;
@@ -745,7 +748,7 @@ namespace Tbot.Includes {
 			return CalcEnergyProduction(buildable, level, researches.EnergyTechnology, ratio, playerClass, hasEngineer, hasStaff);
 		}
 
-		public long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcMetalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float metalLFBonus = 0) {
 			int baseProd = position switch {
 				6 => (int) Math.Round(30 + (30 * 0.17)),
 				7 => (int) Math.Round(30 + (30 * 0.23)),
@@ -775,22 +778,28 @@ namespace Tbot.Includes {
 			if (crawlers > 0) {
 				crawlerProd = (int) Math.Round(prod * crawlers * 0.003);
 			}
-			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio + crawlerProd * crawlerRatio), 0);
+			int bonusProd = 0;
+			if (metalLFBonus > 0) {
+				bonusProd = (int) Math.Round(prod * metalLFBonus);
+			}
+			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd + bonusProd) * ratio + crawlerProd * crawlerRatio), 0);
 		}
 
-		public long CalcMetalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcMetalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float metalLFBonus = 0) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcMetalProduction(buildings.MetalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			return CalcMetalProduction(buildings.MetalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, metalLFBonus);
 		}
 
 		public long CalcMetalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			if (planet.LFBonuses == null)
+				planet.LFBonuses = new() { Production = new() { Metal = 0 } };
+			return CalcMetalProduction(planet.Buildings.MetalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, planet.LFBonuses.Production.Metal);
 		}
 
-		public long CalcCrystalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcCrystalProduction(int level, int position, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float crystalLFBonus = 0) {
 			int baseProd = position switch {
 				1 => (int) Math.Round(20 + (20 * 0.3)),
 				2 => (int) Math.Round(20 + (20 * 0.2)),
@@ -818,22 +827,28 @@ namespace Tbot.Includes {
 			if (crawlers > 0) {
 				crawlerProd = (int) Math.Round(prod * crawlers * 0.003);
 			}
-			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio + crawlerProd * crawlerRatio), 0);
+			int bonusProd = 0;
+			if (crystalLFBonus > 0) {
+				bonusProd = (int) Math.Round(prod * crystalLFBonus);
+			}
+			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd + bonusProd) * ratio + crawlerProd * crawlerRatio), 0);
 		}
 
-		public long CalcCrystalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcCrystalProduction(Buildings buildings, int position, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float crystalLFBonus = 0) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcCrystalProduction(buildings.CrystalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			return CalcCrystalProduction(buildings.CrystalMine, position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, crystalLFBonus);
 		}
 
 		public long CalcCrystalProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			if (planet.LFBonuses == null)
+				planet.LFBonuses = new() { Production = new() { Crystal = 0 } };
+			return CalcCrystalProduction(planet.Buildings.CrystalMine, planet.Coordinate.Position, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, planet.LFBonuses.Production.Crystal);
 		}
 
-		public long CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcDeuteriumProduction(int level, float temp, int speedFactor, float ratio = 1, int plasma = 0, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float deuteriumLFBonus = 0) {
 			if (level == 0)
 				return 0;
 			int baseProd = 10 * speedFactor;
@@ -855,19 +870,25 @@ namespace Tbot.Includes {
 			if (crawlers > 0) {
 				crawlerProd = (int) Math.Round(prod * crawlers * 0.003);
 			}
-			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd) * ratio + crawlerProd * crawlerRatio), 0);
+			int bonusProd = 0;
+			if (deuteriumLFBonus > 0) {
+				bonusProd = (int) Math.Round(prod * deuteriumLFBonus);
+			}
+			return (long) Math.Round(((prod + plasmaProd + geologistProd + staffProd + classProd + deuteriumLFBonus) * ratio + crawlerProd * crawlerRatio), 0);
 		}
 
-		public long CalcDeuteriumProduction(Buildings buildings, Temperature temp, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
+		public long CalcDeuteriumProduction(Buildings buildings, Temperature temp, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1, float deuteriumLFBonus = 0) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcDeuteriumProduction(buildings.CrystalMine, temp.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			return CalcDeuteriumProduction(buildings.CrystalMine, temp.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, deuteriumLFBonus);
 		}
 
 		public long CalcDeuteriumProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
 			if (researches == null)
 				researches = new Researches() { PlasmaTechnology = 0 };
-			return CalcDeuteriumProduction(planet.Buildings.CrystalMine, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio);
+			if (planet.LFBonuses == null)
+				planet.LFBonuses = new() { Production = new() { Deuterium = 0 } };
+			return CalcDeuteriumProduction(planet.Buildings.CrystalMine, planet.Temperature.Average, speedFactor, ratio, researches.PlasmaTechnology, playerClass, hasGeologist, hasStaff, crawlers, crawlerRatio, planet.LFBonuses.Production.Deuterium);
 		}
 
 		public Resources CalcPlanetHourlyProduction(Planet planet, int speedFactor, float ratio = 1, Researches researches = null, CharacterClass playerClass = CharacterClass.NoClass, bool hasGeologist = false, bool hasStaff = false, int crawlers = 0, float crawlerRatio = 1) {
@@ -879,7 +900,7 @@ namespace Tbot.Includes {
 			return hourlyProduction;
 		}
 
-		public Resources CalcPrice(Buildables buildable, int level) {
+		public Resources CalcPrice(Buildables buildable, int level, LFBonuses lfBonuses = null) {
 			Resources output = new();
 
 			switch (buildable) {
@@ -1175,6 +1196,19 @@ namespace Tbot.Includes {
 				case Buildables.Null:
 				default:
 					break;
+			}
+
+			if (lfBonuses != null) {
+				float reduction = 0; 
+				if (lfBonuses.Buildings.Keys.Any(b => b == (int) buildable)) {
+					reduction = lfBonuses.Buildings[(int) buildable].Cost;
+				}
+				else if (lfBonuses.Researches.Keys.Any(b => b == (int) buildable)) {
+					reduction = lfBonuses.Researches[(int) buildable].Cost;
+				}
+				output.Metal = (long) (output.Metal - (output.Metal * reduction));
+				output.Crystal = (long) (output.Crystal - (output.Crystal * reduction));
+				output.Deuterium = (long) (output.Deuterium - (output.Deuterium * reduction));
 			}
 
 			return output;

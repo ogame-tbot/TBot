@@ -28,5 +28,18 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public float PlanetSize { get; set; }
 		public float InactivesLoot { get; set; }
 
+		public LFBonuses() {
+			Production = new LFBonusesProduction();
+			Expeditions = new LFBonusesExpeditions();
+			Dens = new LFBonusesDens();
+			Moons = new LFBonusesMoons();
+			Crawlers = new LFBonusesCrawlers();
+			Ships = new Dictionary<int, LFBonusesShip>();
+			Defenses = new Dictionary<int, LFBonusesShip>();
+			Buildings = new Dictionary<int, LFBonusesBase>();
+			Researches = new Dictionary<int, LFBonusesBase>();
+			LfBuildings = new Dictionary<int, LFBonusesBase>();
+			LfResearches = new Dictionary<int, LFBonusesBase>();
+		}
 	}
 }

@@ -9,5 +9,11 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public float EnergyReduction { get; set; }
 		public float Production { get; set; }
         public float Number { get; set; }
+
+		public LFBonusesCrawlers() {
+			EnergyReduction = 0;
+			Production = 0;
+			Number = 0;
+		}
     }
 }

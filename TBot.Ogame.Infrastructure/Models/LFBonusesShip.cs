@@ -13,5 +13,15 @@ namespace TBot.Ogame.Infrastructure.Models {
         public float Speed { get; set; }
         public float Consumption { get; set; }
         public float Duration { get; set; }
+
+		public LFBonusesShip() {
+			Armour = 0;
+			Shield = 0;
+			Weapon = 0;
+			Cargo = 0;
+			Speed = 0;
+			Consumption = 0;
+			Duration = 0;
+		}
     }
 }

@@ -9,5 +9,11 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public float Metal { get; set; }
 		public float Crystal { get; set; }
         public float Deuterium { get; set; }
-    }
+
+		public LFBonusesDens() {
+			Metal = 0;
+			Crystal = 0;
+			Deuterium = 0;
+		}
+	}
 }

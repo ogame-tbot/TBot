@@ -12,5 +12,14 @@ namespace TBot.Ogame.Infrastructure.Models {
         public float Energy { get; set; }
         public float Food { get; set; }
         public float Population { get; set; }
+
+		public LFBonusesProduction() {
+			Metal = 0;
+			Crystal = 0;
+			Deuterium = 0;
+			Energy = 0;
+			Food = 0;
+			Population = 0;
+		}
     }
 }
