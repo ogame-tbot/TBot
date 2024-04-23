@@ -111,16 +111,23 @@ namespace Tbot.Workers {
 								_tbotInstance.UserData.discoveryBlackList.Remove(blacklistedCoord);
 							}
 						}
+
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
+						if (!origin.Resources.IsEnoughFor(new Resources { Metal = 5000, Crystal = 1000, Deuterium = 500 })) {
+							DoLog(LogLevel.Warning, $"Failed to send discovery fleet from {origin.ToString()}: not enough resources.");
+							return;
+						}
+						
 						var result = await _ogameService.SendDiscovery(origin, dest);
 						if (!result) {
 							failures++;
 							DoLog(LogLevel.Warning, $"Failed to send discovery fleet to {dest.ToString()} from {origin.ToString()}.");
+							_tbotInstance.UserData.discoveryBlackList.Add(dest, DateTime.Now.AddDays(1));
 						}
 						else {
 							DoLog(LogLevel.Information, $"Sent discovery fleet to {dest.ToString()} from {origin.ToString()}.");
-						}
-						_tbotInstance.UserData.discoveryBlackList.Add(dest, DateTime.Now.AddDays(1));
-						
+							_tbotInstance.UserData.discoveryBlackList.Add(dest, DateTime.Now.AddDays(7));
+						}						
 
 						if (failures >= (int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxFailures) {
 							DoLog(LogLevel.Warning, $"Max failures reached");
