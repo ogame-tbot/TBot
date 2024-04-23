@@ -67,7 +67,7 @@ namespace Tbot.Workers.Brain {
 					if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
 						Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
 						DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
-
+						continue;
 					}
 
 					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
