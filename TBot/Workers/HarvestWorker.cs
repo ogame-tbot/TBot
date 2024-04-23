@@ -148,15 +148,19 @@ namespace Tbot.Workers {
 					foreach (Coordinate destination in dic.Keys) {
 						var fleetId = (int) SendFleetCode.GenericError;
 						Celestial origin = dic[destination];
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
+						float cargoBonus = 0;
 						if (destination.Position == 16) {
 							ExpeditionDebris debris = (await _ogameService.GetGalaxyInfo(destination)).ExpeditionDebris;
-							long pathfindersToSend = Math.Min(_calculationService.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class), origin.Ships.Pathfinder);
+							cargoBonus = origin.LFBonuses.GetShipCargoBonus(Buildables.Pathfinder);
+							long pathfindersToSend = Math.Min(_calculationService.CalcShipNumberForPayload(debris.Resources, Buildables.Pathfinder, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class), origin.Ships.Pathfinder);
 							DoLog(LogLevel.Information, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {pathfindersToSend.ToString()} {Buildables.Pathfinder.ToString()}");
 							fleetId = await _fleetScheduler.SendFleet(origin, new Ships { Pathfinder = pathfindersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 						} else {
 							if (_tbotInstance.UserData.celestials.Any(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet)))) {
 								Debris debris = (_tbotInstance.UserData.celestials.Where(c => c.HasCoords(new(destination.Galaxy, destination.System, destination.Position, Celestials.Planet))).First() as Planet).Debris;
-								long recyclersToSend = Math.Min(_calculationService.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class), origin.Ships.Recycler);
+								cargoBonus = origin.LFBonuses.GetShipCargoBonus(Buildables.Recycler);
+								long recyclersToSend = Math.Min(_calculationService.CalcShipNumberForPayload(debris.Resources, Buildables.Recycler, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class), origin.Ships.Recycler);
 								DoLog(LogLevel.Information, $"Harvesting debris in {destination.ToString()} from {origin.ToString()} with {recyclersToSend.ToString()} {Buildables.Recycler.ToString()}");
 								fleetId = await _fleetScheduler.SendFleet(origin, new Ships { Recycler = recyclersToSend }, destination, Missions.Harvest, Speeds.HundredPercent);
 							}

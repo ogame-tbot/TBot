@@ -41,5 +41,13 @@ namespace TBot.Ogame.Infrastructure.Models {
 			LfBuildings = new Dictionary<int, LFBonusesBase>();
 			LfResearches = new Dictionary<int, LFBonusesBase>();
 		}
+
+		public float GetShipCargoBonus(Buildables buildable) {
+			float bonusCargo = 0;
+			if (this != null && Ships != null && Ships.Count > 0 && Ships.ContainsKey((int) buildable)) {
+				bonusCargo = Ships.GetValueOrDefault((int) buildable).Cargo;
+			}
+			return bonusCargo;
+		}
 	}
 }

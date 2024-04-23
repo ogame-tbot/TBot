@@ -860,6 +860,7 @@ namespace Tbot.Services {
 
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
 
 			if (origin.Ships.GetMovableShips().IsEmpty()) {
 				await SendTelegramMessage($"No ships on {origin.Coordinate}, did you /celestial?");
@@ -869,12 +870,20 @@ namespace Tbot.Services {
 			var payload = origin.Resources;
 			Ships ships = origin.Ships;
 			if (mode.Equals("auto")) {
-				long idealSmallCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.SmallCargo, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
+				float cargoBonus = 0;
+				if (origin.LFBonuses != null && origin.LFBonuses.Ships != null && origin.LFBonuses.Ships.Count > 0 && origin.LFBonuses.Ships.ContainsKey((int) Buildables.SmallCargo)) {
+					cargoBonus = origin.LFBonuses.Ships.GetValueOrDefault((int) Buildables.SmallCargo).Cargo;
+				}
+				long idealSmallCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.SmallCargo, userData.researches.HyperspaceTechnology, userData.serverData, cargoBonus, userData.userInfo.Class, userData.serverData.ProbeCargo);
 
 				if (idealSmallCargo <= origin.Ships.GetAmount(Buildables.SmallCargo)) {
 					ships.SetAmount(Buildables.SmallCargo, origin.Ships.GetAmount(Buildables.SmallCargo) - (long) idealSmallCargo);
 				} else {
-					long idealLargeCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.LargeCargo, userData.researches.HyperspaceTechnology, userData.serverData, userData.userInfo.Class, userData.serverData.ProbeCargo);
+					cargoBonus = 0;
+					if (origin.LFBonuses != null && origin.LFBonuses.Ships != null && origin.LFBonuses.Ships.Count > 0 && origin.LFBonuses.Ships.ContainsKey((int) Buildables.LargeCargo)) {
+						cargoBonus = origin.LFBonuses.Ships.GetValueOrDefault((int) Buildables.LargeCargo).Cargo;
+					}
+					long idealLargeCargo = _helpersService.CalcShipNumberForPayload(payload, Buildables.LargeCargo, userData.researches.HyperspaceTechnology, userData.serverData, cargoBonus, userData.userInfo.Class, userData.serverData.ProbeCargo);
 					if (idealLargeCargo <= origin.Ships.GetAmount(Buildables.LargeCargo)) {
 						ships.SetAmount(Buildables.LargeCargo, origin.Ships.GetAmount(Buildables.LargeCargo) - (long) idealLargeCargo);
 					} else {

@@ -46,84 +46,87 @@ namespace Tbot.Workers.Brain {
 						continue;
 					}
 
-						var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
+					var tempCelestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Fast);
 
-						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
-						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.SkipIfIncomingTransport && _calculationService.IsThereTransportTowardsCelestial(tempCelestial, _tbotInstance.UserData.fleets)) {
-							DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: there is a transport incoming.");
-							continue;
-						}
+					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+					if ((bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.SkipIfIncomingTransport && _calculationService.IsThereTransportTowardsCelestial(tempCelestial, _tbotInstance.UserData.fleets)) {
+						DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: there is a transport incoming.");
+						continue;
+					}
 
-						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
-						if (tempCelestial.HasProduction()) {
-							DoLog(LogLevel.Warning, $"Skipping {tempCelestial.ToString()}: there is already a production ongoing.");
-							foreach (Production production in tempCelestial.Productions) {
-								Buildables productionType = (Buildables) production.ID;
-								DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are already in production.");
-							}
-							continue;
+					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
+					if (tempCelestial.HasProduction()) {
+						DoLog(LogLevel.Warning, $"Skipping {tempCelestial.ToString()}: there is already a production ongoing.");
+						foreach (Production production in tempCelestial.Productions) {
+							Buildables productionType = (Buildables) production.ID;
+							DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are already in production.");
 						}
-						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Constructions);
-						if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
-							Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
-							DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
+						continue;
+					}
+					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Constructions);
+					if (tempCelestial.Constructions.BuildingID == (int) Buildables.Shipyard || tempCelestial.Constructions.BuildingID == (int) Buildables.NaniteFactory) {
+						Buildables buildingInProgress = (Buildables) tempCelestial.Constructions.BuildingID;
+						DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: {buildingInProgress.ToString()} is upgrading.");
 
 					}
 
-						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
-						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
-						var capacity = _calculationService.CalcFleetCapacity(tempCelestial.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
-						if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.ExcludeMoons) {
-							DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
-							continue;
+					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Ships);
+					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Resources);
+					tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.LFBonuses);
+					
+					var capacity = _calculationService.CalcFleetCapacity(tempCelestial.Ships, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches.HyperspaceTechnology, tempCelestial.LFBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+					if (tempCelestial.Coordinate.Type == Celestials.Moon && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.ExcludeMoons) {
+						DoLog(LogLevel.Information, $"Skipping {tempCelestial.ToString()}: celestial is a moon.");
+						continue;
+					}
+					long neededCargos;
+					Buildables preferredCargoShip = Buildables.SmallCargo;
+					if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoCargo.CargoType, true, out preferredCargoShip)) {
+						DoLog(LogLevel.Warning, "Unable to parse CargoType. Falling back to default SmallCargo");
+						preferredCargoShip = Buildables.SmallCargo;
+					}
+					if (capacity <= tempCelestial.Resources.TotalResources && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.LimitToCapacity) {
+						long difference = tempCelestial.Resources.TotalResources - capacity;
+						float cargoBonus = tempCelestial.LFBonuses.GetShipCargoBonus(preferredCargoShip);
+						int oneShipCapacity = _calculationService.CalcShipCapacity(preferredCargoShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						neededCargos = (long) Math.Round((float) difference / (float) oneShipCapacity, MidpointRounding.ToPositiveInfinity);
+						DoLog(LogLevel.Information, $"{difference.ToString("N0")} more capacity is needed, {neededCargos} more {preferredCargoShip.ToString()} are needed.");
+					} else {
+						neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
+					}
+					if (neededCargos > 0) {
+						if (neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild)
+							neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild;
+
+					if (tempCelestial.Ships.GetAmount(preferredCargoShip) + neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep)
+						neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
+
+						var cost = _calculationService.CalcPrice(preferredCargoShip, (int) neededCargos);
+						if (tempCelestial.Resources.IsEnoughFor(cost))
+							DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: Building {neededCargos}x{preferredCargoShip.ToString()}");
+						else {
+							var buildableCargos = _calculationService.CalcMaxBuildableNumber(preferredCargoShip, tempCelestial.Resources);
+							DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
+							neededCargos = buildableCargos;
 						}
-						long neededCargos;
-						Buildables preferredCargoShip = Buildables.SmallCargo;
-						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.AutoCargo.CargoType, true, out preferredCargoShip)) {
-							DoLog(LogLevel.Warning, "Unable to parse CargoType. Falling back to default SmallCargo");
-							preferredCargoShip = Buildables.SmallCargo;
-						}
-						if (capacity <= tempCelestial.Resources.TotalResources && (bool) _tbotInstance.InstanceSettings.Brain.AutoCargo.LimitToCapacity) {
-							long difference = tempCelestial.Resources.TotalResources - capacity;
-							int oneShipCapacity = _calculationService.CalcShipCapacity(preferredCargoShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
-							neededCargos = (long) Math.Round((float) difference / (float) oneShipCapacity, MidpointRounding.ToPositiveInfinity);
-							DoLog(LogLevel.Information, $"{difference.ToString("N0")} more capacity is needed, {neededCargos} more {preferredCargoShip.ToString()} are needed.");
-						} else {
-							neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
-						}
+
 						if (neededCargos > 0) {
-							if (neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild)
-								neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToBuild;
-
-						if (tempCelestial.Ships.GetAmount(preferredCargoShip) + neededCargos > (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep)
-							neededCargos = (long) _tbotInstance.InstanceSettings.Brain.AutoCargo.MaxCargosToKeep - tempCelestial.Ships.GetAmount(preferredCargoShip);
-
-							var cost = _calculationService.CalcPrice(preferredCargoShip, (int) neededCargos);
-							if (tempCelestial.Resources.IsEnoughFor(cost))
-								DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: Building {neededCargos}x{preferredCargoShip.ToString()}");
-							else {
-								var buildableCargos = _calculationService.CalcMaxBuildableNumber(preferredCargoShip, tempCelestial.Resources);
-								DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: Not enough resources to build {neededCargos}x{preferredCargoShip.ToString()}. {buildableCargos.ToString()} will be built instead.");
-								neededCargos = buildableCargos;
+							try {
+								await _ogameService.BuildShips(tempCelestial, preferredCargoShip, neededCargos);
+								DoLog(LogLevel.Information, "Production succesfully started.");
+							} catch {
+								DoLog(LogLevel.Warning, "Unable to start ship production.");
 							}
-
-							if (neededCargos > 0) {
-								try {
-									await _ogameService.BuildShips(tempCelestial, preferredCargoShip, neededCargos);
-									DoLog(LogLevel.Information, "Production succesfully started.");
-								} catch {
-									DoLog(LogLevel.Warning, "Unable to start ship production.");
-								}
-							}
-
-							tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
-							foreach (Production production in tempCelestial.Productions) {
-								Buildables productionType = (Buildables) production.ID;
-								DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are in production.");
-							}
-						} else {
-							DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: No ships will be built.");
 						}
+
+						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.Productions);
+						foreach (Production production in tempCelestial.Productions) {
+							Buildables productionType = (Buildables) production.ID;
+							DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: {production.Nbr}x{productionType.ToString()} are in production.");
+						}
+					} else {
+						DoLog(LogLevel.Information, $"{tempCelestial.ToString()}: No ships will be built.");
+					}
 
 					newCelestials.Remove(celestial);
 					newCelestials.Add(tempCelestial);
