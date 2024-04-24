@@ -262,12 +262,7 @@ namespace Tbot.Services {
 			await Task.Delay(RandomizeHelper.CalcRandomInterval(IntervalType.AFewSeconds));
 
 			loggedIn = true;
-			log(LogLevel.Information, LogSender.Tbot, "Logged in!");
-			log(LogLevel.Information, LogSender.Tbot, "------------------------------------------------");
-			log(LogLevel.Information, LogSender.Tbot, "--------------Snapshot maxLF v0.01--------------");
-			log(LogLevel.Information, LogSender.Tbot, "------------------------------------------------");
-
-			
+			log(LogLevel.Information, LogSender.Tbot, "Logged in!");			
 
 			await InitUserData();
 
