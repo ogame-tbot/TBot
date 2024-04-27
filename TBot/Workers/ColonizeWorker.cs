@@ -116,7 +116,8 @@ namespace Tbot.Workers {
 								Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.AutoColonize.Origin.Type)
 							);
 							Celestial origin = _tbotInstance.UserData.celestials.Single(c => c.HasCoords(originCoords));
-							await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+							origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+							origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
 
 							var neededColonizers = maxPlanets - currentPlanets - slotsToLeaveFree;
 
@@ -230,12 +231,12 @@ namespace Tbot.Workers {
 											}
 											var minWaitNextFleet = (int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MinWaitNextFleet;
 											var maxWaitNextFleet = (int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MaxWaitNextFleet;
-
+											
 											if (minWaitNextFleet < 0)
 												minWaitNextFleet = 0;
 											if (maxWaitNextFleet < 1)
 												maxWaitNextFleet = 1;
-
+											
 											var rndWaitTimeMs = 0;	//(int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);
 											if (indexList < filteredTargets.Count()) {
 												Coordinate nextSlot = filteredTargets.ElementAt(indexList);

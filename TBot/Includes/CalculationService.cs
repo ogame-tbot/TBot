@@ -154,7 +154,9 @@ namespace Tbot.Includes {
 				default:
 					return 0;
 			}
-			return (int) Math.Floor(baseCargo * (bonus + buildableCargoBonus + 100) / 100);
+			double totalBonus = Math.Round(Math.Round((double) bonus / 100, 2, MidpointRounding.ToZero) + Math.Round((double) buildableCargoBonus / 100, 2, MidpointRounding.ToZero), 2, MidpointRounding.ToZero) - 0.01;
+			int output = (int) Math.Floor((double) baseCargo + (double) (baseCargo * totalBonus));
+			return output;
 		}
 
 		public int CalcShipFuelCapacity(Buildables buildable, ServerData serverData, int hyperspaceTech = 0, CharacterClass playerClass = CharacterClass.NoClass, int probeCargo = 0) {
@@ -193,11 +195,16 @@ namespace Tbot.Includes {
 			return total;
 		}
 
-		public int CalcShipSpeed(Buildables buildable, Researches researches, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcShipSpeed(buildable, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, playerClass);
+		public int CalcShipSpeed(Buildables buildable, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			if (lfBonuses == null)
+				lfBonuses = new() {
+					Ships = new()
+				};
+			float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
+			return CalcShipSpeed(buildable, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonus, playerClass);
 		}
 
-		public int CalcShipSpeed(Buildables buildable, int combustionDrive, int impulseDrive, int hyperspaceDrive, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcShipSpeed(Buildables buildable, int combustionDrive, int impulseDrive, int hyperspaceDrive, float lfBonus = 0, CharacterClass playerClass = CharacterClass.NoClass) {
 			int baseSpeed;
 			int bonus = combustionDrive;
 			switch (buildable) {
@@ -299,14 +306,15 @@ namespace Tbot.Includes {
 				default:
 					return 0;
 			}
-			return (int) Math.Round(((float) baseSpeed * ((float) bonus + 10) / 10), MidpointRounding.ToZero);
+			var output = ((float) baseSpeed * (1 + lfBonus / 100) * ((float) bonus + 10) / 10);
+			return (int) Math.Round(output, MidpointRounding.ToZero);
 		}
 
-		public int CalcSlowestSpeed(Ships fleet, Researches researches, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcSlowestSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, playerClass);
+		public int CalcSlowestSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			return CalcSlowestSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass);
 		}
 
-		public int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			int lowest = int.MaxValue;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
@@ -316,7 +324,8 @@ namespace Tbot.Includes {
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
 					if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler)
 						continue;
-					int speed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
+					float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
+					int speed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass);
 					if (speed < lowest)
 						lowest = speed;
 				}
@@ -324,18 +333,19 @@ namespace Tbot.Includes {
 			return lowest;
 		}
 
-		public int CalcFleetSpeed(Ships fleet, Researches researches, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcFleetSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, playerClass);
+		public int CalcFleetSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			return CalcFleetSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass);
 		}
 
-		public int CalcFleetSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcFleetSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			int minSpeed = 0;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					int thisSpeed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
+					float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
+					int thisSpeed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass);
 					if (thisSpeed < minSpeed)
 						minSpeed = thisSpeed;
 				}
@@ -343,11 +353,12 @@ namespace Tbot.Includes {
 			return minSpeed;
 		}
 
-		public int CalcShipConsumption(Buildables buildable, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcShipConsumption(buildable, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.GlobalDeuteriumSaveFactor, playerClass);
+		public int CalcShipConsumption(Buildables buildable, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			float lfBonus = lfBonuses.GetShipConsumptionBonus(buildable);
+			return CalcShipConsumption(buildable, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.GlobalDeuteriumSaveFactor, lfBonus, playerClass);
 		}
 
-		public int CalcShipConsumption(Buildables buildable, int impulseDrive, int hyperspaceDrive, double deuteriumSaveFactor, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcShipConsumption(Buildables buildable, int impulseDrive, int hyperspaceDrive, double deuteriumSaveFactor, float lfBonus = 0, CharacterClass playerClass = CharacterClass.NoClass) {
 			int baseConsumption;
 			switch (buildable) {
 				case Buildables.SmallCargo:
@@ -406,7 +417,7 @@ namespace Tbot.Includes {
 				default:
 					return 0;
 			}
-			double fuelConsumption = (double) deuteriumSaveFactor * (double) baseConsumption;
+			double fuelConsumption = (double) deuteriumSaveFactor * (double) baseConsumption * (1 - lfBonus / 100);
 			if (playerClass == CharacterClass.General)
 				fuelConsumption /= 2;
 			fuelConsumption = Math.Round(fuelConsumption);
@@ -417,17 +428,17 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			var fleetSpeed = mission switch {
 				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Spy or Missions.Harvest => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
-			return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, playerClass);
+			return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, lfBonuses, playerClass);
 		}
 
-		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, CharacterClass playerClass = CharacterClass.NoClass) {
-			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, playerClass);
+		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, lfBonuses, playerClass);
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
 			double s = (double) speed;
 			double v = (double) slowestShipSpeed;
@@ -437,16 +448,16 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			var fleetSpeed = mission switch {
 				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Harvest or Missions.Spy => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
-			return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, serverData.GlobalDeuteriumSaveFactor, playerClass);
+			return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, serverData.GlobalDeuteriumSaveFactor, lfBonuses, playerClass);
 		}
 
-		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
 			double tempFuel = (double) 0;
 			foreach (PropertyInfo prop in ships.GetType().GetProperties()) {
@@ -454,8 +465,10 @@ namespace Tbot.Includes {
 				if (qty == 0)
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
-					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, playerClass));
-					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, playerClass);
+					float lfSpeedBonus = lfBonuses.GetShipSpeedBonus(buildable);
+					float lfConsBonus = lfBonuses.GetShipConsumptionBonus(buildable);
+					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfSpeedBonus, playerClass));
+					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, lfConsBonus, playerClass);
 					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 * Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
 					tempFuel += thisFuel;
 				}
@@ -463,10 +476,10 @@ namespace Tbot.Includes {
 			long output = (long) (1 + Math.Round(tempFuel));
 			return output;
 		}
-
-		public FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
-			long time = CalcFlightTime(origin, destination, ships, mission, speed, researches, serverData, playerClass);
-			long fuel = CalcFuelConsumption(origin, destination, ships, mission, time, researches, serverData, playerClass);
+		
+		public FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			long time = CalcFlightTime(origin, destination, ships, mission, speed, researches, serverData, lfBonuses, playerClass);
+			long fuel = CalcFuelConsumption(origin, destination, ships, mission, time, researches, serverData, lfBonuses, playerClass);
 			return new() {
 				Fuel = fuel,
 				Time = time
@@ -474,7 +487,7 @@ namespace Tbot.Includes {
 		}
 
 		public FleetPrediction CalcFleetPrediction(Celestial origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, playerClass);
+			return CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, origin.LFBonuses, playerClass);
 		}
 
 		public List<decimal> GetValidSpeedsForClass(CharacterClass playerClass) {
@@ -527,12 +540,12 @@ namespace Tbot.Includes {
 			return speeds;
 		}
 
-		public decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
+		public decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
 			var speeds = GetValidSpeedsForClass(playerClass);
 			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
 			var maxFuel = loot.ConvertedDeuterium * ratio;
 			foreach (var speed in speeds) {
-				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, playerClass));
+				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, lfBonuses, playerClass));
 			}
 			if (speedPredictions.Any(p => p.Value.Fuel < maxFuel && p.Value.Time < maxFlightTime)) {
 				return speedPredictions
@@ -546,8 +559,8 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, maxFlightTime, researches, serverData, playerClass);
+		public decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, maxFlightTime, researches, serverData, lfBonuses, playerClass);
 		}
 
 		public Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, long deutToLeave = 0, int probeCargo = 0) {
@@ -2299,15 +2312,15 @@ namespace Tbot.Includes {
 		}
 
 		private long CalcLFPrice(long baseCost, double factor, int level, double costReduction = 0) {
-			return (long) Math.Ceiling(((double) 1 - costReduction) * ((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
+			return (long) Math.Ceiling(((double) 1 - (costReduction/100)) * ((double) baseCost * (double) level * Math.Pow(factor, level - 1)));
 		}
 
 		private long CalcLFEnergyPrice(long baseCost, double factor, int level, double costReduction = 0) {
-			return (long) Math.Round(((double) 1 - costReduction) * ((double) baseCost * (double) level * Math.Pow(factor, level)));
+			return (long) Math.Round(((double) 1 - (costReduction / 100)) * ((double) baseCost * (double) level * Math.Pow(factor, level)));
 		}
 
 		private long CalcLFPopulationPrice(long baseCost, double factor, int level, double costReduction = 0) {
-			return (long)  Math.Ceiling(((double) 1 - costReduction) * ((double) baseCost * Math.Pow(factor, level - 1)));
+			return (long)  Math.Ceiling(((double) 1 - (costReduction / 100)) * ((double) baseCost * Math.Pow(factor, level - 1)));
 		}
 
 		private Resources CalcLFPrice(int level, long metalBaseCost, double metalFactor, long crystalBaseCost, double crystalFactor, long deutBaseCost = 0, double deutFactor = 0, long energyBaseCost = 0, double energyFactor = 0, long populationBaseCost = 0, double populationFactor = 0, double costReduction = 0, double energyCostReduction = 0, double populationCostReduction = 0) {
@@ -2447,9 +2460,26 @@ namespace Tbot.Includes {
 			return (long) Math.Round(output * 3600, 0, MidpointRounding.ToPositiveInfinity);
 		}
 
-		public long CalcProductionTime(LFBuildables buildable, int level, int speed = 1, Facilities facilities = null) {
+		public long CalcProductionTime(LFBuildables buildable, int level, int speed = 1, Celestial celestial = null) {
 			int baseTime = 0;
 			double increaseFactor = 0;
+			double speedReduction = 0;
+
+			if (celestial == null)
+				celestial = new() {
+					LFtype = LFTypes.None,
+					LFBuildings = new(),
+					LFBonuses = new(),
+					Facilities = new(),
+				};
+
+			switch (celestial.LFtype) {
+				case LFTypes.Rocktal:
+					speedReduction = celestial.LFBuildings.Megalith;
+					break;
+				default:
+					break;
+			}
 
 			switch (buildable) {
 				case LFBuildables.ResidentialSector:
@@ -2648,10 +2678,10 @@ namespace Tbot.Includes {
 				default:
 					break;
 			}
-			return CalcLFTime(level, baseTime, increaseFactor, speed, facilities.RoboticsFactory, facilities.NaniteFactory);
+			return CalcLFTime(level, baseTime, increaseFactor, speed, celestial.Facilities.RoboticsFactory, celestial.Facilities.NaniteFactory, speedReduction);
 		}
-		public long CalcProductionTime(LFBuildables buildable, int level, ServerData serverData, Facilities facilities = null) {
-			return CalcProductionTime(buildable, level, serverData.Speed, facilities);
+		public long CalcProductionTime(LFBuildables buildable, int level, ServerData serverData, Celestial celestial) {
+			return CalcProductionTime(buildable, level, serverData.Speed, celestial);
 		}
 		public long CalcProductionTime(LFTechno buildable, int level, int speed = 1, double speedReduction = 0) {
 			int baseTime = 0;
@@ -2963,10 +2993,11 @@ namespace Tbot.Includes {
 			return duration;
 		}
 
-		private long CalcLFTime(int level, int baseTime, double increaseFactor, int speed = 1, int robots = 0, int nanites = 1) {
+		private long CalcLFTime(int level, int baseTime, double increaseFactor, int speed = 1, int robots = 0, int nanites = 1, double speedReduction = 0) {
 			long duration = (long) Math.Round((double) level * (double) baseTime * (double) Math.Pow(increaseFactor, level));
 			duration = (long) Math.Round((double) duration / (double) ((double) (robots + 1) * Math.Pow(2, nanites)));
-			duration = (long) Math.Round((double) duration / (double) speed);
+			duration = (long) Math.Round((double) (1 - speedReduction / 100) * (double) duration / (double) speed);
+			
 			return duration;
 		}
 
@@ -3530,6 +3561,9 @@ namespace Tbot.Includes {
 				return nextLFbuild;
 			}
 
+			float costReduction = CalcLFBuildingsResourcesCostBonus(planet);
+			float popReduction = CalcLFBuildingsPopulationCostBonus(planet);
+
 			LFBuildables foodBuilding = GetFoodBuilding(planet.LFtype);
 			LFBuildables populationBuilding = GetPopulationBuilding(planet.LFtype);
 			LFBuildables techBuilding = GetTechBuilding(planet.LFtype);
@@ -3551,20 +3585,20 @@ namespace Tbot.Includes {
 			}
 			else if (planet.ResourcesProduction.Population.NeedsMoreT2() || planet.ResourcesProduction.Population.NeedsMoreT3()) {
 				if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
-					if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
+					if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population) {
 						nextLFbuild = T2Building;
 					}
 				}
 				else if (planet.ResourcesProduction.Population.NeedsMoreT3()) {
 					Dictionary<LFBuildables, long> list = new();					
 					if (isUnlocked(planet, T2Building)) {
-						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).Population) {
-							list.Add(T2Building, CalcPrice(T2Building, planet.GetLevel(T2Building) + 1).ConvertedDeuterium);
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population) {
+							list.Add(T2Building, CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
 						}
 					}
 					if (isUnlocked(planet, T3Building)) {
-						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).Population) {
-							list.Add(T3Building, CalcPrice(T3Building, planet.GetLevel(T3Building) + 1).ConvertedDeuterium);
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).Population) {
+							list.Add(T3Building, CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
 						}
 					}
 					if (list.Count > 0) {
@@ -3581,7 +3615,7 @@ namespace Tbot.Includes {
 			}
 			
 			if (nextLFbuild != LFBuildables.None) {
-				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild));
+				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild), costReduction, 0, popReduction);
 				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory, maxLFBuilding);
 				if (lessExpensiveBuilding != LFBuildables.None) {
 					nextLFbuild = lessExpensiveBuilding;
@@ -3592,7 +3626,7 @@ namespace Tbot.Includes {
 			}
 			if (preventIfMoreExpensiveThanNextMine) {
 				var nextlvl = GetNextLevel(planet, nextLFbuild);
-				var nextlvlcost = CalcPrice(nextLFbuild, nextlvl);
+				var nextlvlcost = CalcPrice(nextLFbuild, nextlvl, costReduction, 0, popReduction);
 				var nextMine = GetNextMineToBuild(planet as Planet, 100, 100, 100, false);
 				var nextMineCost = CalcPrice(nextMine, GetNextLevel(planet, nextMine));
 				if (nextlvlcost.ConvertedDeuterium > nextMineCost.ConvertedDeuterium) {
@@ -3711,18 +3745,44 @@ namespace Tbot.Includes {
 			return list;
 		}
 
+		public float CalcLFBuildingsResourcesCostBonus(Celestial planet) {
+			var output = 0;
+			switch (planet.LFtype) {
+				case LFTypes.Rocktal:
+					output = planet.GetLevel(LFBuildables.Megalith);
+					break;
+				default:
+					break;
+			}
+			return output;
+		}
+
+		public float CalcLFBuildingsPopulationCostBonus(Celestial planet) {
+			var output = 0;
+			switch (planet.LFtype) {
+				case LFTypes.Rocktal:
+					output = planet.GetLevel(LFBuildables.Megalith);
+					break;
+				default:
+					break;
+			}
+			return output;
+		}
+
 		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding, LFBuildings maxlvlLFBuilding) {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
 			var livingSpace = CalcLivingSpace(planet as Planet);
 
+			float costReduction = CalcLFBuildingsResourcesCostBonus(planet);
+			float popReduction = CalcLFBuildingsPopulationCostBonus(planet);
+
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
-				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium)
+				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium)
 				.Where(b => b != GetTechBuilding(planet.LFtype) || (b == GetTechBuilding(planet.LFtype) && planet.GetLevel(b) < maxTechBuilding))
-				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
-				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
-				.ToList();	
-			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Population <= livingSpace)
+				.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium)
 				.ToList();
 
 			if (possibleBuildings.Count > 0) {
@@ -3739,12 +3799,14 @@ namespace Tbot.Includes {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			var livingSpace = CalcLivingSpace(planet as Planet);
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
-			
+
+			float costReduction = CalcLFBuildingsResourcesCostBonus(planet);
+			float popReduction = CalcLFBuildingsPopulationCostBonus(planet);
+
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
-				.Where(b => CalcPrice(b, GetNextLevel(planet, b)).Population <= livingSpace)
-				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b)).ConvertedDeuterium)
-				.ToList();
-			possibleBuildings = possibleBuildings.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Population <= livingSpace)
+				.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium)
 				.ToList();
 
 			if (possibleBuildings.Count > 0) {

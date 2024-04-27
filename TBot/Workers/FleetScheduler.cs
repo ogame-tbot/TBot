@@ -413,7 +413,8 @@ namespace Tbot.Workers {
 				_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to send fleet: speed not available for your class");
 				return (int) SendFleetCode.GenericError;
 			}
-			FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
+			FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight time (one-way): {TimeSpan.FromSeconds(fleetPrediction.Time).ToString()}");
 
 			var flightTime = mission switch {
@@ -589,6 +590,7 @@ namespace Tbot.Workers {
 			GalaxyInfo galaxyInfo = new();
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
 			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+			origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
 			int sys = 0;
 
 			switch (mission) {
@@ -601,7 +603,7 @@ namespace Tbot.Workers {
 						sys = GeneralHelper.ClampSystem(sys);
 						Coordinate destination = new(origin.Coordinate.Galaxy, sys, 16, Celestials.Planet);
 						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 
 							FleetHypotesis fleetHypotesis = new() {
 								Origin = origin,
@@ -642,7 +644,7 @@ namespace Tbot.Workers {
 					if (possibleDestinations.Count() > 0) {
 						foreach (var possibleDestination in possibleDestinations) {
 							foreach (var currentSpeed in validSpeeds) {
-								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 
 								FleetHypotesis fleetHypotesis = new() {
 									Origin = origin,
@@ -682,7 +684,7 @@ namespace Tbot.Workers {
 					if (possibleDestinations.Count() > 0) {
 						foreach (var possibleDestination in possibleDestinations) {
 							foreach (var currentSpeed in validSpeeds) {
-								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+								FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 
 								FleetHypotesis fleetHypotesis = new() {
 									Origin = origin,
@@ -718,7 +720,7 @@ namespace Tbot.Workers {
 
 					foreach (var possibleDestination in possibleDestinations) {
 						foreach (var currentSpeed in validSpeeds) {
-							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+							FleetPrediction fleetPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, possibleDestination, origin.Ships.GetMovableShips(), mission, currentSpeed, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 
 							FleetHypotesis fleetHypotesis = new() {
 								Origin = origin,
@@ -766,6 +768,7 @@ namespace Tbot.Workers {
 					origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Resources);
 					if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
 						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
 						Buildables preferredShip = Buildables.SmallCargo;
 						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.Transports.CargoType, true, out preferredShip)) {
 							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to parse CargoType. Falling back to default SmallCargo");
@@ -778,7 +781,7 @@ namespace Tbot.Workers {
 						Ships ships = new();
 						Ships tempShips = new();
 						tempShips.Add(preferredShip, 1);
-						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 						long flightTime = flightPrediction.Time;
 						idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
@@ -909,20 +912,21 @@ namespace Tbot.Workers {
 							preferredShip = Buildables.SmallCargo;
 						}
 
+						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBuildings);
 						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.LFBonuses);
 						float cargoBonus = origin.LFBonuses.GetShipCargoBonus(preferredShip);
-						long idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
+						long idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo) + 1;
 						Ships ships = new();
 						Ships tempShips = new();
 						LFBuildings maxLFBuildings = new();
 						tempShips.Add(preferredShip, 1);
-						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class);
+						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class);
 						long flightTime = flightPrediction.Time;
 						idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
 						if (buildable != LFBuildables.None) {
 							int level = _calcService.GetNextLevel(destination, buildable);
-							long buildTime = _calcService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, destination.Facilities);
+							long buildTime = _calcService.CalcProductionTime(buildable, level, _tbotInstance.UserData.serverData, destination);
 							if (maxPopuFactory != 0 && maxFoodFactory != 0 && maxTechFactory != 0) {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
@@ -935,14 +939,16 @@ namespace Tbot.Workers {
 									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, true);
 									if (nextBuildable != LFBuildables.None) {
 										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
-										var newMissingRes = missingResources.Sum(_calcService.CalcPrice(nextBuildable, nextLevel));
+										float costReduction = _calcService.CalcLFBuildingsResourcesCostBonus(tempCelestial);
+										float popReduction = _calcService.CalcLFBuildingsPopulationCostBonus(tempCelestial);
+										var newMissingRes = missingResources.Sum(_calcService.CalcPrice(nextBuildable, nextLevel, costReduction, 0, popReduction));
 
 										if (origin.Resources.IsEnoughFor(newMissingRes, resToLeave)) {
 											var newIdealShips = _calcService.CalcShipNumberForPayload(newMissingRes, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 											if (newIdealShips <= origin.Ships.GetAmount(preferredShip)) {
 												idealShips = newIdealShips;
 												missingResources = newMissingRes;
-												buildTime += _calcService.CalcProductionTime(nextBuildable, nextLevel, _tbotInstance.UserData.serverData, tempCelestial.Facilities);
+												buildTime += _calcService.CalcProductionTime(nextBuildable, nextLevel, _tbotInstance.UserData.serverData, tempCelestial);
 												_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Sending resources for {nextBuildable.ToString()} level {nextLevel} too");
 												level = nextLevel;
 												buildable = nextBuildable;

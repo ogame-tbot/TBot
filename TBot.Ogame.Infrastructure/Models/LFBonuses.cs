@@ -49,5 +49,21 @@ namespace TBot.Ogame.Infrastructure.Models {
 			}
 			return bonusCargo;
 		}
+
+		public float GetShipSpeedBonus(Buildables buildable) {
+			float bonusSpeed = 0;
+			if (this != null && Ships != null && Ships.Count > 0 && Ships.ContainsKey((int) buildable)) {
+				bonusSpeed = Ships.GetValueOrDefault((int) buildable).Speed;
+			}
+			return bonusSpeed;
+		}
+
+		public float GetShipConsumptionBonus(Buildables buildable) {
+			float bonusCons = 0;
+			if (this != null && Ships != null && Ships.Count > 0 && Ships.ContainsKey((int) buildable)) {
+				bonusCons = Ships.GetValueOrDefault((int) buildable).Consumption;
+			}
+			return bonusCons;
+		}
 	}
 }
