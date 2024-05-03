@@ -96,7 +96,7 @@ namespace Tbot.Includes {
 		int GetNextLevel(Celestial planet, LFBuildables buildable);
 		int GetNextLevel(Celestial planet, LFTechno buildable);
 		int GetNextLevel(Researches researches, Buildables buildable);
-		LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false);
+		LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, bool preventIfMoreExpensiveThanNextMine = false, bool preventTechBuilding = false);
 		LFBuildables GetPopulationBuilding(LFTypes LFtype);
 		LFBuildables GetFoodBuilding(LFTypes LFtype);
 		LFBuildables GetTechBuilding(LFTypes LFtype);

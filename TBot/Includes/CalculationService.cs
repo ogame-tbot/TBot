@@ -3555,7 +3555,7 @@ namespace Tbot.Includes {
 			return true;
 		}
 
-		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false) {
+		public LFBuildables GetNextLFBuildingToBuild(Celestial planet, LFBuildings maxLFBuilding, bool preventIfMoreExpensiveThanNextMine = false, bool preventTechBuilding = false) {
 			LFBuildables nextLFbuild = LFBuildables.None;
 			if (planet is Moon || planet.LFtype == LFTypes.None) {
 				return nextLFbuild;
@@ -3569,61 +3569,47 @@ namespace Tbot.Includes {
 			LFBuildables techBuilding = GetTechBuilding(planet.LFtype);
 			LFBuildables T2Building = GetT2Building(planet.LFtype);
 			LFBuildables T3Building = GetT3Building(planet.LFtype);
-			
-			if (planet.GetLevel(foodBuilding) < maxFoodFactory && planet.ResourcesProduction.Population.IsStarving()) {
+
+			Dictionary<LFBuildables, long> list = new();
+
+			if (GetNextLevel(planet, foodBuilding) <= maxLFBuilding.GetLevel(foodBuilding) && planet.ResourcesProduction.Population.IsStarving()) {
 				return foodBuilding;
 			}
-			if (planet.GetLevel(foodBuilding) < maxFoodFactory && planet.ResourcesProduction.Population.WillStarve()) {
-				nextLFbuild = foodBuilding;
+			if (GetNextLevel(planet, foodBuilding) <= maxLFBuilding.GetLevel(foodBuilding) && planet.ResourcesProduction.Population.WillStarve()) {
+				list.Add(foodBuilding, CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
 			}
-			else if (planet.GetLevel(populationBuilding) < maxPopuFactory && planet.ResourcesProduction.Population.IsThereFoodForMore()) {
-				nextLFbuild = populationBuilding;
+			if (GetNextLevel(planet, populationBuilding) <= maxLFBuilding.GetLevel(populationBuilding) && planet.ResourcesProduction.Population.IsThereFoodForMore()) {
+				list.Add(populationBuilding, CalcPrice(populationBuilding, GetNextLevel(planet, populationBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
 			}
-			else if (isUnlocked(planet, techBuilding) && planet.GetLevel(techBuilding) < maxTechFactory) {
-				nextLFbuild = techBuilding;
-				var techBuildingLevel = planet.GetLevel(techBuilding);
+			if (isUnlocked(planet, techBuilding) && GetNextLevel(planet, techBuilding) <= maxLFBuilding.GetLevel(techBuilding) && !preventTechBuilding) {
+				list.Add(techBuilding, CalcPrice(techBuilding, GetNextLevel(planet, techBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
 			}
-			else if (planet.ResourcesProduction.Population.NeedsMoreT2() || planet.ResourcesProduction.Population.NeedsMoreT3()) {
-				if (isUnlocked(planet, T2Building) && planet.ResourcesProduction.Population.NeedsMoreT2()) {
+			if (planet.ResourcesProduction.Population.NeedsMoreT2() || planet.ResourcesProduction.Population.NeedsMoreT3()) {
+				if (planet.ResourcesProduction.Population.NeedsMoreT2() && isUnlocked(planet, T2Building) && GetNextLevel(planet, T2Building) <= maxLFBuilding.GetLevel(T2Building)) {
 					if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population) {
-						nextLFbuild = T2Building;
+						list.Add(T2Building, CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction).ConvertedDeuterium);
 					}
 				}
-				else if (planet.ResourcesProduction.Population.NeedsMoreT3()) {
-					Dictionary<LFBuildables, long> list = new();					
+				else if (planet.ResourcesProduction.Population.NeedsMoreT3()) {										
 					if (isUnlocked(planet, T2Building)) {
-						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population) {
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population && GetNextLevel(planet, T2Building) <= maxLFBuilding.GetLevel(T2Building)) {
 							list.Add(T2Building, CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
 						}
 					}
 					if (isUnlocked(planet, T3Building)) {
-						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).Population) {
+						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).Population && GetNextLevel(planet, T3Building) <= maxLFBuilding.GetLevel(T3Building)) {
 							list.Add(T3Building, CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
 						}
-					}
-					if (list.Count > 0) {
-						nextLFbuild = list.OrderBy(x => x.Value).First().Key;
-					}
+					}					
 				}				
 			}
-			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
+
+			var leastExpensiveBuilding = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
+			list.Add(leastExpensiveBuilding, CalcPrice(leastExpensiveBuilding, GetNextLevel(planet, leastExpensiveBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
+			if (list.Count > 0) {
+				nextLFbuild = list.OrderBy(x => x.Value).First().Key;
 			}
 			
-			if (GetNextLevel(planet, nextLFbuild) > maxLFBuilding.GetLevel(nextLFbuild)) {
-				nextLFbuild = LFBuildables.None;
-			}
-			
-			if (nextLFbuild != LFBuildables.None) {
-				Resources nextLFbuildcost = CalcPrice(nextLFbuild, GetNextLevel(planet, nextLFbuild), costReduction, 0, popReduction);
-				var lessExpensiveBuilding = GetLessExpensiveLFBuilding(planet, nextLFbuildcost, maxTechFactory, maxLFBuilding);
-				if (lessExpensiveBuilding != LFBuildables.None) {
-					nextLFbuild = lessExpensiveBuilding;
-				}
-			}
-			else {
-				nextLFbuild = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
-			}
 			if (preventIfMoreExpensiveThanNextMine) {
 				var nextlvl = GetNextLevel(planet, nextLFbuild);
 				var nextlvlcost = CalcPrice(nextLFbuild, nextlvl, costReduction, 0, popReduction);
@@ -3769,7 +3755,7 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, int maxTechBuilding, LFBuildings maxlvlLFBuilding) {
+		private LFBuildables GetLessExpensiveLFBuilding(Celestial planet, Resources Currentlfbuildingcost, LFBuildings maxlvlLFBuilding) {
 			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
 			var livingSpace = CalcLivingSpace(planet as Planet);
@@ -3779,7 +3765,6 @@ namespace Tbot.Includes {
 
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium)
-				.Where(b => b != GetTechBuilding(planet.LFtype) || (b == GetTechBuilding(planet.LFtype) && planet.GetLevel(b) < maxTechBuilding))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Population <= livingSpace)
 				.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium)
@@ -3796,7 +3781,7 @@ namespace Tbot.Includes {
 
 		public LFBuildables GetLeastExpensiveLFBuilding(Celestial planet, LFBuildings maxlvlLFBuilding) {
 			Resources nextlfcost = new();
-			LFBuildables lessExpensiveLFBuild = LFBuildables.None;
+			LFBuildables leastExpensiveLFBuild = LFBuildables.None;
 			var livingSpace = CalcLivingSpace(planet as Planet);
 			List<LFBuildables> possibleBuildings = GetOtherBuildings(planet.LFtype);
 
@@ -3810,12 +3795,12 @@ namespace Tbot.Includes {
 				.ToList();
 
 			if (possibleBuildings.Count > 0) {
-				lessExpensiveLFBuild = possibleBuildings.First();
+				leastExpensiveLFBuild = possibleBuildings.First();
 			} else {
-				lessExpensiveLFBuild = LFBuildables.None;
+				leastExpensiveLFBuild = LFBuildables.None;
 			}
 
-			return lessExpensiveLFBuild;
+			return leastExpensiveLFBuild;
 		}
 
 		public long CalcFoodProduction(Planet planet) {

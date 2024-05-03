@@ -906,6 +906,7 @@ namespace Tbot.Workers {
 					if (origin.Resources.IsEnoughFor(missingResources, resToLeave)) {
 						origin = await _tbotOgameBridge.UpdatePlanet(origin, UpdateTypes.Ships);
 						destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.Facilities);
+						destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.Constructions);
 						Buildables preferredShip = Buildables.SmallCargo;
 						if (!Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.Brain.Transports.CargoType, true, out preferredShip)) {
 							_tbotInstance.log(LogLevel.Warning, LogSender.FleetScheduler, "Unable to parse CargoType. Falling back to default SmallCargo");
@@ -931,12 +932,17 @@ namespace Tbot.Workers {
 								var tempCelestial = destination;
 								while (flightTime * 2 >= buildTime && idealShips <= availableShips) {
 									tempCelestial.SetLevel(buildable, level);
-
+									
 									tempCelestial.ResourcesProduction.Population.LivingSpace = _calcService.CalcLivingSpace(tempCelestial as Planet);
 									tempCelestial.ResourcesProduction.Population.Satisfied = _calcService.CalcSatisfied(tempCelestial as Planet);
 
+									bool preventTechBuilding = false;
+									if (tempCelestial.Constructions.LFResearchCountdown > 0) {
+										preventTechBuilding = true;
+									}
+
 									var nextBuildable = LFBuildables.None;									
-									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, true);
+									nextBuildable = _calcService.GetNextLFBuildingToBuild(tempCelestial as Planet, maxLFBuildings, true, preventTechBuilding);
 									if (nextBuildable != LFBuildables.None) {
 										var nextLevel = _calcService.GetNextLevel(tempCelestial, nextBuildable);
 										float costReduction = _calcService.CalcLFBuildingsResourcesCostBonus(tempCelestial);

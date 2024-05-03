@@ -102,6 +102,11 @@ namespace Tbot.Workers.Brain {
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Buildings);
 				celestial = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Constructions);
 
+				bool preventTechBuilding = false;
+				if (celestial.Constructions.LFResearchCountdown > 0) {
+					preventTechBuilding = true;
+				}
+
 				LFBuildings maxLFBuildings = new();
 				maxLFBuildings.ResidentialSector = maxLFBuildings.AssemblyLine = maxLFBuildings.MeditationEnclave = maxLFBuildings.Sanctuary = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBasePopulationBuilding;
 				maxLFBuildings.BiosphereFarm = maxLFBuildings.FusionCellFactory = maxLFBuildings.CrystalFarm = maxLFBuildings.AntimatterCondenser = (int) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.MaxBaseFoodBuilding;
@@ -125,7 +130,7 @@ namespace Tbot.Workers.Brain {
 				}
 				if (delayTime == 0) {
 					if (celestial is Planet) {
-						buildable = _calculationService.GetNextLFBuildingToBuild(celestial, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
+						buildable = _calculationService.GetNextLFBuildingToBuild(celestial, maxLFBuildings, preventIfMoreExpensiveThanNextMine, preventTechBuilding);
 
 						if (buildable != LFBuildables.None) {
 							level = _calculationService.GetNextLevel(celestial, buildable);

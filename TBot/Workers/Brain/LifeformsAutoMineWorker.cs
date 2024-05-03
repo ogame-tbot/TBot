@@ -147,7 +147,7 @@ namespace Tbot.Workers.Brain {
 							default:
 								break;
 						}
-						var nextLFBuilding = _calculationService.GetNextLFBuildingToBuild(cel, maxLFBuildings, maxPopuFactory, maxFoodFactory, maxTechFactory, preventIfMoreExpensiveThanNextMine);
+						var nextLFBuilding = _calculationService.GetNextLFBuildingToBuild(cel, maxLFBuildings, preventIfMoreExpensiveThanNextMine);
 						if (nextLFBuilding != LFBuildables.None) {
 							var lv = _calculationService.GetNextLevel(celestial, nextLFBuilding);
 							DoLog(LogLevel.Debug, $"Celestial {cel.ToString()}: Next Lifeform building: {nextLFBuilding.ToString()} lv {lv.ToString()}.");
