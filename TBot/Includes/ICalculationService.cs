@@ -104,6 +104,7 @@ namespace Tbot.Includes {
 		LFBuildables GetT3Building(LFTypes LFtype);
 		float CalcLFBuildingsResourcesCostBonus(Celestial planet);
 		float CalcLFBuildingsPopulationCostBonus(Celestial planet);
+		float CalcLFBuildingPopulationTechCapBonus(Celestial planet);
 		LFBuildables GetLeastExpensiveLFBuilding(Celestial planet, LFBuildings maxlvlLFBuilding);
 		List<LFBuildables> GetOtherBuildings(LFTypes LFtype);
 		long CalcFoodProduction(Planet planet);

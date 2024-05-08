@@ -18,7 +18,7 @@ namespace TBot.Ogame.Infrastructure.Models {
 			return Available >= LivingSpace;
 		}
 		public bool IsStarving() {
-			return Hungry > 0 && WillStarve();
+			return Hungry > 0 || Available > Satisfied;
 		}
 		public bool WillStarve() {
 			return LivingSpace > Satisfied;
@@ -26,11 +26,15 @@ namespace TBot.Ogame.Infrastructure.Models {
 		public bool IsThereFoodForMore() {
 			return Satisfied > Available;
 		}
-		public bool NeedsMoreT2() {
-			return T2Lifeforms < 11000000;
+		public bool NeedsMoreT2(float bonus = 0) {
+			float cap = 11000000;
+			cap -= cap * bonus / 100;
+			return T2Lifeforms < cap;
 		}
-		public bool NeedsMoreT3() {
-			return T3Lifeforms < 435000000;
+		public bool NeedsMoreT3(float bonus = 0) {
+			float cap = 448000000;
+			cap -= cap * bonus / 100;
+			return T3Lifeforms < cap;
 		}
 	}
 }
