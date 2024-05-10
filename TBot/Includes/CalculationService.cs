@@ -3578,10 +3578,14 @@ namespace Tbot.Includes {
 			Dictionary<LFBuildables, long> list = new();
 
 			if (GetNextLevel(planet, foodBuilding) <= maxLFBuilding.GetLevel(foodBuilding) && planet.ResourcesProduction.Population.IsStarving()) {
-				return foodBuilding;
+				var requiredEnergy = CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).Energy;
+				if (planet.ResourcesProduction.Energy.CurrentProduction >= requiredEnergy)
+					return foodBuilding;
 			}
 			if (GetNextLevel(planet, foodBuilding) <= maxLFBuilding.GetLevel(foodBuilding) && planet.ResourcesProduction.Population.WillStarve()) {
-				list.Add(foodBuilding, CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
+				var requiredEnergy = CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).Energy;
+				if (planet.ResourcesProduction.Energy.CurrentProduction >= requiredEnergy)
+					list.Add(foodBuilding, CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
 			}
 			if (GetNextLevel(planet, populationBuilding) <= maxLFBuilding.GetLevel(populationBuilding) && planet.ResourcesProduction.Population.IsThereFoodForMore()) {
 				list.Add(populationBuilding, CalcPrice(populationBuilding, GetNextLevel(planet, populationBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
@@ -3789,6 +3793,7 @@ namespace Tbot.Includes {
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium < Currentlfbuildingcost.ConvertedDeuterium)
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Population <= livingSpace)
 				.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.Where(b => planet.ResourcesProduction.Energy.CurrentProduction >= CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Energy)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium)
 				.ToList();
 
@@ -3813,6 +3818,7 @@ namespace Tbot.Includes {
 			possibleBuildings = possibleBuildings.Where(b => isUnlocked(planet, b))
 				.Where(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Population <= livingSpace)
 				.Where(b => (int) GetNextLevel(planet, b) <= (int) maxlvlLFBuilding.GetLevel(b))
+				.Where(b => planet.ResourcesProduction.Energy.CurrentProduction >= CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).Energy)
 				.OrderBy(b => CalcPrice(b, GetNextLevel(planet, b), costReduction, 0, popReduction).ConvertedDeuterium)
 				.ToList();
 
@@ -4002,7 +4008,7 @@ namespace Tbot.Includes {
 			var foodFactoryLevel = planet.GetLevel(foodFactory);
 			var populationBonus = CalcLivingSpaceBonus(planet);
 			var foodProductionBonus = CalcFoodProductionBonus(planet);
-			var foodConsumptionBonus = CalcFoodConsumption(planet);
+			var foodConsumptionBonus = CalcFoodConsumptionBonus(planet);
 			return CalcSatisfied(popuFactory, popuFactoryLevel, foodFactory, foodFactoryLevel, populationBonus, foodProductionBonus, foodConsumptionBonus);
 		}
 
@@ -4549,6 +4555,8 @@ namespace Tbot.Includes {
 						break;
 					case Buildables.GravitonTechnology:
 						if (celestial.Facilities.ResearchLab < 12)
+							continue;
+						if (researches.GravitonTechnology >= 1)
 							continue;
 						if (celestial.ResourcesProduction.Energy.CurrentProduction < CalcPrice(Buildables.GravitonTechnology, GetNextLevel(researches, Buildables.GravitonTechnology)).Energy)
 							continue;
