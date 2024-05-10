@@ -195,16 +195,16 @@ namespace Tbot.Includes {
 			return total;
 		}
 
-		public int CalcShipSpeed(Buildables buildable, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcShipSpeed(Buildables buildable, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			if (lfBonuses == null)
 				lfBonuses = new() {
 					Ships = new()
 				};
 			float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
-			return CalcShipSpeed(buildable, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonus, playerClass);
+			return CalcShipSpeed(buildable, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonus, playerClass, allyClass);
 		}
 
-		public int CalcShipSpeed(Buildables buildable, int combustionDrive, int impulseDrive, int hyperspaceDrive, float lfBonus = 0, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcShipSpeed(Buildables buildable, int combustionDrive, int impulseDrive, int hyperspaceDrive, float lfBonus = 0, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			int baseSpeed;
 			int bonus = combustionDrive;
 			switch (buildable) {
@@ -216,11 +216,15 @@ namespace Tbot.Includes {
 					}
 					if (playerClass == CharacterClass.Collector)
 						bonus += 10;
+					if (allyClass == AllianceClass.Trader)
+						bonus += 1;
 					break;
 				case Buildables.LargeCargo:
 					baseSpeed = 7500;
 					if (playerClass == CharacterClass.Collector)
 						bonus += 10;
+					if (allyClass == AllianceClass.Trader)
+						bonus += 1;
 					break;
 				case Buildables.LightFighter:
 					baseSpeed = 12500;
@@ -292,13 +296,13 @@ namespace Tbot.Includes {
 						bonus += 10;
 					break;
 				case Buildables.Reaper:
-					baseSpeed = 10000;
+					baseSpeed = 7000;
 					bonus = hyperspaceDrive * 3;
 					if (playerClass == CharacterClass.General)
 						bonus += 10;
 					break;
 				case Buildables.Pathfinder:
-					baseSpeed = 10000;
+					baseSpeed = 12000;
 					bonus = hyperspaceDrive * 3;
 					if (playerClass == CharacterClass.General)
 						bonus += 10;
@@ -310,11 +314,11 @@ namespace Tbot.Includes {
 			return (int) Math.Round(output, MidpointRounding.ToZero);
 		}
 
-		public int CalcSlowestSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcSlowestSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass);
+		public int CalcSlowestSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			return CalcSlowestSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass, allyClass);
 		}
 
-		public int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcSlowestSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			int lowest = int.MaxValue;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
@@ -325,7 +329,7 @@ namespace Tbot.Includes {
 					if (buildable == Buildables.SolarSatellite || buildable == Buildables.Crawler)
 						continue;
 					float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
-					int speed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass);
+					int speed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass, allyClass);
 					if (speed < lowest)
 						lowest = speed;
 				}
