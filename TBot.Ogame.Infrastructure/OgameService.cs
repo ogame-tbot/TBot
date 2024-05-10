@@ -488,6 +488,10 @@ namespace TBot.Ogame.Infrastructure {
 			return await GetAsync<bool>("/bot/has-technocrat");
 		}
 
+		public async Task<AllianceClass> GetAllianceClass() {
+			return await GetAsync<AllianceClass>("/bot/alliance-class");
+		}
+
 		public async Task<Staff> GetStaff() {
 			try {
 				return new() {

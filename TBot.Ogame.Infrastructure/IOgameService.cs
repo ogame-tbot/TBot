@@ -80,6 +80,7 @@ namespace TBot.Ogame.Infrastructure {
 		Task<bool> HasEngineer();
 		Task<bool> HasGeologist();
 		Task<bool> HasTechnocrat();
+		Task<AllianceClass> GetAllianceClass();
 		bool IsPortAvailable(string host, int port = 8080);
 		Task<bool> IsUnderAttack();
 		Task<bool> IsVacationMode();

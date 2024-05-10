@@ -337,11 +337,11 @@ namespace Tbot.Includes {
 			return lowest;
 		}
 
-		public int CalcFleetSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcFleetSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass);
+		public int CalcFleetSpeed(Ships fleet, Researches researches, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			return CalcFleetSpeed(fleet, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, lfBonuses, playerClass, allyClass);
 		}
 
-		public int CalcFleetSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public int CalcFleetSpeed(Ships fleet, int combustionDrive, int impulseDrive, int hyperspaceDrive, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			int minSpeed = 0;
 			foreach (PropertyInfo prop in fleet.GetType().GetProperties()) {
 				long qty = (long) prop.GetValue(fleet, null);
@@ -349,7 +349,7 @@ namespace Tbot.Includes {
 					continue;
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
 					float lfBonus = lfBonuses.GetShipSpeedBonus(buildable);
-					int thisSpeed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass);
+					int thisSpeed = CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfBonus, playerClass, allyClass);
 					if (thisSpeed < minSpeed)
 						minSpeed = thisSpeed;
 				}
@@ -432,17 +432,17 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			var fleetSpeed = mission switch {
 				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Spy or Missions.Harvest => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
-			return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, lfBonuses, playerClass);
+			return CalcFlightTime(origin, destination, ships, speed, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, lfBonuses, playerClass, allyClass);
 		}
 
-		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
-			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, lfBonuses, playerClass);
+		public long CalcFlightTime(Coordinate origin, Coordinate destination, Ships ships, decimal speed, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			int slowestShipSpeed = CalcSlowestSpeed(ships, combustionDrive, impulseDrive, hyperspaceDrive, lfBonuses, playerClass, allyClass);
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
 			double s = (double) speed;
 			double v = (double) slowestShipSpeed;
@@ -452,16 +452,16 @@ namespace Tbot.Includes {
 			return output;
 		}
 
-		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, Missions mission, long flightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			var fleetSpeed = mission switch {
 				Missions.Attack or Missions.FederalAttack or Missions.Destroy or Missions.Harvest or Missions.Spy => serverData.SpeedFleetWar,
 				Missions.FederalDefense => serverData.SpeedFleetHolding,
 				_ => serverData.SpeedFleetPeaceful,
 			};
-			return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, serverData.GlobalDeuteriumSaveFactor, lfBonuses, playerClass);
+			return CalcFuelConsumption(origin, destination, ships, flightTime, researches.CombustionDrive, researches.ImpulseDrive, researches.HyperspaceDrive, serverData.Galaxies, serverData.Systems, serverData.DonutGalaxy, serverData.DonutSystem, fleetSpeed, serverData.GlobalDeuteriumSaveFactor, lfBonuses, playerClass, allyClass);
 		}
 
-		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public long CalcFuelConsumption(Coordinate origin, Coordinate destination, Ships ships, long flightTime, int combustionDrive, int impulseDrive, int hyperspaceDrive, int numberOfGalaxies, int numberOfSystems, bool donutGalaxies, bool donutSystems, int fleetSpeed, float deuteriumSaveFactor, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			int distance = CalcDistance(origin, destination, numberOfGalaxies, numberOfSystems, donutGalaxies, donutSystems);
 			double tempFuel = (double) 0;
 			foreach (PropertyInfo prop in ships.GetType().GetProperties()) {
@@ -471,7 +471,7 @@ namespace Tbot.Includes {
 				if (Enum.TryParse<Buildables>(prop.Name, out Buildables buildable)) {
 					float lfSpeedBonus = lfBonuses.GetShipSpeedBonus(buildable);
 					float lfConsBonus = lfBonuses.GetShipConsumptionBonus(buildable);
-					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfSpeedBonus, playerClass));
+					double tempSpeed = 35000 / (((double) flightTime * (double) fleetSpeed) - (double) 10) * (double) Math.Sqrt((double) distance * (double) 10 / (double) CalcShipSpeed(buildable, combustionDrive, impulseDrive, hyperspaceDrive, lfSpeedBonus, playerClass, allyClass));
 					int shipConsumption = CalcShipConsumption(buildable, impulseDrive, hyperspaceDrive, deuteriumSaveFactor, lfConsBonus, playerClass);
 					double thisFuel = ((double) shipConsumption * (double) qty * (double) distance) / (double) 35000 * Math.Pow(((double) tempSpeed / (double) 10) + (double) 1, 2);
 					tempFuel += thisFuel;
@@ -481,17 +481,17 @@ namespace Tbot.Includes {
 			return output;
 		}
 		
-		public FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
-			long time = CalcFlightTime(origin, destination, ships, mission, speed, researches, serverData, lfBonuses, playerClass);
-			long fuel = CalcFuelConsumption(origin, destination, ships, mission, time, researches, serverData, lfBonuses, playerClass);
+		public FleetPrediction CalcFleetPrediction(Coordinate origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			long time = CalcFlightTime(origin, destination, ships, mission, speed, researches, serverData, lfBonuses, playerClass, allyClass);
+			long fuel = CalcFuelConsumption(origin, destination, ships, mission, time, researches, serverData, lfBonuses, playerClass, allyClass);
 			return new() {
 				Fuel = fuel,
 				Time = time
 			};
 		}
 
-		public FleetPrediction CalcFleetPrediction(Celestial origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, origin.LFBonuses, playerClass);
+		public FleetPrediction CalcFleetPrediction(Celestial origin, Coordinate destination, Ships ships, Missions mission, decimal speed, Researches researches, ServerData serverData, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			return CalcFleetPrediction(origin.Coordinate, destination, ships, mission, speed, researches, serverData, origin.LFBonuses, playerClass, allyClass);
 		}
 
 		public List<decimal> GetValidSpeedsForClass(CharacterClass playerClass) {
@@ -544,12 +544,12 @@ namespace Tbot.Includes {
 			return speeds;
 		}
 
-		public decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
+		public decimal CalcOptimalFarmSpeed(Coordinate origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
 			var speeds = GetValidSpeedsForClass(playerClass);
 			var speedPredictions = new Dictionary<decimal, FleetPrediction>();
 			var maxFuel = loot.ConvertedDeuterium * ratio;
 			foreach (var speed in speeds) {
-				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, lfBonuses, playerClass));
+				speedPredictions.Add(speed, CalcFleetPrediction(origin, destination, ships, Missions.Attack, speed, researches, serverData, lfBonuses, playerClass, allyClass));
 			}
 			if (speedPredictions.Any(p => p.Value.Fuel < maxFuel && p.Value.Time < maxFlightTime)) {
 				return speedPredictions
@@ -563,8 +563,8 @@ namespace Tbot.Includes {
 			}
 		}
 
-		public decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass) {
-			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, maxFlightTime, researches, serverData, lfBonuses, playerClass);
+		public decimal CalcOptimalFarmSpeed(Celestial origin, Coordinate destination, Ships ships, Resources loot, decimal ratio, long maxFlightTime, Researches researches, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, AllianceClass allyClass = AllianceClass.NoClass) {
+			return CalcOptimalFarmSpeed(origin.Coordinate, destination, ships, loot, ratio, maxFlightTime, researches, serverData, lfBonuses, playerClass, allyClass);
 		}
 
 		public Resources CalcMaxTransportableResources(Ships ships, Resources resources, int hyperspaceTech, ServerData serverData, LFBonuses lfBonuses = null, CharacterClass playerClass = CharacterClass.NoClass, long deutToLeave = 0, int probeCargo = 0) {

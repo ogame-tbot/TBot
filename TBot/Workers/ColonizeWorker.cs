@@ -187,7 +187,7 @@ namespace Tbot.Workers {
 									}
 									Ships ships = new() { ColonyShip = 1 };
 									filteredTargets = filteredTargets
-										.OrderBy(t => _calculationService.CalcFleetPrediction(origin, t, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class).Time)
+										.OrderBy(t => _calculationService.CalcFleetPrediction(origin, t, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.allianceClass).Time)
 										.ToList();
 									int indexList = 0;
 									foreach (var target in filteredTargets) {
@@ -240,7 +240,7 @@ namespace Tbot.Workers {
 											var rndWaitTimeMs = 0;	//(int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet);
 											if (indexList < filteredTargets.Count()) {
 												Coordinate nextSlot = filteredTargets.ElementAt(indexList);
-												rndWaitTimeMs = _calculationService.CalcFleetPrediction(origin, nextSlot, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class).Time - _calculationService.CalcFleetPrediction(origin, target, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class).Time < maxWaitNextFleet ? 
+												rndWaitTimeMs = _calculationService.CalcFleetPrediction(origin, nextSlot, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.allianceClass).Time - _calculationService.CalcFleetPrediction(origin, target, ships, Missions.Colonize, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.allianceClass).Time < maxWaitNextFleet ? 
 													(int) RandomizeHelper.CalcRandomIntervalSecToMs(minWaitNextFleet, maxWaitNextFleet) :
 													0;
 											}

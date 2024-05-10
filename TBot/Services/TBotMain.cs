@@ -213,12 +213,14 @@ namespace Tbot.Services {
 			userData.serverData = await _tbotOgameBridge.UpdateServerData();
 			userData.userInfo = await _tbotOgameBridge.UpdateUserInfo();
 			userData.staff = await _tbotOgameBridge.UpdateStaff();
+			userData.allianceClass = await _tbotOgameBridge.UpdateAllianceClass();
 
 			var serverTime = await _tbotOgameBridge.GetDateTime();
 
 			log(LogLevel.Information, LogSender.Tbot, $"Server time: {serverTime.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player name: {userData.userInfo.PlayerName}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player class: {userData.userInfo.Class.ToString()}");
+			log(LogLevel.Information, LogSender.Tbot, $"Alliance class: {userData.allianceClass.ToString()}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player rank: {userData.userInfo.Rank}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player points: {userData.userInfo.Points}");
 			log(LogLevel.Information, LogSender.Tbot, $"Player honour points: {userData.userInfo.HonourPoints}");
@@ -930,7 +932,7 @@ namespace Tbot.Services {
 				return;
 			}
 
-			FleetPrediction fleetPrediction = _helpersService.CalcFleetPrediction(celestial.Coordinate, destination, celestial.Ships, Missions.Deploy, speed, userData.researches, userData.serverData, celestial.LFBonuses, userData.userInfo.Class);
+			FleetPrediction fleetPrediction = _helpersService.CalcFleetPrediction(celestial.Coordinate, destination, celestial.Ships, Missions.Deploy, speed, userData.researches, userData.serverData, celestial.LFBonuses, userData.userInfo.Class, userData.allianceClass);
 			int fleetId = await _fleetScheduler.SendFleet(celestial, celestial.Ships, destination, Missions.Deploy, speed, payload, userData.userInfo.Class, true);
 
 			if (fleetId != (int) SendFleetCode.GenericError ||
@@ -992,7 +994,7 @@ namespace Tbot.Services {
 				return false;
 			}
 
-			FleetPrediction fleetPrediction = _helpersService.CalcFleetPrediction(celestial.Coordinate, dest, celestial.Ships, Missions.Deploy, speed, userData.researches, userData.serverData, celestial.LFBonuses, userData.userInfo.Class);
+			FleetPrediction fleetPrediction = _helpersService.CalcFleetPrediction(celestial.Coordinate, dest, celestial.Ships, Missions.Deploy, speed, userData.researches, userData.serverData, celestial.LFBonuses, userData.userInfo.Class, userData.allianceClass);
 			int fleetId = await _fleetScheduler.SendFleet(celestial, celestial.Ships, dest, Missions.Deploy, speed, payload, userData.userInfo.Class, true);
 
 			if (fleetId != (int) SendFleetCode.GenericError ||

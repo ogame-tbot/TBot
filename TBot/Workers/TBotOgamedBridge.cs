@@ -267,6 +267,15 @@ namespace Tbot.Workers
 			}
 		}
 
+		public async Task<AllianceClass> UpdateAllianceClass() {
+			try {
+				return await _ogameService.GetAllianceClass();
+			} catch (Exception e) {
+				_tbotInstance.log(LogLevel.Debug, LogSender.Tbot, $"UpdateAllianceClass() Exception");
+				_tbotInstance.log(LogLevel.Warning, LogSender.Tbot, $"Stacktrace: {e.StackTrace}");
+				return AllianceClass.NoClass;
+			}
+		}
 
 		public async Task<bool> CheckCelestials() {
 			try {

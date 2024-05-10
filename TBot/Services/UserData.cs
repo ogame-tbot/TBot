@@ -14,6 +14,7 @@ namespace Tbot.Services {
 		public Server serverInfo = new();
 		public ServerData serverData;
 		public UserInfo userInfo;
+		public AllianceClass allianceClass;
 		public List<Celestial> celestials;
 		public List<Fleet> fleets;
 		public List<AttackerFleet> attacks;

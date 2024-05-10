@@ -19,6 +19,7 @@ namespace Tbot.Workers {
 		Task<Server> UpdateServerInfo();
 		Task<Slots> UpdateSlots();
 		Task<Staff> UpdateStaff();
+		Task<AllianceClass> UpdateAllianceClass();
 		Task<UserInfo> UpdateUserInfo();
 	}
 }
