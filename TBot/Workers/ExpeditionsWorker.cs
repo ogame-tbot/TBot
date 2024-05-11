@@ -137,17 +137,20 @@ namespace Tbot.Workers {
 								if ((bool) _tbotInstance.InstanceSettings.Expeditions.RandomizeOrder) {
 									origins = origins.Shuffle().ToList();
 								}
+								int quotient = (int) Math.Floor((float) expsToSend / (float) origins.Count());
+								int reste = (int) Math.Floor((float) expsToSend % (float) origins.Count());
+								int[] arrayExpsToSend = new int[origins.Count()];
+								for (int i = 0; i < origins.Count(); i++) {
+									arrayExpsToSend[i] = quotient;
+								}
+								for (int i = 0; i < origins.Count(); i++) {
+									if (i < reste) {
+										arrayExpsToSend[i]++;
+									}
+								}
 								LFBonuses lfBonuses = origins.First().LFBonuses;
 								foreach (var origin in origins) {
-									int expsToSendFromThisOrigin;
-									if (origins.Count() >= expsToSend) {
-										expsToSendFromThisOrigin = 1;
-									} else {
-										expsToSendFromThisOrigin = (int) Math.Round((float) expsToSend / (float) origins.Count(), MidpointRounding.ToZero);
-										//if (origin == origins.Last()) {
-										//	expsToSendFromThisOrigin = (int) Math.Round((float) expsToSend / (float) origins.Count(), MidpointRounding.ToZero) + (expsToSend % origins.Count());
-										//}
-									}
+									int expsToSendFromThisOrigin = (int) arrayExpsToSend[origins.IndexOf(origin)];
 									if (origin.Ships.IsEmpty()) {
 										DoLog(LogLevel.Warning, "Unable to send expeditions: no ships available");
 										continue;
