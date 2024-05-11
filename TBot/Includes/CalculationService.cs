@@ -310,7 +310,7 @@ namespace Tbot.Includes {
 				default:
 					return 0;
 			}
-			var output = ((float) baseSpeed * (1 + lfBonus / 100) * ((float) bonus + 10) / 10);
+			var output = ((float) baseSpeed * (lfBonus / 100)) + ((float) baseSpeed * ((float) bonus + 10) / 10);
 			return (int) Math.Round(output, MidpointRounding.ToZero);
 		}
 
