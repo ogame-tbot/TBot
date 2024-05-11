@@ -19,7 +19,7 @@ namespace Tbot.Includes {
 		Task<List<Fleet>> UpdateFleets();
 		void RetireFleet(object fleet);
 		Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, Buildables buildable = Buildables.Null, Buildings maxBuildings = null, Facilities maxFacilities = null, Facilities maxLunarFacilities = null, AutoMinerSettings autoMinerSettings = null);
-		Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, LFBuildables buildable = LFBuildables.None, int maxPopuFactory = 100, int maxFoodFactory = 100, int maxTechFactory = 20, bool preventIfMoreExpensiveThanNextMine = false);
+		Task<int> HandleMinerTransport(Celestial origin, Celestial destination, Resources resources, LFBuildables buildable = LFBuildables.None, LFBuildings maxLFBuildings = null, bool preventIfMoreExpensiveThanNextMine = false);
 		Task Collect();
 		Task<RepatriateCode> CollectImpl(bool fromTelegram = false);
 		Task CollectDeut(long minAmount = 0);

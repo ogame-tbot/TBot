@@ -3619,7 +3619,16 @@ namespace Tbot.Includes {
 			var leastExpensiveBuilding = GetLeastExpensiveLFBuilding(planet, maxLFBuilding);
 			if (leastExpensiveBuilding != LFBuildables.None)
 				list.Add(leastExpensiveBuilding, CalcPrice(leastExpensiveBuilding, GetNextLevel(planet, leastExpensiveBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
-			
+
+			if (list.Count == 0) {
+				if (GetNextLevel(planet, foodBuilding) <= maxLFBuilding.GetLevel(foodBuilding)) {
+					list.Add(foodBuilding, CalcPrice(foodBuilding, GetNextLevel(planet, foodBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
+				}
+				if (GetNextLevel(planet, populationBuilding) <= maxLFBuilding.GetLevel(populationBuilding)) {
+					list.Add(populationBuilding, CalcPrice(populationBuilding, GetNextLevel(planet, populationBuilding), costReduction, 0, popReduction).ConvertedDeuterium);
+				}
+			}
+
 			if (list.Count > 0) {
 				nextLFbuild = list.OrderBy(x => x.Value).First().Key;
 			}
