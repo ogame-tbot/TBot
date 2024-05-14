@@ -86,6 +86,7 @@ namespace Tbot.Workers.Brain {
 						bool preventIfMoreExpensiveThanNextMine = (bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.PreventIfMoreExpensiveThanNextMine;
 
 						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.LFBuildings);
+						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.Resources);
 						cel = await _tbotOgameBridge.UpdatePlanet(celestial, UpdateTypes.ResourcesProduction);
 						switch (cel.LFtype) {
 							case LFTypes.Humans:

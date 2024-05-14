@@ -3599,18 +3599,27 @@ namespace Tbot.Includes {
 			if (planet.ResourcesProduction.Population.NeedsMoreT2(techPopReduction) || planet.ResourcesProduction.Population.NeedsMoreT3(techPopReduction)) {
 				if (planet.ResourcesProduction.Population.NeedsMoreT2(techPopReduction) && isUnlocked(planet, T2Building) && GetNextLevel(planet, T2Building) <= maxLFBuilding.GetLevel(T2Building)) {
 					if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population) {
-						list.Add(T2Building, CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction).ConvertedDeuterium);
+						Resources xCostBuildable = CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction);
+						if (xCostBuildable.Population <= planet.Resources.Population) {
+							list.Add(T2Building, CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction).ConvertedDeuterium);
+						}
 					}
 				}
 				else if (planet.ResourcesProduction.Population.NeedsMoreT3(techPopReduction)) {										
 					if (isUnlocked(planet, T2Building)) {
 						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).Population && GetNextLevel(planet, T2Building) <= maxLFBuilding.GetLevel(T2Building)) {
-							list.Add(T2Building, CalcPrice(T2Building, planet.GetLevel(T2Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
+							Resources xCostBuildable = CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction);
+							if (xCostBuildable.Population <= planet.Resources.Population) {
+								list.Add(T2Building, CalcPrice(T2Building, GetNextLevel(planet, T2Building), costReduction, 0, popReduction).ConvertedDeuterium);
+							}
 						}
 					}
 					if (isUnlocked(planet, T3Building)) {
 						if (CalcLivingSpace(planet as Planet) >= CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).Population && GetNextLevel(planet, T3Building) <= maxLFBuilding.GetLevel(T3Building)) {
-							list.Add(T3Building, CalcPrice(T3Building, planet.GetLevel(T3Building) + 1, costReduction, 0, popReduction).ConvertedDeuterium);
+							Resources xCostBuildable = CalcPrice(T3Building, GetNextLevel(planet, T3Building), costReduction, 0, popReduction);
+							if (xCostBuildable.Population <= planet.Resources.Population) {
+								list.Add(T3Building, CalcPrice(T3Building, GetNextLevel(planet, T3Building), costReduction, 0, popReduction).ConvertedDeuterium);
+							}
 						}
 					}					
 				}				
