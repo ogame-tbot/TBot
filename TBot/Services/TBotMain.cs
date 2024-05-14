@@ -712,33 +712,63 @@ namespace Tbot.Services {
 
 					Celestial celestial = null;
 
-					log(LogLevel.Information, LogSender.Tbot, "Finding input for Minimum Bid into Auction...");
-					foreach (KeyValuePair<string, AuctionResourcesValue> item in auction.Resources) {
-						var planetIdStr = item.Key;
-						var planetResources = item.Value;
+					var defaultCoords = new Coordinate() {
+						Galaxy = (int) InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
+						System = (int) InstanceSettings.Brain.AutoRepatriate.Target.System,
+						Position = (int) InstanceSettings.Brain.AutoRepatriate.Target.Position,
+						Type = Enum.Parse<Celestials>((string) InstanceSettings.Brain.AutoRepatriate.Target.Type)
+					};
 
-						long auctionPoints = (long) Math.Round(
-								(planetResources.input.Metal / auction.ResourceMultiplier.Metal) +
-								(planetResources.input.Crystal / auction.ResourceMultiplier.Crystal) +
-								(planetResources.input.Deuterium / auction.ResourceMultiplier.Deuterium)
-						);
-						if (auctionPoints > minBidRequired) {
-							await SendTelegramMessage($"Found celestial! \"{planetResources.Name}\". ID: {planetIdStr}");
-							celestial = new Celestial();
-							celestial.ID = Int32.Parse(planetIdStr);
-							celestial.Name = planetResources.Name;
-							celestial.Resources = new Resources();
-							celestial.Resources.Metal = planetResources.input.Metal;
-							celestial.Resources.Crystal = planetResources.input.Crystal;
-							celestial.Resources.Deuterium = planetResources.input.Deuterium;
+					Celestial defaultCelestial = UserData.celestials.Unique()
+						.Where(c => c.Coordinate.IsSame(defaultCoords))
+						.SingleOrDefault() ?? new() { ID = 0 };
 
-							log(LogLevel.Information, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} > {minBidRequired}. Proceeding! :)");
-							break;
-						} else
-							log(LogLevel.Information, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} < {minBidRequired}. Discarding");
+					AuctionResourcesValue defaultplanetResources = auction.Resources.Where(r => Int32.Parse(r.Key) == defaultCelestial.ID).First().Value;
+					long defaultAuctionPoints = (long) Math.Round(
+						(defaultplanetResources.input.Metal / auction.ResourceMultiplier.Metal) +
+						(defaultplanetResources.input.Crystal / auction.ResourceMultiplier.Crystal) +
+						(defaultplanetResources.input.Deuterium / auction.ResourceMultiplier.Deuterium)
+					);
+					if (defaultAuctionPoints > minBidRequired) {
+						await SendTelegramMessage($"Default celestial. \"{defaultplanetResources.Name}\". ID: {defaultCelestial.ID}");
+						log(LogLevel.Information, LogSender.Tbot, $"Planet \"{defaultplanetResources.Name}\" points {defaultAuctionPoints} > {minBidRequired}. Proceeding! :)");
+						defaultCelestial.Resources = new Resources() {
+							Metal = defaultplanetResources.input.Metal,
+							Crystal = defaultplanetResources.input.Crystal,
+							Deuterium = defaultplanetResources.input.Deuterium
+						};
+						celestial = defaultCelestial;
+					}
+					else {
+						log(LogLevel.Information, LogSender.Tbot, "Finding input for Minimum Bid into Auction...");
+						foreach (KeyValuePair<string, AuctionResourcesValue> item in auction.Resources) {
+							var planetIdStr = item.Key;
+							var planetResources = item.Value;
+
+							long auctionPoints = (long) Math.Round(
+									(planetResources.input.Metal / auction.ResourceMultiplier.Metal) +
+									(planetResources.input.Crystal / auction.ResourceMultiplier.Crystal) +
+									(planetResources.input.Deuterium / auction.ResourceMultiplier.Deuterium)
+							);
+							if (auctionPoints > minBidRequired) {
+								await SendTelegramMessage($"Found celestial! \"{planetResources.Name}\". ID: {planetIdStr}");
+								celestial = new Celestial();
+								celestial.ID = Int32.Parse(planetIdStr);
+								celestial.Name = planetResources.Name;
+								celestial.Resources = new Resources();
+								celestial.Resources.Metal = planetResources.input.Metal;
+								celestial.Resources.Crystal = planetResources.input.Crystal;
+								celestial.Resources.Deuterium = planetResources.input.Deuterium;
+
+								log(LogLevel.Information, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} > {minBidRequired}. Proceeding! :)");
+								break;
+							} else {
+								log(LogLevel.Information, LogSender.Tbot, $"Planet \"{planetResources.Name}\" points {auctionPoints} < {minBidRequired}. Discarding");
+							}
+						}
 					}
 
-					if (celestial == null) {
+					if (celestial.ID == 0) {
 						await SendTelegramMessage(
 							$"No celestial with minimum required resources found! \n" +
 							$"Resource Multiplier: M:{auction.ResourceMultiplier.Metal} C:{auction.ResourceMultiplier.Crystal} D:{auction.ResourceMultiplier.Deuterium}.\n" +
