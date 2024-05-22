@@ -11,7 +11,7 @@ TBot is a .NET 6 [OGame](https://lobby.ogame.gameforge.com/) bot based on [ogame
 
 Feel free to publish issues or pull requests
 
-TBot supports Ogame **v11.13**!
+TBot supports Ogame **v11.15**!
 
 ## How to Update from 0.3.1
 
