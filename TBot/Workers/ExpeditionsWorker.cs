@@ -137,21 +137,22 @@ namespace Tbot.Workers {
 								if ((bool) _tbotInstance.InstanceSettings.Expeditions.RandomizeOrder) {
 									origins = origins.Shuffle().ToList();
 								}
-								int quotient = (int) Math.Floor((float) expsToSend / (float) origins.Count());
-								int reste = (int) Math.Floor((float) expsToSend % (float) origins.Count());
-								int[] arrayExpsToSend = new int[origins.Count()];
-								for (int i = 0; i < origins.Count(); i++) {
-									arrayExpsToSend[i] = quotient;
+								Dictionary<Celestial, int> originExps = new();
+								int quot = (int) Math.Floor((float) expsToSend / (float) origins.Count());								
+								foreach (var origin in origins) {
+									originExps.Add(origin, quot);
 								}
-								for (int i = 0; i < origins.Count(); i++) {
-									if (i < reste) {
-										arrayExpsToSend[i]++;
-									}
+								int rest = (int) Math.Floor((float) expsToSend % (float) origins.Count());
+								for (int i = 0; i < rest; i++) {
+									originExps[origins[i]]++;
 								}
 								LFBonuses lfBonuses = origins.First().LFBonuses;
-								foreach (var origin in origins) {
-									int expsToSendFromThisOrigin = (int) arrayExpsToSend[origins.IndexOf(origin)];
-									if (origin.Ships.IsEmpty()) {
+								foreach (var origin in originExps.Keys) {
+									int expsToSendFromThisOrigin = originExps[origin];
+									if (expsToSendFromThisOrigin == 0) {
+										continue;
+									}
+									else if (origin.Ships.IsEmpty()) {
 										DoLog(LogLevel.Warning, "Unable to send expeditions: no ships available");
 										continue;
 									} else {
@@ -193,10 +194,7 @@ namespace Tbot.Workers {
 
 											var availableShips = origin.Ships.GetMovableShips();
 											if (SettingsService.IsSettingSet(_tbotInstance.InstanceSettings.Expeditions, "PrimaryToKeep") && (int) _tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep > 0) {
-												availableShips.SetAmount(primaryShip, availableShips.GetAmount(primaryShip) - (long) _tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep);
-												if (availableShips.GetAmount(primaryShip) < 0) {
-													availableShips.SetAmount(primaryShip, 0);
-												}
+												availableShips.SetAmount(primaryShip, Math.Max(0, availableShips.GetAmount(primaryShip) - (long) _tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep));
 											}
 											DoLog(LogLevel.Warning, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)} ({_tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep} must be kept at dock)");
 											fleet = _calculationService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, lfBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
@@ -299,7 +297,8 @@ namespace Tbot.Workers {
 
 											} else {
 												DoLog(LogLevel.Information, "Unable to send expeditions: no expedition slots available.");
-												break;
+												delay = true;
+												return;
 											}
 										}
 									}
