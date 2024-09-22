@@ -320,6 +320,7 @@
 	},
 	"Expeditions": {
 		"Active": true,
+		"IgnoreSleep": false,
 		"MinWaitNextFleet": 5,
 		"MaxWaitNextFleet": 15,
 		"PrimaryShip": "LargeCargo",

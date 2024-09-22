@@ -419,8 +419,14 @@ namespace Tbot.Workers {
 
 			var flightTime = mission switch {
 				Missions.Deploy => fleetPrediction.Time,
-				Missions.Expedition => (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
-				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
+
+				// Use a ternary operator to conditionally handle IgnoreSleep setting
+				Missions.Expedition => (bool) _tbotInstance.InstanceSettings.Expeditions.IgnoreSleep
+					? 1
+					: (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
+
+				// Default case for other missions
+				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity)
 			};
 			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight time (full trip): {TimeSpan.FromSeconds(flightTime).ToString()}");
 			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight fuel: {fleetPrediction.Fuel.ToString()}");
@@ -635,7 +641,7 @@ namespace Tbot.Workers {
 						galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 						foreach (var planet in galaxyInfo.Planets) {
 							if (planet == null) {
-								possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
+								possibleDestinations.Add(new(origin.Coordinate.Galaxy, sys, pos));
 							}
 							pos++;
 						}
