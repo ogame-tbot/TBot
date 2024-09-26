@@ -147,13 +147,18 @@ namespace Tbot.Workers {
 									originExps[origins[i]]++;
 								}
 								LFBonuses lfBonuses = origins.First().LFBonuses;
+								int delayExpedition = 0;
 								foreach (var origin in originExps.Keys) {
 									int expsToSendFromThisOrigin = originExps[origin];
 									if (expsToSendFromThisOrigin == 0) {
-										continue;
+										if (delayExpedition > 0)
+											delayExpedition--;
+										else
+											continue;
 									}
 									else if (origin.Ships.IsEmpty()) {
 										DoLog(LogLevel.Warning, "Unable to send expeditions: no ships available");
+										delayExpedition++;
 										continue;
 									} else {
 										Ships fleet;
@@ -179,16 +184,19 @@ namespace Tbot.Workers {
 											);
 											if (!origin.Ships.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 												DoLog(LogLevel.Warning, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
+												delayExpedition++;
 												continue;
 											}
 										} else {
 											Buildables primaryShip = Buildables.LargeCargo;
 											if (!Enum.TryParse<Buildables>(_tbotInstance.InstanceSettings.Expeditions.PrimaryShip.ToString(), true, out primaryShip)) {
 												DoLog(LogLevel.Warning, "Unable to parse PrimaryShip. Falling back to default LargeCargo");
+												delayExpedition++;
 												primaryShip = Buildables.LargeCargo;
 											}
 											if (primaryShip == Buildables.Null) {
 												DoLog(LogLevel.Warning, "Unable to send expeditions: primary ship is Null");
+												delayExpedition++;
 												continue;
 											}
 
@@ -202,6 +210,7 @@ namespace Tbot.Workers {
 												fleet.SetAmount(primaryShip, (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend);
 												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 													DoLog(LogLevel.Warning, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend}");
+													delayExpedition++;
 													continue;
 												}
 											}
@@ -225,11 +234,13 @@ namespace Tbot.Workers {
 												);
 												if (secondaryToSend < (long) _tbotInstance.InstanceSettings.Expeditions.MinSecondaryToSend) {
 													DoLog(LogLevel.Warning, $"Unable to send expeditions: available {secondaryShip.ToString()} in origin {origin.ToString()} under set number of {(long) _tbotInstance.InstanceSettings.Expeditions.MinSecondaryToSend}");
+													delayExpedition++;
 													continue;
 												} else {
 													fleet.Add(secondaryShip, secondaryToSend);
 													if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 														DoLog(LogLevel.Warning, $"Unable to send expeditions: not enough ships in origin {origin.ToString()}");
+														delayExpedition++;
 														continue;
 													}
 												}
