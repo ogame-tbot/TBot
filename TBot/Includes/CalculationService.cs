@@ -4806,5 +4806,16 @@ namespace Tbot.Includes {
 				.Where(planet => (planet as Planet).Temperature.Max >= minTemperature && (planet as Planet).Temperature.Max <= maxTemperature)
 				.Count();
 		}
+
+		public bool	IsThereMoonHere(List<Celestial> planets, Celestial celestial) {
+			Celestial moon = planets.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) celestial.Coordinate.Galaxy)
+				.Where(c => c.Coordinate.System == (int) celestial.Coordinate.System)
+				.Where(c => c.Coordinate.Position == (int) celestial.Coordinate.Position)
+				.Where(c => c.Coordinate.Type == Celestials.Moon)
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			return moon.ID == 0 ? false: true;
+		}
 	}
 }

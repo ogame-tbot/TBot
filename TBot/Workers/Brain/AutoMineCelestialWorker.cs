@@ -304,14 +304,36 @@ namespace Tbot.Workers.Brain {
 						if ((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Transports.Active && (bool) _tbotInstance.InstanceSettings.Brain.Transports.Active) {
 							_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
 							if (!_calculationService.IsThereTransportTowardsCelestial(celestial, _tbotInstance.UserData.fleets)) {
-								Celestial origin = _tbotInstance.UserData.celestials
+								Celestial origin;
+								if ((bool) _tbotInstance.InstanceSettings.Brain.Transports.CheckMoonOrPlanetFirst && _calculationService.IsThereMoonHere(_tbotInstance.UserData.celestials, celestial)) {
+									origin = _tbotInstance.UserData.celestials
+											.Unique()
+											.Where(c => c.Coordinate.Galaxy == (int) celestial.Coordinate.Galaxy)
+											.Where(c => c.Coordinate.System == (int) celestial.Coordinate.System)
+											.Where(c => c.Coordinate.Position == (int) celestial.Coordinate.Position)
+											.Where(c => c.Coordinate.Type == (celestial.Coordinate.Type == Celestials.Planet ? Celestials.Moon : Celestials.Planet))
+											.SingleOrDefault() ?? new() { ID = 0 };
+								} else {
+									origin = _tbotInstance.UserData.celestials
+											.Unique()
+											.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
+											.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
+											.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
+											.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
+											.SingleOrDefault() ?? new() { ID = 0 };
+								}
+								fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+
+								if (fleetId == (int) SendFleetCode.NotEnoughRessources) {
+									origin = _tbotInstance.UserData.celestials
 										.Unique()
 										.Where(c => c.Coordinate.Galaxy == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Galaxy)
 										.Where(c => c.Coordinate.System == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.System)
 										.Where(c => c.Coordinate.Position == (int) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Position)
 										.Where(c => c.Coordinate.Type == Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.Transports.Origin.Type))
-										.SingleOrDefault() ?? new() { ID = 0 };
-								fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+										.SingleOrDefault() ?? new() { ID = 0 };								
+									fleetId = await _fleetScheduler.HandleMinerTransport(origin, celestial, xCostBuildable, buildable, maxBuildings, maxFacilities, maxLunarFacilities, autoMinerSettings);
+								}
 
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
 									stop = true;

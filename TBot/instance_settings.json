@@ -117,7 +117,8 @@
 				"System": 333,
 				"Position": 8,
 				"Type": "Moon"
-			}
+			},
+			"CheckMoonOrPlanetFirst": true
 		},
 		"AutoMine": {
 			"Active": true,

@@ -9,6 +9,7 @@ namespace TBot.Ogame.Infrastructure.Enums {
 		GenericError = 0,
 		AfterSleepTime = -1,
 		NotEnoughSlots = -2,
-		QuickerToWaitForProduction = -3
+		QuickerToWaitForProduction = -3,
+		NotEnoughRessources = -4		
 	}
 }

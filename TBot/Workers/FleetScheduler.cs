@@ -878,7 +878,7 @@ namespace Tbot.Workers {
 						}
 					} else {
 						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-						return 0;
+						return (int) SendFleetCode.NotEnoughRessources;
 					}
 				}
 			} catch (Exception e) {
@@ -1017,7 +1017,7 @@ namespace Tbot.Workers {
 						}
 					} else {
 						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-						return 0;
+						return (int) SendFleetCode.NotEnoughRessources;
 					}
 				}
 			} catch (Exception e) {
@@ -1129,11 +1129,11 @@ namespace Tbot.Workers {
 					long TotalCri = 0;
 					long TotalDeut = 0;
 					Coordinate destinationCoordinate = new(
-					(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
-						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System,
-						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position,
-						Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
-					);
+						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
+							(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System,
+							(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position,
+							Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
+						);
 					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
 					List<Celestial> celestialsToExclude = _calcService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Exclude, _tbotInstance.UserData.celestials);
 
