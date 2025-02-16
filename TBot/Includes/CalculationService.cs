@@ -366,7 +366,7 @@ namespace Tbot.Includes {
 			int baseConsumption;
 			switch (buildable) {
 				case Buildables.SmallCargo:
-					baseConsumption = 20;
+					baseConsumption = 10;
 					if (impulseDrive >= 5)
 						baseConsumption *= 2;
 					break;
@@ -389,7 +389,7 @@ namespace Tbot.Includes {
 					baseConsumption = 1000;
 					break;
 				case Buildables.Recycler:
-					baseConsumption = 2000;
+					baseConsumption = 300;
 					if (hyperspaceDrive >= 15)
 						baseConsumption *= 3;
 					else if (impulseDrive >= 17)
@@ -4805,6 +4805,17 @@ namespace Tbot.Includes {
 				.Where(planet => planet.Fields.Total >= minSlots)
 				.Where(planet => (planet as Planet).Temperature.Max >= minTemperature && (planet as Planet).Temperature.Max <= maxTemperature)
 				.Count();
+		}
+
+		public bool	IsThereMoonHere(List<Celestial> planets, Celestial celestial) {
+			Celestial moon = planets.Unique()
+				.Where(c => c.Coordinate.Galaxy == (int) celestial.Coordinate.Galaxy)
+				.Where(c => c.Coordinate.System == (int) celestial.Coordinate.System)
+				.Where(c => c.Coordinate.Position == (int) celestial.Coordinate.Position)
+				.Where(c => c.Coordinate.Type == Celestials.Moon)
+				.SingleOrDefault() ?? new() { ID = 0 };
+
+			return moon.ID == 0 ? false: true;
 		}
 	}
 }

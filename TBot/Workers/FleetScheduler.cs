@@ -419,8 +419,14 @@ namespace Tbot.Workers {
 
 			var flightTime = mission switch {
 				Missions.Deploy => fleetPrediction.Time,
-				Missions.Expedition => (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
-				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity),
+
+				// Use a ternary operator to conditionally handle IgnoreSleep setting
+				Missions.Expedition => (bool) _tbotInstance.InstanceSettings.Expeditions.IgnoreSleep
+					? 1
+					: (long) Math.Round((double) (2 * fleetPrediction.Time) + 3600, 0, MidpointRounding.ToPositiveInfinity),
+
+				// Default case for other missions
+				_ => (long) Math.Round((double) (2 * fleetPrediction.Time), 0, MidpointRounding.ToPositiveInfinity)
 			};
 			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight time (full trip): {TimeSpan.FromSeconds(flightTime).ToString()}");
 			_tbotInstance.log(LogLevel.Debug, LogSender.FleetScheduler, $"Calculated flight fuel: {fleetPrediction.Fuel.ToString()}");
@@ -635,7 +641,7 @@ namespace Tbot.Workers {
 						galaxyInfo = await _ogameService.GetGalaxyInfo(origin.Coordinate.Galaxy, sys);
 						foreach (var planet in galaxyInfo.Planets) {
 							if (planet == null) {
-								possibleDestinations.Add(new(origin.Coordinate.Galaxy, origin.Coordinate.System, pos));
+								possibleDestinations.Add(new(origin.Coordinate.Galaxy, sys, pos));
 							}
 							pos++;
 						}
@@ -783,7 +789,6 @@ namespace Tbot.Workers {
 						tempShips.Add(preferredShip, 1);
 						var flightPrediction = _calcService.CalcFleetPrediction(origin.Coordinate, destination.Coordinate, tempShips, Missions.Transport, Speeds.HundredPercent, _tbotInstance.UserData.researches, _tbotInstance.UserData.serverData, origin.LFBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.allianceClass);
 						long flightTime = flightPrediction.Time;
-						idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						var availableShips = origin.Ships.GetAmount(preferredShip);
 						if (buildable != Buildables.Null) {
 							int level = _calcService.GetNextLevel(destination, buildable);
@@ -836,8 +841,19 @@ namespace Tbot.Workers {
 							idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						}
 
-						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
-							ships.Add(preferredShip, idealShips);
+						bool doMultipleTransports = (idealShips > origin.Ships.GetAmount(preferredShip) && (bool) _tbotInstance.InstanceSettings.Brain.Transports.DoMultipleTransportIsNotEnoughShipButSamePosition) &&
+							(origin.Coordinate.Galaxy == destination.Coordinate.Galaxy &&
+							origin.Coordinate.System == destination.Coordinate.System &&
+							origin.Coordinate.Position == destination.Coordinate.Position) ?
+								true:
+								false;
+
+						if (idealShips <= origin.Ships.GetAmount(preferredShip) || (doMultipleTransports && !origin.Ships.IsEmpty())) {
+							if (doMultipleTransports) {
+								ships.Add(preferredShip, origin.Ships.GetAmount(preferredShip));
+							} else {
+								ships.Add(preferredShip, idealShips);
+							}
 
 							if (destination.Coordinate.Type == Celestials.Planet) {
 								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourceSettings);
@@ -877,8 +893,8 @@ namespace Tbot.Workers {
 							return 0;
 						}
 					} else {
-						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-						return 0;
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in {origin.ToString()}. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+						return (int) SendFleetCode.NotEnoughRessources;
 					}
 				}
 			} catch (Exception e) {
@@ -975,8 +991,19 @@ namespace Tbot.Workers {
 							idealShips = _calcService.CalcShipNumberForPayload(missingResources, preferredShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
 						}
 
-						if (idealShips <= origin.Ships.GetAmount(preferredShip)) {
-							ships.Add(preferredShip, idealShips);
+						bool doMultipleTransports = (idealShips > origin.Ships.GetAmount(preferredShip) && (bool) _tbotInstance.InstanceSettings.Brain.Transports.DoMultipleTransportIsNotEnoughShipButSamePosition) &&
+							(origin.Coordinate.Galaxy == destination.Coordinate.Galaxy &&
+							origin.Coordinate.System == destination.Coordinate.System &&
+							origin.Coordinate.Position == destination.Coordinate.Position) ?
+								true:
+								false;
+						
+						if (idealShips <= origin.Ships.GetAmount(preferredShip) || (doMultipleTransports && !origin.Ships.IsEmpty())) {
+							if (doMultipleTransports) {
+								ships.Add(preferredShip, origin.Ships.GetAmount(preferredShip));
+							} else {
+								ships.Add(preferredShip, idealShips);
+							}
 
 							if (destination.Coordinate.Type == Celestials.Planet) {
 								destination = await _tbotOgameBridge.UpdatePlanet(destination, UpdateTypes.ResourceSettings);
@@ -1016,8 +1043,8 @@ namespace Tbot.Workers {
 							return 0;
 						}
 					} else {
-						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in origin. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
-						return 0;
+						_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping transport: not enough resources in {origin.ToString()}. Needed: {missingResources.TransportableResources} - Available: {origin.Resources.TransportableResources}");
+						return (int) SendFleetCode.NotEnoughRessources;
 					}
 				}
 			} catch (Exception e) {
@@ -1115,8 +1142,6 @@ namespace Tbot.Workers {
 		}
 
 		public async Task<RepatriateCode> CollectImpl(bool fromTelegram) {
-			bool stop = false;
-			bool delay = false;
 			try {
 				_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, "Repatriating resources...");
 
@@ -1128,16 +1153,35 @@ namespace Tbot.Workers {
 					long TotalMet = 0;
 					long TotalCri = 0;
 					long TotalDeut = 0;
-					Coordinate destinationCoordinate = new(
-					(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
-						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System,
-						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position,
-						Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
-					);
+					bool samePosition = (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.TargetAssociateMoon;
+					Coordinate destinationCoordinate = new();
+					if (!samePosition) {
+						destinationCoordinate = new(
+						(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Galaxy,
+							(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.System,
+							(int) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Position,
+							Enum.Parse<Celestials>((string) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.Target.Type)
+						);
+					}
 					List<Celestial> newCelestials = _tbotInstance.UserData.celestials.ToList();
 					List<Celestial> celestialsToExclude = _calcService.ParseCelestialsList(_tbotInstance.InstanceSettings.Brain.AutoRepatriate.Exclude, _tbotInstance.UserData.celestials);
+					List<Celestial> celestialList = _tbotInstance.UserData.celestials.ToList();
+					if (!samePosition)
+						celestialList = (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.RandomOrder ? celestialList.Shuffle().ToList() : celestialList.OrderBy(c => _calcService.CalcDistance(c.Coordinate, destinationCoordinate, _tbotInstance.UserData.serverData)).ToList();
 
-					foreach (Celestial celestial in (bool) _tbotInstance.InstanceSettings.Brain.AutoRepatriate.RandomOrder ? _tbotInstance.UserData.celestials.Shuffle().ToList() : _tbotInstance.UserData.celestials.OrderBy(c => _calcService.CalcDistance(c.Coordinate, destinationCoordinate, _tbotInstance.UserData.serverData)).ToList()) {
+					foreach (Celestial celestial in celestialList) {
+						if (samePosition) {
+							if (celestial.Coordinate.Type == Celestials.Planet && !_calcService.IsThereMoonHere(_tbotInstance.UserData.celestials, celestial)) {
+								_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {celestial.ToString()}: There is no moon.");
+								continue;
+							}
+							destinationCoordinate = new(
+								(int) celestial.Coordinate.Galaxy,
+								(int) celestial.Coordinate.System,
+								(int) celestial.Coordinate.Position,
+								celestial.Coordinate.Type == Celestials.Planet ? Celestials.Moon : Celestials.Planet
+							);
+						}
 						if (celestialsToExclude.Has(celestial)) {
 							_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Skipping {celestial.ToString()}: celestial in exclude list.");
 							continue;
@@ -1196,15 +1240,13 @@ namespace Tbot.Workers {
 								ships.Add(preferredShip, tempCelestial.Ships.GetAmount(preferredShip));
 							}
 							payload = _calcService.CalcMaxTransportableResources(ships, payload, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, tempCelestial.LFBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
-
+							
 							if (payload.TotalResources > 0) {
 								var fleetId = await SendFleet(tempCelestial, ships, destinationCoordinate, Missions.Transport, Speeds.HundredPercent, payload);
 								if (fleetId == (int) SendFleetCode.AfterSleepTime) {
-									stop = true;
 									return RepatriateCode.Stop;
 								}
 								if (fleetId == (int) SendFleetCode.NotEnoughSlots) {
-									delay = true;
 									return RepatriateCode.Delay;
 								}
 								TotalMet += payload.Metal;

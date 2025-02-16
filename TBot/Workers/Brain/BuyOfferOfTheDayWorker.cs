@@ -25,8 +25,6 @@ namespace Tbot.Workers.Brain {
 			_tbotOgameBridge = tbotOgameBridge;
 		}
 		protected override async Task Execute() {
-			bool stop = true;
-
 			_tbotInstance.log(LogLevel.Information, GetLogSender(), "Buying offer of the day...");
 			OfferOfTheDayStatus sts = await _ogameService.BuyOfferOfTheDay();
 
@@ -36,23 +34,16 @@ namespace Tbot.Workers.Brain {
 				_tbotInstance.log(LogLevel.Information, GetLogSender(), "Offer of the day already bought.");
 			} else {
 				_tbotInstance.log(LogLevel.Information, GetLogSender(), "Error buying Offer of the day. Already bought?");
-				stop = false;
 			}
 			
-			
-			if (stop) {
-				_tbotInstance.log(LogLevel.Information, GetLogSender(), $"Stopping BuyOfferOfTheDay.");
-				await EndExecution();
-			} else {
-				var time = await _tbotOgameBridge.GetDateTime();
-				var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
-				if (interval <= 0)
-					interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
-				var newTime = time.AddMilliseconds(interval);
-				ChangeWorkerPeriod(interval);
-				_tbotInstance.log(LogLevel.Information, GetLogSender(), $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
-				await _tbotOgameBridge.CheckCelestials();
-			}
+			var time = await _tbotOgameBridge.GetDateTime();
+			var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.Brain.BuyOfferOfTheDay.CheckIntervalMax);
+			if (interval <= 0)
+				interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+			var newTime = time.AddMilliseconds(interval);
+			ChangeWorkerPeriod(interval);
+			_tbotInstance.log(LogLevel.Information, GetLogSender(), $"Next BuyOfferOfTheDay check at {newTime.ToString()}");
+			await _tbotOgameBridge.CheckCelestials();
 		}
 		public override bool IsWorkerEnabledBySettings() {
 			try {

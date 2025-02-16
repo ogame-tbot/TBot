@@ -21,7 +21,7 @@
 			"Height": 1080,
 			"Timezone": "Europe/London",
 			"Lang": "en"
-		}
+		  }
 	},
 	"General": {
 		"Host": "localhost",
@@ -107,16 +107,35 @@
 	},
 	"Brain": {
 		"Active": true,
+		"SlotPriorityLevel": 2,
 		"Transports": {
 			"Active": true,
 			"CargoType": "SmallCargo",
 			"DeutToLeave": 1000000,
 			"RoundResources": true,
+			"SendToTheMoonIfPossible": true,
 			"Origin": {
 				"Galaxy": 3,
 				"System": 333,
 				"Position": 8,
 				"Type": "Moon"
+			},
+			"MaxSlots": 10,
+			"CheckMoonOrPlanetFirst": true,
+			"DoMultipleTransportIsNotEnoughShipButSamePosition": true,
+			"MultipleOrigins": {
+				"Active": false,
+				"OnlyFromMoons": true,
+				"MinimumResourcesToSend": 10000000,
+				"PriorityToProximityOverQuantity": true,
+				"Exclude": [
+					{
+						"Galaxy": 1,
+						"System": 1,
+						"Position": 1,
+						"Type": "Planet"
+					}
+				]			
 			}
 		},
 		"AutoMine": {
@@ -298,6 +317,7 @@
 				"Position": 8,
 				"Type": "Moon"
 			},
+			"TargetAssociateMoon": true,
 			"CargoType": "LargeCargo",
 			"RandomOrder": true,
 			"SkipIfIncomingTransport": true,
@@ -320,6 +340,8 @@
 	},
 	"Expeditions": {
 		"Active": true,
+		"SlotPriorityLevel": 1,
+		"IgnoreSleep": false,
 		"MinWaitNextFleet": 5,
 		"MaxWaitNextFleet": 15,
 		"PrimaryShip": "LargeCargo",
@@ -365,6 +387,7 @@
 	},
 	"AutoFarm": {
 		"Active": true,
+		"SlotPriorityLevel": 0,
 		"ExcludeMoons": true,
 		"ScanRange": [
 			{
@@ -420,6 +443,7 @@
 	},
 	"AutoColonize": {
 		"Active": true,
+		"SlotPriorityLevel": 0,
 		"Origin": {
 			"Galaxy": 5,
 			"System": 64,
@@ -463,6 +487,7 @@
 	},
 	"AutoDiscovery": {
 		"Active": true,
+		"SlotPriorityLevel": 0,
 		"Origin": {
 			"Galaxy": 5,
 			"System": 64,

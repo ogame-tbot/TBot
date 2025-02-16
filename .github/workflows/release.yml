@@ -126,7 +126,7 @@ jobs:
     - name: Build ogamed osx-arm64
       run: | 
         cd ${{ github.workspace }}/ogame/cmd/ogamed
-        env GOOS=darwin GOARCH=amd64 go build -o ogamed
+        env GOOS=darwin GOARCH=arm64 go build -o ogamed
         cd ${{ github.workspace }}
         mv ${{ github.workspace }}/ogame/cmd/ogamed/ogamed ${{ github.workspace }}/publish/osx-arm64/
         chmod +x ${{ github.workspace }}/publish/osx-arm64/TBot

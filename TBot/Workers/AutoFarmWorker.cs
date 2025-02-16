@@ -334,13 +334,11 @@ namespace Tbot.Workers {
 		protected override async Task Execute() {
 			bool stop = false;
 			try {
-
 				_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, "Running autofarm...");
-
 				if ((bool) _tbotInstance.InstanceSettings.AutoFarm.Active) {
-					// If not enough slots are free, the farmer cannot run.
+					// If not enough slots are free, the farmer cannot run.					
 					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
-
+					
 					int freeSlots = _tbotInstance.UserData.slots.Free;
 					int slotsToLeaveFree = (int) _tbotInstance.InstanceSettings.AutoFarm.SlotsToLeaveFree;
 					if (freeSlots <= slotsToLeaveFree) {
@@ -582,6 +580,83 @@ namespace Tbot.Workers {
 					/// Process reports.
 					await AutoFarmProcessReports();
 
+					_tbotInstance.UserData.slots = await _tbotOgameBridge.UpdateSlots();
+					_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+					List<RankSlotsPriority> rankSlotsPriority = new();
+					RankSlotsPriority BrainRank = new(Feature.BrainAutoMine,
+						(int) _tbotInstance.InstanceSettings.Brain.SlotPriorityLevel,
+						((bool) _tbotInstance.InstanceSettings.Brain.Active &&
+							(bool) _tbotInstance.InstanceSettings.Brain.Transports.Active && 
+							((bool) _tbotInstance.InstanceSettings.Brain.AutoMine.Active ||
+								(bool) _tbotInstance.InstanceSettings.Brain.AutoResearch.Active ||
+								(bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoMine.Active ||
+								(bool) _tbotInstance.InstanceSettings.Brain.LifeformAutoResearch.Active)),
+						(int) _tbotInstance.InstanceSettings.Brain.Transports.MaxSlots,
+						(int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Transport).Count());
+					RankSlotsPriority ExpeditionsRank = new(Feature.Expeditions,
+						(int) _tbotInstance.InstanceSettings.Expeditions.SlotPriorityLevel,
+						(bool) _tbotInstance.InstanceSettings.Expeditions.Active,
+						(int) _tbotInstance.UserData.slots.ExpTotal,
+						(int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Expedition).Count());
+					RankSlotsPriority AutoFarmRank = new(Feature.AutoFarm,
+						(int) _tbotInstance.InstanceSettings.AutoFarm.SlotPriorityLevel,
+						(bool) _tbotInstance.InstanceSettings.AutoFarm.Active,
+						(int) _tbotInstance.InstanceSettings.AutoFarm.MaxSlots,
+						(int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Attack).Count());
+					RankSlotsPriority ColonizeRank = new(Feature.Colonize,
+						(int) _tbotInstance.InstanceSettings.AutoColonize.SlotPriorityLevel,
+						(bool) _tbotInstance.InstanceSettings.AutoColonize.Active,
+						(bool) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.Active ?
+							(int) _tbotInstance.InstanceSettings.AutoColonize.IntensiveResearch.MaxSlots :
+							1,
+						(int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Colonize).Count());
+					RankSlotsPriority AutoDiscoveryRank = new(Feature.AutoDiscovery,
+						(int) _tbotInstance.InstanceSettings.AutoDiscovery.SlotPriorityLevel,
+						(bool) _tbotInstance.InstanceSettings.AutoDiscovery.Active,
+						(int) _tbotInstance.InstanceSettings.AutoDiscovery.MaxSlots,
+						(int) _tbotInstance.UserData.fleets.Where(fleet => fleet.Mission == Missions.Discovery).Count());
+					RankSlotsPriority presentFeature = AutoFarmRank;
+					rankSlotsPriority.Add(BrainRank);
+					rankSlotsPriority.Add(ExpeditionsRank);
+					rankSlotsPriority.Add(AutoFarmRank);
+					rankSlotsPriority.Add(ColonizeRank);
+					rankSlotsPriority.Add(AutoDiscoveryRank);
+					rankSlotsPriority = rankSlotsPriority.OrderBy(r => r.Rank).ToList();
+					string msg = "";
+					int reservedSlots = 0;
+					int MaxSlots = presentFeature.MaxSlots - presentFeature.SlotsUsed;
+					int otherSlots = (int) _tbotInstance.UserData.fleets.Where(fleet => (fleet.Mission != Missions.Transport &&
+							fleet.Mission != Missions.Expedition &&
+							fleet.Mission != Missions.Attack &&
+							fleet.Mission != Missions.Spy &&
+							fleet.Mission != Missions.Colonize &&
+							fleet.Mission != Missions.Discovery)
+						).Count();
+					//_tbotInstance.log(LogLevel.Warning, LogSender.Main, $"Main -> {presentFeature.ToString()}");
+					foreach (RankSlotsPriority feature in rankSlotsPriority) {
+						if (feature == presentFeature)
+							continue;
+						//_tbotInstance.log(LogLevel.Warning, LogSender.Main, $"{feature.ToString()}");
+						if (feature.Active && feature.HasPriorityOn(presentFeature)) {
+							msg = $"{msg}, {feature.MaxSlots} are reserved for {feature.Feature.ToString()}";
+							reservedSlots += feature.MaxSlots;
+						} else {
+							otherSlots += feature.SlotsUsed;
+						}
+					}
+					if (otherSlots > 0)
+						msg = $"{msg}, {otherSlots} are used for Other";
+					int tempsValue = _tbotInstance.UserData.slots.Total - (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree - reservedSlots - otherSlots - presentFeature.SlotsUsed;
+					tempsValue = tempsValue < 0 ? 0 : tempsValue;
+					DoLog(LogLevel.Information, $"{presentFeature.MaxSlots} slots are reserved for {presentFeature.Feature.ToString()}. Total slots: {_tbotInstance.UserData.slots.Total}. {_tbotInstance.InstanceSettings.General.SlotsToLeaveFree} must remain free{msg}, {tempsValue} are availables");
+					if (reservedSlots + otherSlots > _tbotInstance.UserData.slots.Total - (int) _tbotInstance.InstanceSettings.General.SlotsToLeaveFree) {
+						DoLog(LogLevel.Information, $"Unable to send fleet for {presentFeature.Feature.ToString()}, too many slots are already used/reserved");
+						MaxSlots = 0;
+					} else if (MaxSlots > tempsValue) {
+						MaxSlots = tempsValue;
+						DoLog(LogLevel.Information, $"Less slots available than {presentFeature.Feature.ToString()}, many slots are already used/reserved -> steping back to {MaxSlots} instead of {presentFeature.MaxSlots}");
+					}
+
 					/// Send attacks.
 					List<FarmTarget> attackTargets;
 					if (_tbotInstance.InstanceSettings.AutoFarm.PreferedResource == "Metal")
@@ -625,7 +700,7 @@ namespace Tbot.Workers {
 						attackTargetsCount++;
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacking target {attackTargetsCount}/{attackTargets.Count()} at {target.Celestial.Coordinate.ToString()} for {target.Report.Loot(_tbotInstance.UserData.userInfo.Class).TransportableResources}.");
 						var loot = target.Report.Loot(_tbotInstance.UserData.userInfo.Class);
-						Celestial tempCelestial = _tbotInstance.UserData.celestials.Where(c => c.Coordinate.Type == Celestials.Moon).First();
+						Celestial tempCelestial = _tbotInstance.UserData.celestials.Where(c => c.Coordinate.Type == Celestials.Planet).First();
 						tempCelestial = await _tbotOgameBridge.UpdatePlanet(tempCelestial, UpdateTypes.LFBonuses);
 						float cargoBonus = tempCelestial.LFBonuses.GetShipCargoBonus(cargoShip);
 						var numCargo = _calculationService.CalcShipNumberForPayload(loot, cargoShip, _tbotInstance.UserData.researches.HyperspaceTechnology, _tbotInstance.UserData.serverData, cargoBonus, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
@@ -808,7 +883,7 @@ namespace Tbot.Workers {
 							.Where(fleet => fleet.Mission == Missions.Attack)
 							.ToList();
 
-						if (_tbotInstance.UserData.slots.Free > slotsToLeaveFree && slotUsed.Count() < (int) _tbotInstance.InstanceSettings.AutoFarm.MaxSlots) {
+						if (_tbotInstance.UserData.slots.Free > slotsToLeaveFree && slotUsed.Count() < MaxSlots) {
 							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attacking {target.ToString()} from {fromCelestial} with {numCargo} {cargoShip.ToString()}.");
 							Ships ships = new();
 							fromCelestial = await _tbotOgameBridge.UpdatePlanet(fromCelestial, UpdateTypes.LFBonuses);
@@ -850,7 +925,7 @@ namespace Tbot.Workers {
 							target.State = FarmState.AttackSent;
 							_tbotInstance.UserData.farmTargets.Add(target);
 						} else {
-							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}: {slotUsed.Count()} slots used by AutoFarm, {_tbotInstance.InstanceSettings.AutoFarm.MaxSlots} slots usable by AutoFarm, {_tbotInstance.UserData.slots.Free} slots free, {slotsToLeaveFree} must remain free.");
+							_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Unable to attack {target.Celestial.Coordinate}: {slotUsed.Count()} slots used by AutoFarm, {MaxSlots} slots usable by AutoFarm, {_tbotInstance.UserData.slots.Free} slots free, {_tbotInstance.InstanceSettings.General.SlotsToLeaveFree} must remain free.");
 							return;
 						}
 					}
@@ -867,9 +942,21 @@ namespace Tbot.Workers {
 						await EndExecution();
 					} else {
 						var time = await _tbotOgameBridge.GetDateTime();
-						var interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMax);
-						if (interval <= 0)
-							interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						_tbotInstance.UserData.fleets = await _fleetScheduler.UpdateFleets();
+						List<Fleet> orderedFleets = _tbotInstance.UserData.fleets
+							.Where(fleet => fleet.Mission == Missions.Attack)
+							.ToList();
+						orderedFleets = orderedFleets
+							.OrderByDescending(fleet => fleet.BackIn)
+							.ToList();
+						long interval;
+						try {
+							interval = (int) ((1000 * orderedFleets.First().BackIn) + RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds));
+						} catch {
+							interval = RandomizeHelper.CalcRandomInterval((int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMin, (int) _tbotInstance.InstanceSettings.AutoFarm.CheckIntervalMax);
+							if (interval <= 0)
+								interval = RandomizeHelper.CalcRandomInterval(IntervalType.SomeSeconds);
+						}
 						var newTime = time.AddMilliseconds(interval);
 						ChangeWorkerPeriod(interval);
 						_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Next autofarm check at {newTime.ToString()}");
@@ -925,6 +1012,9 @@ namespace Tbot.Workers {
 							continue;
 						}
 
+						Buildables cargoShip;
+						Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.AutoFarm.CargoType, true, out cargoShip);
+						bool isUsingProbes = cargoShip == Buildables.EspionageProbe && _tbotInstance.UserData.serverData.ProbeCargo == 1 ? true : false;
 						newFarmTarget.Report = report;
 						if (_tbotInstance.InstanceSettings.AutoFarm.PreferedResource == "Metal" && report.Loot(_tbotInstance.UserData.userInfo.Class).Metal > _tbotInstance.InstanceSettings.AutoFarm.MinimumResources
 							|| _tbotInstance.InstanceSettings.AutoFarm.PreferedResource == "Crystal" && report.Loot(_tbotInstance.UserData.userInfo.Class).Crystal > _tbotInstance.InstanceSettings.AutoFarm.MinimumResources
@@ -939,7 +1029,7 @@ namespace Tbot.Workers {
 									newFarmTarget.State = FarmState.ProbesRequired;
 
 								_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(_tbotInstance.UserData.userInfo.Class)}");
-							} else if (report.IsDefenceless()) {
+							} else if (report.IsDefenceless(isUsingProbes)) {
 								newFarmTarget.State = FarmState.AttackPending;
 								_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(_tbotInstance.UserData.userInfo.Class)}");
 							} else {
