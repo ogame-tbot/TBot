@@ -1012,6 +1012,9 @@ namespace Tbot.Workers {
 							continue;
 						}
 
+						Buildables cargoShip;
+						Enum.TryParse<Buildables>((string) _tbotInstance.InstanceSettings.AutoFarm.CargoType, true, out cargoShip);
+						bool isUsingProbes = cargoShip == Buildables.EspionageProbe && _tbotInstance.UserData.serverData.ProbeCargo == 1 ? true : false;
 						newFarmTarget.Report = report;
 						if (_tbotInstance.InstanceSettings.AutoFarm.PreferedResource == "Metal" && report.Loot(_tbotInstance.UserData.userInfo.Class).Metal > _tbotInstance.InstanceSettings.AutoFarm.MinimumResources
 							|| _tbotInstance.InstanceSettings.AutoFarm.PreferedResource == "Crystal" && report.Loot(_tbotInstance.UserData.userInfo.Class).Crystal > _tbotInstance.InstanceSettings.AutoFarm.MinimumResources
@@ -1026,7 +1029,7 @@ namespace Tbot.Workers {
 									newFarmTarget.State = FarmState.ProbesRequired;
 
 								_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Need more probes on {report.Coordinate}. Loot: {report.Loot(_tbotInstance.UserData.userInfo.Class)}");
-							} else if (report.IsDefenceless()) {
+							} else if (report.IsDefenceless(isUsingProbes)) {
 								newFarmTarget.State = FarmState.AttackPending;
 								_tbotInstance.log(LogLevel.Information, LogSender.AutoFarm, $"Attack pending on {report.Coordinate}. Loot: {report.Loot(_tbotInstance.UserData.userInfo.Class)}");
 							} else {

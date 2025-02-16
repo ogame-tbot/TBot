@@ -281,8 +281,13 @@ namespace Tbot.Workers {
 											}
 											DoLog(LogLevel.Warning, $"Available {primaryShip.ToString()} in origin {origin.ToString()}: {availableShips.GetAmount(primaryShip)} ({_tbotInstance.InstanceSettings.Expeditions.PrimaryToKeep} must be kept at dock)");
 											fleet = _calculationService.CalcFullExpeditionShips(availableShips, primaryShip, expsToSendFromThisOrigin, _tbotInstance.UserData.serverData, _tbotInstance.UserData.researches, lfBonuses, _tbotInstance.UserData.userInfo.Class, _tbotInstance.UserData.serverData.ProbeCargo);
-											if (fleet.GetAmount(primaryShip) < (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend) {
+											if (fleet.GetAmount(primaryShip) < (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend || availableShips.GetAmount(primaryShip) < 1) {
 												fleet.SetAmount(primaryShip, (long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend);
+												if (availableShips.GetAmount(primaryShip) < 1) {
+													DoLog(LogLevel.Warning, $"Unable to send expeditions: no ships available in origin {origin.ToString()}");
+													delayExpedition++;
+													continue;
+												}
 												if (!availableShips.HasAtLeast(fleet, expsToSendFromThisOrigin)) {
 													DoLog(LogLevel.Warning, $"Unable to send expeditions: available {primaryShip.ToString()} in origin {origin.ToString()} under set min number of {(long) _tbotInstance.InstanceSettings.Expeditions.MinPrimaryToSend}");
 													delayExpedition++;

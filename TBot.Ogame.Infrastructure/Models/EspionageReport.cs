@@ -112,9 +112,32 @@ namespace TBot.Ogame.Infrastructure.Models {
 		/// Get whether or not the scanned planet has any defence (either ships or defence) against an attack.
 		/// </summary>
 		/// <returns>Returns true if the target is defenceless, false otherwise.</returns>
-		public bool IsDefenceless() {
-			if (HasDefensesInformation && HasFleetInformation) {
+		public bool IsDefenceless(bool isUsingProbes = false) {
+			if (HasDefensesInformation && HasFleetInformation && !isUsingProbes) {
 				return LightFighter == null
+					&& HeavyFighter == null
+					&& Cruiser == null
+					&& Battleship == null
+					&& Battlecruiser == null
+					&& Bomber == null
+					&& Destroyer == null
+					&& Deathstar == null
+					&& SmallCargo == null
+					&& LargeCargo == null
+					&& Recycler == null
+					&& Reaper == null
+					&& Pathfinder == null
+					&& RocketLauncher == null
+					&& LightLaser == null
+					&& HeavyLaser == null
+					&& GaussCannon == null
+					&& IonCannon == null
+					&& PlasmaTurret == null
+					&& SmallShieldDome == null
+					&& LargeShieldDome == null;
+			} else if (HasDefensesInformation && HasFleetInformation && isUsingProbes) {
+				return SolarSatellite == null
+					&& LightFighter == null
 					&& HeavyFighter == null
 					&& Cruiser == null
 					&& Battleship == null
