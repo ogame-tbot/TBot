@@ -119,7 +119,7 @@ namespace Tbot.Workers.Brain {
 							_tbotInstance.UserData.nextDOIR = DOIR;
 						}
 					}
-					if (celestial.Coordinate.Type == Celestials.Planet && celestial.Fields.Built == 0 && (bool) _tbotInstance.InstanceSettings.AutoColonize.Abandon.Active) {
+					if (_tbotInstance.UserData.celestials.Count > 1 && celestial.Coordinate.Type == Celestials.Planet && celestial.Fields.Built == 0 && (bool) _tbotInstance.InstanceSettings.AutoColonize.Abandon.Active) {
 						if (_calculationService.ShouldAbandon(celestial as Planet, celestial.Fields.Total, abaCelestial.Temperature.Max, fieldsSettings, temperaturesSettings)) {
 							DoLog(LogLevel.Debug, $"Skipping {celestial.ToString()}: planet should be abandoned.");
 						} else {

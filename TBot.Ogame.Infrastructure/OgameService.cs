@@ -156,7 +156,7 @@ namespace TBot.Ogame.Infrastructure {
 					args += $" --device-timezone={device.Timezone}";
 				}
 				if (device.Lang != "") {
-					args += $" --device-lang={device.Lang}";
+					args += $" --device-lang=\"{device.Lang}\"";
 				}
 
 				ogameProc = new Process();
