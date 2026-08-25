@@ -15,7 +15,8 @@ namespace Tbot.Services {
 		event EventHandler OnError;
 		Task Init(string settingPath,
 			string alias,
-			ITelegramMessenger telegramHandler);
+			ITelegramMessenger telegramHandler,
+			IDiscordMessenger discordHandler = null);
 
 		ValueTask DisposeAsync();
 
@@ -29,6 +30,7 @@ namespace Tbot.Services {
 		Task InitializeFeature(Feature feat);
 		Task StopFeature(Feature feat);
 		bool IsFeatureRunning(Feature feat);
+		bool IsNotificationEnabled(dynamic featureSettings);
 		Task SendTelegramMessage(string fmt);
 		Task<bool> TelegramSwitch(decimal speed, Celestial attacked = null, bool fromTelegram = false);
 		Task SleepNow(DateTime WakeUpTime);

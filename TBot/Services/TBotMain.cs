@@ -41,6 +41,7 @@ namespace Tbot.Services {
 		private readonly SemaphoreSlim _settingsReloadSemaphore = new SemaphoreSlim(1, 1);
 
 		private ITelegramMessenger telegramMessenger;
+		private IDiscordMessenger discordMessenger;
 
 		private bool loggedIn = false;
 		private Dictionary<string, Timer> timers = new();
@@ -228,13 +229,15 @@ namespace Tbot.Services {
 
 		public async Task Init(string settingPath,
 			string alias,
-			ITelegramMessenger telegramHandler) {
+			ITelegramMessenger telegramHandler,
+			IDiscordMessenger discordHandler = null) {
 
 			InstanceSettingsPath = settingPath;
 			InstanceAlias = alias;
 			InstanceSettings = await SettingsService.GetSettings(settingPath);
 
 			telegramMessenger = telegramHandler;
+			discordMessenger = discordHandler;
 			try {
 				await InitializeOgame();
 			} catch (Exception e) {
@@ -280,6 +283,9 @@ namespace Tbot.Services {
 			if (telegramMessenger != null) {
 				await telegramMessenger.AddTbotInstance(this, _tbotOgameBridge);
 			}
+			if (discordMessenger != null) {
+				await discordMessenger.AddTbotInstance(this, _tbotOgameBridge);
+			}
 			userData.lastDOIR = 0;
 			userData.nextDOIR = 0;
 
@@ -312,6 +318,10 @@ namespace Tbot.Services {
 			if (telegramMessenger != null) {
 				log(LogLevel.Information, LogSender.Tbot, "Removing instance from telegram...");
 				await telegramMessenger.RemoveTBotInstance(this);
+			}
+			if (discordMessenger != null) {
+				log(LogLevel.Information, LogSender.Tbot, "Removing instance from Discord...");
+				await discordMessenger.RemoveTBotInstance(this);
 			}
 
 			// Deinitialize workers
@@ -575,12 +585,52 @@ namespace Tbot.Services {
 			}
 		}
 
+		public void RemoveDiscordMessenger() {
+			if (discordMessenger != null) {
+				log(LogLevel.Information, LogSender.Tbot, "Removing Discord messenger from current instance...");
+				discordMessenger = null;
+			}
+		}
+
+		public bool IsNotificationEnabled(dynamic featureSettings) {
+			try {
+				bool telegramOn = telegramMessenger != null
+					&& SettingsService.IsSettingSet(featureSettings, "TelegramMessenger")
+					&& SettingsService.IsSettingSet(featureSettings.TelegramMessenger, "Active")
+					&& (bool) featureSettings.TelegramMessenger.Active;
+				bool discordOn = discordMessenger != null;
+				if (discordOn && IsDiscordMuted(featureSettings)) {
+					discordOn = false;
+				}
+				return telegramOn || discordOn;
+			} catch (Exception) {
+				return discordMessenger != null;
+			}
+		}
+
+		private static bool IsDiscordMuted(dynamic featureSettings) {
+			if (SettingsService.IsSettingSet(featureSettings, "DiscordMessenger")
+				&& SettingsService.IsSettingSet(featureSettings.DiscordMessenger, "Active")
+				&& (bool) featureSettings.DiscordMessenger.Active == false) {
+				return true;
+			}
+			if (SettingsService.IsSettingSet(featureSettings, "DiscordWebhook")
+				&& SettingsService.IsSettingSet(featureSettings.DiscordWebhook, "Active")
+				&& (bool) featureSettings.DiscordWebhook.Active == false) {
+				return true;
+			}
+			return false;
+		}
+
 		public async Task SendTelegramMessage(string fmt) {
-			// We may consider any filter logic to be put here IE telegram notification disabled from settings
+			string player = userData?.userInfo?.PlayerName ?? InstanceAlias;
+			string server = userData?.serverData?.Name ?? "";
+			string prefix = $"[{player}@{server}]";
 			if (telegramMessenger != null) {
-				string finalStr = $"<code>[{userData.userInfo.PlayerName}@{userData.serverData.Name}]</code>\n" +
-					fmt;
-				await telegramMessenger.SendMessage(finalStr);
+				await telegramMessenger.SendMessage($"<code>{prefix}</code>\n{fmt}");
+			}
+			if (discordMessenger != null) {
+				await discordMessenger.SendMessage($"`{prefix}`\n{fmt}");
 			}
 		}
 
@@ -1317,7 +1367,7 @@ namespace Tbot.Services {
 							timers.GetValueOrDefault("SleepModeTimer").Change(interval, Timeout.Infinite);
 							delayed = true;
 							log(LogLevel.Information, LogSender.SleepMode, $"Fleets active, Next check at {newTime.ToString()}");
-							if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active) {
+							if (IsNotificationEnabled(InstanceSettings.SleepMode)) {
 								await SendTelegramMessage($"Fleets active, Next check at {newTime.ToString()}");
 							}
 						}
@@ -1342,7 +1392,7 @@ namespace Tbot.Services {
 						}
 					}
 
-					if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active && state != null) {
+					if (IsNotificationEnabled(InstanceSettings.SleepMode) && state != null) {
 						await SendTelegramMessage($"Going to sleep, Waking Up at {state.ToString()}");
 					}
 					if (userData.isSleeping == false) {
@@ -1413,7 +1463,7 @@ namespace Tbot.Services {
 		private async Task WakeUpAsync(object state) {
 			try {
 				log(LogLevel.Information, LogSender.SleepMode, "Waking Up...");
-				if ((bool) InstanceSettings.SleepMode.TelegramMessenger.Active && state != null) {
+				if (IsNotificationEnabled(InstanceSettings.SleepMode) && state != null) {
 					await SendTelegramMessage($"Waking up");
 					await SendTelegramMessage($"Going to sleep at {state.ToString()}");
 				}

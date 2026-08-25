@@ -33,10 +33,13 @@ namespace Tbot.Services {
 		private readonly IOgameService _ogameService;
 		private readonly ILoggerService<InstanceManager> _logger;
 		private readonly ILoggerService<TelegramMessenger> _telegramLogger;
+		private readonly ILoggerService<DiscordWebhookMessenger> _discordWebhookLogger;
+		private readonly ILoggerService<DiscordBotMessenger> _discordBotLogger;
 		private readonly IServiceScopeFactory _scopeFactory;
 		private readonly ICalculationService _helpersService;
 
 		static ITelegramMessenger telegramMessenger = null;
+		static IDiscordMessenger discordMessenger = null;
 		static SemaphoreSlim instancesSem = new SemaphoreSlim(1, 1);
 		static List<TbotInstanceData> instances = new();
 		static SettingsFileWatcher settingsWatcher = null;
@@ -44,11 +47,15 @@ namespace Tbot.Services {
 			IOgameService ogameService,
 			IServiceScopeFactory serviceScopeFactory,
 			ILoggerService<TelegramMessenger> telegramLogger,
+			ILoggerService<DiscordWebhookMessenger> discordWebhookLogger,
+			ILoggerService<DiscordBotMessenger> discordBotLogger,
 			ICalculationService helpersService) {
 			_logger = logger;
 			_ogameService = ogameService;
 			_scopeFactory = serviceScopeFactory;
 			_telegramLogger = telegramLogger;
+			_discordWebhookLogger = discordWebhookLogger;
+			_discordBotLogger = discordBotLogger;
 			_helpersService = helpersService;
 		}
 
@@ -62,6 +69,7 @@ namespace Tbot.Services {
 
 			// Initialize TelegramMessenger if enabled on main settings
 			await InitializeTelegramMessenger();
+			await InitializeDiscord();
 
 			// Detect settings versioning by checking existence of "Instances" key
 			SettingsVersion settingVersion = SettingsVersion.Invalid;
@@ -199,6 +207,10 @@ namespace Tbot.Services {
 			}
 			await Task.WhenAll(deinitTasks);
 			instances.Clear();
+			if (discordMessenger != null) {
+				await discordMessenger.Disable();
+				discordMessenger = null;
+			}
 		}
 
 		private async Task InitializeTelegramMessenger() {
@@ -244,6 +256,114 @@ namespace Tbot.Services {
 			}
 		}
 
+		private async Task InitializeDiscord() {
+			if (TryGetDiscordBotSettings(out string token, out ulong channelId, out List<ulong> allowedUserIds, out bool selfTestOnStart)) {
+				if (discordMessenger is not DiscordBotMessenger) {
+					if (discordMessenger != null) {
+						await discordMessenger.Disable();
+						discordMessenger = null;
+					}
+					_logger.WriteLog(LogLevel.Information, LogSender.Main, "Activating Discord bot");
+					var bot = new DiscordBotMessenger(_discordBotLogger, token, channelId, allowedUserIds, selfTestOnStart);
+					await bot.Start();
+					discordMessenger = bot;
+				}
+				StartDiscordAutoPing(_mainSettings.DiscordMessenger);
+				return;
+			}
+
+			bool webhookActive = SettingsService.IsSettingSet(_mainSettings, "DiscordWebhook")
+				&& SettingsService.IsSettingSet(_mainSettings.DiscordWebhook, "Active")
+				&& (bool) _mainSettings.DiscordWebhook.Active;
+			string url = "";
+			if (webhookActive && SettingsService.IsSettingSet(_mainSettings.DiscordWebhook, "Url")) {
+				url = (string) _mainSettings.DiscordWebhook.Url ?? "";
+			}
+
+			if (webhookActive && !string.IsNullOrWhiteSpace(url)) {
+				if (discordMessenger is not DiscordWebhookMessenger) {
+					if (discordMessenger != null) {
+						await discordMessenger.Disable();
+						discordMessenger = null;
+					}
+					_logger.WriteLog(LogLevel.Information, LogSender.Main, "Activating Discord webhook");
+					string username = "TBot";
+					if (SettingsService.IsSettingSet(_mainSettings.DiscordWebhook, "Username")
+						&& !string.IsNullOrWhiteSpace((string) _mainSettings.DiscordWebhook.Username)) {
+						username = (string) _mainSettings.DiscordWebhook.Username;
+					}
+					discordMessenger = new DiscordWebhookMessenger(_discordWebhookLogger, url, username);
+					await discordMessenger.SendMessage("TBot Discord webhook connected.");
+				}
+				StartDiscordAutoPing(_mainSettings.DiscordWebhook);
+				return;
+			}
+
+			_logger.WriteLog(LogLevel.Information, LogSender.Main, "Discord messenger disabled");
+			if (discordMessenger != null) {
+				await discordMessenger.Disable();
+				discordMessenger = null;
+			}
+		}
+
+		private bool TryGetDiscordBotSettings(out string token, out ulong channelId, out List<ulong> allowedUserIds, out bool selfTestOnStart) {
+			token = "";
+			channelId = 0;
+			allowedUserIds = new List<ulong>();
+			selfTestOnStart = false;
+			if (!SettingsService.IsSettingSet(_mainSettings, "DiscordMessenger")
+				|| !SettingsService.IsSettingSet(_mainSettings.DiscordMessenger, "Active")
+				|| !(bool) _mainSettings.DiscordMessenger.Active) {
+				return false;
+			}
+			if (SettingsService.IsSettingSet(_mainSettings.DiscordMessenger, "Token")) {
+				token = ((string) _mainSettings.DiscordMessenger.Token ?? "").Trim();
+			}
+			string channelRaw = "";
+			if (SettingsService.IsSettingSet(_mainSettings.DiscordMessenger, "ChannelId")) {
+				channelRaw = Convert.ToString(_mainSettings.DiscordMessenger.ChannelId) ?? "";
+			}
+			if (string.IsNullOrWhiteSpace(token) || !ulong.TryParse(channelRaw, out channelId) || channelId == 0) {
+				_logger.WriteLog(LogLevel.Warning, LogSender.Main, "Discord bot is Active but Token or ChannelId is missing.");
+				return false;
+			}
+			if (SettingsService.IsSettingSet(_mainSettings.DiscordMessenger, "AllowedUserIds")) {
+				try {
+					foreach (var item in _mainSettings.DiscordMessenger.AllowedUserIds) {
+						if (ulong.TryParse(Convert.ToString(item), out ulong userId) && userId > 0) {
+							allowedUserIds.Add(userId);
+						}
+					}
+				} catch (Exception) {
+					// ignore malformed AllowedUserIds
+				}
+			}
+			if (SettingsService.IsSettingSet(_mainSettings.DiscordMessenger, "SelfTestOnStart")
+				&& (bool) _mainSettings.DiscordMessenger.SelfTestOnStart) {
+				selfTestOnStart = true;
+			}
+			return true;
+		}
+
+		private void StartDiscordAutoPing(dynamic discordSettings) {
+			if (
+				SettingsService.IsSettingSet(discordSettings, "AutoPing")
+				&& SettingsService.IsSettingSet(discordSettings.AutoPing, "Active")
+				&& SettingsService.IsSettingSet(discordSettings.AutoPing, "EveryHours")
+				&& (bool) discordSettings.AutoPing.Active
+			) {
+				_logger.WriteLog(LogLevel.Information, LogSender.Main, "Discord AutoPing is enabled!");
+				long everyHours = (long) discordSettings.AutoPing.EveryHours;
+				if (everyHours == 0) {
+					everyHours = 1;
+				}
+				discordMessenger.StartAutoPing(everyHours);
+			} else {
+				_logger.WriteLog(LogLevel.Information, LogSender.Main, "Discord AutoPing disabled.");
+				discordMessenger.StopAutoPing();
+			}
+		}
+
 
 		private async Task<TbotInstanceData> StartTBotMain(string settingsPath, string alias) {
 			_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Initializing instance \"{alias}\" \"{settingsPath}\"");
@@ -257,7 +377,7 @@ namespace Tbot.Services {
 					var scope = _scopeFactory.CreateScope();
 					var tBotInstance = scope.ServiceProvider.GetRequiredService<ITBotMain>();
 
-					await tBotInstance.Init(settingsPath, alias, telegramMessenger);	// This may throw
+					await tBotInstance.Init(settingsPath, alias, telegramMessenger, discordMessenger);	// This may throw
 
 					_logger.WriteLog(LogLevel.Information, LogSender.Main, $"Instance \"{alias}\" initialized successfully!");
 					// Add a OnError callback so we can remove it from our list if an error occurred

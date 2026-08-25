@@ -23,7 +23,8 @@ namespace TBot.Common.Logging.TextFormatters {
 			{ "SleepMode", "🛏" },
 			{ "Colonize", "🛬" },
 			{ "AutoFarm", "⚔" },
-			{ "Telegram", "📢" }
+			{ "Telegram", "📢" },
+			{ "Discord", "💬" }
 		};
 
 		public static string GetEmoji(string text) {

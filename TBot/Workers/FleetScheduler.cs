@@ -628,7 +628,7 @@ if (
 								DisposeAndRemoveTimer($"RecallTimer-{fleet.ID.ToString()}");
                                 AddTimer($"RecallTimer-{fleet.ID.ToString()}", new Timer(RetireFleet, fleet, (int)newRecallDelay, Timeout.Infinite));
 
-								if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+								if (_tbotInstance.IsNotificationEnabled(_tbotInstance.InstanceSettings.Defender)) {
 									await _tbotInstance.SendTelegramMessage($"⚠️ Recall delayed! Attack still incoming on {fleet.Origin}. New recall in {newRecallDelay/1000}s");
 								}
 								return;
@@ -656,7 +656,7 @@ if (
 					_tbotInstance.log(LogLevel.Error, LogSender.FleetScheduler, "Unable to recall fleet: an unknon error has occurred, already recalled ?.");
 				} else {
 					_tbotInstance.log(LogLevel.Information, LogSender.FleetScheduler, $"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
-					if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+					if (_tbotInstance.IsNotificationEnabled(_tbotInstance.InstanceSettings.Defender)) {
 						await _tbotInstance.SendTelegramMessage($"Fleet recalled. Arrival time: {recalledFleet.BackTime.ToString()}");
 					}
 					return;

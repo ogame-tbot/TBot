@@ -9,6 +9,25 @@
 			"EveryHours": 1
 		}
 	},
+	"DiscordMessenger": {
+		"Active": false,
+		"Token": "",
+		"ChannelId": "",
+		"AllowedUserIds": [],
+		"AutoPing": {
+			"Active": true,
+			"EveryHours": 1
+		}
+	},
+	"DiscordWebhook": {
+		"Active": false,
+		"Url": "",
+		"Username": "TBot",
+		"AutoPing": {
+			"Active": true,
+			"EveryHours": 1
+		}
+	},
 	"WebUI": {
 		"Enable": true,
 		"Urls": "http://localhost:9090",
