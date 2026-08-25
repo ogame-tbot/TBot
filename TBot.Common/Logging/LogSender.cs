@@ -28,6 +28,7 @@ namespace TBot.Common.Logging {
 		Colonize,
 		AutoFarm,
 		AutoDiscovery,
-		Telegram
+		Telegram,
+		Discord
 	}
 }

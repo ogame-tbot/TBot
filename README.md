@@ -54,6 +54,25 @@ The *settings.json* should be compiled as follows:
                         "EveryHours": 0
                 }
         },
+        "DiscordMessenger": {
+                "Active": false,
+                "Token": "<DISCORD BOT TOKEN>",
+                "ChannelId": "<channel id>",
+                "AllowedUserIds": [],
+                "AutoPing": {
+                        "Active": true,
+                        "EveryHours": 1
+                }
+        },
+        "DiscordWebhook": {
+                "Active": false,
+                "Url": "https://discord.com/api/webhooks/<id>/<token>",
+                "Username": "TBot",
+                "AutoPing": {
+                        "Active": true,
+                        "EveryHours": 1
+                }
+        },
         "Instances": [
                 {
                         "Alias": "Account alias",
@@ -187,6 +206,35 @@ You can control and get info for TBot through a Telegram Bot. In order to enable
     * /stopautofarm - stop autofarm
     * /startautofarm - start autofarm
  
+### Discord bot
+TBot can use a Discord bot the same way as Telegram: notifications **and** commands (`!help`, `!startexpe`, `!sleep`, …). Discord's `/` menu is reserved for slash commands, so use a leading `!` in Discord.
+
+* Create an application at [Discord Developer Portal](https://discord.com/developers/applications) → Bot
+  * Copy the bot token
+  * Enable **Message Content Intent** (Privileged Gateway Intents)
+* Invite the bot to your server with scopes `bot` and permissions: View Channel, Send Messages, Read Message History
+* Enable Developer Mode in Discord, then copy the channel ID (right-click the channel)
+* Optional: copy your user ID and put it in `AllowedUserIds` so only you can run commands. Leave it empty to allow anyone in that channel. Use a private channel if you leave it empty.
+* In `settings.json`:
+  * Set `DiscordMessenger.Active` to `true`
+  * Paste the token into `DiscordMessenger.Token`
+  * Paste the channel ID into `DiscordMessenger.ChannelId`
+* Restart TBot after changing these settings
+* Per-feature mute: in an instance settings file, next to `TelegramMessenger`, you can add `"DiscordMessenger": { "Active": false }` under Defender or SleepMode
+
+If both Discord bot and webhook are enabled, the **bot** is used. A webhook-only setup still works for notifications without commands.
+
+### Discord webhook
+TBot can also send notifications only (attacks, sleep, instance up, AutoPing) through an incoming webhook. Webhooks cannot receive commands.
+
+* In Discord: channel settings → Integrations → Webhooks → New Webhook
+* Copy the webhook URL
+* In `settings.json`:
+  * Set `DiscordWebhook.Active` to `true`
+  * Paste the URL into `DiscordWebhook.Url`
+  * Optional: `Username` (display name in Discord) and `AutoPing` (periodic uptime message)
+* Restart TBot after changing these settings
+
 ### Settings Hot Reload
 TBot supports the editing of instance settings even while it is running. It will take care of turning on and off features as well as the specific feature config settings.
 You can change settings from WebUI or editing the files directly.

@@ -3,6 +3,15 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Local account credentials — never commit
+instance_settings.local.json
+**/instance_settings.local.json
+instance_settings*.local.json
+**/instance_settings*.local.json
+settings.local.json
+**/settings.local.json
+.tbot-secrets/
+
 # User-specific files
 *.rsuser
 *.suo

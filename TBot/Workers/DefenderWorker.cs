@@ -191,7 +191,7 @@ namespace Tbot.Workers {
 
 			try {
 				if (attack.MissionType == Missions.MissileAttack) {
-					if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+					if (_tbotInstance.IsNotificationEnabled(_tbotInstance.InstanceSettings.Defender)) {
 						await _tbotInstance.SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} with IPM!");
 					}
 					DoLog(LogLevel.Information, $"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} with IPM!");
@@ -272,7 +272,7 @@ namespace Tbot.Workers {
 				DoLog(LogLevel.Warning, "An error has occurred while checking attacker fleet composition");
 			}
 
-			if ((bool) _tbotInstance.InstanceSettings.Defender.TelegramMessenger.Active) {
+			if (_tbotInstance.IsNotificationEnabled(_tbotInstance.InstanceSettings.Defender)) {
 				await _tbotInstance.SendTelegramMessage($"Player {attack.AttackerName} ({attack.AttackerID}) is attacking your planet {attack.Destination.ToString()} arriving at {attack.ArrivalTime.ToString()}");
 				if (attack.Ships != null) { 
 					await Task.Delay(1000, _ct);
